@@ -480,7 +480,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     <FormItem className="md:col-span-2">
                       <FormLabel className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />Student Photo</FormLabel>
                       <FormControl>
-                        <>
+                        <div>
                           <input
                             type="file"
                             id="studentPhotoUpload"
@@ -515,7 +515,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                               </Button>
                             </div>
                           )}
-                        </>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
