@@ -22,6 +22,8 @@ interface ReportFormProps {
   initialData?: Partial<ReportData>;
 }
 
+const NONE_VALUE_KEY = "--none--";
+
 export default function ReportForm({ onFormUpdate, initialData }: ReportFormProps) {
   const [isAiLoading, startAiTransition] = useTransition();
   const { toast } = useToast();
@@ -197,8 +199,8 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                         <FormItem>
                           <FormLabel className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary" />CA Mark (1-60)</FormLabel>
                            <Select
-                              onValueChange={(value) => field.onChange(value ? parseInt(value, 10) : null)}
-                              value={field.value !== null && field.value !== undefined ? String(field.value) : undefined}
+                              onValueChange={(value) => field.onChange(value === NONE_VALUE_KEY ? null : (value ? parseInt(value, 10) : null) )}
+                              value={field.value === null ? NONE_VALUE_KEY : (field.value !== undefined ? String(field.value) : undefined)}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -206,7 +208,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value=""><em>None</em></SelectItem>
+                                <SelectItem value={NONE_VALUE_KEY}><em>None</em></SelectItem>
                                 {Array.from({ length: 60 }, (_, i) => i + 1).map((val) => (
                                   <SelectItem key={`ca-${val}`} value={String(val)}>
                                     {val}
@@ -225,8 +227,8 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                         <FormItem>
                           <FormLabel className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary" />Exam Mark (1-100)</FormLabel>
                           <Select
-                              onValueChange={(value) => field.onChange(value ? parseInt(value, 10) : null)}
-                              value={field.value !== null && field.value !== undefined ? String(field.value) : undefined}
+                              onValueChange={(value) => field.onChange(value === NONE_VALUE_KEY ? null : (value ? parseInt(value, 10) : null) )}
+                              value={field.value === null ? NONE_VALUE_KEY : (field.value !== undefined ? String(field.value) : undefined)}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -234,7 +236,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                 <SelectItem value=""><em>None</em></SelectItem>
+                                 <SelectItem value={NONE_VALUE_KEY}><em>None</em></SelectItem>
                                 {Array.from({ length: 100 }, (_, i) => i + 1).map((val) => (
                                   <SelectItem key={`exam-${val}`} value={String(val)}>
                                     {val}
