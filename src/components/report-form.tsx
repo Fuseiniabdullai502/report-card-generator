@@ -11,9 +11,9 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {getAiFeedbackAction} from '@/app/actions';
+import {getAiFeedbackAction, getAiPerformanceSummaryAction} from '@/app/actions';
 import {useState, useTransition} from 'react';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3 } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 
@@ -33,7 +33,8 @@ const classLevels = [
 ];
 
 export default function ReportForm({ onFormUpdate, initialData }: ReportFormProps) {
-  const [isAiLoading, startAiTransition] = useTransition();
+  const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
+  const [isPerformanceSummaryAiLoading, startPerformanceSummaryAiTransition] = useTransition();
   const { toast } = useToast();
 
   const form = useForm<ReportData>({
@@ -56,19 +57,71 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
     name: "subjects"
   });
 
-  const handleGenerateAiFeedback = async () => {
+  const handleGenerateAiPerformanceSummary = async () => {
+    const { studentName, className, subjects } = form.getValues();
+    if (!studentName || !className || !subjects || subjects.some(s => !s.subjectName)) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in student name, class name, and ensure all subjects have names before generating AI performance summary.",
+        variant: "destructive",
+      });
+      form.trigger(['studentName', 'className', 'subjects']);
+      return;
+    }
+
+    startPerformanceSummaryAiTransition(async () => {
+      try {
+        // Ensure subject marks are numbers or null
+        const formattedSubjects = subjects.map(s => ({
+            ...s,
+            continuousAssessment: s.continuousAssessment ? Number(s.continuousAssessment) : null,
+            examinationMark: s.examinationMark ? Number(s.examinationMark) : null,
+        }));
+
+        const result = await getAiPerformanceSummaryAction({
+          studentName,
+          className,
+          subjects: formattedSubjects,
+        });
+
+        if (result.success && result.performanceSummary) {
+          form.setValue('performanceSummary', result.performanceSummary);
+          toast({
+            title: "AI Performance Summary Generated",
+            description: "The performance summary has been populated.",
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "Error Generating Summary",
+            description: result.error || "An unknown error occurred.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+         toast({
+            title: "Error Generating Summary",
+            description: "An unexpected error occurred while generating the summary.",
+            variant: "destructive",
+          });
+      }
+    });
+  };
+
+
+  const handleGenerateAiTeacherFeedback = async () => {
     const { studentName, className, performanceSummary, strengths, areasForImprovement } = form.getValues();
     if (!studentName || !className || !performanceSummary || !strengths || !areasForImprovement) {
       toast({
         title: "Missing Information",
-        description: "Please fill in student name, class name, performance summary, strengths, and areas for improvement before generating AI feedback.",
+        description: "Please fill in student name, class name, performance summary, strengths, and areas for improvement before generating AI teacher feedback.",
         variant: "destructive",
       });
       form.trigger(['studentName', 'className', 'performanceSummary', 'strengths', 'areasForImprovement']);
       return;
     }
 
-    startAiTransition(async () => {
+    startTeacherFeedbackAiTransition(async () => {
       try {
         const result = await getAiFeedbackAction({
           studentName,
@@ -80,7 +133,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
         if (result.success && result.feedback) {
           form.setValue('teacherFeedback', result.feedback);
           toast({
-            title: "AI Feedback Generated",
+            title: "AI Teacher Feedback Generated",
             description: "Teacher's feedback has been populated.",
             variant: "default",
           });
@@ -301,9 +354,25 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                 name="performanceSummary"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center"><ClipboardList className="mr-2 h-4 w-4 text-primary" />Performance Summary</FormLabel>
+                    <div className="flex justify-between items-center mb-1">
+                        <FormLabel className="flex items-center"><ClipboardList className="mr-2 h-4 w-4 text-primary" />Performance Summary</FormLabel>
+                        <Button
+                            type="button"
+                            onClick={handleGenerateAiPerformanceSummary}
+                            disabled={isPerformanceSummaryAiLoading}
+                            variant="outline"
+                            size="sm"
+                        >
+                            {isPerformanceSummaryAiLoading ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                            <Bot className="mr-2 h-4 w-4" />
+                            )}
+                            Generate Summary with AI
+                        </Button>
+                    </div>
                     <FormControl>
-                      <Textarea placeholder="Describe the student's overall performance..." {...field} rows={3} />
+                      <Textarea placeholder="Describe the student's overall performance, or generate one with AI using subject marks." {...field} rows={3} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -346,12 +415,12 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                       <FormLabel className="flex items-center"><Sparkles className="mr-2 h-4 w-4 text-accent" />Teacher's Feedback (Optional)</FormLabel>
                       <Button
                         type="button"
-                        onClick={handleGenerateAiFeedback}
-                        disabled={isAiLoading}
+                        onClick={handleGenerateAiTeacherFeedback}
+                        disabled={isTeacherFeedbackAiLoading}
                         variant="outline"
                         size="sm"
                       >
-                        {isAiLoading ? (
+                        {isTeacherFeedbackAiLoading ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
                           <Wand2 className="mr-2 h-4 w-4" />
@@ -368,7 +437,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
               />
             </section>
             
-            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isPerformanceSummaryAiLoading || isTeacherFeedbackAiLoading}>
               <CheckSquare className="mr-2 h-4 w-4" /> Update Preview
             </Button>
           </form>
@@ -377,3 +446,4 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
     </Card>
   );
 }
+
