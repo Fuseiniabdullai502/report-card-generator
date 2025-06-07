@@ -49,6 +49,7 @@ export default function Home() {
   const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined})));
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
   const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
+  const [sessionDefaults, setSessionDefaults] = useState<Partial<ReportData>>({});
   const { toast } = useToast();
 
   const calculateAndSetRanks = (listToProcess: ReportData[]) => {
@@ -108,8 +109,6 @@ export default function Home() {
             }
         }
     }
-
-
     setReportPrintList(rankedReports);
   };
 
@@ -137,12 +136,51 @@ export default function Home() {
       const newList = [...reportPrintList, reportWithEntryNumber];
       calculateAndSetRanks(newList);
 
+      // Set session defaults if this is the first report being added
+      if (reportPrintList.length === 0) {
+        setSessionDefaults({
+          schoolName: currentEditingReport.schoolName,
+          className: currentEditingReport.className,
+          gender: currentEditingReport.gender,
+          academicYear: currentEditingReport.academicYear,
+          academicTerm: currentEditingReport.academicTerm,
+          totalSchoolDays: currentEditingReport.totalSchoolDays,
+        });
+      }
+
       setNextStudentEntryNumber(prevNumber => prevNumber + 1); 
       toast({
         title: "Report Added & Ranked",
         description: `${currentEditingReport.studentName}'s report (#${nextStudentEntryNumber}) added and list re-ranked.`,
       });
-      setCurrentEditingReport(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined})));
+      
+      // Reset currentEditingReport for the next entry, applying session defaults
+      const newFormBase = JSON.parse(JSON.stringify(defaultReportData));
+      const newCurrentEditingReport: ReportData = {
+        ...newFormBase,
+        schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
+        className: sessionDefaults.className ?? newFormBase.className,
+        gender: sessionDefaults.gender ?? newFormBase.gender,
+        academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear,
+        academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm,
+        totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null 
+                         ? sessionDefaults.totalSchoolDays 
+                         : newFormBase.totalSchoolDays,
+        studentName: '', // Always clear student-specific fields
+        daysAttended: null,
+        performanceSummary: '',
+        strengths: '',
+        areasForImprovement: '',
+        teacherFeedback: '',
+        subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+        promotionStatus: undefined,
+        studentEntryNumber: undefined,
+        id: undefined,
+        overallAverage: undefined,
+        rank: undefined,
+      };
+      setCurrentEditingReport(newCurrentEditingReport);
+
     } else {
        toast({
         title: "No Report Data",
@@ -154,11 +192,14 @@ export default function Home() {
 
   const handleClearList = () => {
     setReportPrintList([]);
-    setNextStudentEntryNumber(1); 
+    setNextStudentEntryNumber(1);
+    setSessionDefaults({}); // Clear session defaults
     toast({
       title: "Print List Cleared",
-      description: "All reports have been removed and ranking reset.",
+      description: "All reports have been removed and ranking reset. Session defaults cleared.",
     });
+     // Reset currentEditingReport to absolute defaults
+    setCurrentEditingReport(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined})));
   }
 
   const handlePrint = () => {
@@ -223,7 +264,7 @@ export default function Home() {
               </div>
               <CardDescription>
                 This area shows all reports added to the print list, sorted by rank. Each will attempt to print on a new page.
-                {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on the average of final subject scores (CA 40%, Exam 60%).</span>}
+                {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on the average of final subject scores (CA 40%, Exam 60%). Session defaults apply after the first student.</span>}
               </CardDescription>
             </CardHeader>
             <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">
@@ -249,3 +290,4 @@ export default function Home() {
     </div>
   );
 }
+
