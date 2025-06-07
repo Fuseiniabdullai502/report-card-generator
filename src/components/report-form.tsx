@@ -11,7 +11,7 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {getAiFeedbackAction, getAiPerformanceSummaryAction} from '@/app/actions';
+import {getAiFeedbackAction, getAiReportInsightsAction} from '@/app/actions'; // Updated action import
 import {useState, useTransition} from 'react';
 import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
@@ -34,7 +34,7 @@ const classLevels = [
 
 export default function ReportForm({ onFormUpdate, initialData }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
-  const [isPerformanceSummaryAiLoading, startPerformanceSummaryAiTransition] = useTransition();
+  const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition(); // Renamed state
   const { toast } = useToast();
 
   const form = useForm<ReportData>({
@@ -59,19 +59,19 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
     name: "subjects"
   });
 
-  const handleGenerateAiPerformanceSummary = async () => {
-    const { studentName, className, subjects } = form.getValues();
+  const handleGenerateAiReportInsights = async () => { // Renamed handler
+    const { studentName, className, subjects, daysAttended, totalSchoolDays } = form.getValues();
     if (!studentName || !className || !subjects || subjects.some(s => !s.subjectName)) {
       toast({
         title: "Missing Information",
-        description: "Please fill in student name, class name, and ensure all subjects have names before generating AI performance summary.",
+        description: "Please fill in student name, class name, and ensure all subjects have names before generating AI insights.",
         variant: "destructive",
       });
       form.trigger(['studentName', 'className', 'subjects']);
       return;
     }
 
-    startPerformanceSummaryAiTransition(async () => {
+    startReportInsightsAiTransition(async () => { // Updated transition
       try {
         const formattedSubjects = subjects.map(s => ({
             ...s,
@@ -79,30 +79,34 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
             examinationMark: s.examinationMark ? Number(s.examinationMark) : null,
         }));
 
-        const result = await getAiPerformanceSummaryAction({
+        const result = await getAiReportInsightsAction({ // Updated action call
           studentName,
           className,
+          daysAttended: daysAttended ? Number(daysAttended) : null,
+          totalSchoolDays: totalSchoolDays ? Number(totalSchoolDays) : null,
           subjects: formattedSubjects,
         });
 
-        if (result.success && result.performanceSummary) {
-          form.setValue('performanceSummary', result.performanceSummary);
+        if (result.success && result.insights) {
+          form.setValue('performanceSummary', result.insights.performanceSummary);
+          form.setValue('strengths', result.insights.strengths);
+          form.setValue('areasForImprovement', result.insights.areasForImprovement);
           toast({
-            title: "AI Performance Summary Generated",
-            description: "The performance summary has been populated.",
+            title: "AI Insights Generated",
+            description: "Performance summary, strengths, and areas for improvement have been populated.",
             variant: "default",
           });
         } else {
           toast({
-            title: "Error Generating Summary",
+            title: "Error Generating Insights",
             description: result.error || "An unknown error occurred.",
             variant: "destructive",
           });
         }
       } catch (error) {
          toast({
-            title: "Error Generating Summary",
-            description: "An unexpected error occurred while generating the summary.",
+            title: "Error Generating Insights",
+            description: "An unexpected error occurred while generating the insights.",
             variant: "destructive",
           });
       }
@@ -254,7 +258,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                     <FormItem>
                       <FormLabel className="flex items-center"><CalendarCheck2 className="mr-2 h-4 w-4" />Days Attended</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="e.g., 85" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} value={field.value === null ? '' : field.value} />
+                        <Input type="number" placeholder="e.g., 85" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} value={field.value === null ? '' : String(field.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -267,7 +271,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                     <FormItem>
                       <FormLabel className="flex items-center"><CalendarDays className="mr-2 h-4 w-4" />Total School Days</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="e.g., 90" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} value={field.value === null ? '' : field.value} />
+                        <Input type="number" placeholder="e.g., 90" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} value={field.value === null ? '' : String(field.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -380,31 +384,32 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
             <Separator />
 
             <section className="space-y-6">
-               <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Overall Performance & Feedback</h3>
+               <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4 flex justify-between items-center">
+                Overall Performance & Feedback
+                <Button
+                    type="button"
+                    onClick={handleGenerateAiReportInsights}
+                    disabled={isReportInsightsAiLoading}
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto"
+                >
+                    {isReportInsightsAiLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                    <Bot className="mr-2 h-4 w-4" />
+                    )}
+                    Generate AI Insights
+                </Button>
+               </h3>
               <FormField
                 control={form.control}
                 name="performanceSummary"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex justify-between items-center mb-1">
-                        <FormLabel className="flex items-center"><ClipboardList className="mr-2 h-4 w-4 text-primary" />Performance Summary</FormLabel>
-                        <Button
-                            type="button"
-                            onClick={handleGenerateAiPerformanceSummary}
-                            disabled={isPerformanceSummaryAiLoading}
-                            variant="outline"
-                            size="sm"
-                        >
-                            {isPerformanceSummaryAiLoading ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                            <Bot className="mr-2 h-4 w-4" />
-                            )}
-                            Generate Summary with AI
-                        </Button>
-                    </div>
+                    <FormLabel className="flex items-center"><ClipboardList className="mr-2 h-4 w-4 text-primary" />Performance Summary</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Describe the student's overall performance, or generate one with AI using subject marks." {...field} rows={3} />
+                      <Textarea placeholder="AI-generated summary based on attendance and subject marks will appear here." {...field} rows={3} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -418,7 +423,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                     <FormItem>
                       <FormLabel className="flex items-center"><ThumbsUp className="mr-2 h-4 w-4 text-primary" />Strengths</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="List the student's key strengths..." {...field} rows={3} />
+                        <Textarea placeholder="AI-generated strengths will appear here." {...field} rows={3} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -431,7 +436,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                     <FormItem>
                       <FormLabel className="flex items-center"><Activity className="mr-2 h-4 w-4 text-primary" />Areas for Improvement</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Identify areas where the student can improve..." {...field} rows={3} />
+                        <Textarea placeholder="AI-generated areas for improvement will appear here." {...field} rows={3} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -448,7 +453,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                       <Button
                         type="button"
                         onClick={handleGenerateAiTeacherFeedback}
-                        disabled={isTeacherFeedbackAiLoading}
+                        disabled={isTeacherFeedbackAiLoading || !form.getValues().performanceSummary || !form.getValues().strengths || !form.getValues().areasForImprovement}
                         variant="outline"
                         size="sm"
                       >
@@ -461,7 +466,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                       </Button>
                     </div>
                     <FormControl>
-                      <Textarea placeholder="AI-generated feedback will appear here, or write your own. You can edit it as needed." {...field} rows={4} className="border-accent focus:ring-accent" />
+                      <Textarea placeholder="AI-generated teacher feedback will appear here, or write your own. You can edit it as needed." {...field} rows={4} className="border-accent focus:ring-accent" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -469,7 +474,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
               />
             </section>
             
-            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isPerformanceSummaryAiLoading || isTeacherFeedbackAiLoading}>
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading}>
               <CheckSquare className="mr-2 h-4 w-4" /> Update Preview
             </Button>
           </form>
