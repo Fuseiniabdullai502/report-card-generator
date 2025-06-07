@@ -32,7 +32,7 @@ const classLevels = [
   "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"
 ];
 
-const genderOptions = ["Male", "Female", "Other", "Prefer not to say"];
+const genderOptions = ["Male", "Female"];
 
 export default function ReportForm({ onFormUpdate, initialData }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
