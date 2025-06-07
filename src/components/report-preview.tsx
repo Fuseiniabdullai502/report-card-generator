@@ -117,7 +117,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
           )}
         </div>
         {data.studentPhotoDataUri && (
-          <div className="ml-auto flex-shrink-0">
+          <div className="ml-auto flex-shrink-0 text-center">
             <Image
               src={data.studentPhotoDataUri}
               alt={`${data.studentName || 'Student'}'s photo`}
@@ -126,6 +126,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
               className="object-cover rounded border border-gray-300 shadow-sm"
               data-ai-hint="student portrait"
             />
+            <p className="text-xs text-gray-700 mt-1 font-medium">{data.studentName}</p>
           </div>
         )}
       </section>
