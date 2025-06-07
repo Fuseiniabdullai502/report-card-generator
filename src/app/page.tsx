@@ -82,10 +82,6 @@ export default function Home() {
         lastScore = report.overallAverage ?? 0;
         return { ...report, rank: formatRankString(displayRankCounter, false) };
       } else {
-        // const prevReport = sortedReports[index -1]; // This logic had a slight bug with multiple ties.
-        // if (prevReport && !prevReport.rank?.startsWith('T-')) {
-        //     prevReport.rank = formatRankString(displayRankCounter, true);
-        // }
         return { ...report, rank: formatRankString(displayRankCounter, true) };
       }
     });
@@ -139,11 +135,12 @@ export default function Home() {
           headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
         });
       }
-
+      
+      const currentEntryNum = nextStudentEntryNumber;
       setNextStudentEntryNumber(prevNumber => prevNumber + 1); 
       toast({
         title: "Report Added & Ranked",
-        description: `${currentEditingReport.studentName}'s report (#${nextStudentEntryNumber}) added and list re-ranked.`,
+        description: `${currentEditingReport.studentName}'s report (Entry #${currentEntryNum}) added and list re-ranked.`,
       });
       
       const newFormBase = JSON.parse(JSON.stringify(defaultReportData));
@@ -292,8 +289,8 @@ export default function Home() {
               </div>
               <CardDescription className="mt-2 md:mt-0">
                 This area shows all reports added to the print list, sorted by rank. Each will attempt to print on a new page.
-                Browser print dialog usually offers "Save as PDF". "Download Data" saves list as JSON.
-                {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on the average of final subject scores (CA 40%, Exam 60%). Session defaults apply after the first student.</span>}
+                Browser print dialog usually offers "Save as PDF". "Download Data" saves list as JSON. Session defaults (School, Class, Term etc.) apply after the first student entry.
+                {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on the average of final subject scores (CA 40%, Exam 60%).</span>}
               </CardDescription>
             </CardHeader>
             <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">

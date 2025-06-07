@@ -308,6 +308,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       headMasterSignatureDataUri: data.headMasterSignatureDataUri || undefined,
       instructorContact: data.instructorContact || '',
       schoolLogoDataUri: data.schoolLogoDataUri || undefined,
+      studentEntryNumber: data.studentEntryNumber || undefined,
     };
     onFormUpdate(processedData);
      toast({

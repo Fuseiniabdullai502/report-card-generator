@@ -62,9 +62,9 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         <div className="flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-headline font-bold text-primary">{data.schoolName || 'School Name'}</h2>
-            <p className="text-muted-foreground">{data.academicYear || 'Academic Year'} - {data.academicTerm || 'Term/Semester'}</p>
+            <p className="text-muted-foreground font-semibold">{data.academicYear || 'Academic Year'} - {data.academicTerm || 'Term/Semester'}</p>
             {data.studentEntryNumber && (
-              <p className="text-xs text-gray-500 mt-0.5">Entry #: {data.studentEntryNumber}</p>
+              <p className="text-xs text-gray-500 mt-0.5 font-semibold">Entry #: {data.studentEntryNumber}</p>
             )}
           </div>
           <Image
@@ -83,19 +83,19 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs flex-grow pr-4">
           <div>
             <span className="font-semibold text-gray-600">Student Name:</span>
-            <p className="text-gray-800 text-sm">{data.studentName}</p>
+            <p className="text-gray-800 text-sm font-semibold">{data.studentName}</p>
           </div>
           <div>
             <span className="font-semibold text-gray-600">Class:</span>
-            <p className="text-gray-800 text-sm">{data.className}</p>
+            <p className="text-gray-800 text-sm font-semibold">{data.className}</p>
           </div>
           <div>
             <span className="font-semibold text-gray-600">Gender:</span>
-            <p className="text-gray-800 text-sm">{data.gender || 'N/A'}</p>
+            <p className="text-gray-800 text-sm font-semibold">{data.gender || 'N/A'}</p>
           </div>
           <div>
             <span className="font-semibold text-gray-600">Attendance:</span>
-            <p className="text-gray-800 text-sm">{attendanceString}</p>
+            <p className="text-gray-800 text-sm font-semibold">{attendanceString}</p>
           </div>
           {data.rank && (
             <div className="col-span-1">
