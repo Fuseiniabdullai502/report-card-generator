@@ -39,6 +39,9 @@ const getGradeAndRemarks = (
   return { grade: 'N/A', remarks: 'Incomplete Data', finalMark: displayFinalMark > 0 ? displayFinalMark : '-' };
 };
 
+const tertiaryLevelClassesList = [ // Re-define or import if used across multiple files
+  "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"
+];
 
 export default function ReportPreview({ data }: ReportPreviewProps) {
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -50,6 +53,10 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
   const attendanceString = (data.daysAttended !== null && data.daysAttended !== undefined && data.totalSchoolDays !== null && data.totalSchoolDays !== undefined)
     ? `${data.daysAttended} / ${data.totalSchoolDays} days`
     : 'N/A';
+
+  const isPromotionStatusRelevant = data.academicTerm === 'Third Term' && 
+                                   data.className && 
+                                   !tertiaryLevelClassesList.includes(data.className);
 
   return (
     <div id="printable-report-area" className="a4-page-simulation flex flex-col text-sm">
@@ -103,7 +110,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             <p className="text-gray-800 text-sm font-semibold">{data.overallAverage.toFixed(2)}%</p>
           </div>
         )}
-        {data.academicTerm === 'Third Term' && data.promotionStatus && (
+        {isPromotionStatusRelevant && data.promotionStatus && (
           <div className="col-span-1">
             <strong className="text-gray-600 flex items-center"><Medal className="mr-1 h-3.5 w-3.5 text-green-600" />Promotion Status:</strong>
             <p className="text-gray-800 text-sm font-semibold">{data.promotionStatus}</p>
@@ -203,3 +210,4 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
   );
 }
 
+    

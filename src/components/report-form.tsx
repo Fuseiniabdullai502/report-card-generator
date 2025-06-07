@@ -37,6 +37,10 @@ const classLevels = [
   "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"
 ];
 
+const tertiaryLevelClasses = [
+  "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"
+];
+
 const genderOptions = ["Male", "Female"];
 
 const academicTermOptions = [
@@ -97,6 +101,11 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   });
 
   const watchedAcademicTerm = form.watch('academicTerm');
+  const watchedClassName = form.watch('className');
+
+  const isPromotionStatusApplicable = React.useMemo(() => {
+    return watchedAcademicTerm === 'Third Term' && !tertiaryLevelClasses.includes(watchedClassName || '');
+  }, [watchedAcademicTerm, watchedClassName]);
 
   useEffect(() => {
     if (initialData) {
@@ -121,10 +130,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   }, [initialData, form.reset]);
 
   useEffect(() => {
-    if (watchedAcademicTerm !== 'Third Term') {
+    if (!isPromotionStatusApplicable) {
       form.setValue('promotionStatus', undefined);
     }
-  }, [watchedAcademicTerm, form]);
+  }, [isPromotionStatusApplicable, form]);
 
 
   const handleAddCustomSubjectToListAndForm = () => {
@@ -255,6 +264,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   };
 
   const onSubmit: SubmitHandler<ReportData> = (data) => {
+    const promotionStatusApplicableCheck = data.academicTerm === 'Third Term' && !tertiaryLevelClasses.includes(data.className || '');
     const processedData = {
       ...data,
       daysAttended: data.daysAttended === '' || data.daysAttended === undefined ? null : Number(data.daysAttended),
@@ -264,7 +274,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         continuousAssessment: s.continuousAssessment === undefined ? null : s.continuousAssessment,
         examinationMark: s.examinationMark === undefined ? null : s.examinationMark,
       })),
-      promotionStatus: watchedAcademicTerm === 'Third Term' ? data.promotionStatus : undefined,
+      promotionStatus: promotionStatusApplicableCheck ? data.promotionStatus : undefined,
     };
     onFormUpdate(processedData);
      toast({
@@ -432,7 +442,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     </FormItem>
                   )}
                 />
-                 {watchedAcademicTerm === 'Third Term' && (
+                 {isPromotionStatusApplicable && (
                   <FormField
                     control={form.control}
                     name="promotionStatus"
@@ -726,3 +736,4 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   );
 }
 
+    
