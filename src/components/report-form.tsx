@@ -13,7 +13,7 @@ import {Textarea}from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator}from '@/components/ui/select';
 import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect} from 'react';
-import NextImage from 'next/image'; // Renamed import
+import NextImage from 'next/image'; // Correctly aliased import
 import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -73,12 +73,12 @@ async function resizeImage(
   quality: number = IMAGE_QUALITY
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const img = new Image(); // This will now correctly refer to window.Image
+    const img = new window.Image(); // Explicitly use window.Image
     img.onload = () => {
       let { width, height } = img;
 
       if (width <= maxWidth && height <= maxHeight) {
-        resolve(dataUri); // Return original if already small enough
+        resolve(dataUri); 
         return;
       }
 
@@ -92,7 +92,6 @@ async function resizeImage(
         width = height * aspectRatio;
       }
       
-      // Ensure dimensions are integers
       width = Math.round(width);
       height = Math.round(height);
 
@@ -101,7 +100,7 @@ async function resizeImage(
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        reject(new Error('Failed to get canvas context'));
+        reject(new Error('Failed to get canvas context for resizing.'));
         return;
       }
       ctx.drawImage(img, 0, 0, width, height);
@@ -125,7 +124,8 @@ async function resizeImage(
       }
     };
     img.onerror = (_error) => {
-      reject(new Error('Failed to load image for resizing. Check if the file is a valid image.'));
+      console.error("Native image loading failed in resizeImage:", _error, "Data URI starts with:", dataUri.substring(0, 50));
+      reject(new Error('Failed to load image for resizing. Please ensure it is a valid image file (e.g., JPG, PNG).'));
     };
     img.src = dataUri;
   });
@@ -199,7 +199,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const watchedAcademicTerm = form.watch('academicTerm');
   const watchedClassName = form.watch('className');
-  // const watchedStudentPhotoDataUri = form.watch('studentPhotoDataUri'); // Not directly used by AI edit button enable state
 
 
   const isPromotionStatusApplicable = React.useMemo(() => {
@@ -455,8 +454,19 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     if (file) {
       const reader = new FileReader();
       reader.onloadend = async () => {
+        const originalDataUri = reader.result; // Keep as string | ArrayBuffer | null
+
+        if (typeof originalDataUri !== 'string' || !originalDataUri.startsWith('data:image/')) {
+          toast({
+            title: "Invalid File Type",
+            description: "The selected file does not appear to be a valid image (e.g., JPG, PNG, GIF). Please choose a different file.",
+            variant: "destructive",
+          });
+          if (event.target) event.target.value = ''; // Reset file input
+          return;
+        }
+        // Now originalDataUri is confirmed to be a string starting with 'data:image/'
         try {
-          const originalDataUri = reader.result as string;
           const resizedDataUri = await resizeImage(originalDataUri, maxWidth, maxHeight);
           form.setValue(fieldName, resizedDataUri, { shouldDirty: true, shouldValidate: true });
           toast({
@@ -464,22 +474,30 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             description: `${fieldName === 'studentPhotoDataUri' ? 'Student photo' : fieldName === 'schoolLogoDataUri' ? 'School logo' : 'Signature'} has been uploaded and optimized.`,
           });
         } catch (error: any) {
-          console.error("Error resizing image:", error);
+          console.error("Error processing image in handleImageUpload:", error);
           toast({
             title: "Image Processing Error",
-            description: error.message || "Could not process the uploaded image. Using original.",
+            description: error.message || "Could not process the uploaded image. Attempting to use the original.",
             variant: "destructive",
           });
-          // Fallback to original if resizing fails
-          if (reader.result) {
-            form.setValue(fieldName, reader.result as string, { shouldDirty: true, shouldValidate: true });
-          }
+          // Fallback to original (which is already validated as a string data URI)
+          form.setValue(fieldName, originalDataUri, { shouldDirty: true, shouldValidate: true });
         }
+      };
+      reader.onerror = () => {
+        toast({
+            title: "File Read Error",
+            description: "Could not read the selected file. It might be corrupted or the browser might not support reading it.",
+            variant: "destructive",
+          });
+        if (event.target) event.target.value = ''; // Reset file input
       };
       reader.readAsDataURL(file);
     }
     // Reset file input value to allow re-uploading the same file if needed
-    event.target.value = '';
+    if (event.target) { 
+        event.target.value = '';
+    }
   };
 
 
