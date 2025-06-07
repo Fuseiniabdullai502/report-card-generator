@@ -13,7 +13,7 @@ import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {getAiFeedbackAction, getAiReportInsightsAction} from '@/app/actions';
 import {useState, useTransition} from 'react';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 
@@ -34,6 +34,10 @@ const classLevels = [
 
 const genderOptions = ["Male", "Female"];
 
+const academicTermOptions = [
+  "First Term", "Second Term", "Third Term", "First Semester", "Second Semester"
+];
+
 export default function ReportForm({ onFormUpdate, initialData }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
@@ -47,6 +51,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
       gender: initialData?.gender || '',
       schoolName: initialData?.schoolName || 'Springfield Elementary',
       academicYear: initialData?.academicYear || '2023-2024',
+      academicTerm: initialData?.academicTerm || 'First Term',
       daysAttended: initialData?.daysAttended || null,
       totalSchoolDays: initialData?.totalSchoolDays || null,
       performanceSummary: initialData?.performanceSummary || '',
@@ -274,6 +279,30 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                       <FormControl>
                         <Input placeholder="e.g., 2023-2024" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="academicTerm"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><Type className="mr-2 h-4 w-4" />Academic Term</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select academic term" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {academicTermOptions.map((term) => (
+                            <SelectItem key={term} value={term}>
+                              {term}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -510,3 +539,4 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
     </Card>
   );
 }
+

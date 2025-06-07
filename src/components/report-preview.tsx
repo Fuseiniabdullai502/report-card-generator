@@ -59,7 +59,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         <div className="flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-headline font-bold text-primary">{data.schoolName || 'School Name'}</h2>
-            <p className="text-muted-foreground">{data.academicYear || 'Academic Year'}</p>
+            <p className="text-muted-foreground">{data.academicYear || 'Academic Year'} - {data.academicTerm || 'Term/Semester'}</p>
           </div>
           <Image
             src="https://placehold.co/120x60.png"
@@ -176,3 +176,4 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
     </div>
   );
 }
+

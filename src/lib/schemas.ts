@@ -25,6 +25,7 @@ export const ReportDataSchema = z.object({
   gender: z.string().optional(),
   schoolName: z.string().optional().default('Springfield Elementary'),
   academicYear: z.string().optional().default('2023-2024'),
+  academicTerm: z.string().optional().default('First Term'), // Added academicTerm
   daysAttended: z.coerce
     .number({ invalid_type_error: 'Days attended must be a number' })
     .min(0, 'Days attended cannot be negative')
@@ -63,6 +64,7 @@ export const defaultReportData: ReportData = {
   gender: undefined, // or '' if your Select treats empty string as placeholder
   schoolName: 'Springfield Elementary',
   academicYear: '2023-2024',
+  academicTerm: 'First Term',
   daysAttended: null,
   totalSchoolDays: null,
   performanceSummary: '',
@@ -71,3 +73,4 @@ export const defaultReportData: ReportData = {
   teacherFeedback: '',
   subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
 };
+
