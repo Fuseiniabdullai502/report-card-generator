@@ -68,7 +68,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             )}
           </div>
           <Image
-            src="https://placehold.co/120x60.png"
+            src={data.schoolLogoDataUri || "https://placehold.co/120x60.png"}
             alt="School Logo"
             width={120}
             height={60}

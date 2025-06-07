@@ -43,7 +43,7 @@ function formatRankString(rankNumber: number, isTie: boolean): string {
 
 
 export default function Home() {
-  const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined, headMasterSignatureDataUri: undefined})));
+  const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined, headMasterSignatureDataUri: undefined, schoolLogoDataUri: undefined})));
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
   const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
   const [sessionDefaults, setSessionDefaults] = useState<Partial<ReportData>>({});
@@ -130,6 +130,7 @@ export default function Home() {
       if (reportPrintList.length === 0) { 
         setSessionDefaults({
           schoolName: currentEditingReport.schoolName,
+          schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
           className: currentEditingReport.className,
           gender: currentEditingReport.gender,
           academicYear: currentEditingReport.academicYear,
@@ -149,6 +150,7 @@ export default function Home() {
       const newCurrentEditingReport: ReportData = {
         ...newFormBase,
         schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
+        schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBase.schoolLogoDataUri,
         className: sessionDefaults.className ?? newFormBase.className,
         gender: sessionDefaults.gender ?? newFormBase.gender,
         academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear,
@@ -191,7 +193,7 @@ export default function Home() {
       title: "Print List Cleared",
       description: "All reports have been removed and ranking reset. Session defaults cleared.",
     });
-    setCurrentEditingReport(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined, headMasterSignatureDataUri: undefined })));
+    setCurrentEditingReport(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined, headMasterSignatureDataUri: undefined, schoolLogoDataUri: undefined })));
   }
 
   const handlePrint = () => {
@@ -317,4 +319,3 @@ export default function Home() {
     </div>
   );
 }
-

@@ -14,7 +14,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSep
 import {getAiFeedbackAction, getAiReportInsightsAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect} from 'react';
 import Image from 'next/image';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -85,6 +85,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       className: initialData?.className || '',
       gender: initialData?.gender || '',
       schoolName: initialData?.schoolName || 'Springfield Elementary',
+      schoolLogoDataUri: initialData?.schoolLogoDataUri || undefined,
       academicYear: initialData?.academicYear || '2023-2024',
       academicTerm: initialData?.academicTerm || 'First Term',
       daysAttended: initialData?.daysAttended || null,
@@ -136,6 +137,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         className: initialData.className || '',
         gender: initialData.gender || '',
         schoolName: initialData.schoolName || 'Springfield Elementary',
+        schoolLogoDataUri: initialData.schoolLogoDataUri || undefined,
         academicYear: initialData.academicYear || '2023-2024',
         academicTerm: initialData.academicTerm || 'First Term',
         daysAttended: initialData.daysAttended === undefined ? null : initialData.daysAttended,
@@ -305,6 +307,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       studentPhotoDataUri: data.studentPhotoDataUri || undefined,
       headMasterSignatureDataUri: data.headMasterSignatureDataUri || undefined,
       instructorContact: data.instructorContact || '',
+      schoolLogoDataUri: data.schoolLogoDataUri || undefined,
     };
     onFormUpdate(processedData);
      toast({
@@ -416,9 +419,57 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                   name="schoolName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="M14 22v-4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4"/><path d="M18 10H6"/><path d="M18 18H6"/><path d="M10 6L12 4l2 2"/><path d="M12 10V4"/></svg>School Name</FormLabel>
+                      <FormLabel className="flex items-center"><Building className="mr-2 h-4 w-4" />School Name</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., Springfield Elementary" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="schoolLogoDataUri"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />School Logo</FormLabel>
+                      <FormControl>
+                        <div>
+                          <input
+                            type="file"
+                            id="schoolLogoUpload"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  form.setValue('schoolLogoDataUri', reader.result as string, { shouldDirty: true, shouldValidate: true });
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                          <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('schoolLogoUpload')?.click()}>
+                            <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
+                          </Button>
+                          {field.value && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <Image
+                                src={field.value}
+                                alt="School logo preview"
+                                width={60}
+                                height={60}
+                                className="rounded object-contain border bg-white p-1"
+                                data-ai-hint="school logo"
+                              />
+                              <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('schoolLogoDataUri', undefined, { shouldDirty: true, shouldValidate: true })}>
+                                <X className="mr-2 h-4 w-4 text-destructive" /> Remove
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

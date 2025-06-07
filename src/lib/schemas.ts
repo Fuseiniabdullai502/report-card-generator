@@ -25,6 +25,7 @@ export const ReportDataSchema = z.object({
   className: z.string().min(1, 'Class name is required'),
   gender: z.string().optional(),
   schoolName: z.string().optional().default('Springfield Elementary'),
+  schoolLogoDataUri: z.string().optional().describe("A data URI of the school's logo."),
   academicYear: z.string().optional().default('2023-2024'),
   academicTerm: z.string().optional().default('First Term'),
   daysAttended: z.coerce
@@ -69,6 +70,7 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   className: '',
   gender: undefined,
   schoolName: 'Springfield Elementary',
+  schoolLogoDataUri: undefined,
   academicYear: '2023-2024',
   academicTerm: 'First Term',
   daysAttended: null,
