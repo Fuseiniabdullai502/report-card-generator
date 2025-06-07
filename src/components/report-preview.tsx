@@ -82,36 +82,36 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
       <section className="mb-4 flex justify-between items-start">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs flex-grow pr-4">
           <div>
-            <strong className="text-gray-600">Student Name:</strong>
+            <span className="font-semibold text-gray-600">Student Name:</span>
             <p className="text-gray-800 text-sm">{data.studentName}</p>
           </div>
           <div>
-            <strong className="text-gray-600">Class:</strong>
+            <span className="font-semibold text-gray-600">Class:</span>
             <p className="text-gray-800 text-sm">{data.className}</p>
           </div>
           <div>
-            <strong className="text-gray-600">Gender:</strong>
+            <span className="font-semibold text-gray-600">Gender:</span>
             <p className="text-gray-800 text-sm">{data.gender || 'N/A'}</p>
           </div>
           <div>
-            <strong className="text-gray-600">Attendance:</strong>
+            <span className="font-semibold text-gray-600">Attendance:</span>
             <p className="text-gray-800 text-sm">{attendanceString}</p>
           </div>
           {data.rank && (
             <div className="col-span-1">
-              <strong className="text-gray-600 flex items-center"><Award className="mr-1 h-3.5 w-3.5 text-amber-500" />Position:</strong>
+              <span className="font-semibold text-gray-600 flex items-center"><Award className="mr-1 h-3.5 w-3.5 text-amber-500" />Position:</span>
               <p className="text-gray-800 text-sm font-semibold">{data.rank}</p>
             </div>
           )}
            {data.overallAverage !== undefined && data.overallAverage !== null && (
             <div className="col-span-1">
-              <strong className="text-gray-600">Overall Avg:</strong>
+              <span className="font-semibold text-gray-600">Overall Avg:</span>
               <p className="text-gray-800 text-sm font-semibold">{data.overallAverage.toFixed(2)}%</p>
             </div>
           )}
           {isPromotionStatusRelevant && data.promotionStatus && (
-            <div className="sm:col-span-1"> {/* Adjust span for different layouts if needed */}
-              <strong className="text-gray-600 flex items-center"><Medal className="mr-1 h-3.5 w-3.5 text-green-600" />Promotion:</strong>
+            <div className="sm:col-span-1">
+              <span className="font-semibold text-gray-600 flex items-center"><Medal className="mr-1 h-3.5 w-3.5 text-green-600" />Promotion:</span>
               <p className="text-gray-800 text-sm font-semibold">{data.promotionStatus}</p>
             </div>
           )}
@@ -138,12 +138,12 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
           <Table className="border rounded-md text-xs">
             <TableHeader>
               <TableRow className="bg-gray-50">
-                <TableHead className="font-semibold text-gray-600 w-[28%] py-1.5 px-2">Subject</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600 py-1.5 px-2">CA (60)</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600 py-1.5 px-2">Exam (100)</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600 py-1.5 px-2">Final (100)</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600 py-1.5 px-2">Grade</TableHead>
-                <TableHead className="font-semibold text-gray-600 w-[25%] py-1.5 px-2">Remarks</TableHead>
+                <TableHead className="font-semibold text-gray-600 w-[28%] py-1 px-2">Subject</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2">CA (60)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2">Exam (100)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2">Final (100)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2">Grade</TableHead>
+                <TableHead className="font-semibold text-gray-600 w-[25%] py-1 px-2">Remarks</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -196,13 +196,13 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
       <footer className="mt-8 pt-4 border-t border-gray-300 text-[10px] text-gray-600">
         <div className="flex justify-between items-end">
           <div>
-            <p><strong>Date Issued:</strong> {currentDate}</p>
+            <p><span className="font-semibold">Date Issued:</span> {currentDate}</p>
             {data.instructorContact && (
-              <p className="mt-1"><strong>Instructor Contact:</strong> {data.instructorContact}</p>
+              <p className="mt-1"><span className="font-semibold">Instructor Contact:</span> {data.instructorContact}</p>
             )}
           </div>
           <div>
-            <p className="mb-1"><strong>Teacher's Signature:</strong></p>
+            <p className="mb-1 font-semibold">Teacher's Signature:</p>
             <div className="h-8 border-b border-gray-400 w-40"></div>
           </div>
         </div>
@@ -226,4 +226,3 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
     </div>
   );
 }
-
