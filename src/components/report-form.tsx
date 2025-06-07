@@ -491,7 +491,35 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                 setCustomSubjectInputValue('');
                                 setIsCustomSubjectDialogOpen(true);
                               } else {
-                                field.onChange(value);
+                                field.onChange(value); // Set the current field's value
+
+                                // Auto-select logic for the next subject
+                                const currentFieldValue = value;
+                                const nextRowIndex = index + 1;
+
+                                if (currentFieldValue && currentFieldValue !== ADD_CUSTOM_SUBJECT_VALUE && fields[nextRowIndex]) {
+                                    const nextSubjectFieldName = `subjects.${nextRowIndex}.subjectName` as const;
+                                    const isNextSubjectFieldEmpty = !form.getValues(nextSubjectFieldName);
+
+                                    if (isNextSubjectFieldEmpty) {
+                                        const existingSubjectNamesInOtherSlots = form.getValues('subjects')
+                                            .map((subjectField, i) => i === nextRowIndex ? null : subjectField.subjectName)
+                                            .filter(Boolean) as string[];
+
+                                        let subjectToSet: string | undefined = undefined;
+
+                                        for (const predefinedSub of predefinedSubjectsList) {
+                                            if (!existingSubjectNamesInOtherSlots.includes(predefinedSub)) {
+                                                subjectToSet = predefinedSub;
+                                                break;
+                                            }
+                                        }
+                                        
+                                        if (subjectToSet) {
+                                            form.setValue(nextSubjectFieldName, subjectToSet, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                                        }
+                                    }
+                                }
                               }
                             }}
                             value={field.value || ''}
@@ -735,5 +763,3 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
-
-    
