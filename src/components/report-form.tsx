@@ -13,7 +13,7 @@ import {Textarea}from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator}from '@/components/ui/select';
 import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect} from 'react';
-import Image from 'next/image';
+import NextImage from 'next/image'; // Renamed import
 import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -73,7 +73,7 @@ async function resizeImage(
   quality: number = IMAGE_QUALITY
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
+    const img = new Image(); // This will now correctly refer to window.Image
     img.onload = () => {
       let { width, height } = img;
 
@@ -599,7 +599,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                           </Button>
                           {field.value && (
                             <div className="mt-2 flex items-center gap-2">
-                              <Image
+                              <NextImage
                                 src={field.value}
                                 alt="School logo preview"
                                 width={60}
@@ -746,7 +746,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                           </div>
                           {field.value && (
                             <div className="mt-2">
-                              <Image
+                              <NextImage
                                 src={field.value}
                                 alt="Student photo preview"
                                 width={80}
@@ -782,7 +782,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                           </Button>
                           {field.value && (
                             <div className="mt-2 flex items-center gap-2">
-                              <Image
+                              <NextImage
                                 src={field.value}
                                 alt="Head Master's signature preview"
                                 width={100} 
