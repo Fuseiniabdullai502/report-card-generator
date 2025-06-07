@@ -11,7 +11,7 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage}from '@/c
 import {Input}from '@/components/ui/input';
 import {Textarea}from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator}from '@/components/ui/select';
-import {getAiFeedbackAction, getAiReportInsightsAction}from '@/app/actions';
+import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect} from 'react';
 import Image from 'next/image';
 import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building } from 'lucide-react';
@@ -61,6 +61,7 @@ const predefinedSubjectsList = [
 export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
+  const [isImageEditingAiLoading, startImageEditingAiTransition] = useTransition();
   const { toast } = useToast();
 
   const [customSubjects, setCustomSubjects] = useState<string[]>([]);
@@ -124,6 +125,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const watchedAcademicTerm = form.watch('academicTerm');
   const watchedClassName = form.watch('className');
+  const watchedStudentPhotoDataUri = form.watch('studentPhotoDataUri');
+
 
   const isPromotionStatusApplicable = React.useMemo(() => {
     if (!watchedAcademicTerm || !watchedClassName) return false;
@@ -291,6 +294,43 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       }
     });
   };
+
+  const handleAiEditImage = async (photoDataUri: string, editPrompt: string) => {
+    if (!photoDataUri) {
+      toast({
+        title: "No Image to Edit",
+        description: "Please upload a student photo first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    startImageEditingAiTransition(async () => {
+      try {
+        const result = await editImageWithAiAction({ photoDataUri, prompt: editPrompt });
+        if (result.success && result.editedPhotoDataUri) {
+          form.setValue('studentPhotoDataUri', result.editedPhotoDataUri, { shouldDirty: true, shouldValidate: true });
+          toast({
+            title: "AI Image Edit Successful",
+            description: "The student photo has been updated with the AI edit.",
+          });
+        } else {
+          toast({
+            title: "AI Image Edit Failed",
+            description: result.error || "Could not apply AI edit to the image.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "AI Image Edit Error",
+          description: "An unexpected error occurred during AI image editing.",
+          variant: "destructive",
+        });
+      }
+    });
+  };
+
 
   const onSubmit: SubmitHandler<ReportData> = (data) => {
     const promotionStatusApplicableCheck = data.academicTerm === 'Third Term' && data.className && !tertiaryLevelClasses.includes(data.className);
@@ -589,22 +629,38 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                               }
                             }}
                           />
-                          <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()}>
-                            <UploadCloud className="mr-2 h-4 w-4" /> Upload Photo
-                          </Button>
+                           <div className="flex flex-wrap gap-2 items-start">
+                            <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()}>
+                              <UploadCloud className="mr-2 h-4 w-4" /> Upload Photo
+                            </Button>
+                            {field.value && (
+                              <>
+                                <Button 
+                                  type="button" 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => handleAiEditImage(field.value!, "Place the main subject of this image on a clean, plain white background. Ensure the subject is clear and retains its original details.")}
+                                  disabled={isImageEditingAiLoading}
+                                >
+                                  {isImageEditingAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                                  Add White BG (AI)
+                                </Button>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('studentPhotoDataUri', undefined, { shouldDirty: true, shouldValidate: true })}>
+                                  <X className="mr-2 h-4 w-4 text-destructive" /> Remove
+                                </Button>
+                              </>
+                            )}
+                          </div>
                           {field.value && (
-                            <div className="mt-2 flex items-center gap-2">
+                            <div className="mt-2">
                               <Image
                                 src={field.value}
                                 alt="Student photo preview"
-                                width={60}
-                                height={60}
+                                width={80}
+                                height={100}
                                 className="rounded object-cover border"
                                 data-ai-hint="student portrait"
                               />
-                              <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('studentPhotoDataUri', undefined, { shouldDirty: true, shouldValidate: true })}>
-                                <X className="mr-2 h-4 w-4 text-destructive" /> Remove
-                              </Button>
                             </div>
                           )}
                         </div>
@@ -955,7 +1011,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
               />
             </section>
 
-            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading}>
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading}>
               <CheckSquare className="mr-2 h-4 w-4" /> Update Preview
             </Button>
           </form>

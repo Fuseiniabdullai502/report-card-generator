@@ -4,6 +4,7 @@
 
 import { generateStudentFeedback, type GenerateStudentFeedbackInput } from '@/ai/flows/generate-student-feedback';
 import { generateReportInsights, type GenerateReportInsightsInput, type GenerateReportInsightsOutput } from '@/ai/flows/generate-performance-summary'; // Updated import
+import { editImage, type EditImageInput, type EditImageOutput } from '@/ai/flows/edit-image-flow';
 import type { SubjectEntry } from '@/lib/schemas';
 import { z } from 'zod';
 
@@ -82,4 +83,29 @@ export async function getAiReportInsightsAction(
     }
     return { success: false, error: "An unexpected error occurred while generating the insights." };
   }
+}
+
+// Schema for AI image editing
+const EditImageActionInputSchema = z.object({
+    photoDataUri: z.string().min(1, "Image data URI is required."),
+    prompt: z.string().min(1, "Edit prompt is required."),
+});
+
+export async function editImageWithAiAction(
+    input: EditImageInput
+): Promise<{ success: boolean; editedPhotoDataUri?: string; error?: string }> {
+    try {
+        const validatedInput = EditImageActionInputSchema.parse(input);
+        const result = await editImage(validatedInput);
+        return { success: true, editedPhotoDataUri: result.editedPhotoDataUri };
+    } catch (error) {
+        console.error("Error editing image with AI:", error);
+        let errorMessage = "Failed to edit image with AI. Please try again.";
+        if (error instanceof z.ZodError) {
+            errorMessage = "Invalid input for AI image editing: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        return { success: false, error: "An unexpected error occurred while editing the image." };
+    }
 }
