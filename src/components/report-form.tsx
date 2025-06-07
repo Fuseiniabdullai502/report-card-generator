@@ -2,20 +2,23 @@
 'use client';
 
 import type {ReportData, SubjectEntry} from '@/lib/schemas';
-import {ReportDataSchema} from '@/lib/schemas';
+import {ReportDataSchema}from '@/lib/schemas';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm, type SubmitHandler, useFieldArray} from 'react-hook-form';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
-import {Textarea} from '@/components/ui/textarea';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
+import {Textarea}from '@/components/ui/textarea';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator} from '@/components/ui/select';
 import {getAiFeedbackAction, getAiReportInsightsAction} from '@/app/actions';
-import {useState, useTransition} from 'react';
+import {useState, useTransition, useEffect} from 'react';
 import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type } from 'lucide-react';
-import {useToast} from '@/hooks/use-toast';
+import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from '@/components/ui/label';
+
 
 interface ReportFormProps {
   onFormUpdate: (data: ReportData) => void;
@@ -23,6 +26,7 @@ interface ReportFormProps {
 }
 
 const NONE_VALUE_KEY = "--none--";
+const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom--";
 
 const classLevels = [
   "KG1", "KG2",
@@ -38,10 +42,22 @@ const academicTermOptions = [
   "First Term", "Second Term", "Third Term", "First Semester", "Second Semester"
 ];
 
+const predefinedSubjectsList = [
+  "Mathematics", "English Language", "Science", "Computing", 
+  "Religious and Moral Education", "Creative Arts", "Geography", 
+  "Economics", "Biology", "Elective Mathematics"
+];
+
 export default function ReportForm({ onFormUpdate, initialData }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
   const { toast } = useToast();
+
+  const [customSubjects, setCustomSubjects] = useState<string[]>([]);
+  const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
+  const [customSubjectInputValue, setCustomSubjectInputValue] = useState('');
+  const [currentCustomSubjectIndex, setCurrentCustomSubjectIndex] = useState<number | null>(null);
+
 
   const form = useForm<ReportData>({
     resolver: zodResolver(ReportDataSchema),
@@ -66,6 +82,55 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
     control: form.control,
     name: "subjects"
   });
+
+  // Effect to reset form when initialData changes (e.g., after adding to print list)
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        studentName: initialData.studentName || '',
+        className: initialData.className || '',
+        gender: initialData.gender || '',
+        schoolName: initialData.schoolName || 'Springfield Elementary',
+        academicYear: initialData.academicYear || '2023-2024',
+        academicTerm: initialData.academicTerm || 'First Term',
+        daysAttended: initialData.daysAttended === undefined ? null : initialData.daysAttended,
+        totalSchoolDays: initialData.totalSchoolDays === undefined ? null : initialData.totalSchoolDays,
+        performanceSummary: initialData.performanceSummary || '',
+        strengths: initialData.strengths || '',
+        areasForImprovement: initialData.areasForImprovement || '',
+        teacherFeedback: initialData.teacherFeedback || '',
+        subjects: initialData.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+      });
+    }
+  }, [initialData, form.reset]);
+
+
+  const handleAddCustomSubjectToListAndForm = () => {
+    if (customSubjectInputValue.trim() === '') {
+      toast({
+        title: "Invalid Subject Name",
+        description: "Custom subject name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (currentCustomSubjectIndex !== null) {
+      const newSubjectName = customSubjectInputValue.trim();
+      form.setValue(`subjects.${currentCustomSubjectIndex}.subjectName`, newSubjectName);
+      
+      if (!predefinedSubjectsList.includes(newSubjectName) && !customSubjects.includes(newSubjectName)) {
+        setCustomSubjects(prev => [...prev, newSubjectName]);
+      }
+      
+      toast({
+        title: "Custom Subject Added",
+        description: `"${newSubjectName}" has been set for the current subject entry and added to your session list.`,
+      });
+      setIsCustomSubjectDialogOpen(false);
+      setCustomSubjectInputValue('');
+      setCurrentCustomSubjectIndex(null);
+    }
+  };
 
   const handleGenerateAiReportInsights = async () => {
     const { studentName, className, subjects, daysAttended, totalSchoolDays } = form.getValues();
@@ -168,10 +233,16 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
   };
 
   const onSubmit: SubmitHandler<ReportData> = (data) => {
+    // Ensure numeric fields that can be empty are either numbers or null
     const processedData = {
       ...data,
-      daysAttended: data.daysAttended === '' ? null : Number(data.daysAttended),
-      totalSchoolDays: data.totalSchoolDays === '' ? null : Number(data.totalSchoolDays),
+      daysAttended: data.daysAttended === '' || data.daysAttended === undefined ? null : Number(data.daysAttended),
+      totalSchoolDays: data.totalSchoolDays === '' || data.totalSchoolDays === undefined ? null : Number(data.totalSchoolDays),
+      subjects: data.subjects.map(s => ({
+        ...s,
+        continuousAssessment: s.continuousAssessment === undefined ? null : s.continuousAssessment,
+        examinationMark: s.examinationMark === undefined ? null : s.examinationMark,
+      }))
     };
     onFormUpdate(processedData);
      toast({
@@ -181,6 +252,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
   };
 
   return (
+    <>
     <Card className="shadow-lg">
       <CardHeader>
         <div className="flex items-center gap-2">
@@ -215,7 +287,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center"><Users className="mr-2 h-4 w-4" />Class Name</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select class level" />
@@ -239,7 +311,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center"><VenetianMask className="mr-2 h-4 w-4" />Gender</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select gender" />
@@ -289,7 +361,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center"><Type className="mr-2 h-4 w-4" />Academic Term</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select academic term" />
@@ -314,7 +386,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                     <FormItem>
                       <FormLabel className="flex items-center"><CalendarCheck2 className="mr-2 h-4 w-4" />Days Attended</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="e.g., 85" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} value={field.value === null ? '' : String(field.value)} />
+                        <Input type="number" placeholder="e.g., 85" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} value={field.value === null || field.value === undefined ? '' : String(field.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -327,7 +399,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                     <FormItem>
                       <FormLabel className="flex items-center"><CalendarDays className="mr-2 h-4 w-4" />Total School Days</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="e.g., 90" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} value={field.value === null ? '' : String(field.value)} />
+                        <Input type="number" placeholder="e.g., 90" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} value={field.value === null || field.value === undefined ? '' : String(field.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -349,9 +421,40 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="flex items-center"><BookOpenText className="mr-2 h-4 w-4 text-primary" />Subject Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Mathematics" {...field} />
-                          </FormControl>
+                          <Select
+                            onValueChange={(value) => {
+                              if (value === ADD_CUSTOM_SUBJECT_VALUE) {
+                                setCurrentCustomSubjectIndex(index);
+                                setCustomSubjectInputValue(''); 
+                                setIsCustomSubjectDialogOpen(true);
+                              } else {
+                                field.onChange(value); 
+                              }
+                            }}
+                            value={field.value || ''}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select or add subject" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {predefinedSubjectsList.map((subject) => (
+                                <SelectItem key={`predefined-${subject}`} value={subject}>
+                                  {subject}
+                                </SelectItem>
+                              ))}
+                              {customSubjects.map((subject) => (
+                                <SelectItem key={`custom-${subject}`} value={subject}>
+                                  {subject} (Custom)
+                                </SelectItem>
+                              ))}
+                              <SelectSeparator />
+                              <SelectItem value={ADD_CUSTOM_SUBJECT_VALUE}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add New Subject...
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -364,7 +467,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                           <FormLabel className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary" />CA Mark (1-60)</FormLabel>
                            <Select
                               onValueChange={(value) => field.onChange(value === NONE_VALUE_KEY ? null : (value ? parseInt(value, 10) : null) )}
-                              value={field.value === null ? NONE_VALUE_KEY : (field.value !== undefined ? String(field.value) : undefined)}
+                              value={field.value === null || field.value === undefined ? NONE_VALUE_KEY : String(field.value)}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -392,7 +495,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                           <FormLabel className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary" />Exam Mark (1-100)</FormLabel>
                           <Select
                               onValueChange={(value) => field.onChange(value === NONE_VALUE_KEY ? null : (value ? parseInt(value, 10) : null) )}
-                              value={field.value === null ? NONE_VALUE_KEY : (field.value !== undefined ? String(field.value) : undefined)}
+                              value={field.value === null || field.value === undefined ? NONE_VALUE_KEY : String(field.value)}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -537,6 +640,37 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
         </Form>
       </CardContent>
     </Card>
+
+    <Dialog open={isCustomSubjectDialogOpen} onOpenChange={setIsCustomSubjectDialogOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Add Custom Subject</DialogTitle>
+          <DialogDescription>
+            Enter the name of the new subject. It will be added to your list for future use in this session.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="customSubjectNameInput" className="text-right">
+              Name
+            </Label>
+            <Input
+              id="customSubjectNameInput"
+              value={customSubjectInputValue}
+              onChange={(e) => setCustomSubjectInputValue(e.target.value)}
+              placeholder="e.g., Advanced History"
+              className="col-span-3"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsCustomSubjectDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleAddCustomSubjectToListAndForm}>Add Subject</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
+    
