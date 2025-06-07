@@ -14,7 +14,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSep
 import {getAiFeedbackAction, getAiReportInsightsAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect} from 'react';
 import Image from 'next/image'; // Import next/image
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -90,6 +90,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       strengths: initialData?.strengths || '',
       areasForImprovement: initialData?.areasForImprovement || '',
       teacherFeedback: initialData?.teacherFeedback || '',
+      instructorContact: initialData?.instructorContact || '',
       subjects: initialData?.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
       studentEntryNumber: initialData?.studentEntryNumber || undefined,
       promotionStatus: initialData?.promotionStatus || undefined,
@@ -106,7 +107,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const watchedClassName = form.watch('className');
 
   const isPromotionStatusApplicable = React.useMemo(() => {
-    return watchedAcademicTerm === 'Third Term' && !tertiaryLevelClasses.includes(watchedClassName || '');
+    if (!watchedAcademicTerm || !watchedClassName) return false;
+    return watchedAcademicTerm === 'Third Term' && !tertiaryLevelClasses.includes(watchedClassName);
   }, [watchedAcademicTerm, watchedClassName]);
 
   useEffect(() => {
@@ -124,6 +126,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         strengths: initialData.strengths || '',
         areasForImprovement: initialData.areasForImprovement || '',
         teacherFeedback: initialData.teacherFeedback || '',
+        instructorContact: initialData.instructorContact || '',
         subjects: initialData.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
         studentEntryNumber: initialData.studentEntryNumber || undefined,
         promotionStatus: initialData.promotionStatus || undefined,
@@ -268,7 +271,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   };
 
   const onSubmit: SubmitHandler<ReportData> = (data) => {
-    const promotionStatusApplicableCheck = data.academicTerm === 'Third Term' && !tertiaryLevelClasses.includes(data.className || '');
+    const promotionStatusApplicableCheck = data.academicTerm === 'Third Term' && data.className && !tertiaryLevelClasses.includes(data.className);
     const processedData = {
       ...data,
       daysAttended: data.daysAttended === '' || data.daysAttended === undefined ? null : Number(data.daysAttended),
@@ -280,6 +283,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       })),
       promotionStatus: promotionStatusApplicableCheck ? data.promotionStatus : undefined,
       studentPhotoDataUri: data.studentPhotoDataUri || undefined,
+      instructorContact: data.instructorContact || '',
     };
     onFormUpdate(processedData);
      toast({
@@ -774,6 +778,19 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                   </FormItem>
                 )}
               />
+               <FormField
+                control={form.control}
+                name="instructorContact"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center"><Phone className="mr-2 h-4 w-4 text-primary" />Instructor's Contact (Email/Phone - Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., teacher@example.com or 555-1234" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </section>
 
             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading}>
@@ -815,3 +832,4 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
+

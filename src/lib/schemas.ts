@@ -41,6 +41,7 @@ export const ReportDataSchema = z.object({
   strengths: z.string().min(1, 'Strengths are required'),
   areasForImprovement: z.string().min(1, 'Areas for improvement are required'),
   teacherFeedback: z.string().optional(),
+  instructorContact: z.string().optional(), // New field for instructor contact
   subjects: z
     .array(SubjectEntrySchema)
     .min(1, 'At least one subject is required.')
@@ -75,7 +76,9 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   strengths: '',
   areasForImprovement: '',
   teacherFeedback: '',
+  instructorContact: '', // Initialize new field
   subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
   promotionStatus: undefined,
   studentPhotoDataUri: undefined,
 };
+

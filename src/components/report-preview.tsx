@@ -193,9 +193,12 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
       </div>
 
       <footer className="mt-8 pt-4 border-t border-gray-300 text-[10px] text-gray-600">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-end">
           <div>
             <p><strong>Date Issued:</strong> {currentDate}</p>
+            {data.instructorContact && (
+              <p className="mt-1"><strong>Instructor Contact:</strong> {data.instructorContact}</p>
+            )}
           </div>
           <div>
             <p className="mb-1"><strong>Teacher's Signature:</strong></p>
@@ -222,3 +225,4 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
     </div>
   );
 }
+
