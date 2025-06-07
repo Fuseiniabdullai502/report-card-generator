@@ -11,10 +11,9 @@ interface ReportPreviewProps {
 }
 
 const getGradeAndRemarks = (
-  caMarkInput: number | null | undefined, // Allow undefined
-  examMarkInput: number | null | undefined // Allow undefined
+  caMarkInput: number | null | undefined, 
+  examMarkInput: number | null | undefined 
 ): { grade: string; remarks: string; finalMark: number | string } => {
-  // If both marks are null or undefined, it's 'N/A'
   if ((caMarkInput === null || caMarkInput === undefined) && (examMarkInput === null || examMarkInput === undefined)) {
     return { grade: 'N/A', remarks: 'Not available', finalMark: '-' };
   }
@@ -24,7 +23,7 @@ const getGradeAndRemarks = (
 
   let finalPercentageMark: number;
   finalPercentageMark = scaledCaMark + scaledExamMark;
-  finalPercentageMark = Math.min(finalPercentageMark, 100); // Cap at 100
+  finalPercentageMark = Math.min(finalPercentageMark, 100); 
   const displayFinalMark = parseFloat(finalPercentageMark.toFixed(1));
 
   if (finalPercentageMark >= 90) return { grade: 'A+', remarks: 'Excellent', finalMark: displayFinalMark };
@@ -35,11 +34,10 @@ const getGradeAndRemarks = (
   if (finalPercentageMark >= 40) return { grade: 'D', remarks: 'Unsatisfactory', finalMark: displayFinalMark };
   if (finalPercentageMark < 40 && finalPercentageMark >=0) return { grade: 'F', remarks: 'Fail', finalMark: displayFinalMark };
   
-  // Default for any other case (e.g. only one score provided but not enough for a grade)
   return { grade: 'N/A', remarks: 'Incomplete Data', finalMark: displayFinalMark > 0 ? displayFinalMark : '-' };
 };
 
-const tertiaryLevelClassesList = [ // Re-define or import if used across multiple files
+const tertiaryLevelClassesList = [ 
   "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"
 ];
 
@@ -81,42 +79,57 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         <h1 className="text-3xl font-headline font-semibold text-center mt-3 text-gray-700">Student Report Card</h1>
       </header>
 
-      <section className="mb-4 grid grid-cols-3 gap-x-4 gap-y-2 text-xs">
-        <div>
-          <strong className="text-gray-600">Student Name:</strong>
-          <p className="text-gray-800 text-sm">{data.studentName}</p>
-        </div>
-        <div>
-          <strong className="text-gray-600">Class:</strong>
-          <p className="text-gray-800 text-sm">{data.className}</p>
-        </div>
-        <div>
-          <strong className="text-gray-600">Gender:</strong>
-          <p className="text-gray-800 text-sm">{data.gender || 'N/A'}</p>
-        </div>
-        <div>
-          <strong className="text-gray-600">Attendance:</strong>
-          <p className="text-gray-800 text-sm">{attendanceString}</p>
-        </div>
-        {data.rank && (
-          <div className="col-span-1">
-            <strong className="text-gray-600 flex items-center"><Award className="mr-1 h-3.5 w-3.5 text-amber-500" />Position in Class:</strong>
-            <p className="text-gray-800 text-sm font-semibold">{data.rank}</p>
+      <section className="mb-4 flex justify-between items-start">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs flex-grow pr-4">
+          <div>
+            <strong className="text-gray-600">Student Name:</strong>
+            <p className="text-gray-800 text-sm">{data.studentName}</p>
           </div>
-        )}
-         {data.overallAverage !== undefined && data.overallAverage !== null && (
-          <div className="col-span-1">
-            <strong className="text-gray-600">Overall Average:</strong>
-            <p className="text-gray-800 text-sm font-semibold">{data.overallAverage.toFixed(2)}%</p>
+          <div>
+            <strong className="text-gray-600">Class:</strong>
+            <p className="text-gray-800 text-sm">{data.className}</p>
           </div>
-        )}
-        {isPromotionStatusRelevant && data.promotionStatus && (
-          <div className="col-span-1">
-            <strong className="text-gray-600 flex items-center"><Medal className="mr-1 h-3.5 w-3.5 text-green-600" />Promotion Status:</strong>
-            <p className="text-gray-800 text-sm font-semibold">{data.promotionStatus}</p>
+          <div>
+            <strong className="text-gray-600">Gender:</strong>
+            <p className="text-gray-800 text-sm">{data.gender || 'N/A'}</p>
+          </div>
+          <div>
+            <strong className="text-gray-600">Attendance:</strong>
+            <p className="text-gray-800 text-sm">{attendanceString}</p>
+          </div>
+          {data.rank && (
+            <div className="col-span-1">
+              <strong className="text-gray-600 flex items-center"><Award className="mr-1 h-3.5 w-3.5 text-amber-500" />Position:</strong>
+              <p className="text-gray-800 text-sm font-semibold">{data.rank}</p>
+            </div>
+          )}
+           {data.overallAverage !== undefined && data.overallAverage !== null && (
+            <div className="col-span-1">
+              <strong className="text-gray-600">Overall Avg:</strong>
+              <p className="text-gray-800 text-sm font-semibold">{data.overallAverage.toFixed(2)}%</p>
+            </div>
+          )}
+          {isPromotionStatusRelevant && data.promotionStatus && (
+            <div className="sm:col-span-1"> {/* Adjust span for different layouts if needed */}
+              <strong className="text-gray-600 flex items-center"><Medal className="mr-1 h-3.5 w-3.5 text-green-600" />Promotion:</strong>
+              <p className="text-gray-800 text-sm font-semibold">{data.promotionStatus}</p>
+            </div>
+          )}
+        </div>
+        {data.studentPhotoDataUri && (
+          <div className="ml-auto flex-shrink-0">
+            <Image
+              src={data.studentPhotoDataUri}
+              alt={`${data.studentName || 'Student'}'s photo`}
+              width={80}
+              height={100}
+              className="object-cover rounded border border-gray-300 shadow-sm"
+              data-ai-hint="student portrait"
+            />
           </div>
         )}
       </section>
+
 
       {data.subjects && data.subjects.length > 0 && (
         <section className="mb-4">
@@ -134,7 +147,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             </TableHeader>
             <TableBody>
               {data.subjects.map((subject, index) => {
-                 if (!subject.subjectName || subject.subjectName.trim() === '') return null; // Don't render rows for subjects without names
+                 if (!subject.subjectName || subject.subjectName.trim() === '') return null; 
                 const { grade, remarks, finalMark } = getGradeAndRemarks(subject.continuousAssessment, subject.examinationMark);
 
                 return (
@@ -209,5 +222,3 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
     </div>
   );
 }
-
-    

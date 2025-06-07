@@ -4,7 +4,7 @@
 import type {ReportData, SubjectEntry} from '@/lib/schemas';
 import {ReportDataSchema}from '@/lib/schemas';
 import {zodResolver}from '@hookform/resolvers/zod';
-import {useForm, type SubmitHandler, useFieldArray} from 'react-hook-form';
+import {useForm, type SubmitHandler, useFieldArray}from 'react-hook-form';
 import {Button}from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle}from '@/components/ui/card';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage}from '@/components/ui/form';
@@ -12,8 +12,9 @@ import {Input}from '@/components/ui/input';
 import {Textarea}from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator}from '@/components/ui/select';
 import {getAiFeedbackAction, getAiReportInsightsAction}from '@/app/actions';
-import React, {useState, useTransition, useEffect} from 'react'; // Added React import
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal } from 'lucide-react';
+import React, {useState, useTransition, useEffect} from 'react';
+import Image from 'next/image'; // Import next/image
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -92,6 +93,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       subjects: initialData?.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
       studentEntryNumber: initialData?.studentEntryNumber || undefined,
       promotionStatus: initialData?.promotionStatus || undefined,
+      studentPhotoDataUri: initialData?.studentPhotoDataUri || undefined,
     },
   });
 
@@ -125,9 +127,11 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         subjects: initialData.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
         studentEntryNumber: initialData.studentEntryNumber || undefined,
         promotionStatus: initialData.promotionStatus || undefined,
+        studentPhotoDataUri: initialData.studentPhotoDataUri || undefined,
       });
     }
   }, [initialData, form.reset]);
+
 
   useEffect(() => {
     if (!isPromotionStatusApplicable) {
@@ -275,6 +279,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         examinationMark: s.examinationMark === undefined ? null : s.examinationMark,
       })),
       promotionStatus: promotionStatusApplicableCheck ? data.promotionStatus : undefined,
+      studentPhotoDataUri: data.studentPhotoDataUri || undefined,
     };
     onFormUpdate(processedData);
      toast({
@@ -468,6 +473,54 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     )}
                   />
                 )}
+                <FormField
+                  control={form.control}
+                  name="studentPhotoDataUri"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />Student Photo</FormLabel>
+                      <FormControl>
+                        <>
+                          <input
+                            type="file"
+                            id="studentPhotoUpload"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  form.setValue('studentPhotoDataUri', reader.result as string, { shouldDirty: true, shouldValidate: true });
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                          <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()}>
+                            <UploadCloud className="mr-2 h-4 w-4" /> Upload Photo
+                          </Button>
+                          {field.value && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <Image
+                                src={field.value}
+                                alt="Student photo preview"
+                                width={60}
+                                height={60}
+                                className="rounded object-cover border"
+                                data-ai-hint="student portrait"
+                              />
+                              <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('studentPhotoDataUri', undefined, { shouldDirty: true, shouldValidate: true })}>
+                                <X className="mr-2 h-4 w-4 text-destructive" /> Remove
+                              </Button>
+                            </div>
+                          )}
+                        </>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </section>
 
@@ -491,9 +544,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                 setCustomSubjectInputValue('');
                                 setIsCustomSubjectDialogOpen(true);
                               } else {
-                                field.onChange(value); // Set the current field's value
+                                field.onChange(value); 
 
-                                // Auto-select logic for the next subject
                                 const currentFieldValue = value;
                                 const nextRowIndex = index + 1;
 

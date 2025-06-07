@@ -17,7 +17,6 @@ function calculateSubjectFinalMark(subject: SubjectEntry): number {
   const caMarkInput = subject.continuousAssessment;
   const examMarkInput = subject.examinationMark;
 
-  // If both marks are null or undefined, treat score as 0 for average calculation purposes
   if ((caMarkInput === null || caMarkInput === undefined) && (examMarkInput === null || examMarkInput === undefined)) {
     return 0;
   }
@@ -27,18 +26,16 @@ function calculateSubjectFinalMark(subject: SubjectEntry): number {
 
   let finalPercentageMark: number;
   finalPercentageMark = scaledCaMark + scaledExamMark;
-  finalPercentageMark = Math.min(finalPercentageMark, 100); // Cap at 100
+  finalPercentageMark = Math.min(finalPercentageMark, 100); 
   return parseFloat(finalPercentageMark.toFixed(1));
 }
 
-// Helper function for ordinal suffix
 function getOrdinalSuffix(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
   const v = n % 100;
   return s[(v - 20) % 10] || s[v] || s[0];
 }
 
-// Helper function to format rank
 function formatRankString(rankNumber: number, isTie: boolean): string {
   const suffix = getOrdinalSuffix(rankNumber);
   return `${isTie ? 'T-' : ''}${rankNumber}${suffix}`;
@@ -46,7 +43,7 @@ function formatRankString(rankNumber: number, isTie: boolean): string {
 
 
 export default function Home() {
-  const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined})));
+  const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined})));
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
   const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
   const [sessionDefaults, setSessionDefaults] = useState<Partial<ReportData>>({});
@@ -58,12 +55,10 @@ export default function Home() {
       return;
     }
 
-    // 1. Calculate overall average for each report
     const reportsWithAverages = listToProcess.map(report => {
       let totalScore = 0;
       let validSubjectCount = 0;
       report.subjects.forEach(subject => {
-        // Only count subjects that have a name
         if (subject.subjectName && subject.subjectName.trim() !== '') {
             const finalMark = calculateSubjectFinalMark(subject);
             totalScore += finalMark;
@@ -74,13 +69,11 @@ export default function Home() {
       return { ...report, overallAverage };
     });
 
-    // 2. Sort by overall average (descending)
     const sortedReports = [...reportsWithAverages].sort((a, b) => (b.overallAverage ?? 0) - (a.overallAverage ?? 0));
 
-    // 3. Assign ranks
     let lastScore = -1;
-    let actualRank = 0; // The actual position if there were no ties
-    let displayRankCounter = 0; // The rank number to display, accounting for ties
+    let actualRank = 0; 
+    let displayRankCounter = 0; 
 
     const rankedReports = sortedReports.map((report, index) => {
       actualRank++;
@@ -89,8 +82,6 @@ export default function Home() {
         lastScore = report.overallAverage ?? 0;
         return { ...report, rank: formatRankString(displayRankCounter, false) };
       } else {
-        // Tie with the previous student(s)
-        // Mark current and previous (if not already marked as tie)
         const prevReport = sortedReports[index -1];
         if (prevReport && !prevReport.rank?.startsWith('T-')) {
             prevReport.rank = formatRankString(displayRankCounter, true);
@@ -99,7 +90,6 @@ export default function Home() {
       }
     });
     
-    // Correct ranks for ties: Iterate again to ensure all tied members have T-
     for (let i = 0; i < rankedReports.length; i++) {
         if (i > 0 && rankedReports[i].overallAverage === rankedReports[i-1].overallAverage) {
             const baseRank = parseInt(rankedReports[i-1].rank!.replace('T-', '').replace(/(st|nd|rd|th)$/, ''));
@@ -136,7 +126,6 @@ export default function Home() {
       const newList = [...reportPrintList, reportWithEntryNumber];
       calculateAndSetRanks(newList);
 
-      // Set session defaults if this is the first report being added
       if (reportPrintList.length === 0) {
         setSessionDefaults({
           schoolName: currentEditingReport.schoolName,
@@ -154,7 +143,6 @@ export default function Home() {
         description: `${currentEditingReport.studentName}'s report (#${nextStudentEntryNumber}) added and list re-ranked.`,
       });
       
-      // Reset currentEditingReport for the next entry, applying session defaults
       const newFormBase = JSON.parse(JSON.stringify(defaultReportData));
       const newCurrentEditingReport: ReportData = {
         ...newFormBase,
@@ -166,7 +154,7 @@ export default function Home() {
         totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null 
                          ? sessionDefaults.totalSchoolDays 
                          : newFormBase.totalSchoolDays,
-        studentName: '', // Always clear student-specific fields
+        studentName: '', 
         daysAttended: null,
         performanceSummary: '',
         strengths: '',
@@ -178,6 +166,7 @@ export default function Home() {
         id: undefined,
         overallAverage: undefined,
         rank: undefined,
+        studentPhotoDataUri: undefined, // Ensure photo is reset
       };
       setCurrentEditingReport(newCurrentEditingReport);
 
@@ -193,13 +182,12 @@ export default function Home() {
   const handleClearList = () => {
     setReportPrintList([]);
     setNextStudentEntryNumber(1);
-    setSessionDefaults({}); // Clear session defaults
+    setSessionDefaults({}); 
     toast({
       title: "Print List Cleared",
       description: "All reports have been removed and ranking reset. Session defaults cleared.",
     });
-     // Reset currentEditingReport to absolute defaults
-    setCurrentEditingReport(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined})));
+    setCurrentEditingReport(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined})));
   }
 
   const handlePrint = () => {
@@ -290,4 +278,3 @@ export default function Home() {
     </div>
   );
 }
-

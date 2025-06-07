@@ -47,7 +47,8 @@ export const ReportDataSchema = z.object({
     .default([{ subjectName: '', continuousAssessment: null, examinationMark: null }]),
   overallAverage: z.number().optional(),
   rank: z.string().optional(),
-  promotionStatus: z.string().optional(), // Added promotion status
+  promotionStatus: z.string().optional(),
+  studentPhotoDataUri: z.string().optional().describe("A data URI of the student's photo."),
 }).refine(data => {
   if (data.daysAttended !== null && data.daysAttended !== undefined &&
       data.totalSchoolDays !== null && data.totalSchoolDays !== undefined) {
@@ -61,8 +62,6 @@ export const ReportDataSchema = z.object({
 
 export type ReportData = z.infer<typeof ReportDataSchema>;
 
-// Default structure for initializing or resetting the form
-// Does not include overallAverage or rank as these are calculated
 export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id' | 'studentEntryNumber'> & { subjects: SubjectEntry[] } = {
   studentName: '',
   className: '',
@@ -78,5 +77,5 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   teacherFeedback: '',
   subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
   promotionStatus: undefined,
+  studentPhotoDataUri: undefined,
 };
-
