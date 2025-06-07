@@ -13,7 +13,7 @@ import {Textarea}from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator}from '@/components/ui/select';
 import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect} from 'react';
-import NextImage from 'next/image'; // Correctly aliased import
+import NextImage from 'next/image';
 import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -377,8 +377,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const originalDataUri = reader.result; 
+      reader.onloadend = () => {
+        const originalDataUri = reader.result as string; 
 
         if (typeof originalDataUri !== 'string' || !originalDataUri.startsWith('data:image/')) {
           toast({
@@ -429,7 +429,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 
             <section className="space-y-6">
-              <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Student & School Information</h3>
+              <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Student &amp; School Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -924,7 +924,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
             <section className="space-y-6">
                <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4 flex justify-between items-center">
-                Overall Performance & Feedback
+                Overall Performance &amp; Feedback
                 <Button
                     type="button"
                     onClick={handleGenerateAiReportInsights}
@@ -1065,3 +1065,5 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
+
+    
