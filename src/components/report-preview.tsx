@@ -9,31 +9,39 @@ interface ReportPreviewProps {
   data: ReportData;
 }
 
-// Basic grading logic (can be expanded)
-// Assumes CA and Exam marks are out of 100 each for simplicity, or total is out of 200.
-// Or, if CA max is 40 and Exam max is 60, total is out of 100.
-// For this example, let's assume total mark is out of 100 for simplicity if not specified.
-// We'll calculate total as sum, and grade based on a generic 0-100 scale for the total.
-// Let's assume total possible score for each subject is 100 for grading.
-const getGradeAndRemarks = (totalMark: number | null): { grade: string; remarks: string } => {
-  if (totalMark === null || totalMark < 0) return { grade: 'N/A', remarks: 'Not available' };
-  
-  // Assuming total possible score for grading is 100 for each subject
-  // If CA and Exam are out of different totals, this logic would need adjustment.
-  // For now, let's assume the `totalMark` calculated is effectively out of 100 for grading.
-  // Or, if CA + Exam is, e.g. 40 + 60 = 100. This is a common scenario.
-  // If CA and Exam marks are up to 100 each, then total can be 200.
-  // The schema has max 100 for each, so total can be 200.
-  // Let's make grade based on percentage of 200.
-  const percentage = (totalMark / 200) * 100; // If CA max 100, Exam max 100
+// Updated grading logic: CA (40%), Exam (60%). Final score out of 100.
+const getGradeAndRemarks = (
+  caMarkInput: number | null,
+  examMarkInput: number | null
+): { grade: string; remarks: string; finalMark: number | string } => {
+  if (caMarkInput === null && examMarkInput === null) {
+    return { grade: 'N/A', remarks: 'Not available', finalMark: '-' };
+  }
 
-  if (percentage >= 90) return { grade: 'A+', remarks: 'Excellent' };
-  if (percentage >= 80) return { grade: 'A', remarks: 'Very Good' };
-  if (percentage >= 70) return { grade: 'B+', remarks: 'Good' };
-  if (percentage >= 60) return { grade: 'B', remarks: 'Satisfactory' };
-  if (percentage >= 50) return { grade: 'C', remarks: 'Needs Improvement' };
-  if (percentage >= 40) return { grade: 'D', remarks: 'Unsatisfactory' };
-  return { grade: 'F', remarks: 'Fail' };
+  // Treat null marks as 0 for calculation if at least one mark is present
+  const ca = caMarkInput ?? 0;
+  const exam = examMarkInput ?? 0;
+
+  // Assuming caMarkInput and examMarkInput are out of 100, as per schema.
+  const scaledCaMark = (ca / 100) * 40;
+  const scaledExamMark = (exam / 100) * 60;
+
+  const finalPercentageMark = scaledCaMark + scaledExamMark;
+
+  // Round to one decimal place for display, or show '-' if not applicable
+  const displayFinalMark = (caMarkInput === null && examMarkInput === null) ? '-' : parseFloat(finalPercentageMark.toFixed(1));
+
+  if (finalPercentageMark >= 90) return { grade: 'A+', remarks: 'Excellent', finalMark: displayFinalMark };
+  if (finalPercentageMark >= 80) return { grade: 'A', remarks: 'Very Good', finalMark: displayFinalMark };
+  if (finalPercentageMark >= 70) return { grade: 'B+', remarks: 'Good', finalMark: displayFinalMark };
+  if (finalPercentageMark >= 60) return { grade: 'B', remarks: 'Satisfactory', finalMark: displayFinalMark };
+  if (finalPercentageMark >= 50) return { grade: 'C', remarks: 'Needs Improvement', finalMark: displayFinalMark };
+  if (finalPercentageMark >= 40) return { grade: 'D', remarks: 'Unsatisfactory', finalMark: displayFinalMark };
+  if (caMarkInput !== null || examMarkInput !== null) { // Avoid F for completely missing marks
+    return { grade: 'F', remarks: 'Fail', finalMark: displayFinalMark };
+  }
+  // Should be caught by the first check, but as a fallback for displayFinalMark being '-'
+  return { grade: 'N/A', remarks: 'Not available', finalMark: '-' }; 
 };
 
 
@@ -83,26 +91,23 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             <TableHeader>
               <TableRow className="bg-gray-50">
                 <TableHead className="font-semibold text-gray-600 w-[30%]">Subject</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600">CA Mark</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600">Exam Mark</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600">Total (200)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600">CA Mark (100)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600">Exam Mark (100)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600">Final Score (100)</TableHead>
                 <TableHead className="text-center font-semibold text-gray-600">Grade</TableHead>
                 <TableHead className="font-semibold text-gray-600 w-[25%]">Remarks</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.subjects.map((subject, index) => {
-                const caMark = subject.continuousAssessment ?? 0;
-                const examMark = subject.examinationMark ?? 0;
-                const totalMark = (subject.continuousAssessment === null && subject.examinationMark === null) ? null : caMark + examMark;
-                const { grade, remarks } = getGradeAndRemarks(totalMark);
+                const { grade, remarks, finalMark } = getGradeAndRemarks(subject.continuousAssessment, subject.examinationMark);
                 
                 return (
                   <TableRow key={index} className="hover:bg-gray-50">
                     <TableCell className="font-medium text-gray-700">{subject.subjectName}</TableCell>
                     <TableCell className="text-center text-gray-700">{subject.continuousAssessment === null ? '-' : subject.continuousAssessment}</TableCell>
                     <TableCell className="text-center text-gray-700">{subject.examinationMark === null ? '-' : subject.examinationMark}</TableCell>
-                    <TableCell className="text-center text-gray-700 font-medium">{totalMark === null ? '-' : totalMark}</TableCell>
+                    <TableCell className="text-center text-gray-700 font-medium">{finalMark}</TableCell>
                     <TableCell className="text-center text-gray-700">{grade}</TableCell>
                     <TableCell className="text-gray-700">{remarks}</TableCell>
                   </TableRow>
@@ -163,3 +168,4 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
     </div>
   );
 }
+
