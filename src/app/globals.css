@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,45 +99,122 @@ body {
   }
 }
 
+/* For on-screen A4-like preview */
+@media screen {
+  .a4-page-simulation {
+    width: 21cm; /* A4 width */
+    min-height: 29.7cm; /* A4 height */
+    padding: 1.5cm; /* Margins for the content within the A4 page */
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #D3D3D3; /* Light grey border for page */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); /* Subtle shadow for page */
+    background: white; /* White background for page */
+    box-sizing: border-box;
+    /* Crucial: content that overflows will be hidden, simulating page cutoff.
+       For dev, you might change to 'auto' or 'visible' to debug content fit. */
+    overflow: hidden;
+  }
+}
+
+
 /* Print styles */
 @media print {
   .no-print {
     display: none !important;
   }
-  #report-preview-container {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: white !important;
+    -webkit-print-color-adjust: exact !important; /* Chrome, Safari, Edge */
+    print-color-adjust: exact !important; /* Firefox */
+  }
+
+  #report-preview-container { /* This is the CardContent in page.tsx */
+    position: static !important;
     width: 100% !important;
     height: auto !important;
+    min-height: 0 !important; /* Reset min-height from screen styles */
     margin: 0 !important;
-    padding: 20px !important; /* Add some padding for print */
+    padding: 0 !important; /* Remove CardContent padding */
     border: none !important;
     box-shadow: none !important;
     background-color: white !important;
     color: black !important;
     border-radius: 0 !important;
+    overflow: visible !important; /* Allow content to flow */
   }
-  #report-preview-container * {
+
+  .a4-page-simulation { /* This is the root of ReportPreview, now #printable-report-area */
+    width: 100% !important; /* Expand to fill parent's width (print page width) */
+    min-height: 0 !important; /* Reset screen min-height */
+    height: auto !important; /* Let content define height */
+    margin: 0 !important; /* Reset screen margins */
+    padding: 10mm !important; /* Standard print margin, adjust as needed */
+    border: none !important; /* No border for print */
+    box-shadow: none !important; /* No shadow for print */
+    background-color: white !important;
+    box-sizing: border-box !important;
+    overflow: visible !important; /* Allow content to flow across pages */
+    page-break-inside: avoid; /* Try to keep report sections from breaking across pages if possible */
+  }
+  
+  /* Ensure all children within the printable area use print-friendly styles */
+  .a4-page-simulation * {
     color: black !important;
-    background-color: transparent !important;
-    border-color: #ccc !important; /* Lighter borders for print */
+    background-color: transparent !important; /* Most elements should be transparent */
+    border-color: #b0b0b0 !important; /* Lighter borders for print elements like tables */
+    box-shadow: none !important;
   }
-  #report-preview-container img {
+  .a4-page-simulation .bg-green-50 { /* Example if you have specific bg colors */
+     background-color: #f0fff4 !important; /* Light green for print, if needed */
+  }
+
+
+  .a4-page-simulation img {
     max-width: 100% !important; /* Ensure images are constrained */
+    page-break-inside: avoid;
   }
+  
   /* Hide any specific interactive elements within the preview if they exist and are not caught by .no-print */
-  #report-preview-container button, 
-  #report-preview-container a[href]:not(.printable-link) { /* example of printable-link class */
+  .a4-page-simulation button, 
+  .a4-page-simulation a[href]:not(.printable-link) { 
     display: none !important;
   }
+  
   /* Ensure textareas appear as static text */
-   #report-preview-container textarea {
+   .a4-page-simulation textarea {
     border: none !important;
     resize: none !important;
     padding: 0 !important;
     background: transparent !important;
     color: black !important;
-    white-space: pre-wrap; /* Preserve formatting */
+    white-space: pre-wrap !important; /* Preserve formatting */
+    overflow: visible !important;
+    -webkit-appearance: none; /* Remove browser default styling */
+    -moz-appearance: none;
+    appearance: none;
+  }
+
+  /* Attempt to control page breaks for better layout */
+  .a4-page-simulation header,
+  .a4-page-simulation footer,
+  .a4-page-simulation section > h3 { /* Section headers */
+    page-break-after: avoid;
+  }
+  .a4-page-simulation section {
+     page-break-inside: avoid;
+  }
+
+  .a4-page-simulation table {
+    page-break-inside: auto; /* Allow tables to break across pages if necessary */
+  }
+  .a4-page-simulation tr {
+    page-break-inside: avoid; /* Try to keep table rows on the same page */
   }
 }
+

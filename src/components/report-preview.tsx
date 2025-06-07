@@ -24,13 +24,18 @@ const getGradeAndRemarks = (
 
   if (caMarkInput !== null && examMarkInput !== null) {
     finalPercentageMark = scaledCaMark + scaledExamMark;
-  } else if (caMarkInput !== null) { 
+  } else if (caMarkInput !== null) {
+    // If only CA is present, it contributes 40% to a potential total of 40.
+    // To grade it out of 100 based on its own weight, we'd effectively scale it.
+    // However, typically grading is based on overall performance expectation.
+    // For simplicity, if only one score is present, we use its scaled value directly.
+    // This might need further business logic clarification for partial scores.
     finalPercentageMark = scaledCaMark;
-  } else { 
+  } else { // Only exam mark is present
     finalPercentageMark = scaledExamMark;
   }
   
-  finalPercentageMark = Math.min(finalPercentageMark, 100);
+  finalPercentageMark = Math.min(finalPercentageMark, 100); // Cap at 100
   const displayFinalMark = parseFloat(finalPercentageMark.toFixed(1));
 
   if (finalPercentageMark >= 90) return { grade: 'A+', remarks: 'Excellent', finalMark: displayFinalMark };
@@ -56,7 +61,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
     : 'N/A';
 
   return (
-    <div id="report-preview" className="bg-white p-6 md:p-8 rounded-lg border border-gray-200 min-h-[700px] flex flex-col text-sm">
+    <div id="printable-report-area" className="a4-page-simulation flex flex-col text-sm">
       <header className="mb-8 pb-4 border-b border-gray-300">
         <div className="flex justify-between items-start">
           <div>
@@ -138,7 +143,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         </ReportSection>
 
         {data.teacherFeedback && (
-          <ReportSection title="Teacher's Feedback" highlightColor="bg-green-50">
+          <ReportSection title="Teacher's Feedback" highlightColor="bg-green-50 print:bg-green-50">
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.teacherFeedback}</p>
           </ReportSection>
         )}
