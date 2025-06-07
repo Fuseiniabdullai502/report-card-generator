@@ -243,10 +243,10 @@ export default function Home() {
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground">
       <header className="mb-8 text-center no-print relative">
         <div className="flex items-center justify-center gap-3">
-         <BookMarked className="h-10 w-10 text-primary" />
-         <h1 className="text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
+         <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
+         <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
         </div>
-        <p className="text-muted-foreground mt-2">Easily create, customize, rank, and print student report cards.</p>
+        <p className="text-muted-foreground mt-2 text-sm sm:text-base">Easily create, customize, rank, and print student report cards.</p>
         <div className="absolute top-0 right-0">
           <ThemeToggleButton />
         </div>
@@ -268,12 +268,12 @@ export default function Home() {
         <section className="lg:col-span-3 flex flex-col">
           <Card className="shadow-lg flex-grow flex flex-col bg-card text-card-foreground">
             <CardHeader className="no-print">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
                 <div className="flex items-center gap-2">
-                  <Eye className="mr-2 h-6 w-6 text-primary" />
-                  <CardTitle className="font-headline text-2xl">Report Print Preview ({reportsCount} {reportsLabel})</CardTitle>
+                  <Eye className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />
+                  <CardTitle className="font-headline text-xl md:text-2xl">Report Print Preview ({reportsCount} {reportsLabel})</CardTitle>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 justify-start md:justify-end">
                   <Button onClick={handleDownloadData} disabled={reportsCount === 0} variant="outline" size="sm">
                     <Download className="mr-2 h-4 w-4" />
                     Download Data
@@ -288,7 +288,7 @@ export default function Home() {
                   </Button>
                 </div>
               </div>
-              <CardDescription>
+              <CardDescription className="mt-2 md:mt-0">
                 This area shows all reports added to the print list, sorted by rank. Each will attempt to print on a new page.
                 Browser print dialog usually offers "Save as PDF". "Download Data" saves list as JSON.
                 {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on the average of final subject scores (CA 40%, Exam 60%). Session defaults apply after the first student.</span>}
