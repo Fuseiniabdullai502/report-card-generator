@@ -24,6 +24,14 @@ interface ReportFormProps {
 
 const NONE_VALUE_KEY = "--none--";
 
+const classLevels = [
+  "KG1", "KG2",
+  "BASIC 1", "BASIC 2", "BASIC 3", "BASIC 4", "BASIC 5", "BASIC 6",
+  "JHS1", "JHS2", "JHS3",
+  "SHS1", "SHS2", "SHS3",
+  "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"
+];
+
 export default function ReportForm({ onFormUpdate, initialData }: ReportFormProps) {
   const [isAiLoading, startAiTransition] = useTransition();
   const { toast } = useToast();
@@ -136,9 +144,20 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center"><Users className="mr-2 h-4 w-4" />Class Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Grade 5 Math" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select class level" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {classLevels.map((level) => (
+                            <SelectItem key={level} value={level}>
+                              {level}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
