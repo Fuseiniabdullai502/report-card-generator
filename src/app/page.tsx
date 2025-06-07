@@ -1,22 +1,118 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ReportForm from '@/components/report-form';
 import ReportPreview from '@/components/report-preview';
-import type { ReportData } from '@/lib/schemas';
+import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2 } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
 
+// Helper function to calculate final mark for a single subject
+function calculateSubjectFinalMark(subject: SubjectEntry): number {
+  const caMarkInput = subject.continuousAssessment;
+  const examMarkInput = subject.examinationMark;
+
+  // If both marks are null or undefined, treat score as 0 for average calculation purposes
+  if ((caMarkInput === null || caMarkInput === undefined) && (examMarkInput === null || examMarkInput === undefined)) {
+    return 0;
+  }
+
+  const scaledCaMark = (caMarkInput !== null && caMarkInput !== undefined) ? (caMarkInput / 60) * 40 : 0;
+  const scaledExamMark = (examMarkInput !== null && examMarkInput !== undefined) ? (examMarkInput / 100) * 60 : 0;
+
+  let finalPercentageMark: number;
+  finalPercentageMark = scaledCaMark + scaledExamMark;
+  finalPercentageMark = Math.min(finalPercentageMark, 100); // Cap at 100
+  return parseFloat(finalPercentageMark.toFixed(1));
+}
+
+// Helper function for ordinal suffix
+function getOrdinalSuffix(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
+}
+
+// Helper function to format rank
+function formatRankString(rankNumber: number, isTie: boolean): string {
+  const suffix = getOrdinalSuffix(rankNumber);
+  return `${isTie ? 'T-' : ''}${rankNumber}${suffix}`;
+}
+
+
 export default function Home() {
-  const [currentEditingReport, setCurrentEditingReport] = useState<ReportData | null>(JSON.parse(JSON.stringify(defaultReportData)));
+  const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined})));
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
   const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
   const { toast } = useToast();
+
+  const calculateAndSetRanks = (listToProcess: ReportData[]) => {
+    if (listToProcess.length === 0) {
+      setReportPrintList([]);
+      return;
+    }
+
+    // 1. Calculate overall average for each report
+    const reportsWithAverages = listToProcess.map(report => {
+      let totalScore = 0;
+      let validSubjectCount = 0;
+      report.subjects.forEach(subject => {
+        // Only count subjects that have a name
+        if (subject.subjectName && subject.subjectName.trim() !== '') {
+            const finalMark = calculateSubjectFinalMark(subject);
+            totalScore += finalMark;
+            validSubjectCount++;
+        }
+      });
+      const overallAverage = validSubjectCount > 0 ? parseFloat((totalScore / validSubjectCount).toFixed(2)) : 0;
+      return { ...report, overallAverage };
+    });
+
+    // 2. Sort by overall average (descending)
+    const sortedReports = [...reportsWithAverages].sort((a, b) => (b.overallAverage ?? 0) - (a.overallAverage ?? 0));
+
+    // 3. Assign ranks
+    let lastScore = -1;
+    let actualRank = 0; // The actual position if there were no ties
+    let displayRankCounter = 0; // The rank number to display, accounting for ties
+
+    const rankedReports = sortedReports.map((report, index) => {
+      actualRank++;
+      if (report.overallAverage !== lastScore) {
+        displayRankCounter = actualRank;
+        lastScore = report.overallAverage ?? 0;
+        return { ...report, rank: formatRankString(displayRankCounter, false) };
+      } else {
+        // Tie with the previous student(s)
+        // Mark current and previous (if not already marked as tie)
+        const prevReport = sortedReports[index -1];
+        if (prevReport && !prevReport.rank?.startsWith('T-')) {
+            prevReport.rank = formatRankString(displayRankCounter, true);
+        }
+        return { ...report, rank: formatRankString(displayRankCounter, true) };
+      }
+    });
+    
+    // Correct ranks for ties: Iterate again to ensure all tied members have T-
+    for (let i = 0; i < rankedReports.length; i++) {
+        if (i > 0 && rankedReports[i].overallAverage === rankedReports[i-1].overallAverage) {
+            const baseRank = parseInt(rankedReports[i-1].rank!.replace('T-', '').replace(/(st|nd|rd|th)$/, ''));
+            rankedReports[i].rank = formatRankString(baseRank, true);
+             if (!rankedReports[i-1].rank?.startsWith('T-')) {
+                rankedReports[i-1].rank = formatRankString(baseRank, true);
+            }
+        }
+    }
+
+
+    setReportPrintList(rankedReports);
+  };
+
 
   const handleFormUpdate = (data: ReportData) => {
     setCurrentEditingReport(data);
@@ -34,16 +130,19 @@ export default function Home() {
       }
       const reportWithEntryNumber = {
         ...currentEditingReport,
-        id: `report-${Date.now()}-${Math.random()}`, // Unique key for React list
-        studentEntryNumber: nextStudentEntryNumber, // Assign session serial number
+        id: `report-${Date.now()}-${Math.random()}`, 
+        studentEntryNumber: nextStudentEntryNumber,
       };
-      setReportPrintList(prevList => [...prevList, reportWithEntryNumber]);
-      setNextStudentEntryNumber(prevNumber => prevNumber + 1); // Increment for next entry
+      
+      const newList = [...reportPrintList, reportWithEntryNumber];
+      calculateAndSetRanks(newList);
+
+      setNextStudentEntryNumber(prevNumber => prevNumber + 1); 
       toast({
-        title: "Report Added to List",
-        description: `${currentEditingReport.studentName}'s report (#${nextStudentEntryNumber}) is ready for batch preview.`,
+        title: "Report Added & Ranked",
+        description: `${currentEditingReport.studentName}'s report (#${nextStudentEntryNumber}) added and list re-ranked.`,
       });
-      setCurrentEditingReport(JSON.parse(JSON.stringify(defaultReportData)));
+      setCurrentEditingReport(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined})));
     } else {
        toast({
         title: "No Report Data",
@@ -55,10 +154,10 @@ export default function Home() {
 
   const handleClearList = () => {
     setReportPrintList([]);
-    setNextStudentEntryNumber(1); // Reset serial number counter
+    setNextStudentEntryNumber(1); 
     toast({
       title: "Print List Cleared",
-      description: "All reports have been removed from the preview list.",
+      description: "All reports have been removed and ranking reset.",
     });
   }
 
@@ -73,6 +172,9 @@ export default function Home() {
       });
     }
   };
+  
+  const reportsCount = reportPrintList.length;
+  const reportsLabel = reportsCount === 1 ? 'Report' : 'Reports';
 
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground">
@@ -81,7 +183,7 @@ export default function Home() {
          <BookMarked className="h-10 w-10 text-primary" />
          <h1 className="text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
         </div>
-        <p className="text-muted-foreground mt-2">Easily create, customize, and print student report cards.</p>
+        <p className="text-muted-foreground mt-2">Easily create, customize, rank, and print student report cards.</p>
         <div className="absolute top-0 right-0">
           <ThemeToggleButton />
         </div>
@@ -91,12 +193,12 @@ export default function Home() {
         <section className="lg:col-span-2 no-print space-y-4">
           <ReportForm
             onFormUpdate={handleFormUpdate}
-            initialData={currentEditingReport || defaultReportData}
+            initialData={currentEditingReport}
             reportPrintListForHistory={reportPrintList}
           />
           <Button onClick={handleAddToList} className="w-full" variant="outline">
             <ListPlus className="mr-2 h-4 w-4" />
-            Add Current Report to Print List
+            Add Current Report to Print & Rank List
           </Button>
         </section>
 
@@ -105,24 +207,27 @@ export default function Home() {
             <CardHeader className="no-print">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <Eye className="h-6 w-6 text-primary" />
-                  <CardTitle className="font-headline text-2xl">Report Print Preview ({reportPrintList.length} {reportPrintList.length === 1 ? 'Report' : 'Reports'})</CardTitle>
+                  <Eye className="mr-2 h-6 w-6 text-primary" />
+                  <CardTitle className="font-headline text-2xl">Report Print Preview ({reportsCount} {reportsLabel})</CardTitle>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={handleClearList} disabled={reportPrintList.length === 0} variant="destructive" size="sm">
+                  <Button onClick={handleClearList} disabled={reportsCount === 0} variant="destructive" size="sm">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Clear List
                   </Button>
-                  <Button onClick={handlePrint} disabled={reportPrintList.length === 0} variant="outline" size="sm">
+                  <Button onClick={handlePrint} disabled={reportsCount === 0} variant="outline" size="sm">
                     <Printer className="mr-2 h-4 w-4" />
-                    Print All ({reportPrintList.length})
+                    Print All ({reportsCount})
                   </Button>
                 </div>
               </div>
-              <CardDescription>This area shows all reports added to the print list. Each will attempt to print on a new page.</CardDescription>
+              <CardDescription>
+                This area shows all reports added to the print list, sorted by rank. Each will attempt to print on a new page.
+                {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on the average of final subject scores (CA 40%, Exam 60%).</span>}
+              </CardDescription>
             </CardHeader>
             <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">
-              {reportPrintList.length > 0 ? (
+              {reportsCount > 0 ? (
                 reportPrintList.map((reportData) => (
                   <ReportPreview key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} data={reportData} />
                 ))

@@ -4,25 +4,27 @@
 import type {ReportData, SubjectEntry} from '@/lib/schemas';
 import Image from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Award } from 'lucide-react'; // For rank display
 
 interface ReportPreviewProps {
   data: ReportData;
 }
 
 const getGradeAndRemarks = (
-  caMarkInput: number | null,
-  examMarkInput: number | null
+  caMarkInput: number | null | undefined, // Allow undefined
+  examMarkInput: number | null | undefined // Allow undefined
 ): { grade: string; remarks: string; finalMark: number | string } => {
-  if (caMarkInput === null && examMarkInput === null) {
+  // If both marks are null or undefined, it's 'N/A'
+  if ((caMarkInput === null || caMarkInput === undefined) && (examMarkInput === null || examMarkInput === undefined)) {
     return { grade: 'N/A', remarks: 'Not available', finalMark: '-' };
   }
 
-  const scaledCaMark = caMarkInput !== null ? (caMarkInput / 60) * 40 : 0;
-  const scaledExamMark = examMarkInput !== null ? (examMarkInput / 100) * 60 : 0;
+  const scaledCaMark = (caMarkInput !== null && caMarkInput !== undefined) ? (caMarkInput / 60) * 40 : 0;
+  const scaledExamMark = (examMarkInput !== null && examMarkInput !== undefined) ? (examMarkInput / 100) * 60 : 0;
 
   let finalPercentageMark: number;
   finalPercentageMark = scaledCaMark + scaledExamMark;
-  finalPercentageMark = Math.min(finalPercentageMark, 100);
+  finalPercentageMark = Math.min(finalPercentageMark, 100); // Cap at 100
   const displayFinalMark = parseFloat(finalPercentageMark.toFixed(1));
 
   if (finalPercentageMark >= 90) return { grade: 'A+', remarks: 'Excellent', finalMark: displayFinalMark };
@@ -31,8 +33,10 @@ const getGradeAndRemarks = (
   if (finalPercentageMark >= 60) return { grade: 'B', remarks: 'Satisfactory', finalMark: displayFinalMark };
   if (finalPercentageMark >= 50) return { grade: 'C', remarks: 'Needs Improvement', finalMark: displayFinalMark };
   if (finalPercentageMark >= 40) return { grade: 'D', remarks: 'Unsatisfactory', finalMark: displayFinalMark };
-
-  return { grade: 'F', remarks: 'Fail', finalMark: displayFinalMark };
+  if (finalPercentageMark < 40 && finalPercentageMark >=0) return { grade: 'F', remarks: 'Fail', finalMark: displayFinalMark };
+  
+  // Default for any other case (e.g. only one score provided but not enough for a grade)
+  return { grade: 'N/A', remarks: 'Incomplete Data', finalMark: displayFinalMark > 0 ? displayFinalMark : '-' };
 };
 
 
@@ -49,13 +53,13 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 
   return (
     <div id="printable-report-area" className="a4-page-simulation flex flex-col text-sm">
-      <header className="mb-8 pb-4 border-b border-gray-300">
+      <header className="mb-6 pb-3 border-b border-gray-300">
         <div className="flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-headline font-bold text-primary">{data.schoolName || 'School Name'}</h2>
             <p className="text-muted-foreground">{data.academicYear || 'Academic Year'} - {data.academicTerm || 'Term/Semester'}</p>
             {data.studentEntryNumber && (
-              <p className="text-sm text-gray-500">Entry #: {data.studentEntryNumber}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Entry #: {data.studentEntryNumber}</p>
             )}
           </div>
           <Image
@@ -67,54 +71,67 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             className="object-contain"
           />
         </div>
-        <h1 className="text-3xl font-headline font-semibold text-center mt-4 text-gray-700">Student Report Card</h1>
+        <h1 className="text-3xl font-headline font-semibold text-center mt-3 text-gray-700">Student Report Card</h1>
       </header>
 
-      <section className="mb-6 grid grid-cols-2 gap-x-4 gap-y-2">
+      <section className="mb-4 grid grid-cols-3 gap-x-4 gap-y-2 text-xs">
         <div>
           <strong className="text-gray-600">Student Name:</strong>
-          <p className="text-gray-800">{data.studentName}</p>
+          <p className="text-gray-800 text-sm">{data.studentName}</p>
         </div>
         <div>
           <strong className="text-gray-600">Class:</strong>
-          <p className="text-gray-800">{data.className}</p>
+          <p className="text-gray-800 text-sm">{data.className}</p>
         </div>
         <div>
           <strong className="text-gray-600">Gender:</strong>
-          <p className="text-gray-800">{data.gender || 'N/A'}</p>
+          <p className="text-gray-800 text-sm">{data.gender || 'N/A'}</p>
         </div>
         <div>
           <strong className="text-gray-600">Attendance:</strong>
-          <p className="text-gray-800">{attendanceString}</p>
+          <p className="text-gray-800 text-sm">{attendanceString}</p>
         </div>
+        {data.rank && (
+          <div className="col-span-1">
+            <strong className="text-gray-600 flex items-center"><Award className="mr-1 h-3.5 w-3.5 text-amber-500" />Position in Class:</strong>
+            <p className="text-gray-800 text-sm font-semibold">{data.rank}</p>
+          </div>
+        )}
+         {data.overallAverage !== undefined && data.overallAverage !== null && (
+          <div className="col-span-1">
+            <strong className="text-gray-600">Overall Average:</strong>
+            <p className="text-gray-800 text-sm font-semibold">{data.overallAverage.toFixed(2)}%</p>
+          </div>
+        )}
       </section>
 
       {data.subjects && data.subjects.length > 0 && (
-        <section className="mb-6">
-          <h3 className="text-lg font-headline font-semibold mb-2 text-primary border-b pb-1">Subject Performance</h3>
-          <Table className="border rounded-md">
+        <section className="mb-4">
+          <h3 className="text-base font-headline font-semibold mb-1.5 text-primary border-b pb-0.5">Subject Performance</h3>
+          <Table className="border rounded-md text-xs">
             <TableHeader>
               <TableRow className="bg-gray-50">
-                <TableHead className="font-semibold text-gray-600 w-[30%]">Subject</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600">CA Mark (60)</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600">Exam Mark (100)</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600">Final Score (100)</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600">Grade</TableHead>
-                <TableHead className="font-semibold text-gray-600 w-[25%]">Remarks</TableHead>
+                <TableHead className="font-semibold text-gray-600 w-[28%] py-1.5 px-2">Subject</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1.5 px-2">CA (60)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1.5 px-2">Exam (100)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1.5 px-2">Final (100)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1.5 px-2">Grade</TableHead>
+                <TableHead className="font-semibold text-gray-600 w-[25%] py-1.5 px-2">Remarks</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.subjects.map((subject, index) => {
+                 if (!subject.subjectName || subject.subjectName.trim() === '') return null; // Don't render rows for subjects without names
                 const { grade, remarks, finalMark } = getGradeAndRemarks(subject.continuousAssessment, subject.examinationMark);
 
                 return (
                   <TableRow key={index} className="hover:bg-gray-50">
-                    <TableCell className="font-medium text-gray-700">{subject.subjectName}</TableCell>
-                    <TableCell className="text-center text-gray-700">{subject.continuousAssessment === null ? '-' : subject.continuousAssessment}</TableCell>
-                    <TableCell className="text-center text-gray-700">{subject.examinationMark === null ? '-' : subject.examinationMark}</TableCell>
-                    <TableCell className="text-center text-gray-700 font-medium">{finalMark}</TableCell>
-                    <TableCell className="text-center text-gray-700">{grade}</TableCell>
-                    <TableCell className="text-gray-700">{remarks}</TableCell>
+                    <TableCell className="font-medium text-gray-700 py-1 px-2">{subject.subjectName}</TableCell>
+                    <TableCell className="text-center text-gray-700 py-1 px-2">{subject.continuousAssessment === null || subject.continuousAssessment === undefined ? '-' : subject.continuousAssessment}</TableCell>
+                    <TableCell className="text-center text-gray-700 py-1 px-2">{subject.examinationMark === null || subject.examinationMark === undefined ? '-' : subject.examinationMark}</TableCell>
+                    <TableCell className="text-center text-gray-700 font-medium py-1 px-2">{finalMark}</TableCell>
+                    <TableCell className="text-center text-gray-700 py-1 px-2">{grade}</TableCell>
+                    <TableCell className="text-gray-700 py-1 px-2">{remarks}</TableCell>
                   </TableRow>
                 );
               })}
@@ -123,18 +140,24 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         </section>
       )}
 
-      <div className="space-y-6 flex-grow">
-        <ReportSection title="Overall Performance Summary">
-          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.performanceSummary}</p>
-        </ReportSection>
+      <div className="space-y-4 flex-grow text-xs">
+        {data.performanceSummary && (
+          <ReportSection title="Overall Performance Summary">
+            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.performanceSummary}</p>
+          </ReportSection>
+        )}
 
-        <ReportSection title="Strengths">
-          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.strengths}</p>
-        </ReportSection>
+        {data.strengths && (
+          <ReportSection title="Strengths">
+            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.strengths}</p>
+          </ReportSection>
+        )}
 
-        <ReportSection title="Areas for Improvement">
-          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.areasForImprovement}</p>
-        </ReportSection>
+        {data.areasForImprovement && (
+          <ReportSection title="Areas for Improvement">
+            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.areasForImprovement}</p>
+          </ReportSection>
+        )}
 
         {data.teacherFeedback && (
           <ReportSection title="Teacher's Feedback" highlightColor="bg-green-50 print:bg-green-50">
@@ -143,17 +166,17 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         )}
       </div>
 
-      <footer className="mt-10 pt-6 border-t border-gray-300 text-xs text-gray-600">
+      <footer className="mt-8 pt-4 border-t border-gray-300 text-[10px] text-gray-600">
         <div className="flex justify-between items-center">
           <div>
             <p><strong>Date Issued:</strong> {currentDate}</p>
           </div>
           <div>
             <p className="mb-1"><strong>Teacher's Signature:</strong></p>
-            <div className="h-10 border-b border-gray-400 w-48"></div>
+            <div className="h-8 border-b border-gray-400 w-40"></div>
           </div>
         </div>
-         <p className="text-center mt-6 text-gray-500">&copy; {new Date().getFullYear()} {data.schoolName || 'School Name'}. Confidential Document.</p>
+         <p className="text-center mt-4 text-gray-500">&copy; {new Date().getFullYear()} {data.schoolName || 'School Name'}. Confidential Document.</p>
       </footer>
     </div>
   );
@@ -167,8 +190,8 @@ interface ReportSectionProps {
 
 function ReportSection({ title, children, highlightColor }: ReportSectionProps) {
   return (
-    <div className={`p-4 border border-gray-200 rounded-md shadow-sm ${highlightColor || ''}`}>
-      <h3 className="text-lg font-headline font-semibold mb-2 text-primary border-b pb-1">{title}</h3>
+    <div className={`p-3 border border-gray-200 rounded-md shadow-sm ${highlightColor || ''}`}>
+      <h3 className="text-base font-headline font-semibold mb-1.5 text-primary border-b pb-0.5">{title}</h3>
       {children}
     </div>
   );
