@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Printer, BookMarked, FileText, Eye } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { ThemeToggleButton } from '@/components/theme-toggle-button';
 
 
 export default function Home() {
@@ -31,13 +33,16 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background">
-      <header className="mb-8 text-center no-print">
+    <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground">
+      <header className="mb-8 text-center no-print relative">
         <div className="flex items-center justify-center gap-3">
          <BookMarked className="h-10 w-10 text-primary" />
          <h1 className="text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
         </div>
         <p className="text-muted-foreground mt-2">Easily create, customize, and print student report cards.</p>
+        <div className="absolute top-0 right-0">
+          <ThemeToggleButton />
+        </div>
       </header>
 
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -46,7 +51,7 @@ export default function Home() {
         </section>
 
         <section className="lg:col-span-3 flex flex-col">
-          <Card className="shadow-lg flex-grow flex flex-col">
+          <Card className="shadow-lg flex-grow flex flex-col bg-card text-card-foreground">
             <CardHeader className="no-print">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
