@@ -101,21 +101,28 @@ body {
 
 /* For on-screen A4-like preview */
 @media screen {
+  #report-preview-container {
+    /* Provides a scrollable container for multiple A4 pages */
+    /* background-color: theme('colors.gray.100'); /* Light gray background for the container */
+    /* padding: 1rem; /* Some padding around the A4 pages */ 
+  }
   .a4-page-simulation {
     width: 21cm; /* A4 width */
     min-height: 29.7cm; /* A4 height */
     padding: 1.5cm; /* Margins for the content within the A4 page */
     margin-left: auto;
     margin-right: auto;
-    margin-top: 1rem;
-    margin-bottom: 1rem;
+    margin-top: 1rem; /* Space above the first/only page */
+    margin-bottom: 1rem; /* Space below the last/only page */
     border: 1px solid #D3D3D3; /* Light grey border for page */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); /* Subtle shadow for page */
     background: white; /* White background for page */
     box-sizing: border-box;
-    /* Crucial: content that overflows will be hidden, simulating page cutoff.
-       For dev, you might change to 'auto' or 'visible' to debug content fit. */
-    overflow: hidden;
+    overflow: hidden; /* Content that overflows will be hidden on screen for this single page sim */
+  }
+   /* Add margin between A4 pages when multiple are displayed on screen */
+  #report-preview-container .a4-page-simulation + .a4-page-simulation {
+    margin-top: 1.5rem; /* Increased space between pages on screen */
   }
 }
 
@@ -151,8 +158,8 @@ body {
 
   .a4-page-simulation { /* This is the root of ReportPreview, now #printable-report-area */
     width: 100% !important; /* Expand to fill parent's width (print page width) */
-    min-height: 0 !important; /* Reset screen min-height */
-    height: auto !important; /* Let content define height */
+    min-height: 0 !important; /* Reset screen min-height for printing, let content flow */
+    height: auto !important; /* Let content define height for printing */
     margin: 0 !important; /* Reset screen margins */
     padding: 10mm !important; /* Standard print margin, adjust as needed */
     border: none !important; /* No border for print */
@@ -160,7 +167,12 @@ body {
     background-color: white !important;
     box-sizing: border-box !important;
     overflow: visible !important; /* Allow content to flow across pages */
-    page-break-inside: avoid; /* Try to keep report sections from breaking across pages if possible */
+    /* page-break-inside: avoid; /* Try to keep the whole report on one page if possible, may not be desired for long reports */
+  }
+
+  /* Ensure subsequent reports start on a new page */
+  .a4-page-simulation:not(:first-child) {
+    page-break-before: always !important;
   }
   
   /* Ensure all children within the printable area use print-friendly styles */
@@ -200,7 +212,7 @@ body {
     appearance: none;
   }
 
-  /* Attempt to control page breaks for better layout */
+  /* Attempt to control page breaks for better layout within a single report */
   .a4-page-simulation header,
   .a4-page-simulation footer,
   .a4-page-simulation section > h3 { /* Section headers */
@@ -217,4 +229,3 @@ body {
     page-break-inside: avoid; /* Try to keep table rows on the same page */
   }
 }
-

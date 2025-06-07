@@ -19,6 +19,7 @@ export const SubjectEntrySchema = z.object({
 export type SubjectEntry = z.infer<typeof SubjectEntrySchema>;
 
 export const ReportDataSchema = z.object({
+  id: z.string().optional(), // Optional ID for list management
   studentName: z.string().min(1, 'Student name is required'),
   className: z.string().min(1, 'Class name is required'),
   gender: z.string().optional(),
@@ -54,3 +55,19 @@ export const ReportDataSchema = z.object({
 });
 
 export type ReportData = z.infer<typeof ReportDataSchema>;
+
+// Default structure for initializing or resetting the form
+export const defaultReportData: ReportData = {
+  studentName: '',
+  className: '',
+  gender: undefined, // or '' if your Select treats empty string as placeholder
+  schoolName: 'Springfield Elementary',
+  academicYear: '2023-2024',
+  daysAttended: null,
+  totalSchoolDays: null,
+  performanceSummary: '',
+  strengths: '',
+  areasForImprovement: '',
+  teacherFeedback: '',
+  subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+};
