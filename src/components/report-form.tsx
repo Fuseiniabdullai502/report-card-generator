@@ -13,8 +13,8 @@ import {Textarea}from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator}from '@/components/ui/select';
 import {getAiFeedbackAction, getAiReportInsightsAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect} from 'react';
-import Image from 'next/image'; // Import next/image
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone } from 'lucide-react';
+import Image from 'next/image';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,7 +24,7 @@ import { Label } from '@/components/ui/label';
 interface ReportFormProps {
   onFormUpdate: (data: ReportData) => void;
   initialData?: Partial<ReportData>;
-  reportPrintListForHistory?: ReportData[]; // For student name history
+  reportPrintListForHistory?: ReportData[];
 }
 
 const NONE_VALUE_KEY = "--none--";
@@ -66,12 +66,15 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [customSubjects, setCustomSubjects] = useState<string[]>([]);
   const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
   const [customSubjectInputValue, setCustomSubjectInputValue] = useState('');
-  const [currentCustomSubjectIndex, setCurrentCustomSubjectIndex] = useState<number | null>(null);
+  const [currentCustomSubjectTargetIndex, setCurrentCustomSubjectTargetIndex] = useState<number | null>(null); // Stores the index of the subject field being customized
+
+  const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
+
 
   const studentNameHistory = React.useMemo(() => {
     if (!reportPrintListForHistory) return [];
     const names = reportPrintListForHistory.map(report => report.studentName).filter(Boolean);
-    return [...new Set(names)]; // Unique names
+    return [...new Set(names)];
   }, [reportPrintListForHistory]);
 
 
@@ -103,6 +106,21 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     name: "subjects"
   });
 
+  useEffect(() => {
+    if (fields.length > 0) {
+      if (currentVisibleSubjectIndex >= fields.length) {
+        setCurrentVisibleSubjectIndex(fields.length - 1);
+      }
+    } else {
+      // If all subjects are somehow removed, ensure we have one default and set index to 0
+      if (fields.length === 0) {
+        append({ subjectName: '', continuousAssessment: null, examinationMark: null });
+        setCurrentVisibleSubjectIndex(0);
+      }
+    }
+  }, [fields.length, currentVisibleSubjectIndex, append]);
+
+
   const watchedAcademicTerm = form.watch('academicTerm');
   const watchedClassName = form.watch('className');
 
@@ -132,8 +150,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         promotionStatus: initialData.promotionStatus || undefined,
         studentPhotoDataUri: initialData.studentPhotoDataUri || undefined,
       });
+      // Reset subject visibility to the first subject when initialData changes
+      setCurrentVisibleSubjectIndex(0);
     }
-  }, [initialData, form.reset]);
+  }, [initialData, form.reset, form, append]);
 
 
   useEffect(() => {
@@ -152,9 +172,9 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       });
       return;
     }
-    if (currentCustomSubjectIndex !== null) {
+    if (currentCustomSubjectTargetIndex !== null) {
       const newSubjectName = customSubjectInputValue.trim();
-      form.setValue(`subjects.${currentCustomSubjectIndex}.subjectName`, newSubjectName);
+      form.setValue(`subjects.${currentCustomSubjectTargetIndex}.subjectName`, newSubjectName);
 
       if (!predefinedSubjectsList.includes(newSubjectName) && !customSubjects.includes(newSubjectName)) {
         setCustomSubjects(prev => [...prev, newSubjectName]);
@@ -166,7 +186,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       });
       setIsCustomSubjectDialogOpen(false);
       setCustomSubjectInputValue('');
-      setCurrentCustomSubjectIndex(null);
+      setCurrentCustomSubjectTargetIndex(null);
     }
   };
 
@@ -291,6 +311,22 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         description: "The report preview has been updated with the latest information.",
       });
   };
+
+  const handleAddSubjectAndNavigate = () => {
+    const newIndex = fields.length;
+    append({ subjectName: '', continuousAssessment: null, examinationMark: null }, { shouldFocus: false });
+    setCurrentVisibleSubjectIndex(newIndex);
+  };
+
+  const handleRemoveCurrentSubject = () => {
+    if (fields.length <= 1) {
+      toast({ title: "Cannot Remove", description: "At least one subject is required.", variant: "destructive" });
+      return;
+    }
+    remove(currentVisibleSubjectIndex);
+    // useEffect will adjust currentVisibleSubjectIndex if it becomes out of bounds
+  };
+
 
   return (
     <>
@@ -532,34 +568,61 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
             <section className="space-y-6">
               <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Subject Marks</h3>
-              {fields.map((item, index) => (
-                <div key={item.id} className="space-y-4 p-4 border rounded-md shadow-sm bg-card/50">
-                  <div className="grid grid-cols-1 md:grid-cols-[3fr_1.5fr_1.5fr_auto] gap-4 items-start">
+              
+              <div className="flex items-center justify-between mt-2 mb-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentVisibleSubjectIndex(prev => Math.max(0, prev - 1))}
+                  disabled={currentVisibleSubjectIndex === 0 || fields.length === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="sr-only">Previous Subject</span>
+                </Button>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Subject {fields.length > 0 ? currentVisibleSubjectIndex + 1 : 0} of {fields.length}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentVisibleSubjectIndex(prev => Math.min(fields.length - 1, prev + 1))}
+                  disabled={currentVisibleSubjectIndex >= fields.length - 1 || fields.length === 0}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="sr-only">Next Subject</span>
+                </Button>
+              </div>
+
+              {fields.length > 0 && fields[currentVisibleSubjectIndex] && (
+                <div key={fields[currentVisibleSubjectIndex].id} className="space-y-4 p-4 border rounded-md shadow-sm bg-card/50">
+                  <div className="grid grid-cols-1 md:grid-cols-[3fr_1.5fr_1.5fr] gap-4 items-start">
                     <FormField
                       control={form.control}
-                      name={`subjects.${index}.subjectName`}
+                      name={`subjects.${currentVisibleSubjectIndex}.subjectName`}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="flex items-center"><BookOpenText className="mr-2 h-4 w-4 text-primary" />Subject Name</FormLabel>
                           <Select
                             onValueChange={(value) => {
                               if (value === ADD_CUSTOM_SUBJECT_VALUE) {
-                                setCurrentCustomSubjectIndex(index);
+                                setCurrentCustomSubjectTargetIndex(currentVisibleSubjectIndex);
                                 setCustomSubjectInputValue('');
                                 setIsCustomSubjectDialogOpen(true);
                               } else {
                                 field.onChange(value); 
 
                                 const currentFieldValue = value;
-                                const nextRowIndex = index + 1;
+                                const nextSubjectToAutoPopulateIndex = currentVisibleSubjectIndex + 1;
 
-                                if (currentFieldValue && currentFieldValue !== ADD_CUSTOM_SUBJECT_VALUE && fields[nextRowIndex]) {
-                                    const nextSubjectFieldName = `subjects.${nextRowIndex}.subjectName` as const;
+                                if (currentFieldValue && currentFieldValue !== ADD_CUSTOM_SUBJECT_VALUE && fields[nextSubjectToAutoPopulateIndex]) {
+                                    const nextSubjectFieldName = `subjects.${nextSubjectToAutoPopulateIndex}.subjectName` as const;
                                     const isNextSubjectFieldEmpty = !form.getValues(nextSubjectFieldName);
 
                                     if (isNextSubjectFieldEmpty) {
                                         const existingSubjectNamesInOtherSlots = form.getValues('subjects')
-                                            .map((subjectField, i) => i === nextRowIndex ? null : subjectField.subjectName)
+                                            .map((subjectField, i) => i === nextSubjectToAutoPopulateIndex ? null : subjectField.subjectName)
                                             .filter(Boolean) as string[];
 
                                         let subjectToSet: string | undefined = undefined;
@@ -608,7 +671,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     />
                     <FormField
                       control={form.control}
-                      name={`subjects.${index}.continuousAssessment`}
+                      name={`subjects.${currentVisibleSubjectIndex}.continuousAssessment`}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary" />CA Mark (1-60)</FormLabel>
@@ -636,7 +699,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     />
                     <FormField
                       control={form.control}
-                      name={`subjects.${index}.examinationMark`}
+                      name={`subjects.${currentVisibleSubjectIndex}.examinationMark`}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary" />Exam Mark (1-100)</FormLabel>
@@ -662,24 +725,23 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                         </FormItem>
                       )}
                     />
-                    <Button
+                  </div>
+                   <Button
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => fields.length > 1 ? remove(index) : toast({ title: "Cannot Remove", description: "At least one subject is required.", variant: "destructive"})}
-                      className="mt-auto text-destructive hover:bg-destructive/10 self-center"
-                      aria-label="Remove subject"
+                      variant="destructive"
+                      onClick={handleRemoveCurrentSubject}
+                      className="w-full mt-4"
                       disabled={fields.length <= 1}
                     >
-                      <Trash2 className="h-5 w-5" />
+                      <Trash2 className="mr-2 h-4 w-4" /> Remove Current Subject ({fields[currentVisibleSubjectIndex]?.subjectName || 'Unnamed'})
                     </Button>
-                  </div>
                 </div>
-              ))}
+              )}
+             
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => append({ subjectName: '', continuousAssessment: null, examinationMark: null })}
+                onClick={handleAddSubjectAndNavigate}
                 className="w-full"
               >
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Subject
@@ -832,4 +894,3 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
-
