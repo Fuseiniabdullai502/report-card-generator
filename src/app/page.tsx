@@ -7,7 +7,7 @@ import ReportPreview from '@/components/report-preview';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3 } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
@@ -82,14 +82,15 @@ export default function Home() {
         lastScore = report.overallAverage ?? 0;
         return { ...report, rank: formatRankString(displayRankCounter, false) };
       } else {
-        const prevReport = sortedReports[index -1];
-        if (prevReport && !prevReport.rank?.startsWith('T-')) {
-            prevReport.rank = formatRankString(displayRankCounter, true);
-        }
+        // const prevReport = sortedReports[index -1]; // This logic had a slight bug with multiple ties.
+        // if (prevReport && !prevReport.rank?.startsWith('T-')) {
+        //     prevReport.rank = formatRankString(displayRankCounter, true);
+        // }
         return { ...report, rank: formatRankString(displayRankCounter, true) };
       }
     });
     
+    // Second pass to ensure all tied ranks are marked with T-
     for (let i = 0; i < rankedReports.length; i++) {
         if (i > 0 && rankedReports[i].overallAverage === rankedReports[i-1].overallAverage) {
             const baseRank = parseInt(rankedReports[i-1].rank!.replace('T-', '').replace(/(st|nd|rd|th)$/, ''));
@@ -126,7 +127,7 @@ export default function Home() {
       const newList = [...reportPrintList, reportWithEntryNumber];
       calculateAndSetRanks(newList);
 
-      if (reportPrintList.length === 0) { // This means reportWithEntryNumber is the first one
+      if (reportPrintList.length === 0) { 
         setSessionDefaults({
           schoolName: currentEditingReport.schoolName,
           className: currentEditingReport.className,
@@ -162,6 +163,7 @@ export default function Home() {
         strengths: '',
         areasForImprovement: '',
         teacherFeedback: '',
+        instructorContact: '',
         subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
         promotionStatus: undefined,
         studentEntryNumber: undefined,
@@ -203,6 +205,36 @@ export default function Home() {
       });
     }
   };
+
+  const handleDownloadData = () => {
+    if (reportPrintList.length === 0) {
+      toast({
+        title: "No Reports in List",
+        description: "Please add reports to the list before downloading data.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const dataStr = JSON.stringify(reportPrintList, null, 2); // Pretty print JSON
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const dataUrl = URL.createObjectURL(dataBlob);
+    
+    const exportFileDefaultName = `report_cards_data_${new Date().toISOString().slice(0,10)}.json`;
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUrl);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    document.body.appendChild(linkElement); // Required for Firefox
+    linkElement.click();
+    linkElement.remove(); // Clean up
+    URL.revokeObjectURL(dataUrl); // Clean up blob URL
+
+    toast({
+        title: "Data Downloaded",
+        description: "Report list data has been downloaded as a JSON file.",
+    });
+  };
   
   const reportsCount = reportPrintList.length;
   const reportsLabel = reportsCount === 1 ? 'Report' : 'Reports';
@@ -242,18 +274,23 @@ export default function Home() {
                   <CardTitle className="font-headline text-2xl">Report Print Preview ({reportsCount} {reportsLabel})</CardTitle>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={handleClearList} disabled={reportsCount === 0} variant="destructive" size="sm">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Clear List
+                  <Button onClick={handleDownloadData} disabled={reportsCount === 0} variant="outline" size="sm">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Data
                   </Button>
                   <Button onClick={handlePrint} disabled={reportsCount === 0} variant="outline" size="sm">
                     <Printer className="mr-2 h-4 w-4" />
                     Print All ({reportsCount})
                   </Button>
+                  <Button onClick={handleClearList} disabled={reportsCount === 0} variant="destructive" size="sm">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear List
+                  </Button>
                 </div>
               </div>
               <CardDescription>
                 This area shows all reports added to the print list, sorted by rank. Each will attempt to print on a new page.
+                Browser print dialog usually offers "Save as PDF". "Download Data" saves list as JSON.
                 {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on the average of final subject scores (CA 40%, Exam 60%). Session defaults apply after the first student.</span>}
               </CardDescription>
             </CardHeader>
@@ -280,3 +317,4 @@ export default function Home() {
     </div>
   );
 }
+
