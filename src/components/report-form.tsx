@@ -1,9 +1,10 @@
+
 'use client';
 
-import type {ReportData} from '@/lib/schemas';
+import type {ReportData, SubjectEntry} from '@/lib/schemas';
 import {ReportDataSchema} from '@/lib/schemas';
 import {zodResolver} from '@hookform/resolvers/zod';
-import {useForm, type SubmitHandler} from 'react-hook-form';
+import {useForm, type SubmitHandler, useFieldArray} from 'react-hook-form';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
@@ -11,8 +12,9 @@ import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {getAiFeedbackAction} from '@/app/actions';
 import {useState, useTransition} from 'react';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare} from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3 } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 interface ReportFormProps {
   onFormUpdate: (data: ReportData) => void;
@@ -34,7 +36,13 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
       strengths: initialData?.strengths || '',
       areasForImprovement: initialData?.areasForImprovement || '',
       teacherFeedback: initialData?.teacherFeedback || '',
+      subjects: initialData?.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "subjects"
   });
 
   const handleGenerateAiFeedback = async () => {
@@ -45,7 +53,6 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
         description: "Please fill in student name, class name, performance summary, strengths, and areas for improvement before generating AI feedback.",
         variant: "destructive",
       });
-      // Trigger validation for relevant fields
       form.trigger(['studentName', 'className', 'performanceSummary', 'strengths', 'areasForImprovement']);
       return;
     }
@@ -94,135 +101,221 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Student & Class Details</CardTitle>
-        <CardDescription>Enter the student's information and performance details.</CardDescription>
+        <div className="flex items-center gap-2">
+          <Edit3 className="h-6 w-6 text-primary" />
+          <CardTitle className="font-headline text-2xl">Report Details</CardTitle>
+        </div>
+        <CardDescription>Enter student information, performance, and subject marks.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="studentName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center"><User className="mr-2 h-4 w-4 text-primary" />Student Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Jane Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="className"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center"><Users className="mr-2 h-4 w-4 text-primary" />Class Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Grade 5 Math" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="schoolName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4 text-primary"><path d="M14 22v-4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4"/><path d="M18 10H6"/><path d="M18 18H6"/><path d="M10 6L12 4l2 2"/><path d="M12 10V4"/></svg>School Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Springfield Elementary" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="academicYear"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4 text-primary"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Academic Year</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., 2023-2024" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            
+            <section className="space-y-6">
+              <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Student & School Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="studentName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><User className="mr-2 h-4 w-4" />Student Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Jane Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="className"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><Users className="mr-2 h-4 w-4" />Class Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Grade 5 Math" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="schoolName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="M14 22v-4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4"/><path d="M18 10H6"/><path d="M18 18H6"/><path d="M10 6L12 4l2 2"/><path d="M12 10V4"/></svg>School Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Springfield Elementary" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="academicYear"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Academic Year</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., 2023-2024" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </section>
 
-            <FormField
-              control={form.control}
-              name="performanceSummary"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center"><ClipboardList className="mr-2 h-4 w-4 text-primary" />Performance Summary</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Describe the student's overall performance..." {...field} rows={4} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="strengths"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center"><ThumbsUp className="mr-2 h-4 w-4 text-primary" />Strengths</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="List the student's key strengths..." {...field} rows={3} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="areasForImprovement"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center"><Activity className="mr-2 h-4 w-4 text-primary" />Areas for Improvement</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Identify areas where the student can improve..." {...field} rows={3} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="teacherFeedback"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex justify-between items-center">
-                    <FormLabel className="flex items-center"><Sparkles className="mr-2 h-4 w-4 text-accent" />Teacher's Feedback</FormLabel>
+            <Separator />
+
+            <section className="space-y-6">
+              <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Subject Marks</h3>
+              {fields.map((item, index) => (
+                <div key={item.id} className="space-y-4 p-4 border rounded-md shadow-sm bg-card/50">
+                  <div className="grid grid-cols-1 md:grid-cols-[3fr_1.5fr_1.5fr_auto] gap-4 items-start">
+                    <FormField
+                      control={form.control}
+                      name={`subjects.${index}.subjectName`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center"><BookOpenText className="mr-2 h-4 w-4 text-primary" />Subject Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Mathematics" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`subjects.${index}.continuousAssessment`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary" />CA Mark</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="e.g., 35" {...field} onChange={e => field.onChange(e.target.value === '' ? null : +e.target.value)} value={field.value ?? ''} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`subjects.${index}.examinationMark`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary" />Exam Mark</FormLabel>
+                          <FormControl>
+                             <Input type="number" placeholder="e.g., 55" {...field} onChange={e => field.onChange(e.target.value === '' ? null : +e.target.value)} value={field.value ?? ''} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <Button
                       type="button"
-                      onClick={handleGenerateAiFeedback}
-                      disabled={isAiLoading}
-                      variant="outline"
-                      size="sm"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => fields.length > 1 ? remove(index) : toast({ title: "Cannot Remove", description: "At least one subject is required.", variant: "destructive"})}
+                      className="mt-auto text-destructive hover:bg-destructive/10 self-center"
+                      aria-label="Remove subject"
+                      disabled={fields.length <= 1}
                     >
-                      {isAiLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Wand2 className="mr-2 h-4 w-4" />
-                      )}
-                      Generate AI Feedback
+                      <Trash2 className="h-5 w-5" />
                     </Button>
                   </div>
-                  <FormControl>
-                    <Textarea placeholder="AI-generated feedback will appear here. You can edit it as needed." {...field} rows={5} className="mt-1 border-accent focus:ring-accent" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => append({ subjectName: '', continuousAssessment: null, examinationMark: null })}
+                className="w-full"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Subject
+              </Button>
+              <FormMessage>{form.formState.errors.subjects?.root?.message || form.formState.errors.subjects?.message}</FormMessage>
+            </section>
+            
+            <Separator />
+
+            <section className="space-y-6">
+               <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Overall Performance & Feedback</h3>
+              <FormField
+                control={form.control}
+                name="performanceSummary"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center"><ClipboardList className="mr-2 h-4 w-4 text-primary" />Performance Summary</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe the student's overall performance..." {...field} rows={3} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="strengths"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><ThumbsUp className="mr-2 h-4 w-4 text-primary" />Strengths</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="List the student's key strengths..." {...field} rows={3} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="areasForImprovement"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><Activity className="mr-2 h-4 w-4 text-primary" />Areas for Improvement</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Identify areas where the student can improve..." {...field} rows={3} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="teacherFeedback"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex justify-between items-center mb-1">
+                      <FormLabel className="flex items-center"><Sparkles className="mr-2 h-4 w-4 text-accent" />Teacher's Feedback (Optional)</FormLabel>
+                      <Button
+                        type="button"
+                        onClick={handleGenerateAiFeedback}
+                        disabled={isAiLoading}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {isAiLoading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Wand2 className="mr-2 h-4 w-4" />
+                        )}
+                        Generate AI Feedback
+                      </Button>
+                    </div>
+                    <FormControl>
+                      <Textarea placeholder="AI-generated feedback will appear here, or write your own. You can edit it as needed." {...field} rows={4} className="border-accent focus:ring-accent" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </section>
+            
             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
               <CheckSquare className="mr-2 h-4 w-4" /> Update Preview
             </Button>
