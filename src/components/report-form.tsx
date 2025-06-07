@@ -13,7 +13,7 @@ import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {getAiFeedbackAction, getAiPerformanceSummaryAction} from '@/app/actions';
 import {useState, useTransition} from 'react';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 
@@ -44,6 +44,8 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
       className: initialData?.className || '',
       schoolName: initialData?.schoolName || 'Springfield Elementary',
       academicYear: initialData?.academicYear || '2023-2024',
+      daysAttended: initialData?.daysAttended || null,
+      totalSchoolDays: initialData?.totalSchoolDays || null,
       performanceSummary: initialData?.performanceSummary || '',
       strengths: initialData?.strengths || '',
       areasForImprovement: initialData?.areasForImprovement || '',
@@ -71,7 +73,6 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
 
     startPerformanceSummaryAiTransition(async () => {
       try {
-        // Ensure subject marks are numbers or null
         const formattedSubjects = subjects.map(s => ({
             ...s,
             continuousAssessment: s.continuousAssessment ? Number(s.continuousAssessment) : null,
@@ -155,7 +156,12 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
   };
 
   const onSubmit: SubmitHandler<ReportData> = (data) => {
-    onFormUpdate(data);
+    const processedData = {
+      ...data,
+      daysAttended: data.daysAttended === '' ? null : Number(data.daysAttended),
+      totalSchoolDays: data.totalSchoolDays === '' ? null : Number(data.totalSchoolDays),
+    };
+    onFormUpdate(processedData);
      toast({
         title: "Preview Updated",
         description: "The report preview has been updated with the latest information.",
@@ -236,6 +242,32 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                       <FormLabel className="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Academic Year</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., 2023-2024" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="daysAttended"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><CalendarCheck2 className="mr-2 h-4 w-4" />Days Attended</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 85" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} value={field.value === null ? '' : field.value} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="totalSchoolDays"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><CalendarDays className="mr-2 h-4 w-4" />Total School Days</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 90" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} value={field.value === null ? '' : field.value} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -446,4 +478,3 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
     </Card>
   );
 }
-

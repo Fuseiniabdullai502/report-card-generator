@@ -13,32 +13,24 @@ const getGradeAndRemarks = (
   caMarkInput: number | null,
   examMarkInput: number | null
 ): { grade: string; remarks: string; finalMark: number | string } => {
-  // If both marks are null, no calculation needed.
   if (caMarkInput === null && examMarkInput === null) {
     return { grade: 'N/A', remarks: 'Not available', finalMark: '-' };
   }
 
-  // Scale CA mark (out of 60) to contribute 40%
   const scaledCaMark = caMarkInput !== null ? (caMarkInput / 60) * 40 : 0;
-  // Scale Exam mark (out of 100) to contribute 60%
   const scaledExamMark = examMarkInput !== null ? (examMarkInput / 100) * 60 : 0;
 
   let finalPercentageMark: number;
 
-  // Calculate final mark based on provided inputs
-  // If only one mark is provided, it contributes its scaled value, and the other is 0.
-  // If both are provided, their scaled values are summed.
   if (caMarkInput !== null && examMarkInput !== null) {
     finalPercentageMark = scaledCaMark + scaledExamMark;
-  } else if (caMarkInput !== null) { // Only CA provided
+  } else if (caMarkInput !== null) { 
     finalPercentageMark = scaledCaMark;
-  } else { // Only Exam provided (examMarkInput must be !== null here)
+  } else { 
     finalPercentageMark = scaledExamMark;
   }
   
-  // Ensure final mark doesn't exceed 100 due to potential floating point inaccuracies if inputs were maxed
   finalPercentageMark = Math.min(finalPercentageMark, 100);
-
   const displayFinalMark = parseFloat(finalPercentageMark.toFixed(1));
 
   if (finalPercentageMark >= 90) return { grade: 'A+', remarks: 'Excellent', finalMark: displayFinalMark };
@@ -48,7 +40,6 @@ const getGradeAndRemarks = (
   if (finalPercentageMark >= 50) return { grade: 'C', remarks: 'Needs Improvement', finalMark: displayFinalMark };
   if (finalPercentageMark >= 40) return { grade: 'D', remarks: 'Unsatisfactory', finalMark: displayFinalMark };
   
-  // If we reach here, some mark was provided, but it's below 40.
   return { grade: 'F', remarks: 'Fail', finalMark: displayFinalMark };
 };
 
@@ -59,6 +50,10 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
     month: 'long',
     day: 'numeric',
   });
+
+  const attendanceString = (data.daysAttended !== null && data.daysAttended !== undefined && data.totalSchoolDays !== null && data.totalSchoolDays !== undefined)
+    ? `${data.daysAttended} / ${data.totalSchoolDays} days`
+    : 'N/A';
 
   return (
     <div id="report-preview" className="bg-white p-6 md:p-8 rounded-lg border border-gray-200 min-h-[700px] flex flex-col text-sm">
@@ -89,9 +84,12 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
           <strong className="text-gray-600">Class:</strong>
           <p className="text-gray-800">{data.className}</p>
         </div>
+        <div>
+          <strong className="text-gray-600">Attendance:</strong>
+          <p className="text-gray-800">{attendanceString}</p>
+        </div>
       </section>
 
-      {/* Subject Performance Table */}
       {data.subjects && data.subjects.length > 0 && (
         <section className="mb-6">
           <h3 className="text-lg font-headline font-semibold mb-2 text-primary border-b pb-1">Subject Performance</h3>

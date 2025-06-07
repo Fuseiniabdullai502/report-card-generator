@@ -23,6 +23,16 @@ export const ReportDataSchema = z.object({
   className: z.string().min(1, 'Class name is required'),
   schoolName: z.string().optional().default('Springfield Elementary'),
   academicYear: z.string().optional().default('2023-2024'),
+  daysAttended: z.coerce
+    .number({ invalid_type_error: 'Days attended must be a number' })
+    .min(0, 'Days attended cannot be negative')
+    .nullable()
+    .optional(),
+  totalSchoolDays: z.coerce
+    .number({ invalid_type_error: 'Total school days must be a number' })
+    .min(0, 'Total school days cannot be negative')
+    .nullable()
+    .optional(),
   performanceSummary: z.string().min(1, 'Performance summary is required'),
   strengths: z.string().min(1, 'Strengths are required'),
   areasForImprovement: z.string().min(1, 'Areas for improvement are required'),
@@ -31,6 +41,15 @@ export const ReportDataSchema = z.object({
     .array(SubjectEntrySchema)
     .min(1, 'At least one subject is required.')
     .default([{ subjectName: '', continuousAssessment: null, examinationMark: null }]),
+}).refine(data => {
+  if (data.daysAttended !== null && data.daysAttended !== undefined && 
+      data.totalSchoolDays !== null && data.totalSchoolDays !== undefined) {
+    return data.daysAttended <= data.totalSchoolDays;
+  }
+  return true;
+}, {
+  message: "Days attended cannot exceed total school days.",
+  path: ["daysAttended"], // You can also set this to ["totalSchoolDays"] or a general path
 });
 
 export type ReportData = z.infer<typeof ReportDataSchema>;
