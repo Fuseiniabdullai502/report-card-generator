@@ -17,24 +17,17 @@ const getGradeAndRemarks = (
     return { grade: 'N/A', remarks: 'Not available', finalMark: '-' };
   }
 
+  // CA is out of 60, contributes 40%
+  // Exam is out of 100, contributes 60%
   const scaledCaMark = caMarkInput !== null ? (caMarkInput / 60) * 40 : 0;
   const scaledExamMark = examMarkInput !== null ? (examMarkInput / 100) * 60 : 0;
 
   let finalPercentageMark: number;
 
-  if (caMarkInput !== null && examMarkInput !== null) {
-    finalPercentageMark = scaledCaMark + scaledExamMark;
-  } else if (caMarkInput !== null) {
-    // If only CA is present, it contributes 40% to a potential total of 40.
-    // To grade it out of 100 based on its own weight, we'd effectively scale it.
-    // However, typically grading is based on overall performance expectation.
-    // For simplicity, if only one score is present, we use its scaled value directly.
-    // This might need further business logic clarification for partial scores.
-    finalPercentageMark = scaledCaMark;
-  } else { // Only exam mark is present
-    finalPercentageMark = scaledExamMark;
-  }
-  
+  // If only one score is present, the grading logic might need clarification.
+  // Current assumption: if one is missing, it's treated as 0 for that component's contribution.
+  finalPercentageMark = scaledCaMark + scaledExamMark;
+
   finalPercentageMark = Math.min(finalPercentageMark, 100); // Cap at 100
   const displayFinalMark = parseFloat(finalPercentageMark.toFixed(1));
 
@@ -44,7 +37,7 @@ const getGradeAndRemarks = (
   if (finalPercentageMark >= 60) return { grade: 'B', remarks: 'Satisfactory', finalMark: displayFinalMark };
   if (finalPercentageMark >= 50) return { grade: 'C', remarks: 'Needs Improvement', finalMark: displayFinalMark };
   if (finalPercentageMark >= 40) return { grade: 'D', remarks: 'Unsatisfactory', finalMark: displayFinalMark };
-  
+
   return { grade: 'F', remarks: 'Fail', finalMark: displayFinalMark };
 };
 
@@ -68,10 +61,10 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             <h2 className="text-2xl font-headline font-bold text-primary">{data.schoolName || 'School Name'}</h2>
             <p className="text-muted-foreground">{data.academicYear || 'Academic Year'}</p>
           </div>
-          <Image 
-            src="https://placehold.co/120x60.png" 
-            alt="School Logo" 
-            width={120} 
+          <Image
+            src="https://placehold.co/120x60.png"
+            alt="School Logo"
+            width={120}
             height={60}
             data-ai-hint="school logo"
             className="object-contain"
@@ -88,6 +81,10 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         <div>
           <strong className="text-gray-600">Class:</strong>
           <p className="text-gray-800">{data.className}</p>
+        </div>
+        <div>
+          <strong className="text-gray-600">Gender:</strong>
+          <p className="text-gray-800">{data.gender || 'N/A'}</p>
         </div>
         <div>
           <strong className="text-gray-600">Attendance:</strong>
@@ -112,7 +109,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             <TableBody>
               {data.subjects.map((subject, index) => {
                 const { grade, remarks, finalMark } = getGradeAndRemarks(subject.continuousAssessment, subject.examinationMark);
-                
+
                 return (
                   <TableRow key={index} className="hover:bg-gray-50">
                     <TableCell className="font-medium text-gray-700">{subject.subjectName}</TableCell>

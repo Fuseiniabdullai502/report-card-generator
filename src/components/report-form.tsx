@@ -11,9 +11,9 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {getAiFeedbackAction, getAiReportInsightsAction} from '@/app/actions'; // Updated action import
+import {getAiFeedbackAction, getAiReportInsightsAction} from '@/app/actions';
 import {useState, useTransition} from 'react';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 
@@ -32,9 +32,11 @@ const classLevels = [
   "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"
 ];
 
+const genderOptions = ["Male", "Female", "Other", "Prefer not to say"];
+
 export default function ReportForm({ onFormUpdate, initialData }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
-  const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition(); // Renamed state
+  const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
   const { toast } = useToast();
 
   const form = useForm<ReportData>({
@@ -42,6 +44,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
     defaultValues: {
       studentName: initialData?.studentName || '',
       className: initialData?.className || '',
+      gender: initialData?.gender || '',
       schoolName: initialData?.schoolName || 'Springfield Elementary',
       academicYear: initialData?.academicYear || '2023-2024',
       daysAttended: initialData?.daysAttended || null,
@@ -59,7 +62,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
     name: "subjects"
   });
 
-  const handleGenerateAiReportInsights = async () => { // Renamed handler
+  const handleGenerateAiReportInsights = async () => {
     const { studentName, className, subjects, daysAttended, totalSchoolDays } = form.getValues();
     if (!studentName || !className || !subjects || subjects.some(s => !s.subjectName)) {
       toast({
@@ -71,7 +74,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
       return;
     }
 
-    startReportInsightsAiTransition(async () => { // Updated transition
+    startReportInsightsAiTransition(async () => {
       try {
         const formattedSubjects = subjects.map(s => ({
             ...s,
@@ -79,7 +82,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
             examinationMark: s.examinationMark ? Number(s.examinationMark) : null,
         }));
 
-        const result = await getAiReportInsightsAction({ // Updated action call
+        const result = await getAiReportInsightsAction({
           studentName,
           className,
           daysAttended: daysAttended ? Number(daysAttended) : null,
@@ -184,7 +187,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            
+
             <section className="space-y-6">
               <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Student & School Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -217,6 +220,30 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                           {classLevels.map((level) => (
                             <SelectItem key={level} value={level}>
                               {level}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><VenetianMask className="mr-2 h-4 w-4" />Gender</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {genderOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -380,7 +407,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
               </Button>
               <FormMessage>{form.formState.errors.subjects?.root?.message || form.formState.errors.subjects?.message}</FormMessage>
             </section>
-            
+
             <Separator />
 
             <section className="space-y-6">
@@ -473,7 +500,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                 )}
               />
             </section>
-            
+
             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading}>
               <CheckSquare className="mr-2 h-4 w-4" /> Update Preview
             </Button>
