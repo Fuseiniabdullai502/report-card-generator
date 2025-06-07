@@ -10,13 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
-import { defaultReportData } from '@/lib/schemas'; // Assuming you might add default data structure
+import { defaultReportData } from '@/lib/schemas';
 
 export default function Home() {
-  // State for the report currently being edited in the form
   const [currentEditingReport, setCurrentEditingReport] = useState<ReportData | null>(JSON.parse(JSON.stringify(defaultReportData)));
-  // State for the list of reports to be printed/previewed
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
+  const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
   const { toast } = useToast();
 
   const handleFormUpdate = (data: ReportData) => {
@@ -25,7 +24,6 @@ export default function Home() {
 
   const handleAddToList = () => {
     if (currentEditingReport) {
-      // Basic validation check, ideally from schema, before adding
       if (!currentEditingReport.studentName || !currentEditingReport.className) {
         toast({
           title: "Incomplete Report",
@@ -34,13 +32,18 @@ export default function Home() {
         });
         return;
       }
-      setReportPrintList(prevList => [...prevList, { ...currentEditingReport, id: `report-${Date.now()}-${Math.random()}` }]); // Add a unique key if not present
+      const reportWithEntryNumber = {
+        ...currentEditingReport,
+        id: `report-${Date.now()}-${Math.random()}`, // Unique key for React list
+        studentEntryNumber: nextStudentEntryNumber, // Assign session serial number
+      };
+      setReportPrintList(prevList => [...prevList, reportWithEntryNumber]);
+      setNextStudentEntryNumber(prevNumber => prevNumber + 1); // Increment for next entry
       toast({
         title: "Report Added to List",
-        description: `${currentEditingReport.studentName}'s report is ready for batch preview.`,
+        description: `${currentEditingReport.studentName}'s report (#${nextStudentEntryNumber}) is ready for batch preview.`,
       });
-      // Optionally reset form or currentEditingReport for the next entry
-      setCurrentEditingReport(JSON.parse(JSON.stringify(defaultReportData))); // Reset form to default/empty
+      setCurrentEditingReport(JSON.parse(JSON.stringify(defaultReportData)));
     } else {
        toast({
         title: "No Report Data",
@@ -52,6 +55,7 @@ export default function Home() {
 
   const handleClearList = () => {
     setReportPrintList([]);
+    setNextStudentEntryNumber(1); // Reset serial number counter
     toast({
       title: "Print List Cleared",
       description: "All reports have been removed from the preview list.",
@@ -85,7 +89,11 @@ export default function Home() {
 
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-5 gap-8">
         <section className="lg:col-span-2 no-print space-y-4">
-          <ReportForm onFormUpdate={handleFormUpdate} initialData={currentEditingReport || defaultReportData} />
+          <ReportForm
+            onFormUpdate={handleFormUpdate}
+            initialData={currentEditingReport || defaultReportData}
+            reportPrintListForHistory={reportPrintList}
+          />
           <Button onClick={handleAddToList} className="w-full" variant="outline">
             <ListPlus className="mr-2 h-4 w-4" />
             Add Current Report to Print List
@@ -115,8 +123,8 @@ export default function Home() {
             </CardHeader>
             <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">
               {reportPrintList.length > 0 ? (
-                reportPrintList.map((reportData, index) => (
-                  <ReportPreview key={reportData.id || `report-${index}`} data={reportData} />
+                reportPrintList.map((reportData) => (
+                  <ReportPreview key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} data={reportData} />
                 ))
               ) : (
                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">

@@ -20,12 +20,13 @@ export type SubjectEntry = z.infer<typeof SubjectEntrySchema>;
 
 export const ReportDataSchema = z.object({
   id: z.string().optional(), // Optional ID for list management
+  studentEntryNumber: z.number().optional(), // For session-based serial numbering
   studentName: z.string().min(1, 'Student name is required'),
   className: z.string().min(1, 'Class name is required'),
   gender: z.string().optional(),
   schoolName: z.string().optional().default('Springfield Elementary'),
   academicYear: z.string().optional().default('2023-2024'),
-  academicTerm: z.string().optional().default('First Term'), // Added academicTerm
+  academicTerm: z.string().optional().default('First Term'),
   daysAttended: z.coerce
     .number({ invalid_type_error: 'Days attended must be a number' })
     .min(0, 'Days attended cannot be negative')
@@ -61,7 +62,7 @@ export type ReportData = z.infer<typeof ReportDataSchema>;
 export const defaultReportData: ReportData = {
   studentName: '',
   className: '',
-  gender: undefined, // or '' if your Select treats empty string as placeholder
+  gender: undefined,
   schoolName: 'Springfield Elementary',
   academicYear: '2023-2024',
   academicTerm: 'First Term',
@@ -72,5 +73,5 @@ export const defaultReportData: ReportData = {
   areasForImprovement: '',
   teacherFeedback: '',
   subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+  studentEntryNumber: undefined,
 };
-

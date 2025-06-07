@@ -17,18 +17,12 @@ const getGradeAndRemarks = (
     return { grade: 'N/A', remarks: 'Not available', finalMark: '-' };
   }
 
-  // CA is out of 60, contributes 40%
-  // Exam is out of 100, contributes 60%
   const scaledCaMark = caMarkInput !== null ? (caMarkInput / 60) * 40 : 0;
   const scaledExamMark = examMarkInput !== null ? (examMarkInput / 100) * 60 : 0;
 
   let finalPercentageMark: number;
-
-  // If only one score is present, the grading logic might need clarification.
-  // Current assumption: if one is missing, it's treated as 0 for that component's contribution.
   finalPercentageMark = scaledCaMark + scaledExamMark;
-
-  finalPercentageMark = Math.min(finalPercentageMark, 100); // Cap at 100
+  finalPercentageMark = Math.min(finalPercentageMark, 100);
   const displayFinalMark = parseFloat(finalPercentageMark.toFixed(1));
 
   if (finalPercentageMark >= 90) return { grade: 'A+', remarks: 'Excellent', finalMark: displayFinalMark };
@@ -60,6 +54,9 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
           <div>
             <h2 className="text-2xl font-headline font-bold text-primary">{data.schoolName || 'School Name'}</h2>
             <p className="text-muted-foreground">{data.academicYear || 'Academic Year'} - {data.academicTerm || 'Term/Semester'}</p>
+            {data.studentEntryNumber && (
+              <p className="text-sm text-gray-500">Entry #: {data.studentEntryNumber}</p>
+            )}
           </div>
           <Image
             src="https://placehold.co/120x60.png"
@@ -176,4 +173,3 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
     </div>
   );
 }
-

@@ -3,16 +3,16 @@
 
 import type {ReportData, SubjectEntry} from '@/lib/schemas';
 import {ReportDataSchema}from '@/lib/schemas';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {zodResolver}from '@hookform/resolvers/zod';
 import {useForm, type SubmitHandler, useFieldArray} from 'react-hook-form';
-import {Button} from '@/components/ui/button';
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
-import {Input} from '@/components/ui/input';
+import {Button}from '@/components/ui/button';
+import {Card, CardContent, CardDescription, CardHeader, CardTitle}from '@/components/ui/card';
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage}from '@/components/ui/form';
+import {Input}from '@/components/ui/input';
 import {Textarea}from '@/components/ui/textarea';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator} from '@/components/ui/select';
-import {getAiFeedbackAction, getAiReportInsightsAction} from '@/app/actions';
-import {useState, useTransition, useEffect} from 'react';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator}from '@/components/ui/select';
+import {getAiFeedbackAction, getAiReportInsightsAction}from '@/app/actions';
+import React, {useState, useTransition, useEffect} from 'react'; // Added React import
 import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label';
 interface ReportFormProps {
   onFormUpdate: (data: ReportData) => void;
   initialData?: Partial<ReportData>;
+  reportPrintListForHistory?: ReportData[]; // For student name history
 }
 
 const NONE_VALUE_KEY = "--none--";
@@ -43,12 +44,12 @@ const academicTermOptions = [
 ];
 
 const predefinedSubjectsList = [
-  "Mathematics", "English Language", "Science", "Computing", 
-  "Religious and Moral Education", "Creative Arts", "Geography", 
+  "Mathematics", "English Language", "Science", "Computing",
+  "Religious and Moral Education", "Creative Arts", "Geography",
   "Economics", "Biology", "Elective Mathematics"
 ];
 
-export default function ReportForm({ onFormUpdate, initialData }: ReportFormProps) {
+export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
   const { toast } = useToast();
@@ -57,6 +58,12 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
   const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
   const [customSubjectInputValue, setCustomSubjectInputValue] = useState('');
   const [currentCustomSubjectIndex, setCurrentCustomSubjectIndex] = useState<number | null>(null);
+
+  const studentNameHistory = React.useMemo(() => {
+    if (!reportPrintListForHistory) return [];
+    const names = reportPrintListForHistory.map(report => report.studentName).filter(Boolean);
+    return [...new Set(names)]; // Unique names
+  }, [reportPrintListForHistory]);
 
 
   const form = useForm<ReportData>({
@@ -75,6 +82,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
       areasForImprovement: initialData?.areasForImprovement || '',
       teacherFeedback: initialData?.teacherFeedback || '',
       subjects: initialData?.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+      studentEntryNumber: initialData?.studentEntryNumber || undefined,
     },
   });
 
@@ -83,7 +91,6 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
     name: "subjects"
   });
 
-  // Effect to reset form when initialData changes (e.g., after adding to print list)
   useEffect(() => {
     if (initialData) {
       form.reset({
@@ -100,6 +107,7 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
         areasForImprovement: initialData.areasForImprovement || '',
         teacherFeedback: initialData.teacherFeedback || '',
         subjects: initialData.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+        studentEntryNumber: initialData.studentEntryNumber || undefined,
       });
     }
   }, [initialData, form.reset]);
@@ -117,11 +125,11 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
     if (currentCustomSubjectIndex !== null) {
       const newSubjectName = customSubjectInputValue.trim();
       form.setValue(`subjects.${currentCustomSubjectIndex}.subjectName`, newSubjectName);
-      
+
       if (!predefinedSubjectsList.includes(newSubjectName) && !customSubjects.includes(newSubjectName)) {
         setCustomSubjects(prev => [...prev, newSubjectName]);
       }
-      
+
       toast({
         title: "Custom Subject Added",
         description: `"${newSubjectName}" has been set for the current subject entry and added to your session list.`,
@@ -233,7 +241,6 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
   };
 
   const onSubmit: SubmitHandler<ReportData> = (data) => {
-    // Ensure numeric fields that can be empty are either numbers or null
     const processedData = {
       ...data,
       daysAttended: data.daysAttended === '' || data.daysAttended === undefined ? null : Number(data.daysAttended),
@@ -275,8 +282,13 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                     <FormItem>
                       <FormLabel className="flex items-center"><User className="mr-2 h-4 w-4" />Student Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Jane Doe" {...field} />
+                        <Input placeholder="e.g., Jane Doe" {...field} list="studentNameHistoryDatalist" />
                       </FormControl>
+                      <datalist id="studentNameHistoryDatalist">
+                        {studentNameHistory.map((name, index) => (
+                          <option key={`history-${index}`} value={name} />
+                        ))}
+                      </datalist>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -425,10 +437,10 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                             onValueChange={(value) => {
                               if (value === ADD_CUSTOM_SUBJECT_VALUE) {
                                 setCurrentCustomSubjectIndex(index);
-                                setCustomSubjectInputValue(''); 
+                                setCustomSubjectInputValue('');
                                 setIsCustomSubjectDialogOpen(true);
                               } else {
-                                field.onChange(value); 
+                                field.onChange(value);
                               }
                             }}
                             value={field.value || ''}
@@ -672,5 +684,3 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
     </>
   );
 }
-
-    
