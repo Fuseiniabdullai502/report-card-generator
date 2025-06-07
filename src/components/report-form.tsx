@@ -58,80 +58,6 @@ const predefinedSubjectsList = [
   "Economics", "Biology", "Elective Mathematics"
 ];
 
-const MAX_STUDENT_PHOTO_WIDTH = 1024;
-const MAX_STUDENT_PHOTO_HEIGHT = 1024;
-const MAX_LOGO_WIDTH = 400;
-const MAX_LOGO_HEIGHT = 400;
-const MAX_SIGNATURE_WIDTH = 800;
-const MAX_SIGNATURE_HEIGHT = 400;
-const IMAGE_QUALITY = 0.85; // For JPEGs
-
-async function resizeImage(
-  dataUri: string,
-  maxWidth: number,
-  maxHeight: number,
-  quality: number = IMAGE_QUALITY
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new window.Image(); // Explicitly use window.Image
-    img.onload = () => {
-      let { width, height } = img;
-
-      if (width <= maxWidth && height <= maxHeight) {
-        resolve(dataUri); 
-        return;
-      }
-
-      const aspectRatio = width / height;
-      if (width > maxWidth) {
-        width = maxWidth;
-        height = width / aspectRatio;
-      }
-      if (height > maxHeight) {
-        height = maxHeight;
-        width = height * aspectRatio;
-      }
-      
-      width = Math.round(width);
-      height = Math.round(height);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error('Failed to get canvas context for resizing.'));
-        return;
-      }
-      ctx.drawImage(img, 0, 0, width, height);
-
-      let mimeType = 'image/png';
-      if (dataUri.startsWith('data:image/jpeg')) {
-        mimeType = 'image/jpeg';
-      }
-      
-      try {
-        const resizedDataUri = canvas.toDataURL(mimeType, mimeType === 'image/jpeg' ? quality : undefined);
-        resolve(resizedDataUri);
-      } catch (e) {
-        console.warn("Failed to convert canvas to original MIME type, falling back to PNG.", e);
-        try {
-            const pngDataUri = canvas.toDataURL('image/png');
-            resolve(pngDataUri);
-        } catch (pngError) {
-            reject(new Error('Failed to resize image and convert to data URI.'));
-        }
-      }
-    };
-    img.onerror = (_error) => {
-      console.error("Native image loading failed in resizeImage:", _error, "Data URI starts with:", dataUri.substring(0, 50));
-      reject(new Error('Failed to load image for resizing. Please ensure it is a valid image file (e.g., JPG, PNG).'));
-    };
-    img.src = dataUri;
-  });
-}
-
-
 export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
@@ -446,15 +372,13 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
-    fieldName: keyof ReportData,
-    maxWidth: number,
-    maxHeight: number
+    fieldName: keyof ReportData
   ) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const originalDataUri = reader.result; // Keep as string | ArrayBuffer | null
+        const originalDataUri = reader.result; 
 
         if (typeof originalDataUri !== 'string' || !originalDataUri.startsWith('data:image/')) {
           toast({
@@ -462,27 +386,16 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             description: "The selected file does not appear to be a valid image (e.g., JPG, PNG, GIF). Please choose a different file.",
             variant: "destructive",
           });
-          if (event.target) event.target.value = ''; // Reset file input
+          if (event.target) event.target.value = ''; 
           return;
         }
-        // Now originalDataUri is confirmed to be a string starting with 'data:image/'
-        try {
-          const resizedDataUri = await resizeImage(originalDataUri, maxWidth, maxHeight);
-          form.setValue(fieldName, resizedDataUri, { shouldDirty: true, shouldValidate: true });
-          toast({
-            title: "Image Processed",
-            description: `${fieldName === 'studentPhotoDataUri' ? 'Student photo' : fieldName === 'schoolLogoDataUri' ? 'School logo' : 'Signature'} has been uploaded and optimized.`,
-          });
-        } catch (error: any) {
-          console.error("Error processing image in handleImageUpload:", error);
-          toast({
-            title: "Image Processing Error",
-            description: error.message || "Could not process the uploaded image. Attempting to use the original.",
-            variant: "destructive",
-          });
-          // Fallback to original (which is already validated as a string data URI)
-          form.setValue(fieldName, originalDataUri, { shouldDirty: true, shouldValidate: true });
-        }
+        
+        form.setValue(fieldName, originalDataUri, { shouldDirty: true, shouldValidate: true });
+        toast({
+          title: "Image Uploaded",
+          description: `${fieldName === 'studentPhotoDataUri' ? 'Student photo' : fieldName === 'schoolLogoDataUri' ? 'School logo' : 'Signature'} has been uploaded.`,
+        });
+
       };
       reader.onerror = () => {
         toast({
@@ -490,11 +403,11 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             description: "Could not read the selected file. It might be corrupted or the browser might not support reading it.",
             variant: "destructive",
           });
-        if (event.target) event.target.value = ''; // Reset file input
+        if (event.target) event.target.value = ''; 
       };
       reader.readAsDataURL(file);
     }
-    // Reset file input value to allow re-uploading the same file if needed
+    
     if (event.target) { 
         event.target.value = '';
     }
@@ -610,7 +523,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                             id="schoolLogoUpload"
                             className="hidden"
                             accept="image/*"
-                            onChange={(e) => handleImageUpload(e, 'schoolLogoDataUri', MAX_LOGO_WIDTH, MAX_LOGO_HEIGHT)}
+                            onChange={(e) => handleImageUpload(e, 'schoolLogoDataUri')}
                           />
                           <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('schoolLogoUpload')?.click()}>
                             <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
@@ -738,7 +651,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                             id="studentPhotoUpload"
                             className="hidden"
                             accept="image/*"
-                            onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri', MAX_STUDENT_PHOTO_WIDTH, MAX_STUDENT_PHOTO_HEIGHT)}
+                            onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')}
                           />
                            <div className="flex flex-wrap gap-2 items-start">
                             <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()}>
@@ -793,7 +706,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                             id="headMasterSignatureUpload"
                             className="hidden"
                             accept="image/png, image/jpeg, image/svg+xml"
-                            onChange={(e) => handleImageUpload(e, 'headMasterSignatureDataUri', MAX_SIGNATURE_WIDTH, MAX_SIGNATURE_HEIGHT)}
+                            onChange={(e) => handleImageUpload(e, 'headMasterSignatureDataUri')}
                           />
                           <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('headMasterSignatureUpload')?.click()}>
                             <UploadCloud className="mr-2 h-4 w-4" /> Upload Signature
