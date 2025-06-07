@@ -13,7 +13,7 @@ import {Textarea}from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator}from '@/components/ui/select';
 import {getAiFeedbackAction, getAiReportInsightsAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect} from 'react'; // Added React import
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -41,6 +41,10 @@ const genderOptions = ["Male", "Female"];
 
 const academicTermOptions = [
   "First Term", "Second Term", "Third Term", "First Semester", "Second Semester"
+];
+
+const promotionStatusOptions = [
+  "Promoted", "Repeated", "Graduated", "Under Review"
 ];
 
 const predefinedSubjectsList = [
@@ -83,6 +87,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       teacherFeedback: initialData?.teacherFeedback || '',
       subjects: initialData?.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
       studentEntryNumber: initialData?.studentEntryNumber || undefined,
+      promotionStatus: initialData?.promotionStatus || undefined,
     },
   });
 
@@ -90,6 +95,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     control: form.control,
     name: "subjects"
   });
+
+  const watchedAcademicTerm = form.watch('academicTerm');
 
   useEffect(() => {
     if (initialData) {
@@ -108,9 +115,16 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         teacherFeedback: initialData.teacherFeedback || '',
         subjects: initialData.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
         studentEntryNumber: initialData.studentEntryNumber || undefined,
+        promotionStatus: initialData.promotionStatus || undefined,
       });
     }
   }, [initialData, form.reset]);
+
+  useEffect(() => {
+    if (watchedAcademicTerm !== 'Third Term') {
+      form.setValue('promotionStatus', undefined);
+    }
+  }, [watchedAcademicTerm, form]);
 
 
   const handleAddCustomSubjectToListAndForm = () => {
@@ -249,7 +263,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         ...s,
         continuousAssessment: s.continuousAssessment === undefined ? null : s.continuousAssessment,
         examinationMark: s.examinationMark === undefined ? null : s.examinationMark,
-      }))
+      })),
+      promotionStatus: watchedAcademicTerm === 'Third Term' ? data.promotionStatus : undefined,
     };
     onFormUpdate(processedData);
      toast({
@@ -417,6 +432,32 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     </FormItem>
                   )}
                 />
+                 {watchedAcademicTerm === 'Third Term' && (
+                  <FormField
+                    control={form.control}
+                    name="promotionStatus"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center"><Medal className="mr-2 h-4 w-4" />Promotion Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select promotion status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {promotionStatusOptions.map((status) => (
+                              <SelectItem key={status} value={status}>
+                                {status}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
             </section>
 
@@ -684,3 +725,4 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
+

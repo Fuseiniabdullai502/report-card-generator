@@ -47,6 +47,7 @@ export const ReportDataSchema = z.object({
     .default([{ subjectName: '', continuousAssessment: null, examinationMark: null }]),
   overallAverage: z.number().optional(),
   rank: z.string().optional(),
+  promotionStatus: z.string().optional(), // Added promotion status
 }).refine(data => {
   if (data.daysAttended !== null && data.daysAttended !== undefined &&
       data.totalSchoolDays !== null && data.totalSchoolDays !== undefined) {
@@ -76,4 +77,6 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   areasForImprovement: '',
   teacherFeedback: '',
   subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+  promotionStatus: undefined,
 };
+

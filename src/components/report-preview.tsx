@@ -4,7 +4,7 @@
 import type {ReportData, SubjectEntry} from '@/lib/schemas';
 import Image from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Award } from 'lucide-react'; // For rank display
+import { Award, Medal } from 'lucide-react'; // For rank display, Medal for promotion
 
 interface ReportPreviewProps {
   data: ReportData;
@@ -103,6 +103,12 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             <p className="text-gray-800 text-sm font-semibold">{data.overallAverage.toFixed(2)}%</p>
           </div>
         )}
+        {data.academicTerm === 'Third Term' && data.promotionStatus && (
+          <div className="col-span-1">
+            <strong className="text-gray-600 flex items-center"><Medal className="mr-1 h-3.5 w-3.5 text-green-600" />Promotion Status:</strong>
+            <p className="text-gray-800 text-sm font-semibold">{data.promotionStatus}</p>
+          </div>
+        )}
       </section>
 
       {data.subjects && data.subjects.length > 0 && (
@@ -196,3 +202,4 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
     </div>
   );
 }
+
