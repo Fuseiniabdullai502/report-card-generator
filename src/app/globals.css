@@ -3,36 +3,49 @@
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
+    --background: 208 27% 95%; /* Light gray #F0F4F7 */
+    --foreground: 210 10% 23%; /* Dark Gray */
+
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 210 10% 23%; /* Dark Gray */
+
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 210 10% 23%; /* Dark Gray */
+
+    --primary: 207 88% 68%; /* Soft blue #64B5F6 */
+    --primary-foreground: 210 40% 98%; /* Light color for text on primary */
+
+    --secondary: 207 30% 88%; /* Lighter blue, derived */
+    --secondary-foreground: 207 88% 25%; /* Darker blue for text on secondary */
+
+    --muted: 208 25% 85%; /* Muted gray, derived from background */
+    --muted-foreground: 208 10% 45%; /* Muted text color */
+
+    --accent: 125 36% 64%; /* Gentle green #81C784 */
+    --accent-foreground: 125 40% 15%; /* Dark green for text on accent */
+
+    --destructive: 0 72% 51%; /* Default destructive red */
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+
+    --border: 207 20% 80%; /* Adjusted border */
+    --input: 207 20% 88%; /* Adjusted input */
+    --ring: 207 88% 60%; /* Primary color slightly darker for ring */
+
+    --radius: 0.5rem;
+
+    /* Chart colors can remain default or be adjusted if charts are used */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+
+    /* Sidebar variables, keep them for consistency though not actively used in this specific page structure */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -42,31 +55,29 @@ body {
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    /* Dark theme (example, adjust as needed if implemented) */
+    --background: 210 10% 15%;
+    --foreground: 208 27% 90%;
+    --card: 210 10% 20%;
+    --card-foreground: 208 27% 90%;
+    --popover: 210 10% 10%;
+    --popover-foreground: 208 27% 90%;
+    --primary: 207 80% 60%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 207 20% 30%;
+    --secondary-foreground: 208 27% 90%;
+    --muted: 208 15% 25%;
+    --muted-foreground: 208 20% 65%;
+    --accent: 125 40% 55%;
+    --accent-foreground: 125 36% 95%;
+    --destructive: 0 63% 40%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --border: 207 15% 35%;
+    --input: 207 15% 35%;
+    --ring: 207 80% 55%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -84,5 +95,48 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  #report-preview-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 20px !important; /* Add some padding for print */
+    border: none !important;
+    box-shadow: none !important;
+    background-color: white !important;
+    color: black !important;
+    border-radius: 0 !important;
+  }
+  #report-preview-container * {
+    color: black !important;
+    background-color: transparent !important;
+    border-color: #ccc !important; /* Lighter borders for print */
+  }
+  #report-preview-container img {
+    max-width: 100% !important; /* Ensure images are constrained */
+  }
+  /* Hide any specific interactive elements within the preview if they exist and are not caught by .no-print */
+  #report-preview-container button, 
+  #report-preview-container a[href]:not(.printable-link) { /* example of printable-link class */
+    display: none !important;
+  }
+  /* Ensure textareas appear as static text */
+   #report-preview-container textarea {
+    border: none !important;
+    resize: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    color: black !important;
+    white-space: pre-wrap; /* Preserve formatting */
   }
 }
