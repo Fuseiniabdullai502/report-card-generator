@@ -1,17 +1,18 @@
+
 import { z } from 'zod';
 
 export const SubjectEntrySchema = z.object({
   subjectName: z.string().min(1, 'Subject name is required'),
   continuousAssessment: z.coerce
     .number({ invalid_type_error: 'CA mark must be a number' })
-    .min(0, 'CA mark must be 0 or greater')
-    .max(100, 'CA mark cannot exceed 100') // Assuming max 100 for now
+    .min(1, 'CA mark must be 1 or greater')
+    .max(60, 'CA mark cannot exceed 60')
     .nullable()
     .optional(),
   examinationMark: z.coerce
     .number({ invalid_type_error: 'Exam mark must be a number' })
-    .min(0, 'Exam mark must be 0 or greater')
-    .max(100, 'Exam mark cannot exceed 100') // Assuming max 100 for now
+    .min(1, 'Exam mark must be 1 or greater')
+    .max(100, 'Exam mark cannot exceed 100')
     .nullable()
     .optional(),
 });

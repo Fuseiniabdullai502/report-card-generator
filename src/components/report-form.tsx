@@ -10,6 +10,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/compo
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {getAiFeedbackAction} from '@/app/actions';
 import {useState, useTransition} from 'react';
 import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3 } from 'lucide-react';
@@ -194,10 +195,25 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                       name={`subjects.${index}.continuousAssessment`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary" />CA Mark</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="e.g., 35" {...field} onChange={e => field.onChange(e.target.value === '' ? null : +e.target.value)} value={field.value ?? ''} />
-                          </FormControl>
+                          <FormLabel className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary" />CA Mark (1-60)</FormLabel>
+                           <Select
+                              onValueChange={(value) => field.onChange(value ? parseInt(value, 10) : null)}
+                              value={field.value !== null && field.value !== undefined ? String(field.value) : undefined}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select CA Mark" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value=""><em>None</em></SelectItem>
+                                {Array.from({ length: 60 }, (_, i) => i + 1).map((val) => (
+                                  <SelectItem key={`ca-${val}`} value={String(val)}>
+                                    {val}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -207,10 +223,25 @@ export default function ReportForm({ onFormUpdate, initialData }: ReportFormProp
                       name={`subjects.${index}.examinationMark`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary" />Exam Mark</FormLabel>
-                          <FormControl>
-                             <Input type="number" placeholder="e.g., 55" {...field} onChange={e => field.onChange(e.target.value === '' ? null : +e.target.value)} value={field.value ?? ''} />
-                          </FormControl>
+                          <FormLabel className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary" />Exam Mark (1-100)</FormLabel>
+                          <Select
+                              onValueChange={(value) => field.onChange(value ? parseInt(value, 10) : null)}
+                              value={field.value !== null && field.value !== undefined ? String(field.value) : undefined}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select Exam Mark" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                 <SelectItem value=""><em>None</em></SelectItem>
+                                {Array.from({ length: 100 }, (_, i) => i + 1).map((val) => (
+                                  <SelectItem key={`exam-${val}`} value={String(val)}>
+                                    {val}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           <FormMessage />
                         </FormItem>
                       )}

@@ -9,27 +9,37 @@ interface ReportPreviewProps {
   data: ReportData;
 }
 
-// Updated grading logic: CA (40%), Exam (60%). Final score out of 100.
 const getGradeAndRemarks = (
   caMarkInput: number | null,
   examMarkInput: number | null
 ): { grade: string; remarks: string; finalMark: number | string } => {
+  // If both marks are null, no calculation needed.
   if (caMarkInput === null && examMarkInput === null) {
     return { grade: 'N/A', remarks: 'Not available', finalMark: '-' };
   }
 
-  // Treat null marks as 0 for calculation if at least one mark is present
-  const ca = caMarkInput ?? 0;
-  const exam = examMarkInput ?? 0;
+  // Scale CA mark (out of 60) to contribute 40%
+  const scaledCaMark = caMarkInput !== null ? (caMarkInput / 60) * 40 : 0;
+  // Scale Exam mark (out of 100) to contribute 60%
+  const scaledExamMark = examMarkInput !== null ? (examMarkInput / 100) * 60 : 0;
 
-  // Assuming caMarkInput and examMarkInput are out of 100, as per schema.
-  const scaledCaMark = (ca / 100) * 40;
-  const scaledExamMark = (exam / 100) * 60;
+  let finalPercentageMark: number;
 
-  const finalPercentageMark = scaledCaMark + scaledExamMark;
+  // Calculate final mark based on provided inputs
+  // If only one mark is provided, it contributes its scaled value, and the other is 0.
+  // If both are provided, their scaled values are summed.
+  if (caMarkInput !== null && examMarkInput !== null) {
+    finalPercentageMark = scaledCaMark + scaledExamMark;
+  } else if (caMarkInput !== null) { // Only CA provided
+    finalPercentageMark = scaledCaMark;
+  } else { // Only Exam provided (examMarkInput must be !== null here)
+    finalPercentageMark = scaledExamMark;
+  }
+  
+  // Ensure final mark doesn't exceed 100 due to potential floating point inaccuracies if inputs were maxed
+  finalPercentageMark = Math.min(finalPercentageMark, 100);
 
-  // Round to one decimal place for display, or show '-' if not applicable
-  const displayFinalMark = (caMarkInput === null && examMarkInput === null) ? '-' : parseFloat(finalPercentageMark.toFixed(1));
+  const displayFinalMark = parseFloat(finalPercentageMark.toFixed(1));
 
   if (finalPercentageMark >= 90) return { grade: 'A+', remarks: 'Excellent', finalMark: displayFinalMark };
   if (finalPercentageMark >= 80) return { grade: 'A', remarks: 'Very Good', finalMark: displayFinalMark };
@@ -37,11 +47,9 @@ const getGradeAndRemarks = (
   if (finalPercentageMark >= 60) return { grade: 'B', remarks: 'Satisfactory', finalMark: displayFinalMark };
   if (finalPercentageMark >= 50) return { grade: 'C', remarks: 'Needs Improvement', finalMark: displayFinalMark };
   if (finalPercentageMark >= 40) return { grade: 'D', remarks: 'Unsatisfactory', finalMark: displayFinalMark };
-  if (caMarkInput !== null || examMarkInput !== null) { // Avoid F for completely missing marks
-    return { grade: 'F', remarks: 'Fail', finalMark: displayFinalMark };
-  }
-  // Should be caught by the first check, but as a fallback for displayFinalMark being '-'
-  return { grade: 'N/A', remarks: 'Not available', finalMark: '-' }; 
+  
+  // If we reach here, some mark was provided, but it's below 40.
+  return { grade: 'F', remarks: 'Fail', finalMark: displayFinalMark };
 };
 
 
@@ -91,7 +99,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             <TableHeader>
               <TableRow className="bg-gray-50">
                 <TableHead className="font-semibold text-gray-600 w-[30%]">Subject</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600">CA Mark (100)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600">CA Mark (60)</TableHead>
                 <TableHead className="text-center font-semibold text-gray-600">Exam Mark (100)</TableHead>
                 <TableHead className="text-center font-semibold text-gray-600">Final Score (100)</TableHead>
                 <TableHead className="text-center font-semibold text-gray-600">Grade</TableHead>
@@ -168,4 +176,3 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
     </div>
   );
 }
-
