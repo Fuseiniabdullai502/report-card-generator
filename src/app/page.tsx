@@ -43,7 +43,7 @@ function formatRankString(rankNumber: number, isTie: boolean): string {
 
 
 export default function Home() {
-  const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined})));
+  const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined, headMasterSignatureDataUri: undefined})));
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
   const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
   const [sessionDefaults, setSessionDefaults] = useState<Partial<ReportData>>({});
@@ -126,7 +126,7 @@ export default function Home() {
       const newList = [...reportPrintList, reportWithEntryNumber];
       calculateAndSetRanks(newList);
 
-      if (reportPrintList.length === 0) {
+      if (reportPrintList.length === 0) { // This means reportWithEntryNumber is the first one
         setSessionDefaults({
           schoolName: currentEditingReport.schoolName,
           className: currentEditingReport.className,
@@ -134,6 +134,7 @@ export default function Home() {
           academicYear: currentEditingReport.academicYear,
           academicTerm: currentEditingReport.academicTerm,
           totalSchoolDays: currentEditingReport.totalSchoolDays,
+          headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
         });
       }
 
@@ -154,6 +155,7 @@ export default function Home() {
         totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null 
                          ? sessionDefaults.totalSchoolDays 
                          : newFormBase.totalSchoolDays,
+        headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
         studentName: '', 
         daysAttended: null,
         performanceSummary: '',
@@ -166,7 +168,7 @@ export default function Home() {
         id: undefined,
         overallAverage: undefined,
         rank: undefined,
-        studentPhotoDataUri: undefined, // Ensure photo is reset
+        studentPhotoDataUri: undefined, 
       };
       setCurrentEditingReport(newCurrentEditingReport);
 
@@ -187,7 +189,7 @@ export default function Home() {
       title: "Print List Cleared",
       description: "All reports have been removed and ranking reset. Session defaults cleared.",
     });
-    setCurrentEditingReport(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined})));
+    setCurrentEditingReport(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined, headMasterSignatureDataUri: undefined })));
   }
 
   const handlePrint = () => {

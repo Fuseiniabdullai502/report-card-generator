@@ -41,7 +41,7 @@ export const ReportDataSchema = z.object({
   strengths: z.string().min(1, 'Strengths are required'),
   areasForImprovement: z.string().min(1, 'Areas for improvement are required'),
   teacherFeedback: z.string().optional(),
-  instructorContact: z.string().optional(), // New field for instructor contact
+  instructorContact: z.string().optional(),
   subjects: z
     .array(SubjectEntrySchema)
     .min(1, 'At least one subject is required.')
@@ -50,6 +50,7 @@ export const ReportDataSchema = z.object({
   rank: z.string().optional(),
   promotionStatus: z.string().optional(),
   studentPhotoDataUri: z.string().optional().describe("A data URI of the student's photo."),
+  headMasterSignatureDataUri: z.string().optional().describe("A data URI of the Head Master's signature."),
 }).refine(data => {
   if (data.daysAttended !== null && data.daysAttended !== undefined &&
       data.totalSchoolDays !== null && data.totalSchoolDays !== undefined) {
@@ -76,9 +77,9 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   strengths: '',
   areasForImprovement: '',
   teacherFeedback: '',
-  instructorContact: '', // Initialize new field
+  instructorContact: '',
   subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
   promotionStatus: undefined,
   studentPhotoDataUri: undefined,
+  headMasterSignatureDataUri: undefined,
 };
-

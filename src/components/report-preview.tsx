@@ -201,7 +201,23 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
               <p className="mt-1"><span className="font-semibold">Instructor Contact:</span> {data.instructorContact}</p>
             )}
           </div>
-          <div>
+          <div className="text-center">
+             {data.headMasterSignatureDataUri && (
+              <div className="mb-1">
+                <Image
+                  src={data.headMasterSignatureDataUri}
+                  alt="Head Master's Signature"
+                  width={120}
+                  height={40}
+                  className="object-contain mx-auto"
+                  data-ai-hint="signature"
+                />
+              </div>
+            )}
+            <p className="mb-1 font-semibold">Head Master's Signature:</p>
+            <div className="h-8 border-b border-gray-400 w-40 mx-auto"></div>
+          </div>
+          <div className="text-center">
             <p className="mb-1 font-semibold">Teacher's Signature:</p>
             <div className="h-8 border-b border-gray-400 w-40"></div>
           </div>

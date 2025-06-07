@@ -14,7 +14,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSep
 import {getAiFeedbackAction, getAiReportInsightsAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect} from 'react';
 import Image from 'next/image';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -66,7 +66,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [customSubjects, setCustomSubjects] = useState<string[]>([]);
   const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
   const [customSubjectInputValue, setCustomSubjectInputValue] = useState('');
-  const [currentCustomSubjectTargetIndex, setCurrentCustomSubjectTargetIndex] = useState<number | null>(null); // Stores the index of the subject field being customized
+  const [currentCustomSubjectTargetIndex, setCurrentCustomSubjectTargetIndex] = useState<number | null>(null); 
 
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
 
@@ -98,6 +98,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       studentEntryNumber: initialData?.studentEntryNumber || undefined,
       promotionStatus: initialData?.promotionStatus || undefined,
       studentPhotoDataUri: initialData?.studentPhotoDataUri || undefined,
+      headMasterSignatureDataUri: initialData?.headMasterSignatureDataUri || undefined,
     },
   });
 
@@ -112,7 +113,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         setCurrentVisibleSubjectIndex(fields.length - 1);
       }
     } else {
-      // If all subjects are somehow removed, ensure we have one default and set index to 0
       if (fields.length === 0) {
         append({ subjectName: '', continuousAssessment: null, examinationMark: null });
         setCurrentVisibleSubjectIndex(0);
@@ -149,8 +149,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         studentEntryNumber: initialData.studentEntryNumber || undefined,
         promotionStatus: initialData.promotionStatus || undefined,
         studentPhotoDataUri: initialData.studentPhotoDataUri || undefined,
+        headMasterSignatureDataUri: initialData.headMasterSignatureDataUri || undefined,
       });
-      // Reset subject visibility to the first subject when initialData changes
       setCurrentVisibleSubjectIndex(0);
     }
   }, [initialData, form.reset, form, append]);
@@ -303,6 +303,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       })),
       promotionStatus: promotionStatusApplicableCheck ? data.promotionStatus : undefined,
       studentPhotoDataUri: data.studentPhotoDataUri || undefined,
+      headMasterSignatureDataUri: data.headMasterSignatureDataUri || undefined,
       instructorContact: data.instructorContact || '',
     };
     onFormUpdate(processedData);
@@ -324,7 +325,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       return;
     }
     remove(currentVisibleSubjectIndex);
-    // useEffect will adjust currentVisibleSubjectIndex if it becomes out of bounds
   };
 
 
@@ -517,7 +517,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                   control={form.control}
                   name="studentPhotoDataUri"
                   render={({ field }) => (
-                    <FormItem className="md:col-span-2">
+                    <FormItem>
                       <FormLabel className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />Student Photo</FormLabel>
                       <FormControl>
                         <div>
@@ -551,6 +551,54 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                 data-ai-hint="student portrait"
                               />
                               <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('studentPhotoDataUri', undefined, { shouldDirty: true, shouldValidate: true })}>
+                                <X className="mr-2 h-4 w-4 text-destructive" /> Remove
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="headMasterSignatureDataUri"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><Signature className="mr-2 h-4 w-4 text-primary" />Head Master's Signature</FormLabel>
+                      <FormControl>
+                        <div>
+                          <input
+                            type="file"
+                            id="headMasterSignatureUpload"
+                            className="hidden"
+                            accept="image/png, image/jpeg, image/svg+xml"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  form.setValue('headMasterSignatureDataUri', reader.result as string, { shouldDirty: true, shouldValidate: true });
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                          <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('headMasterSignatureUpload')?.click()}>
+                            <UploadCloud className="mr-2 h-4 w-4" /> Upload Signature
+                          </Button>
+                          {field.value && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <Image
+                                src={field.value}
+                                alt="Head Master's signature preview"
+                                width={100} 
+                                height={50} 
+                                className="rounded object-contain border bg-white p-1"
+                                data-ai-hint="signature"
+                              />
+                              <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('headMasterSignatureDataUri', undefined, { shouldDirty: true, shouldValidate: true })}>
                                 <X className="mr-2 h-4 w-4 text-destructive" /> Remove
                               </Button>
                             </div>
