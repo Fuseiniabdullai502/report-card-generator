@@ -639,11 +639,11 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                   type="button" 
                                   variant="outline" 
                                   size="sm" 
-                                  onClick={() => handleAiEditImage(field.value!, "Place the main subject of this image on a clean, plain white background. Ensure the subject is clear and retains its original details.")}
+                                  onClick={() => handleAiEditImage(field.value!, "Adjust this image of a person to be a clear portrait, suitable for an ID photo or report card. The subject should be centered, well-proportioned (typically shoulders-up or headshot), and placed on a clean, plain white background. Ensure all original details of the person are retained.")}
                                   disabled={isImageEditingAiLoading}
                                 >
                                   {isImageEditingAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                                  Add White BG (AI)
+                                  Enhance Portrait (AI)
                                 </Button>
                                 <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('studentPhotoDataUri', undefined, { shouldDirty: true, shouldValidate: true })}>
                                   <X className="mr-2 h-4 w-4 text-destructive" /> Remove
