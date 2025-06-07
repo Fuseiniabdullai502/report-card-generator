@@ -58,6 +58,80 @@ const predefinedSubjectsList = [
   "Economics", "Biology", "Elective Mathematics"
 ];
 
+const MAX_STUDENT_PHOTO_WIDTH = 1024;
+const MAX_STUDENT_PHOTO_HEIGHT = 1024;
+const MAX_LOGO_WIDTH = 400;
+const MAX_LOGO_HEIGHT = 400;
+const MAX_SIGNATURE_WIDTH = 800;
+const MAX_SIGNATURE_HEIGHT = 400;
+const IMAGE_QUALITY = 0.85; // For JPEGs
+
+async function resizeImage(
+  dataUri: string,
+  maxWidth: number,
+  maxHeight: number,
+  quality: number = IMAGE_QUALITY
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+
+      if (width <= maxWidth && height <= maxHeight) {
+        resolve(dataUri); // Return original if already small enough
+        return;
+      }
+
+      const aspectRatio = width / height;
+      if (width > maxWidth) {
+        width = maxWidth;
+        height = width / aspectRatio;
+      }
+      if (height > maxHeight) {
+        height = maxHeight;
+        width = height * aspectRatio;
+      }
+      
+      // Ensure dimensions are integers
+      width = Math.round(width);
+      height = Math.round(height);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Failed to get canvas context'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+
+      let mimeType = 'image/png';
+      if (dataUri.startsWith('data:image/jpeg')) {
+        mimeType = 'image/jpeg';
+      }
+      
+      try {
+        const resizedDataUri = canvas.toDataURL(mimeType, mimeType === 'image/jpeg' ? quality : undefined);
+        resolve(resizedDataUri);
+      } catch (e) {
+        console.warn("Failed to convert canvas to original MIME type, falling back to PNG.", e);
+        try {
+            const pngDataUri = canvas.toDataURL('image/png');
+            resolve(pngDataUri);
+        } catch (pngError) {
+            reject(new Error('Failed to resize image and convert to data URI.'));
+        }
+      }
+    };
+    img.onerror = (_error) => {
+      reject(new Error('Failed to load image for resizing. Check if the file is a valid image.'));
+    };
+    img.src = dataUri;
+  });
+}
+
+
 export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
@@ -125,7 +199,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const watchedAcademicTerm = form.watch('academicTerm');
   const watchedClassName = form.watch('className');
-  const watchedStudentPhotoDataUri = form.watch('studentPhotoDataUri');
+  // const watchedStudentPhotoDataUri = form.watch('studentPhotoDataUri'); // Not directly used by AI edit button enable state
 
 
   const isPromotionStatusApplicable = React.useMemo(() => {
@@ -371,6 +445,43 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     remove(currentVisibleSubjectIndex);
   };
 
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    fieldName: keyof ReportData,
+    maxWidth: number,
+    maxHeight: number
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const originalDataUri = reader.result as string;
+          const resizedDataUri = await resizeImage(originalDataUri, maxWidth, maxHeight);
+          form.setValue(fieldName, resizedDataUri, { shouldDirty: true, shouldValidate: true });
+          toast({
+            title: "Image Processed",
+            description: `${fieldName === 'studentPhotoDataUri' ? 'Student photo' : fieldName === 'schoolLogoDataUri' ? 'School logo' : 'Signature'} has been uploaded and optimized.`,
+          });
+        } catch (error: any) {
+          console.error("Error resizing image:", error);
+          toast({
+            title: "Image Processing Error",
+            description: error.message || "Could not process the uploaded image. Using original.",
+            variant: "destructive",
+          });
+          // Fallback to original if resizing fails
+          if (reader.result) {
+            form.setValue(fieldName, reader.result as string, { shouldDirty: true, shouldValidate: true });
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset file input value to allow re-uploading the same file if needed
+    event.target.value = '';
+  };
+
 
   return (
     <>
@@ -481,16 +592,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                             id="schoolLogoUpload"
                             className="hidden"
                             accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  form.setValue('schoolLogoDataUri', reader.result as string, { shouldDirty: true, shouldValidate: true });
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
+                            onChange={(e) => handleImageUpload(e, 'schoolLogoDataUri', MAX_LOGO_WIDTH, MAX_LOGO_HEIGHT)}
                           />
                           <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('schoolLogoUpload')?.click()}>
                             <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
@@ -618,16 +720,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                             id="studentPhotoUpload"
                             className="hidden"
                             accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  form.setValue('studentPhotoDataUri', reader.result as string, { shouldDirty: true, shouldValidate: true });
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
+                            onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri', MAX_STUDENT_PHOTO_WIDTH, MAX_STUDENT_PHOTO_HEIGHT)}
                           />
                            <div className="flex flex-wrap gap-2 items-start">
                             <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()}>
@@ -682,16 +775,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                             id="headMasterSignatureUpload"
                             className="hidden"
                             accept="image/png, image/jpeg, image/svg+xml"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  form.setValue('headMasterSignatureDataUri', reader.result as string, { shouldDirty: true, shouldValidate: true });
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
+                            onChange={(e) => handleImageUpload(e, 'headMasterSignatureDataUri', MAX_SIGNATURE_WIDTH, MAX_SIGNATURE_HEIGHT)}
                           />
                           <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('headMasterSignatureUpload')?.click()}>
                             <UploadCloud className="mr-2 h-4 w-4" /> Upload Signature
