@@ -1,17 +1,20 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ReportForm from '@/components/report-form';
 import ReportPreview from '@/components/report-preview';
-import ReportActions from '@/components/report-actions'; // New import
+import ReportActions from '@/components/report-actions';
+import ClassDashboard, { type ClassStatistics, type SubjectPerformanceStatForUI, type GenderPerformanceStatForUI } from '@/components/class-dashboard'; // New import
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2 } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, BarChartHorizontalBig } from 'lucide-react'; // Added BarChartHorizontalBig
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
+import { getAiClassInsightsAction } from '@/app/actions'; // New import
+import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow'; // New import
 
 // Helper function to calculate final mark for a single subject
 function calculateSubjectFinalMark(subject: SubjectEntry): number {
@@ -50,7 +53,14 @@ export default function Home() {
   const [sessionDefaults, setSessionDefaults] = useState<Partial<ReportData>>({});
   const { toast } = useToast();
 
-  const calculateAndSetRanks = (listToProcess: ReportData[]) => {
+  // State for Class Dashboard
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [classStatsData, setClassStatsData] = useState<ClassStatistics | null>(null);
+  const [classAiAdviceData, setClassAiAdviceData] = useState<GenerateClassInsightsOutput | null>(null);
+  const [isDashboardLoading, setIsDashboardLoading] = useState(false);
+
+
+  const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
     if (listToProcess.length === 0) {
       setReportPrintList([]);
       return;
@@ -87,7 +97,6 @@ export default function Home() {
       }
     });
     
-    // Second pass to ensure all tied ranks are marked with T-
     for (let i = 0; i < rankedReports.length; i++) {
         if (i > 0 && rankedReports[i].overallAverage === rankedReports[i-1].overallAverage) {
             const baseRank = parseInt(rankedReports[i-1].rank!.replace('T-', '').replace(/(st|nd|rd|th)$/, ''));
@@ -98,7 +107,7 @@ export default function Home() {
         }
     }
     setReportPrintList(rankedReports);
-  };
+  }, []);
 
 
   const handleFormUpdate = (data: ReportData) => {
@@ -238,11 +247,126 @@ export default function Home() {
         description: "Report list data has been downloaded as a JSON file.",
     });
   };
+
+  const handleViewClassDashboard = async () => {
+    if (reportPrintList.length === 0) {
+      toast({ title: "No Reports", description: "Add reports to the list to view class dashboard.", variant: "destructive" });
+      return;
+    }
+
+    setIsDashboardLoading(true);
+    setClassAiAdviceData(null); // Clear previous advice
+
+    const passMark = 50;
+    const className = reportPrintList[0]?.className || "N/A"; // Assuming all reports in list are for the same class
+    const totalStudents = reportPrintList.length;
+
+    // Calculate overall class average
+    let totalOverallAverageSum = 0;
+    reportPrintList.forEach(report => {
+      totalOverallAverageSum += report.overallAverage || 0;
+    });
+    const overallClassAverage = totalStudents > 0 ? totalOverallAverageSum / totalStudents : null;
+
+    // Subject statistics
+    const subjectPerformance: Record<string, { name: string; totalMarks: number; studentCount: number; marksList: number[]; passedCount: number }> = {};
+    reportPrintList.forEach(report => {
+      report.subjects.forEach(subject => {
+        if (subject.subjectName && subject.subjectName.trim() !== '') {
+          const finalMark = calculateSubjectFinalMark(subject);
+          if (!subjectPerformance[subject.subjectName]) {
+            subjectPerformance[subject.subjectName] = { name: subject.subjectName, totalMarks: 0, studentCount: 0, marksList: [], passedCount: 0 };
+          }
+          subjectPerformance[subject.subjectName].totalMarks += finalMark;
+          subjectPerformance[subject.subjectName].studentCount++;
+          subjectPerformance[subject.subjectName].marksList.push(finalMark);
+          if (finalMark >= passMark) {
+            subjectPerformance[subject.subjectName].passedCount++;
+          }
+        }
+      });
+    });
+
+    const subjectStats: SubjectPerformanceStatForUI[] = Object.values(subjectPerformance).map(s => {
+      const subjectAvg = s.studentCount > 0 ? s.totalMarks / s.studentCount : null;
+      let studentsAboveAverage = 0;
+      let studentsAtAverage = 0;
+      let studentsBelowAverage = 0;
+
+      if (subjectAvg !== null) {
+        s.marksList.forEach(mark => {
+          if (mark > subjectAvg + 2) studentsAboveAverage++;
+          else if (mark < subjectAvg - 2) studentsBelowAverage++;
+          else studentsAtAverage++;
+        });
+      }
+      
+      return {
+        subjectName: s.name,
+        averageMark: subjectAvg,
+        studentsAboveAverage,
+        studentsAtAverage,
+        studentsBelowAverage,
+        passRate: s.studentCount > 0 ? (s.passedCount / s.studentCount) * 100 : 0,
+      };
+    });
+
+    // Gender statistics
+    const genderPerformance: Record<string, { totalScore: number; count: number }> = {};
+    reportPrintList.forEach(report => {
+      const gender = report.gender || 'Unspecified';
+      if (!genderPerformance[gender]) {
+        genderPerformance[gender] = { totalScore: 0, count: 0 };
+      }
+      genderPerformance[gender].totalScore += report.overallAverage || 0;
+      genderPerformance[gender].count++;
+    });
+
+    const genderStats: GenderPerformanceStatForUI[] = Object.entries(genderPerformance).map(([gender, data]) => ({
+      gender,
+      averageScore: data.count > 0 ? data.totalScore / data.count : null,
+      count: data.count,
+    }));
+
+    const calculatedStats: ClassStatistics = {
+      className,
+      totalStudents,
+      overallClassAverage,
+      subjectStats,
+      genderStats,
+      passMark,
+    };
+    setClassStatsData(calculatedStats);
+
+    // Call AI for insights
+    try {
+      const aiResult = await getAiClassInsightsAction({
+        className: calculatedStats.className,
+        totalStudents: calculatedStats.totalStudents,
+        overallClassAverage: calculatedStats.overallClassAverage,
+        subjectStats: calculatedStats.subjectStats.map(s => ({...s})), // Clone to match exact schema if needed
+        genderStats: calculatedStats.genderStats.map(g => ({...g})),
+        passMark: calculatedStats.passMark,
+      });
+
+      if (aiResult.success && aiResult.insights) {
+        setClassAiAdviceData(aiResult.insights);
+      } else {
+        toast({ title: "AI Insights Error", description: aiResult.error || "Failed to get AI advice.", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "AI Insights Error", description: "An unexpected error occurred while fetching AI advice.", variant: "destructive" });
+    } finally {
+      setIsDashboardLoading(false);
+      setIsDashboardOpen(true);
+    }
+  };
   
   const reportsCount = reportPrintList.length;
   const reportsLabel = reportsCount === 1 ? 'Report' : 'Reports';
 
   return (
+    <>
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground">
       <header className="mb-8 text-center no-print relative">
         <div className="flex items-center justify-center gap-3">
@@ -277,6 +401,10 @@ export default function Home() {
                   <CardTitle className="font-headline text-xl md:text-2xl">Report Print Preview ({reportsCount} {reportsLabel})</CardTitle>
                 </div>
                 <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+                   <Button onClick={handleViewClassDashboard} disabled={reportsCount === 0} variant="outline" size="sm">
+                    <BarChartHorizontalBig className="mr-2 h-4 w-4" />
+                    View Class Dashboard
+                  </Button>
                   <Button onClick={handleDownloadData} disabled={reportsCount === 0} variant="outline" size="sm">
                     <Download className="mr-2 h-4 w-4" />
                     Download Data
@@ -326,5 +454,13 @@ export default function Home() {
         <p>&copy; {new Date().getFullYear()} Report Card Generator. Professionally designed for educators.</p>
       </footer>
     </div>
+    <ClassDashboard
+        isOpen={isDashboardOpen}
+        onClose={() => setIsDashboardOpen(false)}
+        classStats={classStatsData}
+        aiAdvice={classAiAdviceData}
+        isLoading={isDashboardLoading}
+    />
+    </>
   );
 }

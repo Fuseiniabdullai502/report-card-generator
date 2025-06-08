@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Users, BookOpen, Percent, Users2, PieChart, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare } from 'lucide-react';
-import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow'; // For AI advice type
+import { BarChart3, Users, BookOpen, Percent, Users2, PieChart, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare, Loader2 } from 'lucide-react';
+import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow';
 
 export interface SubjectPerformanceStatForUI {
   subjectName: string;
@@ -39,7 +39,7 @@ interface ClassDashboardProps {
   onClose: () => void;
   classStats: ClassStatistics | null;
   aiAdvice: GenerateClassInsightsOutput | null;
-  isLoading: boolean;
+  isLoading: boolean; // For AI advice loading
 }
 
 export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, isLoading }: ClassDashboardProps) {
@@ -48,17 +48,13 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
   }
 
   const renderContent = () => {
-    if (isLoading) {
+    if (!classStats) { // Initial loading before stats are calculated, or if no reports.
       return (
         <div className="flex flex-col items-center justify-center h-64">
           <BarChart3 className="h-12 w-12 animate-pulse text-primary" />
-          <p className="mt-4 text-lg text-muted-foreground">Generating Class Insights...</p>
+          <p className="mt-4 text-lg text-muted-foreground">Calculating class statistics...</p>
         </div>
       );
-    }
-
-    if (!classStats) {
-      return <p className="text-center text-muted-foreground py-10">No class data available to display.</p>;
     }
 
     return (
@@ -73,7 +69,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(80vh-150px)] pr-3">
+        <ScrollArea className="max-h-[calc(80vh-200px)] pr-3"> {/* Adjusted max height */}
           <div className="space-y-6">
             {/* Overall Class Stats */}
             <Card>
@@ -172,8 +168,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
             )}
 
             {/* AI Teacher Advice */}
-            {aiAdvice && (
-              <Card className="bg-accent/10 border-accent">
+             <Card className="bg-accent/10 border-accent">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2 text-accent">
                     <Star className="h-5 w-5" />
@@ -181,25 +176,35 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
-                  <div>
-                    <h4 className="font-semibold">Overall Summary:</h4>
-                    <p className="whitespace-pre-wrap">{aiAdvice.overallSummary}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Subject Analysis:</h4>
-                    <p className="whitespace-pre-wrap">{aiAdvice.subjectAnalysis}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Gender Analysis:</h4>
-                    <p className="whitespace-pre-wrap">{aiAdvice.genderAnalysis}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Recommendations:</h4>
-                    <p className="whitespace-pre-wrap">{aiAdvice.recommendations}</p>
-                  </div>
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="ml-3 text-muted-foreground">Loading AI Insights...</p>
+                    </div>
+                ) : aiAdvice ? (
+                    <>
+                    <div>
+                        <h4 className="font-semibold">Overall Summary:</h4>
+                        <p className="whitespace-pre-wrap">{aiAdvice.overallSummary}</p>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold">Subject Analysis:</h4>
+                        <p className="whitespace-pre-wrap">{aiAdvice.subjectAnalysis}</p>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold">Gender Analysis:</h4>
+                        <p className="whitespace-pre-wrap">{aiAdvice.genderAnalysis}</p>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold">Recommendations:</h4>
+                        <p className="whitespace-pre-wrap">{aiAdvice.recommendations}</p>
+                    </div>
+                    </>
+                ) : (
+                    <p className="text-center text-muted-foreground py-5">No AI insights available or an error occurred.</p>
+                )}
                 </CardContent>
               </Card>
-            )}
           </div>
         </ScrollArea>
       </>
@@ -207,10 +212,10 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl w-full">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-3xl w-full"> {/* Increased width */}
         {renderContent()}
-        <DialogFooter className="mt-6">
+        <DialogFooter className="mt-6 pt-4 border-t">
           <Button onClick={onClose} variant="outline">Close</Button>
         </DialogFooter>
       </DialogContent>
