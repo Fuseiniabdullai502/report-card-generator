@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Users, BookOpen, Percent, Users2, PieChart, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare, Loader2 } from 'lucide-react';
+import { BarChart3, Users, BookOpen, Percent, Users2, PieChart, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare, Loader2, Printer } from 'lucide-react';
 import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow';
 
 export interface SubjectPerformanceStatForUI {
@@ -46,6 +46,10 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
   if (!isOpen) {
     return null;
   }
+
+  const handlePrintDashboard = () => {
+    window.print();
+  };
 
   const renderContent = () => {
     if (!classStats) { // Initial loading before stats are calculated, or if no reports.
@@ -213,10 +217,14 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-3xl w-full"> {/* Increased width */}
+      <DialogContent className="max-w-3xl w-full" id="class-dashboard-dialog-content"> {/* Increased width and added ID */}
         {renderContent()}
         <DialogFooter className="mt-6 pt-4 border-t">
-          <Button onClick={onClose} variant="outline">Close</Button>
+          <Button onClick={handlePrintDashboard} variant="default" className="dialog-footer-print-hide">
+            <Printer className="mr-2 h-4 w-4" />
+            Print Dashboard
+          </Button>
+          <Button onClick={onClose} variant="outline" className="dialog-footer-print-hide">Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

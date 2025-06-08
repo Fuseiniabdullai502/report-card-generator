@@ -236,4 +236,100 @@ body {
   .a4-page-simulation tr {
     page-break-inside: avoid; /* Try to keep table rows on the same page */
   }
+
+  /* Styles for printing the Class Dashboard Dialog */
+  
+  /* Hide the dialog overlay and focus guards when printing */
+  body > [data-radix-portal] > [data-radix-dialog-overlay],
+  body > [data-radix-portal] > [data-radix-focus-guard] {
+    display: none !important;
+  }
+
+  /* Style the specific class dashboard dialog content for printing */
+  body > [data-radix-portal] > #class-dashboard-dialog-content {
+    position: static !important; /* Override fixed positioning */
+    display: block !important; /* Ensure it's block for static positioning */
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    transform: none !important; /* Reset transforms */
+    margin: 0 !important;
+    padding: 10mm !important; /* Print margins */
+    border: none !important;
+    box-shadow: none !important;
+    background-color: white !important;
+    color: black !important;
+    overflow: visible !important; /* Allow content to flow */
+    border-radius: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* General styling for elements within the printed dashboard */
+  #class-dashboard-dialog-content *,
+  #class-dashboard-dialog-content *::before,
+  #class-dashboard-dialog-content *::after {
+    color: black !important;
+    border-color: #ccc !important; /* Lighter borders for elements like tables */
+    box-shadow: none !important;
+    /* background-color: transparent !important; Allow specific overrides below */
+  }
+  
+  #class-dashboard-dialog-content .card,
+  #class-dashboard-dialog-content .table {
+    background-color: white !important; /* Ensure cards and tables have white background */
+  }
+  
+  #class-dashboard-dialog-content .text-primary {
+     color: #2c5282 !important; /* Darker blue for primary text elements, adjust as needed */
+  }
+  #class-dashboard-dialog-content .text-accent {
+     color: #276749 !important; /* Darker green for accent text elements, adjust as needed */
+  }
+   #class-dashboard-dialog-content .text-muted-foreground {
+     color: #4a5568 !important; /* A darker gray for muted text */
+   }
+
+
+  /* Specific styling for the AI Insights card */
+  #class-dashboard-dialog-content .bg-accent\\/10 {
+    background-color: #f0fff4 !important; /* A very light green, for example */
+    border: 1px solid #a7f3d0 !important; /* A light green border */
+  }
+   /* Ensure icons within specific contexts are visible if colored */
+  #class-dashboard-dialog-content .text-green-500 { color: green !important; }
+  #class-dashboard-dialog-content .text-yellow-500 { color: #b45309 !important; } /* Darker yellow/orange */
+  #class-dashboard-dialog-content .text-red-500 { color: red !important; }
+
+
+  /* Ensure ScrollArea content is fully visible and printable */
+  #class-dashboard-dialog-content .max-h-\\[calc\\(80vh-200px\\)\\] { /* Targets the specific max-height class */
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  #class-dashboard-dialog-content [data-radix-scroll-area-viewport] {
+     overflow: visible !important;
+     height: auto !important;
+  }
+  #class-dashboard-dialog-content [data-radix-scroll-area-thumb],
+  #class-dashboard-dialog-content [data-radix-scroll-area-scrollbar] { /* Hide scrollbar elements */
+      display: none !important;
+  }
+
+  /* Page break control for dashboard elements */
+  #class-dashboard-dialog-content .card,
+  #class-dashboard-dialog-content .table {
+    page-break-inside: avoid;
+  }
+  
+  #class-dashboard-dialog-content tr {
+    page-break-inside: avoid;
+  }
+
+  /* Hide the dialog's main close button and any footer buttons marked for print hiding */
+  #class-dashboard-dialog-content > button[aria-label="Close"],
+  #class-dashboard-dialog-content .dialog-footer-print-hide {
+    display: none !important;
+  }
 }
