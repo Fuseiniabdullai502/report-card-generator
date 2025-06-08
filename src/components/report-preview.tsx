@@ -69,14 +69,16 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
               <p className="text-xs text-gray-500 mt-0.5 font-semibold">Entry #: {data.studentEntryNumber}</p>
             )}
           </div>
-          <Image
-            src={data.schoolLogoDataUri || "https://placehold.co/120x60.png"}
-            alt="School Logo"
-            width={120}
-            height={60}
-            data-ai-hint="school logo"
-            className="object-contain"
-          />
+          {data.schoolLogoDataUri && (
+            <Image
+              src={data.schoolLogoDataUri}
+              alt="School Logo"
+              width={120}
+              height={60}
+              data-ai-hint="school logo"
+              className="object-contain"
+            />
+          )}
         </div>
         <h1 className="text-3xl font-headline font-semibold text-center mt-3 text-gray-700">Student Report Card</h1>
       </header>
@@ -250,3 +252,4 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
     </div>
   );
 }
+
