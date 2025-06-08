@@ -1,20 +1,23 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Added React import
 import ReportForm from '@/components/report-form';
 import ReportPreview from '@/components/report-preview';
 import ReportActions from '@/components/report-actions';
-import ClassDashboard, { type ClassStatistics, type SubjectPerformanceStatForUI, type GenderPerformanceStatForUI } from '@/components/class-dashboard'; // New import
+import ClassDashboard, { type ClassStatistics, type SubjectPerformanceStatForUI, type GenderPerformanceStatForUI } from '@/components/class-dashboard';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, BarChartHorizontalBig } from 'lucide-react'; // Added BarChartHorizontalBig
+import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, BarChartHorizontalBig, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
-import { getAiClassInsightsAction } from '@/app/actions'; // New import
-import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow'; // New import
+import { getAiClassInsightsAction } from '@/app/actions';
+import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow';
+import { LicenseProvider, useLicense } from '@/contexts/license-context';
+import LicenseGate from '@/components/license-gate';
+
 
 // Helper function to calculate final mark for a single subject
 function calculateSubjectFinalMark(subject: SubjectEntry): number {
@@ -45,19 +48,21 @@ function formatRankString(rankNumber: number, isTie: boolean): string {
   return `${isTie ? 'T-' : ''}${rankNumber}${suffix}`;
 }
 
+function AppContent() {
+  const { isLicensed, isLoadingLicense, clearLicense } = useLicense();
 
-export default function Home() {
   const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined, headMasterSignatureDataUri: undefined, schoolLogoDataUri: undefined})));
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
   const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
   const [sessionDefaults, setSessionDefaults] = useState<Partial<ReportData>>({});
   const { toast } = useToast();
 
-  // State for Class Dashboard
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [classStatsData, setClassStatsData] = useState<ClassStatistics | null>(null);
   const [classAiAdviceData, setClassAiAdviceData] = useState<GenerateClassInsightsOutput | null>(null);
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
+
+  const [currentPreviewIndex, setCurrentPreviewIndex] = useState<number>(0);
 
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
@@ -132,6 +137,7 @@ export default function Home() {
       
       const newList = [...reportPrintList, reportWithEntryNumber];
       calculateAndSetRanks(newList);
+      setCurrentPreviewIndex(newList.length - 1); // View the newly added report
 
       if (reportPrintList.length === 0) { 
         setSessionDefaults({
@@ -198,6 +204,7 @@ export default function Home() {
   const handleClearList = () => {
     setReportPrintList([]);
     setNextStudentEntryNumber(1);
+    setCurrentPreviewIndex(0);
     setSessionDefaults({}); 
     toast({
       title: "Print List Cleared",
@@ -255,20 +262,18 @@ export default function Home() {
     }
 
     setIsDashboardLoading(true);
-    setClassAiAdviceData(null); // Clear previous advice
+    setClassAiAdviceData(null); 
 
     const passMark = 50;
-    const className = reportPrintList[0]?.className || "N/A"; // Assuming all reports in list are for the same class
+    const className = reportPrintList[0]?.className || "N/A"; 
     const totalStudents = reportPrintList.length;
 
-    // Calculate overall class average
     let totalOverallAverageSum = 0;
     reportPrintList.forEach(report => {
       totalOverallAverageSum += report.overallAverage || 0;
     });
     const overallClassAverage = totalStudents > 0 ? totalOverallAverageSum / totalStudents : null;
 
-    // Subject statistics
     const subjectPerformance: Record<string, { name: string; totalMarks: number; studentCount: number; marksList: number[]; passedCount: number }> = {};
     reportPrintList.forEach(report => {
       report.subjects.forEach(subject => {
@@ -311,7 +316,6 @@ export default function Home() {
       };
     });
 
-    // Gender statistics
     const genderPerformance: Record<string, { totalScore: number; count: number }> = {};
     reportPrintList.forEach(report => {
       const gender = report.gender || 'Unspecified';
@@ -338,13 +342,12 @@ export default function Home() {
     };
     setClassStatsData(calculatedStats);
 
-    // Call AI for insights
     try {
       const aiResult = await getAiClassInsightsAction({
         className: calculatedStats.className,
         totalStudents: calculatedStats.totalStudents,
         overallClassAverage: calculatedStats.overallClassAverage,
-        subjectStats: calculatedStats.subjectStats.map(s => ({...s})), // Clone to match exact schema if needed
+        subjectStats: calculatedStats.subjectStats.map(s => ({...s})), 
         genderStats: calculatedStats.genderStats.map(g => ({...g})),
         passMark: calculatedStats.passMark,
       });
@@ -363,7 +366,30 @@ export default function Home() {
   };
   
   const reportsCount = reportPrintList.length;
-  const reportsLabel = reportsCount === 1 ? 'Report' : 'Reports';
+
+  const handleNextPreview = () => {
+    setCurrentPreviewIndex(prev => Math.min(prev + 1, reportPrintList.length - 1));
+  };
+
+  const handlePreviousPreview = () => {
+    setCurrentPreviewIndex(prev => Math.max(0, prev - 1));
+  };
+
+  if (isLoadingLicense) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
+        <div className="text-center">
+          <BookMarked className="mx-auto h-16 w-16 text-primary animate-pulse" />
+          <p className="text-lg mt-4">Loading Report Card Generator...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLicensed) {
+    return <LicenseGate />;
+  }
+
 
   return (
     <>
@@ -374,7 +400,10 @@ export default function Home() {
          <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
         </div>
         <p className="text-muted-foreground mt-2 text-sm sm:text-base">Easily create, customize, rank, and print student report cards.</p>
-        <div className="absolute top-0 right-0">
+        <div className="absolute top-0 right-0 flex items-center gap-2">
+          <Button onClick={clearLicense} variant="outline" size="sm" title="Deactivate License (for testing)">
+            <LogOut className="mr-2 h-4 w-4" /> Deactivate
+          </Button>
           <ThemeToggleButton />
         </div>
       </header>
@@ -395,10 +424,24 @@ export default function Home() {
         <section className="lg:col-span-3 flex flex-col">
           <Card className="shadow-lg flex-grow flex flex-col bg-card text-card-foreground">
             <CardHeader className="no-print">
-              <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
-                <div className="flex items-center gap-2">
-                  <Eye className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />
-                  <CardTitle className="font-headline text-xl md:text-2xl">Report Print Preview ({reportsCount} {reportsLabel})</CardTitle>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <Eye className="mr-1 h-5 w-5 md:h-6 md:w-6 text-primary" />
+                    <CardTitle className="font-headline text-lg md:text-xl">
+                      {reportsCount > 0 ? `Report ${currentPreviewIndex + 1} of ${reportsCount}` : `Report Print Preview (0 Reports)`}
+                    </CardTitle>
+                  </div>
+                  {reportsCount > 1 && (
+                    <div className="flex items-center gap-2">
+                      <Button onClick={handlePreviousPreview} disabled={currentPreviewIndex === 0} variant="outline" size="icon" aria-label="Previous Report">
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button onClick={handleNextPreview} disabled={currentPreviewIndex >= reportsCount - 1} variant="outline" size="icon" aria-label="Next Report">
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2 justify-start md:justify-end">
                    <Button onClick={handleViewClassDashboard} disabled={reportsCount === 0} variant="outline" size="sm">
@@ -419,10 +462,9 @@ export default function Home() {
                   </Button>
                 </div>
               </div>
-              <CardDescription className="mt-2 md:mt-0 space-y-1">
+              <CardDescription className="mt-2 md:mt-1 space-y-1">
                 <span>
-                  This area shows all reports added to the print list, sorted by rank. Each will attempt to print on a new page.
-                  Browser print dialog usually offers "Save as PDF". "Download Data" saves list as JSON. Session defaults apply after first entry.
+                  This area shows one report at a time. Use navigation buttons if multiple reports are in the list. "Print All" prints all reports in the list.
                 </span>
                 <span className="block text-xs italic">
                   <Share2 className="inline-block mr-1 h-3 w-3 text-muted-foreground" /> Share options (Email/WhatsApp) below each report will open your default app with a pre-filled message. Automated sending is not supported.
@@ -432,11 +474,17 @@ export default function Home() {
             </CardHeader>
             <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">
               {reportsCount > 0 ? (
-                reportPrintList.map((reportData) => (
-                  <div key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} className="mb-4 bg-card shadow-sm rounded-lg p-2 no-print">
-                    <ReportActions report={reportData} />
-                    <ReportPreview data={reportData} />
-                  </div>
+                reportPrintList.map((reportData, index) => (
+                  <React.Fragment key={reportData.id || `report-entry-${reportData.studentEntryNumber}`}>
+                    {index === currentPreviewIndex && (
+                       <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
+                         <ReportActions report={reportData} />
+                       </div>
+                    )}
+                    <div className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>
+                      <ReportPreview data={reportData} />
+                    </div>
+                  </React.Fragment>
                 ))
               ) : (
                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
@@ -462,5 +510,14 @@ export default function Home() {
         isLoading={isDashboardLoading}
     />
     </>
+  );
+}
+
+
+export default function Home() {
+  return (
+    <LicenseProvider>
+      <AppContent />
+    </LicenseProvider>
   );
 }

@@ -111,8 +111,8 @@ body {
 @media screen {
   #report-preview-container {
     /* Provides a scrollable container for multiple A4 pages */
-    /* background-color: theme('colors.gray.100'); /* Light gray background for the container */
-    /* padding: 1rem; /* Some padding around the A4 pages */
+    /* background-color: theme('colors.gray.100'); */
+    /* padding: 1rem; */
   }
   .a4-page-simulation {
     width: 21cm; /* A4 width */
@@ -120,18 +120,37 @@ body {
     padding: 1.5cm; /* Margins for the content within the A4 page */
     margin-left: auto;
     margin-right: auto;
-    margin-top: 1rem; /* Space above the first/only page */
-    margin-bottom: 1rem; /* Space below the last/only page */
+    /* margin-top: 1rem; */ /* Removed specific top margin for single view */
+    /* margin-bottom: 1rem; */ /* Removed specific bottom margin for single view */
     border: 1px solid #D3D3D3; /* Light grey border for page */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); /* Subtle shadow for page */
     background: white; /* White background for page */
     box-sizing: border-box;
     overflow: hidden; /* Content that overflows will be hidden on screen for this single page sim */
   }
-   /* Add margin between A4 pages when multiple are displayed on screen */
-  #report-preview-container .a4-page-simulation + .a4-page-simulation {
-    margin-top: 1.5rem; /* Increased space between pages on screen */
+
+  /* Screen styles for one-at-a-time preview */
+  .hidden-preview-screen {
+    display: none;
   }
+  .active-preview-screen {
+    display: block; 
+    /* Add some margin around the active preview item if desired, 
+       as the previous loop's margin-top/bottom on a4-page-simulation was removed */
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Ensure the container for the active preview doesn't have excessive padding from its parent CardContent
+     if ReportPreview itself has outer margins/padding. CardContent p-0 ensures this is controlled by active-preview-screen. */
+  #report-preview-container.p-0 .active-preview-screen {
+     /* margin-top: 0; 
+        margin-bottom: 0; 
+        These would be needed if #report-preview-container had padding itself.
+        Since it's p-0 md:p-2, the inner item's margin is fine.
+     */
+  }
+  
   .dashboard-print-header {
     display: none;
   }
@@ -152,81 +171,90 @@ body {
     print-color-adjust: exact !important; /* Firefox */
   }
 
-  #report-preview-container { /* This is the CardContent in page.tsx */
+  #report-preview-container { 
     position: static !important;
     width: 100% !important;
     height: auto !important;
-    min-height: 0 !important; /* Reset min-height from screen styles */
+    min-height: 0 !important; 
     margin: 0 !important;
-    padding: 0 !important; /* Remove CardContent padding */
+    padding: 0 !important; 
     border: none !important;
     box-shadow: none !important;
     background-color: white !important;
     color: black !important;
     border-radius: 0 !important;
-    overflow: visible !important; /* Allow content to flow */
+    overflow: visible !important; 
   }
+  
+  /* Ensure all report preview items are displayed for printing */
+  #report-preview-container .hidden-preview-screen {
+    display: block !important;
+  }
+  #report-preview-container .active-preview-screen {
+    display: block !important; /* Ensure active also prints */
+    margin-top: 0 !important; /* Reset screen margins for print */
+    margin-bottom: 0 !important;
+  }
+  #report-preview-container .report-preview-item { /* Generic class for all items */
+     display: block !important;
+     margin: 0 !important;
+  }
+
 
   .a4-page-simulation { /* This is the root of ReportPreview, now #printable-report-area */
-    width: 100% !important; /* Expand to fill parent's width (print page width) */
-    min-height: 0 !important; /* Reset screen min-height for printing, let content flow */
-    height: auto !important; /* Let content define height for printing */
-    margin: 0 !important; /* Reset screen margins */
-    padding: 10mm !important; /* Standard print margin, adjust as needed */
-    border: none !important; /* No border for print */
-    box-shadow: none !important; /* No shadow for print */
+    width: 100% !important; 
+    min-height: 0 !important; 
+    height: auto !important; 
+    margin: 0 !important; 
+    padding: 10mm !important; 
+    border: none !important; 
+    box-shadow: none !important; 
     background-color: white !important;
     box-sizing: border-box !important;
-    overflow: visible !important; /* Allow content to flow across pages */
-    /* page-break-inside: avoid; /* Try to keep the whole report on one page if possible, may not be desired for long reports */
+    overflow: visible !important; 
   }
 
-  /* Ensure subsequent reports start on a new page */
   .a4-page-simulation:not(:first-child) {
     page-break-before: always !important;
   }
 
-  /* Ensure all children within the printable area use print-friendly styles */
   .a4-page-simulation * {
     color: black !important;
-    background-color: transparent !important; /* Most elements should be transparent */
-    border-color: #b0b0b0 !important; /* Lighter borders for print elements like tables */
+    background-color: transparent !important; 
+    border-color: #b0b0b0 !important; 
     box-shadow: none !important;
   }
-  .a4-page-simulation .bg-green-50 { /* Example if you have specific bg colors */
-     background-color: #f0fff4 !important; /* Light green for print, if needed */
+  .a4-page-simulation .bg-green-50 { 
+     background-color: #f0fff4 !important; 
   }
 
 
   .a4-page-simulation img {
-    max-width: 100% !important; /* Ensure images are constrained */
+    max-width: 100% !important; 
     page-break-inside: avoid;
   }
 
-  /* Hide any specific interactive elements within the preview if they exist and are not caught by .no-print */
   .a4-page-simulation button,
   .a4-page-simulation a[href]:not(.printable-link) {
     display: none !important;
   }
 
-  /* Ensure textareas appear as static text */
    .a4-page-simulation textarea {
     border: none !important;
     resize: none !important;
     padding: 0 !important;
     background: transparent !important;
     color: black !important;
-    white-space: pre-wrap !important; /* Preserve formatting */
+    white-space: pre-wrap !important; 
     overflow: visible !important;
-    -webkit-appearance: none; /* Remove browser default styling */
+    -webkit-appearance: none; 
     -moz-appearance: none;
     appearance: none;
   }
 
-  /* Attempt to control page breaks for better layout within a single report */
   .a4-page-simulation header,
   .a4-page-simulation footer,
-  .a4-page-simulation section > h3 { /* Section headers */
+  .a4-page-simulation section > h3 { 
     page-break-after: avoid;
   }
   .a4-page-simulation section {
@@ -234,63 +262,59 @@ body {
   }
 
   .a4-page-simulation table {
-    page-break-inside: auto; /* Allow tables to break across pages if necessary */
+    page-break-inside: auto; 
   }
   .a4-page-simulation tr {
-    page-break-inside: avoid; /* Try to keep table rows on the same page */
+    page-break-inside: avoid; 
   }
 
   /* Styles for printing the Class Dashboard Dialog */
-
-  /* Hide the dialog overlay and focus guards when printing */
   body > [data-radix-portal] > [data-radix-dialog-overlay],
   body > [data-radix-portal] > [data-radix-focus-guard] {
     display: none !important;
   }
 
-  /* Style the specific class dashboard dialog content for printing */
   #class-dashboard-dialog-content {
-    position: static !important; /* Override fixed positioning */
-    display: block !important; /* Ensure it's block for static positioning */
+    position: static !important; 
+    display: block !important; 
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
-    transform: none !important; /* Reset transforms */
+    transform: none !important; 
     margin: 0 !important;
-    padding: 10mm !important; /* Print margins */
+    padding: 10mm !important; 
     border: none !important;
     box-shadow: none !important;
     background-color: white !important;
     color: black !important;
-    overflow: visible !important; /* Allow content to flow */
+    overflow: visible !important; 
     border-radius: 0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* General styling for elements within the printed dashboard */
   #class-dashboard-dialog-content *,
   #class-dashboard-dialog-content *::before,
   #class-dashboard-dialog-content *::after {
     color: black !important;
-    border-color: #ccc !important; /* Lighter borders for elements like tables */
+    border-color: #ccc !important; 
     box-shadow: none !important;
   }
 
   #class-dashboard-dialog-content .card,
   #class-dashboard-dialog-content .table {
-    background-color: white !important; /* Ensure cards and tables have white background */
+    background-color: white !important; 
   }
 
   #class-dashboard-dialog-content .text-primary {
-     color: #2c5282 !important; /* Darker blue for primary text elements, adjust as needed */
+     color: #2c5282 !important; 
   }
   #class-dashboard-dialog-content .text-accent {
-     color: #276749 !important; /* Darker green for accent text elements, adjust as needed */
+     color: #276749 !important; 
   }
    #class-dashboard-dialog-content .text-muted-foreground {
-     color: #4a5568 !important; /* A darker gray for muted text */
+     color: #4a5568 !important; 
    }
 
   #class-dashboard-dialog-content [class~="bg-accent/10"] {
@@ -298,10 +322,9 @@ body {
     border: 1px solid #a7f3d0 !important;
   }
   #class-dashboard-dialog-content .text-green-500 { color: green !important; }
-  #class-dashboard-dialog-content .text-yellow-500 { color: #b45309 !important; } /* Darker yellow/orange */
+  #class-dashboard-dialog-content .text-yellow-500 { color: #b45309 !important; } 
   #class-dashboard-dialog-content .text-red-500 { color: red !important; }
 
-  /* Styles for the print-only dashboard header */
   #class-dashboard-dialog-content .dashboard-print-header {
     display: block !important;
     text-align: center;
@@ -318,14 +341,13 @@ body {
     font-size: 0.875rem; 
     color: black !important;
   }
-  /* Hide original DialogHeader and DialogDescription on print */
+  
   #class-dashboard-dialog-content .no-print,
-  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header) { /* Target original DialogHeader if it doesn't have the print class */
+  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header) { 
     display: none !important;
   }
 
 
-  /* Ensure ScrollArea content is fully visible and printable */
   #class-dashboard-dialog-content [class~="max-h-[calc(80vh-200px)]"] {
     max-height: none !important;
     overflow: visible !important;
@@ -335,25 +357,22 @@ body {
      height: auto !important;
   }
   #class-dashboard-dialog-content [data-radix-scroll-area-thumb],
-  #class-dashboard-dialog-content [data-radix-scroll-area-scrollbar] { /* Hide scrollbar elements */
+  #class-dashboard-dialog-content [data-radix-scroll-area-scrollbar] { 
       display: none !important;
   }
 
-  /* Page break control for dashboard elements */
   #class-dashboard-dialog-content .card {
     page-break-inside: avoid;
   }
   #class-dashboard-dialog-content .table {
-    page-break-inside: auto; /* Allow tables to break across pages if necessary */
+    page-break-inside: auto; 
   }
   #class-dashboard-dialog-content tr {
     page-break-inside: avoid;
   }
 
-  /* Hide the dialog's main close button and any footer buttons marked for print hiding */
   #class-dashboard-dialog-content > button[aria-label="Close"],
   #class-dashboard-dialog-content .dialog-footer-print-hide {
     display: none !important;
   }
 }
-
