@@ -146,7 +146,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                   Overall Snapshot
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4 text-sm">
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="font-medium text-muted-foreground">Total Students Analyzed:</p>
                   <p className="font-semibold text-lg">{classStats.totalStudents}</p>
@@ -379,3 +379,4 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
     </Dialog>
   );
 }
+
