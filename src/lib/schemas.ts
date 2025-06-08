@@ -28,6 +28,7 @@ export const ReportDataSchema = z.object({
   schoolLogoDataUri: z.string().optional().describe("A data URI of the school's logo."),
   academicYear: z.string().optional().default('2023-2024'),
   academicTerm: z.string().optional().default('First Term'),
+  selectedTemplateId: z.string().optional().default('default'), // Added for template selection
   daysAttended: z.coerce
     .number({ invalid_type_error: 'Days attended must be a number' })
     .min(0, 'Days attended cannot be negative')
@@ -76,6 +77,7 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   schoolLogoDataUri: undefined,
   academicYear: '2023-2024',
   academicTerm: 'First Term',
+  selectedTemplateId: 'default', // Added default template
   daysAttended: null,
   totalSchoolDays: null,
   parentEmail: '',

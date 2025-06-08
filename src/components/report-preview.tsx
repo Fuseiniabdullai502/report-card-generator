@@ -5,10 +5,94 @@ import type {ReportData, SubjectEntry} from '@/lib/schemas';
 import Image from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Award, Medal } from 'lucide-react'; // For rank display, Medal for promotion
+import { cn } from '@/lib/utils';
 
 interface ReportPreviewProps {
   data: ReportData;
 }
+
+interface TemplateStyles {
+  headerContainerClass: string;
+  headerTitleClass: string;
+  headerSubtitleClass: string;
+  sectionTitleClass: string;
+  sectionContainerClass: string;
+  tableHeaderClass: string;
+  overallReportBorderClass: string;
+  mainHeaderTextClass: string;
+}
+
+const getTemplateSpecificStyles = (templateId?: string): TemplateStyles => {
+  switch (templateId) {
+    case 'professionalBlue':
+      return {
+        headerContainerClass: 'pb-3 border-b border-blue-400 bg-blue-50',
+        headerTitleClass: 'text-2xl font-headline font-bold text-blue-700',
+        headerSubtitleClass: 'text-blue-600 font-semibold',
+        sectionTitleClass: 'text-base font-headline font-semibold mb-1.5 text-blue-700 border-b border-blue-300 pb-0.5',
+        sectionContainerClass: 'p-3 border border-blue-300 rounded-md shadow-sm',
+        tableHeaderClass: 'bg-blue-100',
+        overallReportBorderClass: 'border border-blue-400',
+        mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-3 text-blue-700',
+      };
+    case 'elegantGreen':
+      return {
+        headerContainerClass: 'pb-3 border-b border-green-400 bg-green-50',
+        headerTitleClass: 'text-2xl font-headline font-bold text-green-700',
+        headerSubtitleClass: 'text-green-600 font-semibold',
+        sectionTitleClass: 'text-base font-headline font-semibold mb-1.5 text-green-700 border-b border-green-300 pb-0.5',
+        sectionContainerClass: 'p-3 border border-green-300 rounded-md shadow-sm',
+        tableHeaderClass: 'bg-green-100',
+        overallReportBorderClass: 'border border-green-400',
+        mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-3 text-green-700',
+      };
+    case 'minimalistGray':
+      return {
+        headerContainerClass: 'pb-2 border-b border-gray-200',
+        headerTitleClass: 'text-xl font-headline font-semibold text-gray-700',
+        headerSubtitleClass: 'text-gray-500 font-normal text-xs',
+        sectionTitleClass: 'text-sm font-headline font-medium mb-1 text-gray-600 border-b border-gray-200 pb-0.5',
+        sectionContainerClass: 'p-2 border border-gray-200 rounded shadow-none',
+        tableHeaderClass: 'bg-gray-100',
+        overallReportBorderClass: 'border border-gray-300 shadow-sm',
+        mainHeaderTextClass: 'text-2xl font-headline font-medium text-center mt-2 text-gray-600',
+      };
+    case 'academicRed':
+      return {
+        headerContainerClass: 'pb-3 border-b-2 border-red-500',
+        headerTitleClass: 'text-2xl font-headline font-bold text-red-700',
+        headerSubtitleClass: 'text-red-600 font-semibold',
+        sectionTitleClass: 'text-base font-headline font-bold mb-1.5 text-red-700 border-b border-red-200 pb-0.5',
+        sectionContainerClass: 'p-3 border border-red-200 rounded-md',
+        tableHeaderClass: 'bg-red-50',
+        overallReportBorderClass: 'border border-red-300',
+        mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-3 text-red-700',
+      };
+    case 'creativeTeal':
+      return {
+        headerContainerClass: 'pb-3 border-b border-teal-400 bg-teal-50',
+        headerTitleClass: 'text-2xl font-headline font-bold text-teal-700',
+        headerSubtitleClass: 'text-teal-600 font-semibold',
+        sectionTitleClass: 'text-base font-headline font-semibold mb-1.5 text-teal-700 border-b border-teal-300 pb-0.5 italic',
+        sectionContainerClass: 'p-3 border border-teal-300 rounded-lg shadow-sm',
+        tableHeaderClass: 'bg-teal-100',
+        overallReportBorderClass: 'border border-teal-400',
+        mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-3 text-teal-700',
+      };
+    default: // Default Template
+      return {
+        headerContainerClass: 'pb-3 border-b border-gray-300',
+        headerTitleClass: 'text-2xl font-headline font-bold text-primary',
+        headerSubtitleClass: 'text-muted-foreground font-semibold',
+        sectionTitleClass: 'text-base font-headline font-semibold mb-1.5 text-primary border-b pb-0.5',
+        sectionContainerClass: 'p-3 border border-gray-200 rounded-md shadow-sm',
+        tableHeaderClass: 'bg-gray-50',
+        overallReportBorderClass: 'border border-gray-300',
+        mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-3 text-gray-700',
+      };
+  }
+};
+
 
 const getGradeAndRemarks = (
   caMarkInput: number | null | undefined, 
@@ -57,14 +141,21 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
                                    !tertiaryLevelClassesList.includes(data.className);
   
   const hobbiesText = data.hobbies && data.hobbies.length > 0 ? data.hobbies.join(', ') : '';
+  
+  const templateStyles = getTemplateSpecificStyles(data.selectedTemplateId);
+
+  const highlightColorForTeacherFeedback = data.selectedTemplateId === 'elegantGreen' ? 'bg-green-50 print:bg-green-50' 
+                                      : data.selectedTemplateId === 'professionalBlue' ? 'bg-blue-50 print:bg-blue-50'
+                                      : data.selectedTemplateId === 'creativeTeal' ? 'bg-teal-50 print:bg-teal-50'
+                                      : 'bg-green-50 print:bg-green-50'; // Default highlight
 
   return (
-    <div id="printable-report-area" className="a4-page-simulation flex flex-col text-sm">
-      <header className="mb-6 pb-3 border-b border-gray-300">
+    <div id="printable-report-area" className={cn("a4-page-simulation flex flex-col text-sm", templateStyles.overallReportBorderClass)}>
+      <header className={cn("mb-6", templateStyles.headerContainerClass)}>
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-headline font-bold text-primary">{data.schoolName || 'School Name'}</h2>
-            <p className="text-muted-foreground font-semibold">{data.academicYear || 'Academic Year'} - {data.academicTerm || 'Term/Semester'}</p>
+            <h2 className={templateStyles.headerTitleClass}>{data.schoolName || 'School Name'}</h2>
+            <p className={templateStyles.headerSubtitleClass}>{data.academicYear || 'Academic Year'} - {data.academicTerm || 'Term/Semester'}</p>
             {data.studentEntryNumber && (
               <p className="text-xs text-gray-500 mt-0.5 font-semibold">Entry #: {data.studentEntryNumber}</p>
             )}
@@ -80,7 +171,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             />
           )}
         </div>
-        <h1 className="text-3xl font-headline font-semibold text-center mt-3 text-gray-700">Student Report Card</h1>
+        <h1 className={templateStyles.mainHeaderTextClass}>Student Report Card</h1>
       </header>
 
       <section className="mb-4 flex justify-between items-start">
@@ -138,10 +229,10 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 
       {data.subjects && data.subjects.length > 0 && (
         <section className="mb-4">
-          <h3 className="text-base font-headline font-semibold mb-1.5 text-primary border-b pb-0.5">Subject Performance</h3>
-          <Table className="border rounded-md text-xs">
+          <h3 className={templateStyles.sectionTitleClass}>Subject Performance</h3>
+          <Table className={cn("border rounded-md text-xs", templateStyles.overallReportBorderClass)}>
             <TableHeader>
-              <TableRow className="bg-gray-50">
+              <TableRow className={templateStyles.tableHeaderClass}>
                 <TableHead className="font-semibold text-gray-600 w-[28%] py-1 px-2">Subject</TableHead>
                 <TableHead className="text-center font-semibold text-gray-600 py-1 px-2">CA (60)</TableHead>
                 <TableHead className="text-center font-semibold text-gray-600 py-1 px-2">Exam (100)</TableHead>
@@ -173,31 +264,31 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 
       <div className="space-y-4 flex-grow text-xs">
         {data.performanceSummary && (
-          <ReportSection title="Overall Performance Summary">
+          <ReportSection title="Overall Performance Summary" templateStyles={templateStyles}>
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.performanceSummary}</p>
           </ReportSection>
         )}
 
         {data.strengths && (
-          <ReportSection title="Strengths">
+          <ReportSection title="Strengths" templateStyles={templateStyles}>
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.strengths}</p>
           </ReportSection>
         )}
 
         {data.areasForImprovement && (
-          <ReportSection title="Areas for Improvement">
+          <ReportSection title="Areas for Improvement" templateStyles={templateStyles}>
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.areasForImprovement}</p>
           </ReportSection>
         )}
 
         {hobbiesText && (
-          <ReportSection title="Hobbies / Co-curricular Activities">
+          <ReportSection title="Hobbies / Co-curricular Activities" templateStyles={templateStyles}>
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{hobbiesText}</p>
           </ReportSection>
         )}
 
         {data.teacherFeedback && (
-          <ReportSection title="Teacher's Feedback" highlightColor="bg-green-50 print:bg-green-50">
+          <ReportSection title="Teacher's Feedback" templateStyles={templateStyles} highlightColor={highlightColorForTeacherFeedback}>
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.teacherFeedback}</p>
           </ReportSection>
         )}
@@ -241,15 +332,15 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 interface ReportSectionProps {
   title: string;
   children: React.ReactNode;
+  templateStyles: TemplateStyles;
   highlightColor?: string;
 }
 
-function ReportSection({ title, children, highlightColor }: ReportSectionProps) {
+function ReportSection({ title, children, templateStyles, highlightColor }: ReportSectionProps) {
   return (
-    <div className={`p-3 border border-gray-200 rounded-md shadow-sm ${highlightColor || ''}`}>
-      <h3 className="text-base font-headline font-semibold mb-1.5 text-primary border-b pb-0.5">{title}</h3>
+    <div className={cn(templateStyles.sectionContainerClass, highlightColor || '')}>
+      <h3 className={templateStyles.sectionTitleClass}>{title}</h3>
       {children}
     </div>
   );
 }
-

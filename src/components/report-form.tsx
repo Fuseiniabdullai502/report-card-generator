@@ -16,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect}from 'react';
 import NextImage from 'next/image';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, LayoutTemplate } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -66,6 +66,15 @@ const predefinedHobbiesList = [
   "Coding/Programming", "Gardening", "Volunteering", "Cooking/Baking", "Drama/Theater"
 ];
 
+const reportTemplateOptions = [
+    { id: 'default', name: 'Default Template' },
+    { id: 'professionalBlue', name: 'Professional Blue' },
+    { id: 'elegantGreen', name: 'Elegant Green' },
+    { id: 'minimalistGray', name: 'Minimalist Gray' },
+    { id: 'academicRed', name: 'Academic Red' },
+    { id: 'creativeTeal', name: 'Creative Teal' },
+];
+
 export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
@@ -105,6 +114,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       schoolLogoDataUri: initialData?.schoolLogoDataUri || undefined,
       academicYear: initialData?.academicYear || '2023-2024',
       academicTerm: initialData?.academicTerm || 'First Term',
+      selectedTemplateId: initialData?.selectedTemplateId || 'default',
       daysAttended: initialData?.daysAttended || null,
       totalSchoolDays: initialData?.totalSchoolDays || null,
       parentEmail: initialData?.parentEmail || '',
@@ -162,6 +172,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         schoolLogoDataUri: initialData.schoolLogoDataUri || undefined,
         academicYear: initialData.academicYear || '2023-2024',
         academicTerm: initialData.academicTerm || 'First Term',
+        selectedTemplateId: initialData.selectedTemplateId || 'default',
         daysAttended: initialData.daysAttended === undefined ? null : initialData.daysAttended,
         totalSchoolDays: initialData.totalSchoolDays === undefined ? null : initialData.totalSchoolDays,
         parentEmail: initialData.parentEmail || '',
@@ -598,6 +609,30 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                           <SelectItem value={ADD_CUSTOM_CLASS_VALUE}>
                             <PlusCircle className="mr-2 h-4 w-4" /> Add New Class...
                           </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="selectedTemplateId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><LayoutTemplate className="mr-2 h-4 w-4 text-primary" />Report Template</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || 'default'}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a template" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {reportTemplateOptions.map((option) => (
+                            <SelectItem key={option.id} value={option.id}>
+                              {option.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
