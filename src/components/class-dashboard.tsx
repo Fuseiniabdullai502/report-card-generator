@@ -84,6 +84,8 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
   }
 
   if (!classStats) {
+    // This state might occur briefly if dashboard is opened before stats are ready
+    // or if there's an error in calculating stats.
     return (
       <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
         <DialogContent className="sm:max-w-3xl w-full max-h-[90svh] flex flex-col" id="class-dashboard-dialog-content">
@@ -98,21 +100,24 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
 
 
   const handlePrintDashboard = () => {
+    // This might need more specific print styling if just window.print() isn't ideal
     window.print();
   };
 
+  // Prepare data for charts
   const subjectChartData = classStats?.subjectStats
-    .filter(s => s.averageMark !== null)
+    .filter(s => s.averageMark !== null) // Only include subjects with an average mark
     .map(s => ({ name: s.subjectName, averageMark: s.averageMark! })) || [];
 
   const genderChartData = classStats?.genderStats
-    .filter(g => g.count > 0)
+    .filter(g => g.count > 0) // Only include genders with students
     .map((g, index) => ({
       name: g.gender,
       value: g.count,
-      fill: genderChartColors[index % genderChartColors.length],
+      fill: genderChartColors[index % genderChartColors.length], // Cycle through colors
     })) || [];
     
+  // Create a dynamic chart config for gender pie chart legends
   const genderChartConfig = classStats?.genderStats.reduce((acc, stat, index) => {
       acc[stat.gender.toLowerCase().replace(/\s+/g, '')] = { // e.g., 'male', 'unspecified'
           label: stat.gender,
@@ -124,12 +129,13 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-3xl w-full max-h-[90svh] flex flex-col" id="class-dashboard-dialog-content">
+            {/* Header for Print View */}
             <div className="dashboard-print-header">
               <h2 className="text-xl font-bold">Class Performance Dashboard: {classStats.className}</h2>
               <p className="text-sm">Date Printed: {new Date().toLocaleDateString()}</p>
             </div>
 
-            <DialogHeader className="mb-4 no-print">
+            <DialogHeader className="mb-4 no-print"> {/* Standard Dialog Header for screen */}
               <DialogTitle className="text-2xl flex items-center gap-2">
                 <BarChart3 className="h-7 w-7 text-primary" />
                 Class Performance Dashboard: {classStats.className}
@@ -140,7 +146,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
               </DialogDescription>
             </DialogHeader>
 
-            <ScrollArea className="flex-1 min-h-0 pr-3">
+            <ScrollArea className="flex-1 min-h-0 pr-3"> {/* Ensure scroll area can shrink */}
               <div className="space-y-6">
                 {/* Overall Class Stats */}
                 <Card>
@@ -258,12 +264,12 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                               <Pie
                                 data={genderChartData}
                                 dataKey="value"
-                                nameKey="name"
+                                nameKey="name" // Use name (gender) for the legend and tooltips
                                 cx="50%"
                                 cy="50%"
                                 outerRadius={80}
                                 labelLine={false}
-                                label={renderCustomizedLabel}
+                                label={renderCustomizedLabel} // Custom label to show gender and percentage
                               >
                                 {genderChartData.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -319,15 +325,15 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
 
 
                 {/* AI Teacher Advice */}
-                <Card className="bg-accent/10 border-accent">
+                <Card className="bg-accent/10 border-accent"> {/* Use accent color for distinction */}
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2 text-accent">
-                        <Star className="h-5 w-5 animate-pulse" />
+                        <Star className="h-5 w-5 animate-pulse" /> {/* Pulse for AI suggestion */}
                         AI Generated Insights & Recommendations
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
-                    {isLoading ? (
+                    {isLoading ? ( // Show loader while AI advice is loading
                         <div className="flex items-center justify-center py-8">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                             <p className="ml-3 text-muted-foreground">Loading AI Insights...</p>
@@ -363,7 +369,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
               </div>
             </ScrollArea>
 
-            <DialogFooter className="mt-6 pt-4 border-t dialog-footer-print-hide">
+            <DialogFooter className="mt-6 pt-4 border-t dialog-footer-print-hide"> {/* Class to hide on print */}
               <Button onClick={handlePrintDashboard} variant="outline">
                 <Printer className="mr-2 h-4 w-4" />
                 Print Dashboard

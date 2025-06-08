@@ -132,7 +132,7 @@ const ClassInsightsActionInputSchema = z.object({
 
 
 export async function getAiClassInsightsAction(
-  input: GenerateClassInsightsInput
+  input: GenerateClassInsightsInput // Use the TYPE from the flow for the function signature
 ): Promise<{ success: boolean; insights?: GenerateClassInsightsOutput; error?: string }> {
   try {
     // Validate input specifically for this action before passing to the flow

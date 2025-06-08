@@ -279,9 +279,9 @@ function AppContent() {
     }
 
     setIsDashboardLoading(true);
-    setClassAiAdviceData(null);
+    setClassAiAdviceData(null); // Reset AI advice
 
-    const passMark = 50;
+    const passMark = 50; // Define pass mark for analysis
     const totalStudents = reportsForClass.length;
 
     let totalOverallAverageSum = 0;
@@ -290,6 +290,7 @@ function AppContent() {
     });
     const overallClassAverage = totalStudents > 0 ? totalOverallAverageSum / totalStudents : null;
 
+    // Calculate subject performance including above/at/below average counts
     const subjectPerformance: Record<string, { name: string; totalMarks: number; studentCount: number; marksList: number[]; passedCount: number }> = {};
     reportsForClass.forEach(report => {
       report.subjects.forEach(subject => {
@@ -315,9 +316,10 @@ function AppContent() {
       let studentsBelowAverage = 0;
 
       if (subjectAvg !== null) {
+        const averageTolerance = 2; // Marks within +/- 2 of average are considered "at average"
         s.marksList.forEach(mark => {
-          if (mark > subjectAvg + 2) studentsAboveAverage++;
-          else if (mark < subjectAvg - 2) studentsBelowAverage++;
+          if (mark > subjectAvg + averageTolerance) studentsAboveAverage++;
+          else if (mark < subjectAvg - averageTolerance) studentsBelowAverage++;
           else studentsAtAverage++;
         });
       }
@@ -332,9 +334,10 @@ function AppContent() {
       };
     });
 
+    // Calculate gender statistics
     const genderPerformance: Record<string, { totalScore: number; count: number }> = {};
     reportsForClass.forEach(report => {
-      const gender = report.gender || 'Unspecified';
+      const gender = report.gender || 'Unspecified'; // Default to Unspecified if gender is not set
       if (!genderPerformance[gender]) {
         genderPerformance[gender] = { totalScore: 0, count: 0 };
       }
@@ -358,13 +361,14 @@ function AppContent() {
     };
     setClassStatsData(calculatedStats);
 
+    // Fetch AI insights for the class
     try {
       const aiResult = await getAiClassInsightsAction({
         className: calculatedStats.className,
         totalStudents: calculatedStats.totalStudents,
         overallClassAverage: calculatedStats.overallClassAverage,
-        subjectStats: calculatedStats.subjectStats.map(s => ({...s})),
-        genderStats: calculatedStats.genderStats.map(g => ({...g})),
+        subjectStats: calculatedStats.subjectStats.map(s => ({...s})), // Ensure plain objects for AI flow
+        genderStats: calculatedStats.genderStats.map(g => ({...g})), // Ensure plain objects for AI flow
         passMark: calculatedStats.passMark,
       });
 
@@ -377,7 +381,7 @@ function AppContent() {
       toast({ title: "AI Insights Error", description: "An unexpected error occurred while fetching AI advice.", variant: "destructive" });
     } finally {
       setIsDashboardLoading(false);
-      setIsDashboardOpen(true);
+      setIsDashboardOpen(true); // Open dashboard after all data is processed
     }
   };
   
@@ -390,6 +394,7 @@ function AppContent() {
       toast({ title: "No Classes Found", description: "Add reports with class names to view dashboard.", variant: "destructive" });
       return;
     }
+    // currentDashboardClassIndex should already be set by navigation or default to 0
     generateAndDisplayDashboard(currentDashboardClassIndex);
   };
 
@@ -397,7 +402,7 @@ function AppContent() {
     if (currentDashboardClassIndex > 0) {
       const newIndex = currentDashboardClassIndex - 1;
       setCurrentDashboardClassIndex(newIndex);
-      generateAndDisplayDashboard(newIndex);
+      generateAndDisplayDashboard(newIndex); // Generate for the new class
     }
   };
 
@@ -405,7 +410,7 @@ function AppContent() {
     if (currentDashboardClassIndex < uniqueClassesInList.length - 1) {
       const newIndex = currentDashboardClassIndex + 1;
       setCurrentDashboardClassIndex(newIndex);
-      generateAndDisplayDashboard(newIndex);
+      generateAndDisplayDashboard(newIndex); // Generate for the new class
     }
   };
 
@@ -472,6 +477,7 @@ function AppContent() {
                 </div>
 
                 <div className="flex flex-col gap-2 items-stretch">
+                  {/* Class Dashboard Navigation */}
                   {uniqueClassesInList.length > 0 && (
                     <div className="flex items-center gap-2 justify-center md:justify-start">
                       <Button 
@@ -506,13 +512,14 @@ function AppContent() {
                       </Button>
                     </div>
                   )}
-                   {uniqueClassesInList.length === 0 && (
+                   {uniqueClassesInList.length === 0 && ( // Show default button if no unique classes yet
                      <Button onClick={handleViewClassDashboard} disabled={reportsCount === 0} variant="outline" size="sm" className="w-full md:w-auto">
                         <BarChartHorizontalBig className="mr-2 h-4 w-4" />
                         View Class Dashboard
                       </Button>
                    )}
 
+                  {/* Action Buttons */}
                   <div className="flex flex-wrap gap-2 justify-start md:justify-end">
                     <Button onClick={handleDownloadData} disabled={reportsCount === 0} variant="outline" size="sm">
                       <Download className="mr-2 h-4 w-4" />
@@ -545,6 +552,7 @@ function AppContent() {
               {reportsCount > 0 ? (
                 reportPrintList.map((reportData, index) => (
                   <React.Fragment key={reportData.id || `report-entry-${reportData.studentEntryNumber}`}>
+                    {/* Show actions only for the currently active preview */}
                     {index === currentPreviewIndex && (
                        <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
                          <ReportActions report={reportData} />
@@ -575,8 +583,8 @@ function AppContent() {
         isOpen={isDashboardOpen}
         onClose={() => setIsDashboardOpen(false)}
         classStats={classStatsData}
-        aiAdvice={classAiAdviceData}
-        isLoading={isDashboardLoading}
+        aiAdvice={classAiAdviceData} // Pass AI advice to dashboard
+        isLoading={isDashboardLoading} // Pass loading state
     />
     </>
   );
@@ -584,7 +592,9 @@ function AppContent() {
 
 
 export default function Home() {
+  // Removed AuthProvider wrapping here as it's now in RootLayout
   return (
     <AppContent />
   );
 }
+

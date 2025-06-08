@@ -12,6 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+// Schema for individual subject statistics passed to the flow
 const SubjectPerformanceStatSchema = z.object({
   subjectName: z.string(),
   averageMark: z.number().nullable().describe("Average mark for this subject in the class (0-100)."),
@@ -22,6 +23,7 @@ const SubjectPerformanceStatSchema = z.object({
 });
 export type SubjectPerformanceStat = z.infer<typeof SubjectPerformanceStatSchema>;
 
+// Schema for gender-based statistics passed to the flow
 const GenderPerformanceStatSchema = z.object({
   gender: z.string().describe("e.g., Male, Female, Other, Unspecified"),
   averageScore: z.number().nullable().describe("Average overall score for students of this gender (0-100)."),
@@ -29,6 +31,7 @@ const GenderPerformanceStatSchema = z.object({
 });
 export type GenderPerformanceStat = z.infer<typeof GenderPerformanceStatSchema>;
 
+// Input schema for the generateClassInsights flow
 const GenerateClassInsightsInputSchema = z.object({
   className: z.string().describe("The name of the class being analyzed."),
   totalStudents: z.number().describe("Total number of students in the class whose reports are being analyzed."),
@@ -39,6 +42,7 @@ const GenerateClassInsightsInputSchema = z.object({
 });
 export type GenerateClassInsightsInput = z.infer<typeof GenerateClassInsightsInputSchema>;
 
+// Output schema for the generateClassInsights flow
 const GenerateClassInsightsOutputSchema = z.object({
   overallSummary: z.string().describe("A brief (2-3 sentences) overview of the class's general academic performance based on the provided data."),
   subjectAnalysis: z.string().describe("Detailed analysis of performance across different subjects. Highlight subjects where students excel, subjects where they struggle, and any subjects with notable performance distribution (e.g., highly polarized)."),
@@ -47,12 +51,14 @@ const GenerateClassInsightsOutputSchema = z.object({
 });
 export type GenerateClassInsightsOutput = z.infer<typeof GenerateClassInsightsOutputSchema>;
 
+// Exported async wrapper function to call the flow
 export async function generateClassInsights(
   input: GenerateClassInsightsInput
 ): Promise<GenerateClassInsightsOutput> {
   return generateClassInsightsFlow(input);
 }
 
+// Define the prompt for Genkit
 const generateClassInsightsPrompt = ai.definePrompt({
   name: 'generateClassInsightsPrompt',
   input: {schema: GenerateClassInsightsInputSchema},
@@ -102,6 +108,7 @@ Do not invent data or make assumptions beyond what is provided.
 `,
 });
 
+// Define the Genkit flow
 const generateClassInsightsFlow = ai.defineFlow(
   {
     name: 'generateClassInsightsFlow',
