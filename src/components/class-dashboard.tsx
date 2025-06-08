@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Users, BookOpen, Percent, Users2, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare, Loader2, Printer, Save, PieChart as PieChartIcon } from 'lucide-react';
+import { BarChart3, Users, BookOpen, Percent, Users2, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare, Loader2, Printer, Save, PieChart as PieChartIcon, Info } from 'lucide-react';
 import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Sector } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
@@ -161,15 +161,15 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
             </Card>
 
             {/* Subject Performance Bar Chart */}
-            {subjectChartData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                    Subject Average Marks
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  Subject Average Marks
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {subjectChartData.length > 0 ? (
                   <ChartContainer config={subjectChartConfig} className="min-h-[200px] w-full">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={subjectChartData} margin={{ top: 5, right: 20, left: -20, bottom: 40 }}>
@@ -184,9 +184,15 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                       </BarChart>
                     </ResponsiveContainer>
                   </ChartContainer>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground bg-muted/30 rounded-md p-4">
+                    <Info className="h-8 w-8 mb-2 text-primary" />
+                    <p className="text-center">No data available for subject average marks.</p>
+                    <p className="text-xs text-center mt-1">Ensure subjects have marks entered in student reports.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Subject Performance Table */}
             {classStats.subjectStats.length > 0 && (
@@ -229,16 +235,16 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
             )}
             
             {/* Gender Distribution Pie Chart & Table */}
-            {genderChartData.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <PieChartIcon className="h-5 w-5 text-primary" />
-                      Gender Distribution
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <PieChartIcon className="h-5 w-5 text-primary" />
+                    Gender Distribution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {genderChartData.length > 0 ? (
                     <ChartContainer config={genderChartConfig} className="min-h-[200px] w-full aspect-square">
                        <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
@@ -261,43 +267,49 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                         </PieChart>
                       </ResponsiveContainer>
                     </ChartContainer>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground bg-muted/30 rounded-md p-4">
+                      <Info className="h-8 w-8 mb-2 text-primary" />
+                      <p className="text-center">No gender data available for chart.</p>
+                      <p className="text-xs text-center mt-1">Ensure student gender is specified in reports.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {classStats.genderStats.filter(g => g.count > 0).length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Users2 className="h-5 w-5 text-primary" />
+                      Gender Performance (Overall Average)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Gender</TableHead>
+                          <TableHead className="text-center">Student Count</TableHead>
+                          <TableHead className="text-center">Average Score</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {classStats.genderStats.filter(g => g.count > 0).map((genderStat) => (
+                          <TableRow key={genderStat.gender}>
+                            <TableCell className="font-medium">{genderStat.gender}</TableCell>
+                            <TableCell className="text-center">{genderStat.count}</TableCell>
+                            <TableCell className="text-center">
+                              {genderStat.averageScore !== null ? `${genderStat.averageScore.toFixed(2)}%` : 'N/A'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </CardContent>
                 </Card>
-
-                {classStats.genderStats.filter(g => g.count > 0).length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Users2 className="h-5 w-5 text-primary" />
-                        Gender Performance (Overall Average)
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Gender</TableHead>
-                            <TableHead className="text-center">Student Count</TableHead>
-                            <TableHead className="text-center">Average Score</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {classStats.genderStats.filter(g => g.count > 0).map((genderStat) => (
-                            <TableRow key={genderStat.gender}>
-                              <TableCell className="font-medium">{genderStat.gender}</TableCell>
-                              <TableCell className="text-center">{genderStat.count}</TableCell>
-                              <TableCell className="text-center">
-                                {genderStat.averageScore !== null ? `${genderStat.averageScore.toFixed(2)}%` : 'N/A'}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
+              )}
+            </div>
 
 
             {/* AI Teacher Advice */}
@@ -334,7 +346,11 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                     </div>
                     </>
                 ) : (
-                    <p className="text-center text-muted-foreground py-5">No AI insights available or an error occurred.</p>
+                    <div className="flex flex-col items-center justify-center py-5 text-muted-foreground">
+                      <Info className="h-8 w-8 mb-2 text-primary" />
+                      <p className="text-center">No AI insights available.</p>
+                      <p className="text-xs text-center mt-1">This could be due to an error or if insights generation was not triggered.</p>
+                    </div>
                 )}
                 </CardContent>
               </Card>
