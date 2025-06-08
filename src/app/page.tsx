@@ -26,8 +26,8 @@ function calculateSubjectFinalMark(subject: SubjectEntry): number {
     return 0;
   }
 
-  const scaledCaMark = (caMarkInput !== null && caMarkInput !== undefined) ? (caMarkInput / 60) * 40 : 0;
-  const scaledExamMark = (examMarkInput !== null && examMarkInput !== undefined) ? (examMarkInput / 100) * 60 : 0;
+  const scaledCaMark = (caMarkInput !== null && caMarkInput !== undefined) ? (Number(caMarkInput) / 60) * 40 : 0;
+  const scaledExamMark = (examMarkInput !== null && examMarkInput !== undefined) ? (Number(examMarkInput) / 100) * 60 : 0;
 
   let finalPercentageMark: number;
   finalPercentageMark = scaledCaMark + scaledExamMark;
@@ -59,6 +59,16 @@ function AppContent() {
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
 
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState<number>(0);
+
+  // State for class dashboard navigation
+  const [uniqueClassesInList, setUniqueClassesInList] = useState<string[]>([]);
+  const [currentDashboardClassIndex, setCurrentDashboardClassIndex] = useState<number>(0);
+
+  useEffect(() => {
+    const classNames = [...new Set(reportPrintList.map(report => report.className).filter(Boolean) as string[])].sort();
+    setUniqueClassesInList(classNames);
+    setCurrentDashboardClassIndex(0); // Reset to first class when list changes
+  }, [reportPrintList]);
 
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
@@ -202,6 +212,8 @@ function AppContent() {
     setNextStudentEntryNumber(1);
     setCurrentPreviewIndex(0);
     setSessionDefaults({});
+    setUniqueClassesInList([]);
+    setCurrentDashboardClassIndex(0);
     toast({
       title: "Print List Cleared",
       description: "All reports have been removed and ranking reset. Session defaults cleared.",
@@ -251,9 +263,18 @@ function AppContent() {
     });
   };
 
-  const handleViewClassDashboard = async () => {
-    if (reportPrintList.length === 0) {
-      toast({ title: "No Reports", description: "Add reports to the list to view class dashboard.", variant: "destructive" });
+  const generateAndDisplayDashboard = async (classIdx: number) => {
+    if (uniqueClassesInList.length === 0 || classIdx < 0 || classIdx >= uniqueClassesInList.length) {
+      toast({ title: "No Class Data", description: "Cannot generate dashboard for an invalid class selection.", variant: "destructive" });
+      setIsDashboardOpen(false);
+      return;
+    }
+    const targetClassName = uniqueClassesInList[classIdx];
+    const reportsForClass = reportPrintList.filter(report => report.className === targetClassName);
+
+    if (reportsForClass.length === 0) {
+      toast({ title: "No Reports for Class", description: `No reports found for class: ${targetClassName}.`, variant: "destructive" });
+      setIsDashboardOpen(false);
       return;
     }
 
@@ -261,17 +282,16 @@ function AppContent() {
     setClassAiAdviceData(null);
 
     const passMark = 50;
-    const className = reportPrintList[0]?.className || "N/A";
-    const totalStudents = reportPrintList.length;
+    const totalStudents = reportsForClass.length;
 
     let totalOverallAverageSum = 0;
-    reportPrintList.forEach(report => {
+    reportsForClass.forEach(report => {
       totalOverallAverageSum += report.overallAverage || 0;
     });
     const overallClassAverage = totalStudents > 0 ? totalOverallAverageSum / totalStudents : null;
 
     const subjectPerformance: Record<string, { name: string; totalMarks: number; studentCount: number; marksList: number[]; passedCount: number }> = {};
-    reportPrintList.forEach(report => {
+    reportsForClass.forEach(report => {
       report.subjects.forEach(subject => {
         if (subject.subjectName && subject.subjectName.trim() !== '') {
           const finalMark = calculateSubjectFinalMark(subject);
@@ -313,7 +333,7 @@ function AppContent() {
     });
 
     const genderPerformance: Record<string, { totalScore: number; count: number }> = {};
-    reportPrintList.forEach(report => {
+    reportsForClass.forEach(report => {
       const gender = report.gender || 'Unspecified';
       if (!genderPerformance[gender]) {
         genderPerformance[gender] = { totalScore: 0, count: 0 };
@@ -329,7 +349,7 @@ function AppContent() {
     }));
 
     const calculatedStats: ClassStatistics = {
-      className,
+      className: targetClassName, // Use the specific class name
       totalStudents,
       overallClassAverage,
       subjectStats,
@@ -360,6 +380,35 @@ function AppContent() {
       setIsDashboardOpen(true);
     }
   };
+  
+  const handleViewClassDashboard = () => {
+    if (reportPrintList.length === 0) {
+      toast({ title: "No Reports", description: "Add reports to the list to view class dashboard.", variant: "destructive" });
+      return;
+    }
+     if (uniqueClassesInList.length === 0) {
+      toast({ title: "No Classes Found", description: "Add reports with class names to view dashboard.", variant: "destructive" });
+      return;
+    }
+    generateAndDisplayDashboard(currentDashboardClassIndex);
+  };
+
+  const handlePreviousClassDashboard = () => {
+    if (currentDashboardClassIndex > 0) {
+      const newIndex = currentDashboardClassIndex - 1;
+      setCurrentDashboardClassIndex(newIndex);
+      generateAndDisplayDashboard(newIndex);
+    }
+  };
+
+  const handleNextClassDashboard = () => {
+    if (currentDashboardClassIndex < uniqueClassesInList.length - 1) {
+      const newIndex = currentDashboardClassIndex + 1;
+      setCurrentDashboardClassIndex(newIndex);
+      generateAndDisplayDashboard(newIndex);
+    }
+  };
+
 
   const reportsCount = reportPrintList.length;
 
@@ -421,24 +470,66 @@ function AppContent() {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-                   <Button onClick={handleViewClassDashboard} disabled={reportsCount === 0} variant="outline" size="sm">
-                    <BarChartHorizontalBig className="mr-2 h-4 w-4" />
-                    View Class Dashboard
-                  </Button>
-                  <Button onClick={handleDownloadData} disabled={reportsCount === 0} variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Data
-                  </Button>
-                  <Button onClick={handlePrint} disabled={reportsCount === 0} variant="outline" size="sm">
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print All ({reportsCount})
-                  </Button>
-                  <Button onClick={handleClearList} disabled={reportsCount === 0} variant="destructive" size="sm">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Clear List
-                  </Button>
+
+                <div className="flex flex-col gap-2 items-stretch">
+                  {uniqueClassesInList.length > 0 && (
+                    <div className="flex items-center gap-2 justify-center md:justify-start">
+                      <Button 
+                        onClick={handlePreviousClassDashboard} 
+                        disabled={currentDashboardClassIndex === 0 || uniqueClassesInList.length <= 1} 
+                        variant="outline" 
+                        size="icon" 
+                        aria-label="Previous Class Dashboard"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        onClick={handleViewClassDashboard} 
+                        disabled={reportsCount === 0 || uniqueClassesInList.length === 0} 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-grow md:flex-grow-0"
+                      >
+                        <BarChartHorizontalBig className="mr-2 h-4 w-4" />
+                        {uniqueClassesInList.length > 0 
+                          ? `Dashboard for ${uniqueClassesInList[currentDashboardClassIndex]} (${currentDashboardClassIndex + 1} of ${uniqueClassesInList.length})`
+                          : "View Class Dashboard"}
+                      </Button>
+                      <Button 
+                        onClick={handleNextClassDashboard} 
+                        disabled={currentDashboardClassIndex >= uniqueClassesInList.length - 1 || uniqueClassesInList.length <= 1} 
+                        variant="outline" 
+                        size="icon" 
+                        aria-label="Next Class Dashboard"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                   {uniqueClassesInList.length === 0 && (
+                     <Button onClick={handleViewClassDashboard} disabled={reportsCount === 0} variant="outline" size="sm" className="w-full md:w-auto">
+                        <BarChartHorizontalBig className="mr-2 h-4 w-4" />
+                        View Class Dashboard
+                      </Button>
+                   )}
+
+                  <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+                    <Button onClick={handleDownloadData} disabled={reportsCount === 0} variant="outline" size="sm">
+                      <Download className="mr-2 h-4 w-4" />
+                      Download Data
+                    </Button>
+                    <Button onClick={handlePrint} disabled={reportsCount === 0} variant="outline" size="sm">
+                      <Printer className="mr-2 h-4 w-4" />
+                      Print All ({reportsCount})
+                    </Button>
+                    <Button onClick={handleClearList} disabled={reportsCount === 0} variant="destructive" size="sm">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Clear List
+                    </Button>
+                  </div>
                 </div>
+
+
               </div>
               <CardDescription className="mt-2 md:mt-1 space-y-1">
                 <span>
