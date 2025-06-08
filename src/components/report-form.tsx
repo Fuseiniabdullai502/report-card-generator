@@ -29,7 +29,6 @@ interface ReportFormProps {
   reportPrintListForHistory?: ReportData[];
 }
 
-const NONE_VALUE_KEY = "--none--";
 const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
 const ADD_CUSTOM_HOBBY_VALUE = "--add-custom-hobby--";
@@ -985,25 +984,16 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                       name={`subjects.${currentVisibleSubjectIndex}.continuousAssessment`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary" />CA Mark (1-60)</FormLabel>
-                           <Select
-                              onValueChange={(value) => field.onChange(value === NONE_VALUE_KEY ? null : (value ? parseInt(value, 10) : null) )}
-                              value={field.value === null || field.value === undefined ? NONE_VALUE_KEY : String(field.value)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select CA Mark" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value={NONE_VALUE_KEY}><em>None</em></SelectItem>
-                                {Array.from({ length: 60 }, (_, i) => i + 1).map((val) => (
-                                  <SelectItem key={`ca-${val}`} value={String(val)}>
-                                    {val}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                          <FormLabel className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary" />CA Mark</FormLabel>
+                           <FormControl>
+                             <Input 
+                               type="number" 
+                               placeholder="1-60" 
+                               {...field} 
+                               onChange={e => field.onChange(e.target.value === '' ? null : e.target.value)} 
+                               value={field.value === null || field.value === undefined ? '' : String(field.value)}
+                             />
+                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1013,25 +1003,16 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                       name={`subjects.${currentVisibleSubjectIndex}.examinationMark`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary" />Exam Mark (1-100)</FormLabel>
-                          <Select
-                              onValueChange={(value) => field.onChange(value === NONE_VALUE_KEY ? null : (value ? parseInt(value, 10) : null) )}
-                              value={field.value === null || field.value === undefined ? NONE_VALUE_KEY : String(field.value)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select Exam Mark" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                 <SelectItem value={NONE_VALUE_KEY}><em>None</em></SelectItem>
-                                {Array.from({ length: 100 }, (_, i) => i + 1).map((val) => (
-                                  <SelectItem key={`exam-${val}`} value={String(val)}>
-                                    {val}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                          <FormLabel className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary" />Exam Mark</FormLabel>
+                          <FormControl>
+                             <Input 
+                               type="number" 
+                               placeholder="1-100" 
+                               {...field} 
+                               onChange={e => field.onChange(e.target.value === '' ? null : e.target.value)} 
+                               value={field.value === null || field.value === undefined ? '' : String(field.value)}
+                             />
+                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1325,3 +1306,4 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
+
