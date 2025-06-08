@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -259,9 +258,9 @@ export default function Home() {
             initialData={currentEditingReport}
             reportPrintListForHistory={reportPrintList}
           />
-          <Button onClick={handleAddToList} className="w-full" variant="outline">
+          <Button onClick={handleAddToList} className="w-full" variant="default">
             <ListPlus className="mr-2 h-4 w-4" />
-            Add Current Report to Print & Rank List
+            Add Current Report to Print &amp; Rank List
           </Button>
         </section>
 
@@ -316,5 +315,3 @@ export default function Home() {
       </footer>
     </div>
   );
-}
-
