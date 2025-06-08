@@ -3,6 +3,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/theme-provider';
+import { AuthProvider } from '@/contexts/auth-context'; // Added AuthProvider
 
 const APP_NAME = 'Report Card Generator';
 const APP_DESCRIPTION = 'Easily create, customize, rank, and print student terminal reports. An AI-powered tool for educators.';
@@ -22,7 +23,6 @@ export const metadata: Metadata = {
   creator: 'Firebase Studio App Prototyper', // You can change this
   publisher: 'Firebase Studio App Prototyper', // You can change this
   
-  // Open Graph Metadata
   openGraph: {
     type: 'website',
     url: APP_URL,
@@ -39,19 +39,15 @@ export const metadata: Metadata = {
     ],
   },
 
-  // Twitter Card Metadata
   twitter: {
     card: 'summary_large_image',
     title: APP_NAME,
     description: APP_DESCRIPTION,
-    // creator: '@yourTwitterHandle', // Optional: replace with your Twitter handle
     images: [OG_IMAGE_URL],
   },
 
-  // Viewport settings (Next.js handles this by default, but explicitly stating can be good)
   viewport: 'minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover',
 
-  // Robots (Control search engine crawling)
   robots: {
     index: true,
     follow: true,
@@ -64,22 +60,11 @@ export const metadata: Metadata = {
     },
   },
 
-  // Apple-specific tags (if needed for PWA-like behavior on iOS)
   appleWebApp: {
     capable: true,
     title: APP_NAME,
     statusBarStyle: 'default', 
   },
-  
-  // Icons (Next.js default, but can be customized)
-  // icons: {
-  //   icon: '/favicon.ico',
-  //   shortcut: '/favicon-16x16.png',
-  //   apple: '/apple-touch-icon.png',
-  // },
-
-  // Theme color (for browser UI)
-  // themeColor: '#ffffff', // Set your primary theme color
 };
 
 export default function RootLayout({
@@ -90,22 +75,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* The <link> tags for fonts are kept here as they are specific font loading strategies */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-        {/* If you add a manifest.json, you would link it here too, though Next.js can handle it via metadata object */}
-        {/* <link rel="manifest" href="/manifest.json" /> */}
-        {/* Placeholder for data-ai-hint for the OG image if needed, though it's used in metadata directly */}
-        {/* <meta data-ai-hint="education report" /> */}
       </head>
       <body className="font-body antialiased">
         <ThemeProvider
           defaultTheme="light"
           storageKey="report-card-theme"
         >
-          {children}
-          <Toaster />
+          <AuthProvider> {/* AuthProvider wraps the children */}
+            {children}
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
