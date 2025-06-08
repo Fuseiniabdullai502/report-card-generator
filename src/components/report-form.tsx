@@ -28,7 +28,8 @@ interface ReportFormProps {
 }
 
 const NONE_VALUE_KEY = "--none--";
-const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom--";
+const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
+const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
 
 const classLevels = [
   "KG1", "KG2",
@@ -68,6 +69,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
   const [customSubjectInputValue, setCustomSubjectInputValue] = useState('');
   const [currentCustomSubjectTargetIndex, setCurrentCustomSubjectTargetIndex] = useState<number | null>(null); 
+
+  const [customClassNames, setCustomClassNames] = useState<string[]>([]);
+  const [isCustomClassNameDialogOpen, setIsCustomClassNameDialogOpen] = useState(false);
+  const [customClassNameInputValue, setCustomClassNameInputValue] = useState('');
 
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
 
@@ -158,8 +163,13 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         headMasterSignatureDataUri: initialData.headMasterSignatureDataUri || undefined,
       });
       setCurrentVisibleSubjectIndex(0);
+
+      // Ensure initial custom class name is in the list if provided
+      if (initialData.className && !classLevels.includes(initialData.className) && !customClassNames.includes(initialData.className)) {
+        setCustomClassNames(prev => [...prev, initialData.className!]);
+      }
     }
-  }, [initialData, form.reset, form, append]);
+  }, [initialData, form.reset, form, append, customClassNames]);
 
 
   useEffect(() => {
@@ -194,6 +204,28 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       setCustomSubjectInputValue('');
       setCurrentCustomSubjectTargetIndex(null);
     }
+  };
+
+  const handleAddCustomClassNameToListAndForm = () => {
+    const newClassName = customClassNameInputValue.trim();
+    if (newClassName === '') {
+      toast({
+        title: "Invalid Class Name",
+        description: "Custom class name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+    form.setValue('className', newClassName, { shouldDirty: true, shouldValidate: true });
+    if (!classLevels.includes(newClassName) && !customClassNames.includes(newClassName)) {
+      setCustomClassNames(prev => [...prev, newClassName]);
+    }
+    toast({
+      title: "Custom Class Added",
+      description: `"${newClassName}" has been set and added to your session list.`,
+    });
+    setIsCustomClassNameDialogOpen(false);
+    setCustomClassNameInputValue('');
   };
 
   const handleGenerateAiReportInsights = async () => {
@@ -373,7 +405,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     remove(currentVisibleSubjectIndex);
   };
 
-  const handleImageUpload = async (
+  const handleImageUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
     fieldName: keyof Pick<ReportData, 'studentPhotoDataUri' | 'schoolLogoDataUri' | 'headMasterSignatureDataUri'>
   ) => {
@@ -457,18 +489,37 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center"><Users className="mr-2 h-4 w-4" />Class Name</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select
+                        onValueChange={(value) => {
+                          if (value === ADD_CUSTOM_CLASS_VALUE) {
+                            setCustomClassNameInputValue('');
+                            setIsCustomClassNameDialogOpen(true);
+                          } else {
+                            field.onChange(value);
+                          }
+                        }}
+                        value={field.value || ''}
+                      >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select class level" />
+                            <SelectValue placeholder="Select or add class" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {classLevels.map((level) => (
-                            <SelectItem key={level} value={level}>
+                            <SelectItem key={`predefined-class-${level}`} value={level}>
                               {level}
                             </SelectItem>
                           ))}
+                          {customClassNames.map((name) => (
+                            <SelectItem key={`custom-class-${name}`} value={name}>
+                              {name} (Custom)
+                            </SelectItem>
+                          ))}
+                          <SelectSeparator />
+                          <SelectItem value={ADD_CUSTOM_CLASS_VALUE}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add New Class...
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -1077,8 +1128,35 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={isCustomClassNameDialogOpen} onOpenChange={setIsCustomClassNameDialogOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Add Custom Class Name</DialogTitle>
+          <DialogDescription>
+            Enter the name of the new class. It will be added to your list for future use in this session.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="customClassNameInput" className="text-right">
+              Name
+            </Label>
+            <Input
+              id="customClassNameInput"
+              value={customClassNameInputValue}
+              onChange={(e) => setCustomClassNameInputValue(e.target.value)}
+              placeholder="e.g., Form 1 Gold"
+              className="col-span-3"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsCustomClassNameDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleAddCustomClassNameToListAndForm}>Add Class</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
-
-    
