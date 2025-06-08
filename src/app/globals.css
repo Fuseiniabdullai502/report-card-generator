@@ -112,7 +112,7 @@ body {
   #report-preview-container {
     /* Provides a scrollable container for multiple A4 pages */
     /* background-color: theme('colors.gray.100'); /* Light gray background for the container */
-    /* padding: 1rem; /* Some padding around the A4 pages */ 
+    /* padding: 1rem; /* Some padding around the A4 pages */
   }
   .a4-page-simulation {
     width: 21cm; /* A4 width */
@@ -182,7 +182,7 @@ body {
   .a4-page-simulation:not(:first-child) {
     page-break-before: always !important;
   }
-  
+
   /* Ensure all children within the printable area use print-friendly styles */
   .a4-page-simulation * {
     color: black !important;
@@ -199,13 +199,13 @@ body {
     max-width: 100% !important; /* Ensure images are constrained */
     page-break-inside: avoid;
   }
-  
+
   /* Hide any specific interactive elements within the preview if they exist and are not caught by .no-print */
-  .a4-page-simulation button, 
-  .a4-page-simulation a[href]:not(.printable-link) { 
+  .a4-page-simulation button,
+  .a4-page-simulation a[href]:not(.printable-link) {
     display: none !important;
   }
-  
+
   /* Ensure textareas appear as static text */
    .a4-page-simulation textarea {
     border: none !important;
@@ -238,7 +238,7 @@ body {
   }
 
   /* Styles for printing the Class Dashboard Dialog */
-  
+
   /* Hide the dialog overlay and focus guards when printing */
   body > [data-radix-portal] > [data-radix-dialog-overlay],
   body > [data-radix-portal] > [data-radix-focus-guard] {
@@ -275,12 +275,12 @@ body {
     box-shadow: none !important;
     /* background-color: transparent !important; Allow specific overrides below */
   }
-  
+
   #class-dashboard-dialog-content .card,
   #class-dashboard-dialog-content .table {
     background-color: white !important; /* Ensure cards and tables have white background */
   }
-  
+
   #class-dashboard-dialog-content .text-primary {
      color: #2c5282 !important; /* Darker blue for primary text elements, adjust as needed */
   }
@@ -293,9 +293,9 @@ body {
 
 
   /* Specific styling for the AI Insights card */
-  #class-dashboard-dialog-content .bg-accent\\/10 {
-    background-color: #f0fff4 !important; /* A very light green, for example */
-    border: 1px solid #a7f3d0 !important; /* A light green border */
+  #class-dashboard-dialog-content [class~="bg-accent/10"] {
+    background-color: #f0fff4 !important;
+    border: 1px solid #a7f3d0 !important;
   }
    /* Ensure icons within specific contexts are visible if colored */
   #class-dashboard-dialog-content .text-green-500 { color: green !important; }
@@ -304,7 +304,7 @@ body {
 
 
   /* Ensure ScrollArea content is fully visible and printable */
-  #class-dashboard-dialog-content .max-h-\\[calc\\(80vh-200px\\)\\] { /* Targets the specific max-height class */
+  #class-dashboard-dialog-content [class~="max-h-[calc(80vh-200px)]"] {
     max-height: none !important;
     overflow: visible !important;
   }
@@ -322,7 +322,7 @@ body {
   #class-dashboard-dialog-content .table {
     page-break-inside: avoid;
   }
-  
+
   #class-dashboard-dialog-content tr {
     page-break-inside: avoid;
   }
@@ -333,3 +333,4 @@ body {
     display: none !important;
   }
 }
+
