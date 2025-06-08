@@ -55,6 +55,8 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
   const isPromotionStatusRelevant = data.academicTerm === 'Third Term' && 
                                    data.className && 
                                    !tertiaryLevelClassesList.includes(data.className);
+  
+  const hobbiesText = data.hobbies && data.hobbies.length > 0 ? data.hobbies.join(', ') : '';
 
   return (
     <div id="printable-report-area" className="a4-page-simulation flex flex-col text-sm">
@@ -186,9 +188,9 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
           </ReportSection>
         )}
 
-        {data.hobbies && data.hobbies.trim() !== '' && (
+        {hobbiesText && (
           <ReportSection title="Hobbies / Co-curricular Activities">
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.hobbies}</p>
+            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{hobbiesText}</p>
           </ReportSection>
         )}
 
@@ -248,4 +250,3 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
     </div>
   );
 }
-

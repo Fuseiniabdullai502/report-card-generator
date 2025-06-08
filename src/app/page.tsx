@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -160,7 +161,7 @@ export default function Home() {
         performanceSummary: '',
         strengths: '',
         areasForImprovement: '',
-        hobbies: '', // Reset hobbies for new student
+        hobbies: [], // Reset hobbies for new student
         teacherFeedback: '',
         instructorContact: '',
         subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],

@@ -41,7 +41,7 @@ export const ReportDataSchema = z.object({
   performanceSummary: z.string().min(1, 'Performance summary is required'),
   strengths: z.string().min(1, 'Strengths are required'),
   areasForImprovement: z.string().min(1, 'Areas for improvement are required'),
-  hobbies: z.string().optional(),
+  hobbies: z.array(z.string()).optional().default([]), // Changed to array of strings
   teacherFeedback: z.string().optional(),
   instructorContact: z.string().optional(),
   subjects: z
@@ -66,7 +66,7 @@ export const ReportDataSchema = z.object({
 
 export type ReportData = z.infer<typeof ReportDataSchema>;
 
-export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id' | 'studentEntryNumber'> & { subjects: SubjectEntry[] } = {
+export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id' | 'studentEntryNumber' | 'hobbies'> & { subjects: SubjectEntry[]; hobbies: string[] } = {
   studentName: '',
   className: '',
   gender: undefined,
@@ -79,7 +79,7 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   performanceSummary: '',
   strengths: '',
   areasForImprovement: '',
-  hobbies: '',
+  hobbies: [], // Default to empty array
   teacherFeedback: '',
   instructorContact: '',
   subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
@@ -87,4 +87,3 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   studentPhotoDataUri: undefined,
   headMasterSignatureDataUri: undefined,
 };
-

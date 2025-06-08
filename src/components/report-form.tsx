@@ -11,10 +11,12 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage}from '@/c
 import {Input}from '@/components/ui/input';
 import {Textarea}from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator}from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect}from 'react';
 import NextImage from 'next/image';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,6 +32,7 @@ interface ReportFormProps {
 const NONE_VALUE_KEY = "--none--";
 const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
+const ADD_CUSTOM_HOBBY_VALUE = "--add-custom-hobby--";
 
 const classLevels = [
   "KG1", "KG2",
@@ -59,6 +62,11 @@ const predefinedSubjectsList = [
   "Economics", "Biology", "Elective Mathematics"
 ];
 
+const predefinedHobbiesList = [
+  "Reading", "Sports (General)", "Music", "Art & Craft", "Debating",
+  "Coding/Programming", "Gardening", "Volunteering", "Cooking/Baking", "Drama/Theater"
+];
+
 export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
@@ -73,6 +81,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [customClassNames, setCustomClassNames] = useState<string[]>([]);
   const [isCustomClassNameDialogOpen, setIsCustomClassNameDialogOpen] = useState(false);
   const [customClassNameInputValue, setCustomClassNameInputValue] = useState('');
+
+  const [customHobbies, setCustomHobbies] = useState<string[]>([]);
+  const [isCustomHobbyDialogOpen, setIsCustomHobbyDialogOpen] = useState(false);
+  const [customHobbyInputValue, setCustomHobbyInputValue] = useState('');
 
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
 
@@ -99,7 +111,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       performanceSummary: initialData?.performanceSummary || '',
       strengths: initialData?.strengths || '',
       areasForImprovement: initialData?.areasForImprovement || '',
-      hobbies: initialData?.hobbies || '',
+      hobbies: initialData?.hobbies || [],
       teacherFeedback: initialData?.teacherFeedback || '',
       instructorContact: initialData?.instructorContact || '',
       subjects: initialData?.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
@@ -131,6 +143,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const watchedAcademicTerm = form.watch('academicTerm');
   const watchedClassName = form.watch('className');
+  const watchedHobbies = form.watch('hobbies') || [];
 
 
   const isPromotionStatusApplicable = React.useMemo(() => {
@@ -153,7 +166,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         performanceSummary: initialData.performanceSummary || '',
         strengths: initialData.strengths || '',
         areasForImprovement: initialData.areasForImprovement || '',
-        hobbies: initialData.hobbies || '',
+        hobbies: initialData.hobbies || [],
         teacherFeedback: initialData.teacherFeedback || '',
         instructorContact: initialData.instructorContact || '',
         subjects: initialData.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
@@ -164,12 +177,17 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       });
       setCurrentVisibleSubjectIndex(0);
 
-      // Ensure initial custom class name is in the list if provided
       if (initialData.className && !classLevels.includes(initialData.className) && !customClassNames.includes(initialData.className)) {
         setCustomClassNames(prev => [...prev, initialData.className!]);
       }
+      if (initialData.hobbies) {
+        const newCustomHobbies = initialData.hobbies.filter(hobby => !predefinedHobbiesList.includes(hobby) && !customHobbies.includes(hobby));
+        if (newCustomHobbies.length > 0) {
+          setCustomHobbies(prev => [...prev, ...newCustomHobbies]);
+        }
+      }
     }
-  }, [initialData, form.reset, form, append, customClassNames]);
+  }, [initialData, form.reset, form, append, customClassNames, customHobbies]);
 
 
   useEffect(() => {
@@ -227,6 +245,34 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     setIsCustomClassNameDialogOpen(false);
     setCustomClassNameInputValue('');
   };
+
+  const handleAddCustomHobbyToListAndForm = () => {
+    const newHobby = customHobbyInputValue.trim();
+    if (newHobby === '') {
+      toast({
+        title: "Invalid Hobby Name",
+        description: "Custom hobby name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const currentHobbies = form.getValues('hobbies') || [];
+    if (!currentHobbies.includes(newHobby)) {
+      form.setValue('hobbies', [...currentHobbies, newHobby], { shouldDirty: true, shouldValidate: true });
+    }
+
+    if (!predefinedHobbiesList.includes(newHobby) && !customHobbies.includes(newHobby)) {
+      setCustomHobbies(prev => [...prev, newHobby]);
+    }
+    toast({
+      title: "Custom Hobby Added",
+      description: `"${newHobby}" has been selected and added to your session list.`,
+    });
+    setIsCustomHobbyDialogOpen(false);
+    setCustomHobbyInputValue('');
+  };
+
 
   const handleGenerateAiReportInsights = async () => {
     const { studentName, className, subjects, daysAttended, totalSchoolDays } = form.getValues();
@@ -382,7 +428,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       instructorContact: data.instructorContact || '',
       schoolLogoDataUri: data.schoolLogoDataUri || undefined,
       studentEntryNumber: data.studentEntryNumber || undefined,
-      hobbies: data.hobbies || '',
+      hobbies: data.hobbies || [],
     };
     onFormUpdate(processedData);
      toast({
@@ -1035,19 +1081,68 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                   )}
                 />
               </div>
+
               <FormField
                 control={form.control}
                 name="hobbies"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center"><Smile className="mr-2 h-4 w-4 text-primary" />Hobbies / Co-curricular Activities (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="e.g., Reading, Football, Debating Club" {...field} rows={2} />
-                    </FormControl>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between">
+                          <span className="truncate max-w-[calc(100%-2rem)]">
+                            {watchedHobbies.length > 0 ? watchedHobbies.join(', ') : "Select Hobbies"}
+                          </span>
+                          <ChevronDown className="h-4 w-4 opacity-50" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]" align="start">
+                        <ScrollArea className="h-[200px]">
+                          {predefinedHobbiesList.map((hobby) => (
+                            <DropdownMenuCheckboxItem
+                              key={hobby}
+                              checked={watchedHobbies.includes(hobby)}
+                              onCheckedChange={(checked) => {
+                                const current = field.value || [];
+                                field.onChange(
+                                  checked ? [...current, hobby] : current.filter((h) => h !== hobby)
+                                );
+                              }}
+                            >
+                              {hobby}
+                            </DropdownMenuCheckboxItem>
+                          ))}
+                          {customHobbies.length > 0 && <DropdownMenuSeparator />}
+                          {customHobbies.map((hobby) => (
+                             <DropdownMenuCheckboxItem
+                              key={hobby}
+                              checked={watchedHobbies.includes(hobby)}
+                              onCheckedChange={(checked) => {
+                                const current = field.value || [];
+                                field.onChange(
+                                  checked ? [...current, hobby] : current.filter((h) => h !== hobby)
+                                );
+                              }}
+                            >
+                              {hobby} (Custom)
+                            </DropdownMenuCheckboxItem>
+                          ))}
+                        </ScrollArea>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => {
+                          setCustomHobbyInputValue('');
+                          setIsCustomHobbyDialogOpen(true);
+                        }}>
+                          <PlusCircle className="mr-2 h-4 w-4" /> Add Custom Hobby...
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="teacherFeedback"
@@ -1154,6 +1249,35 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsCustomClassNameDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleAddCustomClassNameToListAndForm}>Add Class</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={isCustomHobbyDialogOpen} onOpenChange={setIsCustomHobbyDialogOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Add Custom Hobby</DialogTitle>
+          <DialogDescription>
+            Enter the name of the new hobby. It will be added to your list for future use in this session.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="customHobbyNameInput" className="text-right">
+              Name
+            </Label>
+            <Input
+              id="customHobbyNameInput"
+              value={customHobbyInputValue}
+              onChange={(e) => setCustomHobbyInputValue(e.target.value)}
+              placeholder="e.g., Chess Club"
+              className="col-span-3"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsCustomHobbyDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleAddCustomHobbyToListAndForm}>Add Hobby</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
