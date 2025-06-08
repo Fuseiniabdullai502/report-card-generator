@@ -41,6 +41,7 @@ export const ReportDataSchema = z.object({
   performanceSummary: z.string().min(1, 'Performance summary is required'),
   strengths: z.string().min(1, 'Strengths are required'),
   areasForImprovement: z.string().min(1, 'Areas for improvement are required'),
+  hobbies: z.string().optional(),
   teacherFeedback: z.string().optional(),
   instructorContact: z.string().optional(),
   subjects: z
@@ -78,6 +79,7 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   performanceSummary: '',
   strengths: '',
   areasForImprovement: '',
+  hobbies: '',
   teacherFeedback: '',
   instructorContact: '',
   subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
@@ -85,3 +87,4 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   studentPhotoDataUri: undefined,
   headMasterSignatureDataUri: undefined,
 };
+

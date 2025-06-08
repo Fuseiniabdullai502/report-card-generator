@@ -128,7 +128,7 @@ export default function Home() {
           schoolName: currentEditingReport.schoolName,
           schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
           className: currentEditingReport.className,
-          gender: currentEditingReport.gender,
+          // gender: currentEditingReport.gender, // Gender is student-specific
           academicYear: currentEditingReport.academicYear,
           academicTerm: currentEditingReport.academicTerm,
           totalSchoolDays: currentEditingReport.totalSchoolDays,
@@ -149,7 +149,7 @@ export default function Home() {
         schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
         schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBase.schoolLogoDataUri,
         className: sessionDefaults.className ?? newFormBase.className,
-        gender: sessionDefaults.gender ?? newFormBase.gender,
+        gender: newFormBase.gender, // Reset gender for new student
         academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear,
         academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm,
         totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null 
@@ -161,6 +161,7 @@ export default function Home() {
         performanceSummary: '',
         strengths: '',
         areasForImprovement: '',
+        hobbies: '', // Reset hobbies for new student
         teacherFeedback: '',
         instructorContact: '',
         subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
@@ -316,3 +317,4 @@ export default function Home() {
     </div>
   );
 }
+

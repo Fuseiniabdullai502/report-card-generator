@@ -12,9 +12,9 @@ import {Input}from '@/components/ui/input';
 import {Textarea}from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator}from '@/components/ui/select';
 import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction}from '@/app/actions';
-import React, {useState, useTransition, useEffect} from 'react';
+import React, {useState, useTransition, useEffect}from 'react';
 import NextImage from 'next/image';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -94,6 +94,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       performanceSummary: initialData?.performanceSummary || '',
       strengths: initialData?.strengths || '',
       areasForImprovement: initialData?.areasForImprovement || '',
+      hobbies: initialData?.hobbies || '',
       teacherFeedback: initialData?.teacherFeedback || '',
       instructorContact: initialData?.instructorContact || '',
       subjects: initialData?.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
@@ -147,6 +148,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         performanceSummary: initialData.performanceSummary || '',
         strengths: initialData.strengths || '',
         areasForImprovement: initialData.areasForImprovement || '',
+        hobbies: initialData.hobbies || '',
         teacherFeedback: initialData.teacherFeedback || '',
         instructorContact: initialData.instructorContact || '',
         subjects: initialData.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
@@ -348,6 +350,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       instructorContact: data.instructorContact || '',
       schoolLogoDataUri: data.schoolLogoDataUri || undefined,
       studentEntryNumber: data.studentEntryNumber || undefined,
+      hobbies: data.hobbies || '',
     };
     onFormUpdate(processedData);
      toast({
@@ -372,13 +375,13 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
-    fieldName: keyof ReportData
+    fieldName: keyof Pick<ReportData, 'studentPhotoDataUri' | 'schoolLogoDataUri' | 'headMasterSignatureDataUri'>
   ) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const originalDataUri = reader.result as string; 
+        const originalDataUri = reader.result as string;
 
         if (typeof originalDataUri !== 'string' || !originalDataUri.startsWith('data:image/')) {
           toast({
@@ -386,16 +389,15 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             description: "The selected file does not appear to be a valid image (e.g., JPG, PNG, GIF). Please choose a different file.",
             variant: "destructive",
           });
-          if (event.target) event.target.value = ''; 
+          if (event.target) event.target.value = '';
           return;
         }
         
         form.setValue(fieldName, originalDataUri, { shouldDirty: true, shouldValidate: true });
         toast({
           title: "Image Uploaded",
-          description: `${fieldName === 'studentPhotoDataUri' ? 'Student photo' : fieldName === 'schoolLogoDataUri' ? 'School logo' : 'Signature'} has been uploaded.`,
+          description: `${fieldName === 'studentPhotoDataUri' ? 'Student photo' : fieldName === 'schoolLogoDataUri' ? 'School logo' : "Head Master's signature"} has been uploaded.`,
         });
-
       };
       reader.onerror = () => {
         toast({
@@ -403,7 +405,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             description: "Could not read the selected file. It might be corrupted or the browser might not support reading it.",
             variant: "destructive",
           });
-        if (event.target) event.target.value = ''; 
+        if (event.target) event.target.value = '';
       };
       reader.readAsDataURL(file);
     }
@@ -982,6 +984,19 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="hobbies"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center"><Smile className="mr-2 h-4 w-4 text-primary" />Hobbies / Co-curricular Activities (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="e.g., Reading, Football, Debating Club" {...field} rows={2} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="teacherFeedback"

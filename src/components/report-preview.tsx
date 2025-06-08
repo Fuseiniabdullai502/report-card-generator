@@ -186,6 +186,12 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
           </ReportSection>
         )}
 
+        {data.hobbies && data.hobbies.trim() !== '' && (
+          <ReportSection title="Hobbies / Co-curricular Activities">
+            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.hobbies}</p>
+          </ReportSection>
+        )}
+
         {data.teacherFeedback && (
           <ReportSection title="Teacher's Feedback" highlightColor="bg-green-50 print:bg-green-50">
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.teacherFeedback}</p>
@@ -242,3 +248,4 @@ function ReportSection({ title, children, highlightColor }: ReportSectionProps) 
     </div>
   );
 }
+
