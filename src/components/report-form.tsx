@@ -311,17 +311,15 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
     startReportInsightsAiTransition(async () => {
       try {
-        // Data from form.getValues() should already be coerced by ReportDataSchema
-        // to have numbers for marks and attendance days (or null).
         const result = await getAiReportInsightsAction({
           studentName,
           className,
-          daysAttended, // Should be number | null
-          totalSchoolDays, // Should be number | null
-          subjects: subjects.map(s => ({ // Ensure only fields expected by FlowSubjectEntrySchema are passed
+          daysAttended,
+          totalSchoolDays,
+          subjects: subjects.map(s => ({
             subjectName: s.subjectName,
-            continuousAssessment: s.continuousAssessment,
-            examinationMark: s.examinationMark,
+            continuousAssessment: s.continuousAssessment === undefined || s.continuousAssessment === null ? null : Number(s.continuousAssessment),
+            examinationMark: s.examinationMark === undefined || s.examinationMark === null ? null : Number(s.examinationMark),
           })),
         });
 
@@ -442,8 +440,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       totalSchoolDays: data.totalSchoolDays === '' || data.totalSchoolDays === undefined ? null : Number(data.totalSchoolDays),
       subjects: data.subjects.map(s => ({
         ...s,
-        continuousAssessment: s.continuousAssessment === undefined ? null : s.continuousAssessment,
-        examinationMark: s.examinationMark === undefined ? null : s.examinationMark,
+        continuousAssessment: s.continuousAssessment === undefined || s.continuousAssessment === null ? null : Number(s.continuousAssessment),
+        examinationMark: s.examinationMark === undefined || s.examinationMark === null ? null : Number(s.examinationMark),
       })),
       promotionStatus: promotionStatusApplicableCheck ? data.promotionStatus : undefined,
       studentPhotoDataUri: data.studentPhotoDataUri || undefined,
@@ -1046,7 +1044,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                type="number" 
                                placeholder="1-60" 
                                {...field} 
-                               onChange={e => field.onChange(e.target.value === '' ? null : e.target.value)} 
+                               onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} 
                                value={field.value === null || field.value === undefined ? '' : String(field.value)}
                                onKeyDown={(e) => handleSubjectInputKeyDown(e, 'ca')}
                              />
@@ -1067,7 +1065,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                type="number" 
                                placeholder="1-100" 
                                {...field} 
-                               onChange={e => field.onChange(e.target.value === '' ? null : e.target.value)} 
+                               onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} 
                                value={field.value === null || field.value === undefined ? '' : String(field.value)}
                                onKeyDown={(e) => handleSubjectInputKeyDown(e, 'exam')}
                              />
@@ -1367,4 +1365,3 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
-
