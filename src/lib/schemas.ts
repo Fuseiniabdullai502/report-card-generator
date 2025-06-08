@@ -38,10 +38,12 @@ export const ReportDataSchema = z.object({
     .min(0, 'Total school days cannot be negative')
     .nullable()
     .optional(),
+  parentEmail: z.string().email({ message: "Invalid email address" }).optional().or(z.literal('')),
+  parentPhoneNumber: z.string().optional(),
   performanceSummary: z.string().min(1, 'Performance summary is required'),
   strengths: z.string().min(1, 'Strengths are required'),
   areasForImprovement: z.string().min(1, 'Areas for improvement are required'),
-  hobbies: z.array(z.string()).optional().default([]), // Changed to array of strings
+  hobbies: z.array(z.string()).optional().default([]),
   teacherFeedback: z.string().optional(),
   instructorContact: z.string().optional(),
   subjects: z
@@ -66,7 +68,7 @@ export const ReportDataSchema = z.object({
 
 export type ReportData = z.infer<typeof ReportDataSchema>;
 
-export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id' | 'studentEntryNumber' | 'hobbies'> & { subjects: SubjectEntry[]; hobbies: string[] } = {
+export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id' | 'studentEntryNumber'> & { subjects: SubjectEntry[]; hobbies: string[] } = {
   studentName: '',
   className: '',
   gender: undefined,
@@ -76,10 +78,12 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   academicTerm: 'First Term',
   daysAttended: null,
   totalSchoolDays: null,
+  parentEmail: '',
+  parentPhoneNumber: '',
   performanceSummary: '',
   strengths: '',
   areasForImprovement: '',
-  hobbies: [], // Default to empty array
+  hobbies: [],
   teacherFeedback: '',
   instructorContact: '',
   subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],

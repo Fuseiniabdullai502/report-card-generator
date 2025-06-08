@@ -16,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction}from '@/app/actions';
 import React, {useState, useTransition, useEffect}from 'react';
 import NextImage from 'next/image';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -108,6 +108,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       academicTerm: initialData?.academicTerm || 'First Term',
       daysAttended: initialData?.daysAttended || null,
       totalSchoolDays: initialData?.totalSchoolDays || null,
+      parentEmail: initialData?.parentEmail || '',
+      parentPhoneNumber: initialData?.parentPhoneNumber || '',
       performanceSummary: initialData?.performanceSummary || '',
       strengths: initialData?.strengths || '',
       areasForImprovement: initialData?.areasForImprovement || '',
@@ -163,6 +165,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         academicTerm: initialData.academicTerm || 'First Term',
         daysAttended: initialData.daysAttended === undefined ? null : initialData.daysAttended,
         totalSchoolDays: initialData.totalSchoolDays === undefined ? null : initialData.totalSchoolDays,
+        parentEmail: initialData.parentEmail || '',
+        parentPhoneNumber: initialData.parentPhoneNumber || '',
         performanceSummary: initialData.performanceSummary || '',
         strengths: initialData.strengths || '',
         areasForImprovement: initialData.areasForImprovement || '',
@@ -224,7 +228,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       }
 
       toast({
-        title: "Custom Subject Added",
+        title: "Subject Added",
         description: `"${newSubjectName}" has been set for the current subject entry and added to your session list.`,
       });
       setIsCustomSubjectDialogOpen(false);
@@ -248,7 +252,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       setCustomClassNames(prev => [...prev, newClassName]);
     }
     toast({
-      title: "Custom Class Added",
+      title: "Class Added",
       description: `"${newClassName}" has been set and added to your session list.`,
     });
     setIsCustomClassNameDialogOpen(false);
@@ -275,7 +279,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       setCustomHobbies(prev => [...prev, newHobby]);
     }
     toast({
-      title: "Custom Hobby Added",
+      title: "Hobby Added",
       description: `"${newHobby}" has been selected and added to your session list.`,
     });
     setIsCustomHobbyDialogOpen(false);
@@ -438,6 +442,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       schoolLogoDataUri: data.schoolLogoDataUri || undefined,
       studentEntryNumber: data.studentEntryNumber || undefined,
       hobbies: data.hobbies || [],
+      parentEmail: data.parentEmail || '',
+      parentPhoneNumber: data.parentPhoneNumber || '',
     };
     onFormUpdate(processedData);
      toast({
@@ -613,6 +619,32 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                       <FormLabel className="flex items-center"><Building className="mr-2 h-4 w-4" />School Name</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., Springfield Elementary" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="parentEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><Mail className="mr-2 h-4 w-4" />Parent Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="e.g., parent@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="parentPhoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><Phone className="mr-2 h-4 w-4" />Parent Phone Number</FormLabel>
+                      <FormControl>
+                        <Input type="tel" placeholder="e.g., +1234567890 (for WhatsApp)" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1143,7 +1175,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                           setCustomHobbyInputValue('');
                           setIsCustomHobbyDialogOpen(true);
                         }}>
-                          <PlusCircle className="mr-2 h-4 w-4" /> Add Custom Hobby...
+                          <PlusCircle className="mr-2 h-4 w-4" /> Add New Hobby...
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -1207,7 +1239,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     <Dialog open={isCustomSubjectDialogOpen} onOpenChange={setIsCustomSubjectDialogOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Custom Subject</DialogTitle>
+          <DialogTitle>Add Subject</DialogTitle>
           <DialogDescription>
             Enter the name of the new subject. It will be added to your list for future use in this session.
           </DialogDescription>
@@ -1236,7 +1268,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     <Dialog open={isCustomClassNameDialogOpen} onOpenChange={setIsCustomClassNameDialogOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Custom Class Name</DialogTitle>
+          <DialogTitle>Add Class Name</DialogTitle>
           <DialogDescription>
             Enter the name of the new class. It will be added to your list for future use in this session.
           </DialogDescription>
@@ -1265,7 +1297,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     <Dialog open={isCustomHobbyDialogOpen} onOpenChange={setIsCustomHobbyDialogOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Custom Hobby</DialogTitle>
+          <DialogTitle>Add Hobby</DialogTitle>
           <DialogDescription>
             Enter the name of the new hobby. It will be added to your list for future use in this session.
           </DialogDescription>

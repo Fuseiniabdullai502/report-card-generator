@@ -4,10 +4,11 @@
 import { useState, useEffect } from 'react';
 import ReportForm from '@/components/report-form';
 import ReportPreview from '@/components/report-preview';
+import ReportActions from '@/components/report-actions'; // New import
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
@@ -128,11 +129,11 @@ export default function Home() {
           schoolName: currentEditingReport.schoolName,
           schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
           className: currentEditingReport.className,
-          // gender: currentEditingReport.gender, // Gender is student-specific
           academicYear: currentEditingReport.academicYear,
           academicTerm: currentEditingReport.academicTerm,
           totalSchoolDays: currentEditingReport.totalSchoolDays,
           headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
+          instructorContact: currentEditingReport.instructorContact, 
         });
       }
       
@@ -149,21 +150,23 @@ export default function Home() {
         schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
         schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBase.schoolLogoDataUri,
         className: sessionDefaults.className ?? newFormBase.className,
-        gender: newFormBase.gender, // Reset gender for new student
+        gender: newFormBase.gender, 
         academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear,
         academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm,
         totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null 
                          ? sessionDefaults.totalSchoolDays 
                          : newFormBase.totalSchoolDays,
         headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
+        instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact,
         studentName: '', 
         daysAttended: null,
+        parentEmail: '',
+        parentPhoneNumber: '',
         performanceSummary: '',
         strengths: '',
         areasForImprovement: '',
-        hobbies: [], // Reset hobbies for new student
+        hobbies: [], 
         teacherFeedback: '',
-        instructorContact: '',
         subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
         promotionStatus: undefined,
         studentEntryNumber: undefined,
@@ -216,7 +219,7 @@ export default function Home() {
       return;
     }
 
-    const dataStr = JSON.stringify(reportPrintList, null, 2); // Pretty print JSON
+    const dataStr = JSON.stringify(reportPrintList, null, 2); 
     const dataBlob = new Blob([dataStr], { type: "application/json" });
     const dataUrl = URL.createObjectURL(dataBlob);
     
@@ -225,10 +228,10 @@ export default function Home() {
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUrl);
     linkElement.setAttribute('download', exportFileDefaultName);
-    document.body.appendChild(linkElement); // Required for Firefox
+    document.body.appendChild(linkElement); 
     linkElement.click();
-    linkElement.remove(); // Clean up
-    URL.revokeObjectURL(dataUrl); // Clean up blob URL
+    linkElement.remove(); 
+    URL.revokeObjectURL(dataUrl); 
 
     toast({
         title: "Data Downloaded",
@@ -288,16 +291,24 @@ export default function Home() {
                   </Button>
                 </div>
               </div>
-              <CardDescription className="mt-2 md:mt-0">
-                This area shows all reports added to the print list, sorted by rank. Each will attempt to print on a new page.
-                Browser print dialog usually offers "Save as PDF". "Download Data" saves list as JSON. Session defaults (School, Class, Term etc.) apply after the first student entry.
+              <CardDescription className="mt-2 md:mt-0 space-y-1">
+                <span>
+                  This area shows all reports added to the print list, sorted by rank. Each will attempt to print on a new page.
+                  Browser print dialog usually offers "Save as PDF". "Download Data" saves list as JSON. Session defaults apply after first entry.
+                </span>
+                <span className="block text-xs italic">
+                  <Share2 className="inline-block mr-1 h-3 w-3 text-muted-foreground" /> Share options (Email/WhatsApp) below each report will open your default app with a pre-filled message. Automated sending is not supported.
+                </span>
                 {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on the average of final subject scores (CA 40%, Exam 60%).</span>}
               </CardDescription>
             </CardHeader>
             <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">
               {reportsCount > 0 ? (
                 reportPrintList.map((reportData) => (
-                  <ReportPreview key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} data={reportData} />
+                  <div key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} className="mb-4 bg-card shadow-sm rounded-lg p-2 no-print">
+                    <ReportActions report={reportData} />
+                    <ReportPreview data={reportData} />
+                  </div>
                 ))
               ) : (
                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
@@ -316,3 +327,4 @@ export default function Home() {
       </footer>
     </div>
   );
+}
