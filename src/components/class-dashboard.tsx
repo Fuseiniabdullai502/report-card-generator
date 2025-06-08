@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Users, BookOpen, Percent, Users2, PieChart, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare, Loader2, Printer } from 'lucide-react';
+import { BarChart3, Users, BookOpen, Percent, Users2, PieChart, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare, Loader2, Printer, Save } from 'lucide-react';
 import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow';
 
 export interface SubjectPerformanceStatForUI {
@@ -75,6 +75,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
           </DialogTitle>
           <DialogDescription>
             An overview of class performance based on {classStats.totalStudents} student reports. Pass Mark: {classStats.passMark}%.
+            Use the buttons below to print or save as PDF (via print options).
           </DialogDescription>
         </DialogHeader>
 
@@ -225,9 +226,13 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
       <DialogContent className="max-w-3xl w-full" id="class-dashboard-dialog-content"> {/* Increased width and added ID */}
         {renderContent()}
         <DialogFooter className="mt-6 pt-4 border-t dialog-footer-print-hide"> {/* Added dialog-footer-print-hide to entire footer */}
-          <Button onClick={handlePrintDashboard} variant="default">
+          <Button onClick={handlePrintDashboard} variant="outline">
             <Printer className="mr-2 h-4 w-4" />
             Print Dashboard
+          </Button>
+          <Button onClick={handlePrintDashboard} variant="default">
+            <Save className="mr-2 h-4 w-4" />
+            Save as PDF
           </Button>
           <Button onClick={onClose} variant="outline">Close</Button>
         </DialogFooter>
@@ -235,3 +240,4 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
     </Dialog>
   );
 }
+
