@@ -83,6 +83,20 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
     return null;
   }
 
+  if (!classStats) {
+    return (
+      <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+        <DialogContent className="sm:max-w-3xl w-full max-h-[90svh] flex flex-col" id="class-dashboard-dialog-content">
+          <div className="flex flex-col items-center justify-center h-64">
+            <BarChart3 className="h-12 w-12 animate-pulse text-primary" />
+            <p className="mt-4 text-lg text-muted-foreground">Calculating class statistics...</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+
   const handlePrintDashboard = () => {
     window.print();
   };
@@ -110,13 +124,6 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-3xl w-full max-h-[90svh] flex flex-col" id="class-dashboard-dialog-content">
-        {!classStats ? (
-            <div className="flex flex-col items-center justify-center h-64">
-              <BarChart3 className="h-12 w-12 animate-pulse text-primary" />
-              <p className="mt-4 text-lg text-muted-foreground">Calculating class statistics...</p>
-            </div>
-          ) : (
-          <>
             <div className="dashboard-print-header">
               <h2 className="text-xl font-bold">Class Performance Dashboard: {classStats.className}</h2>
               <p className="text-sm">Date Printed: {new Date().toLocaleDateString()}</p>
@@ -133,7 +140,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
               </DialogDescription>
             </DialogHeader>
 
-            <ScrollArea className="flex-1 min-h-0 pr-3"> {/* Changed for flex scroll */}
+            <ScrollArea className="flex-1 min-h-0 pr-3">
               <div className="space-y-6">
                 {/* Overall Class Stats */}
                 <Card>
@@ -146,12 +153,14 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="font-medium text-muted-foreground">Total Students Analyzed:</p>
-                      <p className="font-semibold text-lg">{classStats.totalStudents}</p>
+                      <p className="font-semibold text-base">{classStats.totalStudents}</p>
                     </div>
                     <div>
                       <p className="font-medium text-muted-foreground">Overall Class Average:</p>
-                      <p className="font-semibold text-lg">
-                        {classStats.overallClassAverage !== null ? `${classStats.overallClassAverage.toFixed(2)}%` : 'N/A'}
+                      <p className="font-semibold text-base break-all" data-testid="overall-class-average-value">
+                        {typeof classStats.overallClassAverage === 'number'
+                          ? `${classStats.overallClassAverage.toFixed(2)}%`
+                          : 'N/A'}
                       </p>
                     </div>
                   </CardContent>
@@ -217,7 +226,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                             <TableRow key={subject.subjectName}>
                               <TableCell className="font-medium">{subject.subjectName}</TableCell>
                               <TableCell className="text-center">
-                                {subject.averageMark !== null ? `${subject.averageMark.toFixed(1)}%` : 'N/A'}
+                                {typeof subject.averageMark === 'number' ? `${subject.averageMark.toFixed(1)}%` : 'N/A'}
                               </TableCell>
                               <TableCell className="text-center">{subject.passRate.toFixed(0)}%</TableCell>
                               <TableCell className="text-center">{subject.studentsAboveAverage}</TableCell>
@@ -297,7 +306,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                                 <TableCell className="font-medium">{genderStat.gender}</TableCell>
                                 <TableCell className="text-center">{genderStat.count}</TableCell>
                                 <TableCell className="text-center">
-                                  {genderStat.averageScore !== null ? `${genderStat.averageScore.toFixed(2)}%` : 'N/A'}
+                                  {typeof genderStat.averageScore === 'number' ? `${genderStat.averageScore.toFixed(2)}%` : 'N/A'}
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -359,16 +368,13 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                 <Printer className="mr-2 h-4 w-4" />
                 Print Dashboard
               </Button>
-              <Button onClick={handlePrintDashboard} variant="default">
-                <Save className="mr-2 h-4 w-4" />
-                Save as PDF
+              <Button onClick={onClose} variant="default"> {/* Changed "Save as PDF" to just "Close" for simplicity, print handles PDF */}
+                Close
               </Button>
-              <Button onClick={onClose} variant="outline">Close</Button>
             </DialogFooter>
-          </>
-        )}
       </DialogContent>
     </Dialog>
   );
 }
 
+    
