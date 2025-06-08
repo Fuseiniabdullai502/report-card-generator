@@ -63,7 +63,12 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
 
     return (
       <>
-        <DialogHeader className="mb-4">
+        <div className="dashboard-print-header">
+          <h2 className="text-xl font-bold">Class Performance Dashboard: {classStats.className}</h2>
+          <p className="text-sm">Date Printed: {new Date().toLocaleDateString()}</p>
+        </div>
+
+        <DialogHeader className="mb-4 no-print"> {/* Hide DialogHeader on print */}
           <DialogTitle className="text-2xl flex items-center gap-2">
             <BarChart3 className="h-7 w-7 text-primary" />
             Class Performance Dashboard: {classStats.className}
@@ -219,12 +224,12 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-3xl w-full" id="class-dashboard-dialog-content"> {/* Increased width and added ID */}
         {renderContent()}
-        <DialogFooter className="mt-6 pt-4 border-t">
-          <Button onClick={handlePrintDashboard} variant="default" className="dialog-footer-print-hide">
+        <DialogFooter className="mt-6 pt-4 border-t dialog-footer-print-hide"> {/* Added dialog-footer-print-hide to entire footer */}
+          <Button onClick={handlePrintDashboard} variant="default">
             <Printer className="mr-2 h-4 w-4" />
             Print Dashboard
           </Button>
-          <Button onClick={onClose} variant="outline" className="dialog-footer-print-hide">Close</Button>
+          <Button onClick={onClose} variant="outline">Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

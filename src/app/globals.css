@@ -132,6 +132,9 @@ body {
   #report-preview-container .a4-page-simulation + .a4-page-simulation {
     margin-top: 1.5rem; /* Increased space between pages on screen */
   }
+  .dashboard-print-header {
+    display: none;
+  }
 }
 
 
@@ -246,7 +249,7 @@ body {
   }
 
   /* Style the specific class dashboard dialog content for printing */
-  body > [data-radix-portal] > #class-dashboard-dialog-content {
+  #class-dashboard-dialog-content {
     position: static !important; /* Override fixed positioning */
     display: block !important; /* Ensure it's block for static positioning */
     width: 100% !important;
@@ -273,7 +276,6 @@ body {
     color: black !important;
     border-color: #ccc !important; /* Lighter borders for elements like tables */
     box-shadow: none !important;
-    /* background-color: transparent !important; Allow specific overrides below */
   }
 
   #class-dashboard-dialog-content .card,
@@ -291,16 +293,36 @@ body {
      color: #4a5568 !important; /* A darker gray for muted text */
    }
 
-
-  /* Specific styling for the AI Insights card */
   #class-dashboard-dialog-content [class~="bg-accent/10"] {
     background-color: #f0fff4 !important;
     border: 1px solid #a7f3d0 !important;
   }
-   /* Ensure icons within specific contexts are visible if colored */
   #class-dashboard-dialog-content .text-green-500 { color: green !important; }
   #class-dashboard-dialog-content .text-yellow-500 { color: #b45309 !important; } /* Darker yellow/orange */
   #class-dashboard-dialog-content .text-red-500 { color: red !important; }
+
+  /* Styles for the print-only dashboard header */
+  #class-dashboard-dialog-content .dashboard-print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #ccc;
+  }
+  #class-dashboard-dialog-content .dashboard-print-header h2 {
+    font-size: 1.25rem; 
+    font-weight: bold;
+    color: black !important;
+  }
+  #class-dashboard-dialog-content .dashboard-print-header p {
+    font-size: 0.875rem; 
+    color: black !important;
+  }
+  /* Hide original DialogHeader and DialogDescription on print */
+  #class-dashboard-dialog-content .no-print,
+  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header) { /* Target original DialogHeader if it doesn't have the print class */
+    display: none !important;
+  }
 
 
   /* Ensure ScrollArea content is fully visible and printable */
@@ -318,11 +340,12 @@ body {
   }
 
   /* Page break control for dashboard elements */
-  #class-dashboard-dialog-content .card,
-  #class-dashboard-dialog-content .table {
+  #class-dashboard-dialog-content .card {
     page-break-inside: avoid;
   }
-
+  #class-dashboard-dialog-content .table {
+    page-break-inside: auto; /* Allow tables to break across pages if necessary */
+  }
   #class-dashboard-dialog-content tr {
     page-break-inside: avoid;
   }
