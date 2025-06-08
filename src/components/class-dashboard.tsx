@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Users, BookOpen, Percent, Users2, PieChart, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare, Loader2, Printer, Save } from 'lucide-react';
+import { BarChart3, Users, BookOpen, Percent, Users2, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare, Loader2, Printer, Save, PieChart as PieChartIcon } from 'lucide-react';
 import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Sector } from 'recharts';
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+
 
 export interface SubjectPerformanceStatForUI {
   subjectName: string;
@@ -42,6 +45,39 @@ interface ClassDashboardProps {
   isLoading: boolean; // For AI advice loading
 }
 
+const subjectChartConfig = {
+  averageMark: {
+    label: "Avg. Mark",
+    color: "hsl(var(--chart-1))",
+  },
+} satisfies ChartConfig;
+
+const genderChartColors = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+];
+
+
+// Helper for custom pie chart label
+const RADIAN = Math.PI / 180;
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name, value }: any) => {
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  if (percent * 100 < 5) return null; // Don't render label if slice is too small
+
+  return (
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" className="text-xs font-medium">
+      {`${name} (${(percent * 100).toFixed(0)}%)`}
+    </text>
+  );
+};
+
+
 export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, isLoading }: ClassDashboardProps) {
   if (!isOpen) {
     return null;
@@ -61,6 +97,27 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
       );
     }
 
+    const subjectChartData = classStats.subjectStats
+      .filter(s => s.averageMark !== null)
+      .map(s => ({ name: s.subjectName, averageMark: s.averageMark! }));
+
+    const genderChartData = classStats.genderStats
+      .filter(g => g.count > 0)
+      .map((g, index) => ({
+        name: g.gender,
+        value: g.count,
+        fill: genderChartColors[index % genderChartColors.length],
+      }));
+      
+    const genderChartConfig = classStats.genderStats.reduce((acc, stat, index) => {
+        acc[stat.gender.toLowerCase().replace(/\s+/g, '')] = { // e.g. 'male', 'unspecified'
+            label: stat.gender,
+            color: genderChartColors[index % genderChartColors.length]
+        };
+        return acc;
+    }, {} as ChartConfig);
+
+
     return (
       <>
         <div className="dashboard-print-header">
@@ -68,7 +125,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
           <p className="text-sm">Date Printed: {new Date().toLocaleDateString()}</p>
         </div>
 
-        <DialogHeader className="mb-4 no-print"> {/* Hide DialogHeader on print */}
+        <DialogHeader className="mb-4 no-print">
           <DialogTitle className="text-2xl flex items-center gap-2">
             <BarChart3 className="h-7 w-7 text-primary" />
             Class Performance Dashboard: {classStats.className}
@@ -79,7 +136,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(80vh-200px)] pr-3"> {/* Adjusted max height */}
+        <ScrollArea className="max-h-[calc(80vh-200px)] pr-3">
           <div className="space-y-6">
             {/* Overall Class Stats */}
             <Card>
@@ -103,13 +160,41 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
               </CardContent>
             </Card>
 
-            {/* Subject Performance */}
+            {/* Subject Performance Bar Chart */}
+            {subjectChartData.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    Subject Average Marks
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer config={subjectChartConfig} className="min-h-[200px] w-full">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={subjectChartData} margin={{ top: 5, right: 20, left: -20, bottom: 40 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" angle={-30} textAnchor="end" interval={0} tick={{ fontSize: 10 }} />
+                        <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                        <ChartTooltip
+                          content={<ChartTooltipContent />}
+                          cursor={{ fill: "hsl(var(--background))", opacity: 0.5 }}
+                        />
+                        <Bar dataKey="averageMark" fill="var(--color-averageMark)" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Subject Performance Table */}
             {classStats.subjectStats.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <BookOpen className="h-5 w-5 text-primary" />
-                    Subject Performance
+                    Subject Performance Details
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -142,40 +227,78 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                 </CardContent>
               </Card>
             )}
+            
+            {/* Gender Distribution Pie Chart & Table */}
+            {genderChartData.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <PieChartIcon className="h-5 w-5 text-primary" />
+                      Gender Distribution
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer config={genderChartConfig} className="min-h-[200px] w-full aspect-square">
+                       <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                          <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                          <Pie
+                            data={genderChartData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            labelLine={false}
+                            label={renderCustomizedLabel}
+                          >
+                            {genderChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                           <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
 
-            {/* Gender Performance */}
-            {classStats.genderStats.filter(g => g.count > 0).length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Users2 className="h-5 w-5 text-primary" />
-                    Gender Performance (Overall Average)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Gender</TableHead>
-                        <TableHead className="text-center">Student Count</TableHead>
-                        <TableHead className="text-center">Average Score</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {classStats.genderStats.filter(g => g.count > 0).map((genderStat) => (
-                        <TableRow key={genderStat.gender}>
-                          <TableCell className="font-medium">{genderStat.gender}</TableCell>
-                          <TableCell className="text-center">{genderStat.count}</TableCell>
-                          <TableCell className="text-center">
-                            {genderStat.averageScore !== null ? `${genderStat.averageScore.toFixed(2)}%` : 'N/A'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+                {classStats.genderStats.filter(g => g.count > 0).length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Users2 className="h-5 w-5 text-primary" />
+                        Gender Performance (Overall Average)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Gender</TableHead>
+                            <TableHead className="text-center">Student Count</TableHead>
+                            <TableHead className="text-center">Average Score</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {classStats.genderStats.filter(g => g.count > 0).map((genderStat) => (
+                            <TableRow key={genderStat.gender}>
+                              <TableCell className="font-medium">{genderStat.gender}</TableCell>
+                              <TableCell className="text-center">{genderStat.count}</TableCell>
+                              <TableCell className="text-center">
+                                {genderStat.averageScore !== null ? `${genderStat.averageScore.toFixed(2)}%` : 'N/A'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             )}
+
 
             {/* AI Teacher Advice */}
              <Card className="bg-accent/10 border-accent">
@@ -223,9 +346,9 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-3xl w-full" id="class-dashboard-dialog-content"> {/* Increased width and added ID */}
+      <DialogContent className="max-w-3xl w-full" id="class-dashboard-dialog-content">
         {renderContent()}
-        <DialogFooter className="mt-6 pt-4 border-t dialog-footer-print-hide"> {/* Added dialog-footer-print-hide to entire footer */}
+        <DialogFooter className="mt-6 pt-4 border-t dialog-footer-print-hide">
           <Button onClick={handlePrintDashboard} variant="outline">
             <Printer className="mr-2 h-4 w-4" />
             Print Dashboard
@@ -240,4 +363,3 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
     </Dialog>
   );
 }
-
