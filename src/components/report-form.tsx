@@ -507,6 +507,24 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     }
   };
 
+  const handleSubjectInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, inputType: 'ca' | 'exam') => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (inputType === 'ca') {
+        const examInput = document.getElementById(`exam_mark_input_${currentVisibleSubjectIndex}`);
+        examInput?.focus();
+      } else if (inputType === 'exam') {
+        if (currentVisibleSubjectIndex < fields.length - 1) {
+          const nextSubjectButton = document.getElementById('next_subject_button');
+          nextSubjectButton?.focus();
+        } else {
+          const addSubjectButton = document.getElementById('add_subject_button_main');
+          addSubjectButton?.focus();
+        }
+      }
+    }
+  };
+
 
   return (
     <>
@@ -881,6 +899,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
               
               <div className="flex items-center justify-between mt-2 mb-4">
                 <Button
+                  id="previous_subject_button"
                   type="button"
                   variant="outline"
                   size="icon"
@@ -894,6 +913,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                   Subject {fields.length > 0 ? currentVisibleSubjectIndex + 1 : 0} of {fields.length}
                 </span>
                 <Button
+                  id="next_subject_button"
                   type="button"
                   variant="outline"
                   size="icon"
@@ -987,11 +1007,13 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                           <FormLabel className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary" />CA Mark</FormLabel>
                            <FormControl>
                              <Input 
+                               id={`ca_mark_input_${currentVisibleSubjectIndex}`}
                                type="number" 
                                placeholder="1-60" 
                                {...field} 
                                onChange={e => field.onChange(e.target.value === '' ? null : e.target.value)} 
                                value={field.value === null || field.value === undefined ? '' : String(field.value)}
+                               onKeyDown={(e) => handleSubjectInputKeyDown(e, 'ca')}
                              />
                            </FormControl>
                           <FormMessage />
@@ -1006,11 +1028,13 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                           <FormLabel className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary" />Exam Mark</FormLabel>
                           <FormControl>
                              <Input 
+                               id={`exam_mark_input_${currentVisibleSubjectIndex}`}
                                type="number" 
                                placeholder="1-100" 
                                {...field} 
                                onChange={e => field.onChange(e.target.value === '' ? null : e.target.value)} 
                                value={field.value === null || field.value === undefined ? '' : String(field.value)}
+                               onKeyDown={(e) => handleSubjectInputKeyDown(e, 'exam')}
                              />
                            </FormControl>
                           <FormMessage />
@@ -1019,6 +1043,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     />
                   </div>
                    <Button
+                      id={`remove_current_subject_button_${currentVisibleSubjectIndex}`}
                       type="button"
                       variant="destructive"
                       onClick={handleRemoveCurrentSubject}
@@ -1031,6 +1056,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
               )}
              
               <Button
+                id="add_subject_button_main"
                 type="button"
                 variant="outline"
                 onClick={handleAddSubjectAndNavigate}
