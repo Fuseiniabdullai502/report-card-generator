@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react'; // Added React import
+import React, { useState, useEffect, useCallback } from 'react';
 import ReportForm from '@/components/report-form';
 import ReportPreview from '@/components/report-preview';
 import ReportActions from '@/components/report-actions';
@@ -9,14 +9,12 @@ import ClassDashboard, { type ClassStatistics, type SubjectPerformanceStatForUI,
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, BarChartHorizontalBig, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, BarChartHorizontalBig, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
 import { getAiClassInsightsAction } from '@/app/actions';
 import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow';
-import { LicenseProvider, useLicense } from '@/contexts/license-context';
-import LicenseGate from '@/components/license-gate';
 
 
 // Helper function to calculate final mark for a single subject
@@ -33,7 +31,7 @@ function calculateSubjectFinalMark(subject: SubjectEntry): number {
 
   let finalPercentageMark: number;
   finalPercentageMark = scaledCaMark + scaledExamMark;
-  finalPercentageMark = Math.min(finalPercentageMark, 100); 
+  finalPercentageMark = Math.min(finalPercentageMark, 100);
   return parseFloat(finalPercentageMark.toFixed(1));
 }
 
@@ -49,8 +47,6 @@ function formatRankString(rankNumber: number, isTie: boolean): string {
 }
 
 function AppContent() {
-  const { isLicensed, isLoadingLicense, clearLicense } = useLicense();
-
   const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(JSON.parse(JSON.stringify({...defaultReportData, studentEntryNumber: undefined, id: undefined, studentPhotoDataUri: undefined, headMasterSignatureDataUri: undefined, schoolLogoDataUri: undefined})));
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
   const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
@@ -88,8 +84,8 @@ function AppContent() {
     const sortedReports = [...reportsWithAverages].sort((a, b) => (b.overallAverage ?? 0) - (a.overallAverage ?? 0));
 
     let lastScore = -1;
-    let actualRank = 0; 
-    let displayRankCounter = 0; 
+    let actualRank = 0;
+    let displayRankCounter = 0;
 
     const rankedReports = sortedReports.map((report, index) => {
       actualRank++;
@@ -101,7 +97,7 @@ function AppContent() {
         return { ...report, rank: formatRankString(displayRankCounter, true) };
       }
     });
-    
+
     for (let i = 0; i < rankedReports.length; i++) {
         if (i > 0 && rankedReports[i].overallAverage === rankedReports[i-1].overallAverage) {
             const baseRank = parseInt(rankedReports[i-1].rank!.replace('T-', '').replace(/(st|nd|rd|th)$/, ''));
@@ -131,15 +127,15 @@ function AppContent() {
       }
       const reportWithEntryNumber = {
         ...currentEditingReport,
-        id: `report-${Date.now()}-${Math.random()}`, 
+        id: `report-${Date.now()}-${Math.random()}`,
         studentEntryNumber: nextStudentEntryNumber,
       };
-      
+
       const newList = [...reportPrintList, reportWithEntryNumber];
       calculateAndSetRanks(newList);
       setCurrentPreviewIndex(newList.length - 1); // View the newly added report
 
-      if (reportPrintList.length === 0) { 
+      if (reportPrintList.length === 0) {
         setSessionDefaults({
           schoolName: currentEditingReport.schoolName,
           schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
@@ -148,39 +144,39 @@ function AppContent() {
           academicTerm: currentEditingReport.academicTerm,
           totalSchoolDays: currentEditingReport.totalSchoolDays,
           headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
-          instructorContact: currentEditingReport.instructorContact, 
+          instructorContact: currentEditingReport.instructorContact,
         });
       }
-      
+
       const currentEntryNum = nextStudentEntryNumber;
-      setNextStudentEntryNumber(prevNumber => prevNumber + 1); 
+      setNextStudentEntryNumber(prevNumber => prevNumber + 1);
       toast({
         title: "Report Added & Ranked",
         description: `${currentEditingReport.studentName}'s report (Entry #${currentEntryNum}) added and list re-ranked.`,
       });
-      
+
       const newFormBase = JSON.parse(JSON.stringify(defaultReportData));
       const newCurrentEditingReport: ReportData = {
         ...newFormBase,
         schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
         schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBase.schoolLogoDataUri,
         className: sessionDefaults.className ?? newFormBase.className,
-        gender: newFormBase.gender, 
+        gender: newFormBase.gender,
         academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear,
         academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm,
-        totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null 
-                         ? sessionDefaults.totalSchoolDays 
+        totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null
+                         ? sessionDefaults.totalSchoolDays
                          : newFormBase.totalSchoolDays,
         headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
         instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact,
-        studentName: '', 
+        studentName: '',
         daysAttended: null,
         parentEmail: '',
         parentPhoneNumber: '',
         performanceSummary: '',
         strengths: '',
         areasForImprovement: '',
-        hobbies: [], 
+        hobbies: [],
         teacherFeedback: '',
         subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
         promotionStatus: undefined,
@@ -188,7 +184,7 @@ function AppContent() {
         id: undefined,
         overallAverage: undefined,
         rank: undefined,
-        studentPhotoDataUri: undefined, 
+        studentPhotoDataUri: undefined,
       };
       setCurrentEditingReport(newCurrentEditingReport);
 
@@ -205,7 +201,7 @@ function AppContent() {
     setReportPrintList([]);
     setNextStudentEntryNumber(1);
     setCurrentPreviewIndex(0);
-    setSessionDefaults({}); 
+    setSessionDefaults({});
     toast({
       title: "Print List Cleared",
       description: "All reports have been removed and ranking reset. Session defaults cleared.",
@@ -235,19 +231,19 @@ function AppContent() {
       return;
     }
 
-    const dataStr = JSON.stringify(reportPrintList, null, 2); 
+    const dataStr = JSON.stringify(reportPrintList, null, 2);
     const dataBlob = new Blob([dataStr], { type: "application/json" });
     const dataUrl = URL.createObjectURL(dataBlob);
-    
+
     const exportFileDefaultName = `report_cards_data_${new Date().toISOString().slice(0,10)}.json`;
 
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUrl);
     linkElement.setAttribute('download', exportFileDefaultName);
-    document.body.appendChild(linkElement); 
+    document.body.appendChild(linkElement);
     linkElement.click();
-    linkElement.remove(); 
-    URL.revokeObjectURL(dataUrl); 
+    linkElement.remove();
+    URL.revokeObjectURL(dataUrl);
 
     toast({
         title: "Data Downloaded",
@@ -262,10 +258,10 @@ function AppContent() {
     }
 
     setIsDashboardLoading(true);
-    setClassAiAdviceData(null); 
+    setClassAiAdviceData(null);
 
     const passMark = 50;
-    const className = reportPrintList[0]?.className || "N/A"; 
+    const className = reportPrintList[0]?.className || "N/A";
     const totalStudents = reportPrintList.length;
 
     let totalOverallAverageSum = 0;
@@ -305,7 +301,7 @@ function AppContent() {
           else studentsAtAverage++;
         });
       }
-      
+
       return {
         subjectName: s.name,
         averageMark: subjectAvg,
@@ -347,7 +343,7 @@ function AppContent() {
         className: calculatedStats.className,
         totalStudents: calculatedStats.totalStudents,
         overallClassAverage: calculatedStats.overallClassAverage,
-        subjectStats: calculatedStats.subjectStats.map(s => ({...s})), 
+        subjectStats: calculatedStats.subjectStats.map(s => ({...s})),
         genderStats: calculatedStats.genderStats.map(g => ({...g})),
         passMark: calculatedStats.passMark,
       });
@@ -364,7 +360,7 @@ function AppContent() {
       setIsDashboardOpen(true);
     }
   };
-  
+
   const reportsCount = reportPrintList.length;
 
   const handleNextPreview = () => {
@@ -374,21 +370,6 @@ function AppContent() {
   const handlePreviousPreview = () => {
     setCurrentPreviewIndex(prev => Math.max(0, prev - 1));
   };
-
-  if (isLoadingLicense) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
-        <div className="text-center">
-          <BookMarked className="mx-auto h-16 w-16 text-primary animate-pulse" />
-          <p className="text-lg mt-4">Loading Report Card Generator...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isLicensed) {
-    return <LicenseGate />;
-  }
 
 
   return (
@@ -401,9 +382,6 @@ function AppContent() {
         </div>
         <p className="text-muted-foreground mt-2 text-sm sm:text-base">Easily create, customize, rank, and print student report cards.</p>
         <div className="absolute top-0 right-0 flex items-center gap-2">
-          <Button onClick={clearLicense} variant="outline" size="sm" title="Deactivate License (for testing)">
-            <LogOut className="mr-2 h-4 w-4" /> Deactivate
-          </Button>
           <ThemeToggleButton />
         </div>
       </header>
@@ -516,8 +494,6 @@ function AppContent() {
 
 export default function Home() {
   return (
-    <LicenseProvider>
-      <AppContent />
-    </LicenseProvider>
+    <AppContent />
   );
 }
