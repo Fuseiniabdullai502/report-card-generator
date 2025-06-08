@@ -806,7 +806,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                   onClick={() => handleAiEditImage(field.value!, "Adjust this image of a person to be a clear portrait, suitable for an ID photo or report card. The subject should be centered, well-proportioned (typically shoulders-up or headshot), and placed on a clean, plain white background. Ensure all original details of the person are retained.")}
                                   disabled={isImageEditingAiLoading}
                                 >
-                                  {isImageEditingAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                                  {isImageEditingAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4 animate-pulse" />}
                                   Enhance Portrait (AI)
                                 </Button>
                                 <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('studentPhotoDataUri', undefined, { shouldDirty: true, shouldValidate: true })}>
@@ -1076,7 +1076,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     {isReportInsightsAiLoading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                    <Bot className="mr-2 h-4 w-4" />
+                    <Bot className="mr-2 h-4 w-4 animate-pulse" />
                     )}
                     Generate AI Insights
                 </Button>
@@ -1190,7 +1190,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex justify-between items-center mb-1">
-                      <FormLabel className="flex items-center"><Sparkles className="mr-2 h-4 w-4 text-accent" />Teacher's Feedback (Optional)</FormLabel>
+                      <FormLabel className="flex items-center"><Sparkles className="mr-2 h-4 w-4 text-accent animate-pulse" />Teacher's Feedback (Optional)</FormLabel>
                       <Button
                         type="button"
                         onClick={handleGenerateAiTeacherFeedback}
@@ -1201,7 +1201,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                         {isTeacherFeedbackAiLoading ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
-                          <Wand2 className="mr-2 h-4 w-4" />
+                          <Wand2 className="mr-2 h-4 w-4 animate-pulse" />
                         )}
                         Generate AI Feedback
                       </Button>

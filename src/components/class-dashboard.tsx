@@ -171,7 +171,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
              <Card className="bg-accent/10 border-accent">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2 text-accent">
-                    <Star className="h-5 w-5" />
+                    <Star className="h-5 w-5 animate-pulse" />
                     AI Generated Insights & Recommendations
                   </CardTitle>
                 </CardHeader>
