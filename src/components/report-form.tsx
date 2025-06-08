@@ -186,8 +186,17 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
           setCustomHobbies(prev => [...prev, ...newCustomHobbies]);
         }
       }
+      if (initialData.subjects) {
+        const newCustomSubjects = initialData.subjects
+          .map(s => s.subjectName)
+          .filter(name => name && !predefinedSubjectsList.includes(name) && !customSubjects.includes(name));
+        if (newCustomSubjects.length > 0) {
+          setCustomSubjects(prev => [...prev, ...newCustomSubjects]);
+        }
+      }
+
     }
-  }, [initialData, form.reset, form, append, customClassNames, customHobbies]);
+  }, [initialData, form.reset, form, append, customClassNames, customHobbies, customSubjects]);
 
 
   useEffect(() => {
@@ -559,7 +568,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                           ))}
                           {customClassNames.map((name) => (
                             <SelectItem key={`custom-class-${name}`} value={name}>
-                              {name} (Custom)
+                              {name}
                             </SelectItem>
                           ))}
                           <SelectSeparator />
@@ -926,7 +935,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                               ))}
                               {customSubjects.map((subject) => (
                                 <SelectItem key={`custom-${subject}`} value={subject}>
-                                  {subject} (Custom)
+                                  {subject}
                                 </SelectItem>
                               ))}
                               <SelectSeparator />
@@ -1125,7 +1134,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                 );
                               }}
                             >
-                              {hobby} (Custom)
+                              {hobby}
                             </DropdownMenuCheckboxItem>
                           ))}
                         </ScrollArea>
