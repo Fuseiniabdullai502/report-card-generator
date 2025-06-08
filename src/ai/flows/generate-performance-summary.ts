@@ -11,15 +11,16 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z}from 'genkit';
 
-// Define the schema for individual subject entries for the flow input
+// Define the schema for individual subject entries for the flow input - NOT EXPORTED
 const FlowSubjectEntrySchema = z.object({
   subjectName: z.string(),
   continuousAssessment: z.number().nullable().optional(),
   examinationMark: z.number().nullable().optional(),
 });
 
+// Define the Zod schema for the input - NOT EXPORTED
 const GenerateReportInsightsInputSchema = z.object({
   studentName: z.string().describe('The name of the student.'),
   className: z.string().describe('The name of the class.'),
@@ -32,7 +33,7 @@ export type GenerateReportInsightsInput = z.infer<
   typeof GenerateReportInsightsInputSchema
 >;
 
-const GenerateReportInsightsOutputSchema = z.object({
+export const GenerateReportInsightsOutputSchema = z.object({
   performanceSummary: z
     .string()
     .describe('The AI-generated overall performance summary for the student.'),
@@ -109,6 +110,9 @@ const generateReportInsightsFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await generateReportInsightsPrompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('AI failed to generate insights based on the provided data. The model may not have returned the expected output format or the input was insufficient.');
+    }
+    return output;
   }
 );

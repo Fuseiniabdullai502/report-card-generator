@@ -3,10 +3,13 @@
 'use server';
 
 import { generateStudentFeedback, type GenerateStudentFeedbackInput } from '@/ai/flows/generate-student-feedback';
-import { generateReportInsights, type GenerateReportInsightsInput, type GenerateReportInsightsOutput } from '@/ai/flows/generate-performance-summary'; // Updated import
+import { 
+  generateReportInsights, 
+  type GenerateReportInsightsInput, // This is the TYPE for the flow's input
+  type GenerateReportInsightsOutput
+} from '@/ai/flows/generate-performance-summary'; 
 import { editImage, type EditImageInput, type EditImageOutput } from '@/ai/flows/edit-image-flow';
 import { generateClassInsights, type GenerateClassInsightsInput, type GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow';
-import type { SubjectEntry } from '@/lib/schemas';
 import { z } from 'zod';
 
 // Schema for student feedback generation
@@ -33,44 +36,36 @@ export async function getAiFeedbackAction(
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
-    return { success: false, error: "An unexpected error occurred while generating feedback." };
+    return { success: false, error: errorMessage };
   }
 }
 
-// Schema for report insights generation (summary, strengths, areas for improvement)
-const FlowSubjectEntrySchemaForReport = z.object({
+// Local Zod schema for validating input to getAiReportInsightsAction
+// This must be compatible with the GenerateReportInsightsInput TYPE from the flow
+const ActionFlowSubjectEntrySchema = z.object({
   subjectName: z.string(),
   continuousAssessment: z.number().nullable().optional(),
   examinationMark: z.number().nullable().optional(),
 });
 
-const ReportInsightsActionInputSchema = z.object({
-  studentName: z.string().min(1, "Student name is required"),
-  className: z.string().min(1, "Class name is required"),
-  daysAttended: z.number().nullable().optional(),
-  totalSchoolDays: z.number().nullable().optional(),
-  subjects: z.array(FlowSubjectEntrySchemaForReport).min(1, "At least one subject is required"),
+const ActionGenerateReportInsightsInputSchema = z.object({
+  studentName: z.string().describe('The name of the student.'),
+  className: z.string().describe('The name of the class.'),
+  daysAttended: z.number().nullable().optional().describe('Number of days the student attended school.'),
+  totalSchoolDays: z.number().nullable().optional().describe('Total number of school days in the term.'),
+  subjects: z.array(ActionFlowSubjectEntrySchema).describe('An array of subjects with their marks. CA is out of 60, Exam is out of 100.'),
 });
 
+
 export async function getAiReportInsightsAction(
-  input: { studentName: string; className: string; daysAttended?: number | null; totalSchoolDays?: number | null; subjects: SubjectEntry[] }
+  input: GenerateReportInsightsInput // Use the TYPE from the flow for the function signature
 ): Promise<{ success: boolean; insights?: GenerateReportInsightsOutput; error?: string }> {
   try {
-    const validatedInput = ReportInsightsActionInputSchema.parse(input);
+    // Validate input using the action's local schema
+    const validatedInput = ActionGenerateReportInsightsInputSchema.parse(input);
     
-    const flowSubjects = validatedInput.subjects.map(s => ({
-        subjectName: s.subjectName,
-        continuousAssessment: s.continuousAssessment,
-        examinationMark: s.examinationMark,
-    }));
-
-    const result = await generateReportInsights({
-        studentName: validatedInput.studentName,
-        className: validatedInput.className,
-        daysAttended: validatedInput.daysAttended,
-        totalSchoolDays: validatedInput.totalSchoolDays,
-        subjects: flowSubjects,
-    });
+    // Call the flow with the validated input. It will conform to GenerateReportInsightsInput type.
+    const result = await generateReportInsights(validatedInput);
     return { success: true, insights: result };
   } catch (error) {
     console.error("Error generating AI report insights:", error);
@@ -78,9 +73,9 @@ export async function getAiReportInsightsAction(
     if (error instanceof z.ZodError) {
       errorMessage = "Invalid input for AI insights: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
     } else if (error instanceof Error) {
-      errorMessage = error.message;
+      errorMessage = error.message; 
     }
-    return { success: false, error: "An unexpected error occurred while generating the insights." };
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -105,12 +100,12 @@ export async function editImageWithAiAction(
         } else if (error instanceof Error) {
           errorMessage = error.message;
         }
-        return { success: false, error: "An unexpected error occurred while editing the image." };
+        return { success: false, error: errorMessage };
     }
 }
 
 // Schema for Class Insights AI action
-// Re-using schemas from the flow definition
+// Re-using schemas from the flow definition (types are fine, Zod schema objects would be re-defined here if needed)
 const SubjectPerformanceStatActionSchema = z.object({
   subjectName: z.string(),
   averageMark: z.number().nullable(),
@@ -150,9 +145,8 @@ export async function getAiClassInsightsAction(
     if (error instanceof z.ZodError) {
       errorMessage = "Invalid input for AI class insights: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
     } else if (error instanceof Error) {
-      errorMessage = error.message; // Use the actual error message from the flow or other errors
+      errorMessage = error.message; 
     }
-    // It's generally better to return a generic error message to the client for unexpected errors.
-    return { success: false, error: "An unexpected error occurred while generating class insights." };
+    return { success: false, error: errorMessage };
   }
 }

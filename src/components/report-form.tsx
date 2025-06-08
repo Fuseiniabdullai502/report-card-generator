@@ -311,18 +311,18 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
     startReportInsightsAiTransition(async () => {
       try {
-        const formattedSubjects = subjects.map(s => ({
-            ...s,
-            continuousAssessment: s.continuousAssessment ? Number(s.continuousAssessment) : null,
-            examinationMark: s.examinationMark ? Number(s.examinationMark) : null,
-        }));
-
+        // Data from form.getValues() should already be coerced by ReportDataSchema
+        // to have numbers for marks and attendance days (or null).
         const result = await getAiReportInsightsAction({
           studentName,
           className,
-          daysAttended: daysAttended ? Number(daysAttended) : null,
-          totalSchoolDays: totalSchoolDays ? Number(totalSchoolDays) : null,
-          subjects: formattedSubjects,
+          daysAttended, // Should be number | null
+          totalSchoolDays, // Should be number | null
+          subjects: subjects.map(s => ({ // Ensure only fields expected by FlowSubjectEntrySchema are passed
+            subjectName: s.subjectName,
+            continuousAssessment: s.continuousAssessment,
+            examinationMark: s.examinationMark,
+          })),
         });
 
         if (result.success && result.insights) {
@@ -343,8 +343,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         }
       } catch (error) {
          toast({
-            title: "Error Generating Insights",
-            description: "An unexpected error occurred while generating the insights.",
+            title: "Client Error Generating Insights",
+            description: error instanceof Error ? error.message : "An unexpected error occurred before calling the AI service.",
             variant: "destructive",
           });
       }
