@@ -33,7 +33,8 @@ export type GenerateReportInsightsInput = z.infer<
   typeof GenerateReportInsightsInputSchema
 >;
 
-export const GenerateReportInsightsOutputSchema = z.object({
+// Output schema is NOT exported as an object
+const GenerateReportInsightsOutputSchema = z.object({
   performanceSummary: z
     .string()
     .describe('The AI-generated overall performance summary for the student.'),
@@ -116,3 +117,4 @@ const generateReportInsightsFlow = ai.defineFlow(
     return output;
   }
 );
+
