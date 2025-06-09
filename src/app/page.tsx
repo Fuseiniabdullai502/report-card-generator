@@ -1,11 +1,11 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ReportForm from '@/components/report-form';
 import ReportPreview from '@/components/report-preview';
 import ReportActions from '@/components/report-actions';
-import ClassPerformanceDashboard, { type ClassStatistics } from '@/components/class-dashboard';
+import ClassPerformanceDashboard from '@/components/class-dashboard';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
