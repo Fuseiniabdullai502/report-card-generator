@@ -207,7 +207,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Table>
+                      <Table className="min-w-[700px]">
                         <TableHeader>
                           <TableRow>
                             <TableHead>Subject</TableHead>
@@ -288,7 +288,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <Table>
+                        <Table className="min-w-[400px]">
                           <TableHeader>
                             <TableRow>
                               <TableHead>Gender</TableHead>
