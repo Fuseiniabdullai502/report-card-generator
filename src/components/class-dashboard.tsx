@@ -141,7 +141,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
             </DialogHeader>
 
             <ScrollArea className="flex-1 min-h-0"> {/* ScrollArea takes remaining space */}
-              <div className="p-4 space-y-6"> {/* Content inside ScrollArea gets padding */}
+              <div className="p-4 space-y-6 overflow-x-auto"> {/* Content inside ScrollArea gets padding and horizontal scroll */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
