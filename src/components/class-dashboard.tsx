@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Users, BookOpen, Percent, Users2, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare, Loader2, Printer, Save, PieChart as PieChartIcon, Info } from 'lucide-react';
+import { BarChart3, Users, BookOpen, Percent, Users2, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, MinusSquare, Loader2, Printer, Info, PieChart as PieChartIcon } from 'lucide-react';
 import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Sector } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 
 
@@ -86,11 +86,9 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
   if (!classStats) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DialogContent className="sm:max-w-3xl w-full h-[calc(100vh-80px)] max-h-[calc(100vh-80px)] p-0 flex flex-col" id="class-dashboard-dialog-content">
-          <div className="flex flex-col items-center justify-center flex-1">
+        <DialogContent className="sm:max-w-md w-full p-0 flex flex-col items-center justify-center h-48" id="class-dashboard-dialog-content-loading">
             <BarChart3 className="h-12 w-12 animate-pulse text-primary" />
             <p className="mt-4 text-lg text-muted-foreground">Calculating class statistics...</p>
-          </div>
         </DialogContent>
       </Dialog>
     );
@@ -123,7 +121,10 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-3xl w-full h-[calc(100vh-80px)] max-h-[calc(100vh-80px)] p-0 flex flex-col" id="class-dashboard-dialog-content">
+      <DialogContent 
+        className="sm:max-w-4xl w-full max-h-[88dvh] p-0 flex flex-col overflow-y-hidden" 
+        id="class-dashboard-dialog-content"
+      >
             <div className="dashboard-print-header">
               <h2 className="text-xl font-bold">Class Performance Dashboard: {classStats.className}</h2>
               <p className="text-sm">Date Printed: {new Date().toLocaleDateString()}</p>
@@ -136,12 +137,12 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
               </DialogTitle>
               <DialogDescription>
                 An overview of class performance based on {classStats.totalStudents} student reports. Pass Mark: {classStats.passMark}%.
-                Use the buttons below to print or save as PDF (via print options).
+                Use the buttons below to print.
               </DialogDescription>
             </DialogHeader>
 
-            <ScrollArea className="flex-1 min-h-0"> {/* ScrollArea takes remaining space */}
-              <div className="p-4 space-y-6 overflow-x-auto"> {/* Content inside ScrollArea gets padding and horizontal scroll */}
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="p-4 space-y-6 overflow-x-auto">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -370,5 +371,3 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
     </Dialog>
   );
 }
-
-    
