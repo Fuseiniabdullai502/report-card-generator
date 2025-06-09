@@ -151,9 +151,9 @@ body {
      */
   }
   
-  .dashboard-print-header {
-    display: none;
-  }
+  /* .dashboard-print-header { */ /* Removed as dashboard is removed */
+    /* display: none; */
+  /* } */
 }
 
 
@@ -268,134 +268,134 @@ body {
     page-break-inside: avoid; 
   }
 
-  /* Styles for printing the Class Dashboard Dialog */
-  body > [data-radix-portal] > [data-radix-dialog-overlay],
-  body > [data-radix-portal] > [data-radix-focus-guard] {
-    display: none !important;
-  }
+  /* Styles for printing the Class Dashboard Dialog - REMOVED */
+  /* body > [data-radix-portal] > [data-radix-dialog-overlay], */
+  /* body > [data-radix-portal] > [data-radix-focus-guard] { */
+    /* display: none !important; */
+  /* } */
 
-  #class-dashboard-dialog-content {
-    position: static !important; 
-    display: block !important; 
-    width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    transform: none !important; 
-    margin: 0 !important;
-    padding: 10mm !important; 
-    border: none !important;
-    box-shadow: none !important;
-    background-color: white !important;
-    color: black !important;
-    overflow: visible !important; 
-    border-radius: 0 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
+  /* #class-dashboard-dialog-content { */
+    /* position: static !important;  */
+    /* display: block !important;  */
+    /* width: 100% !important; */
+    /* max-width: 100% !important; */
+    /* height: auto !important; */
+    /* min-height: 0 !important; */
+    /* transform: none !important;  */
+    /* margin: 0 !important; */
+    /* padding: 10mm !important;  */
+    /* border: none !important; */
+    /* box-shadow: none !important; */
+    /* background-color: white !important; */
+    /* color: black !important; */
+    /* overflow: visible !important;  */
+    /* border-radius: 0 !important; */
+    /* -webkit-print-color-adjust: exact !important; */
+    /* print-color-adjust: exact !important; */
+  /* } */
 
-  #class-dashboard-dialog-content *,
-  #class-dashboard-dialog-content *::before,
-  #class-dashboard-dialog-content *::after {
-    color: black !important;
+  /* #class-dashboard-dialog-content *, */
+  /* #class-dashboard-dialog-content *::before, */
+  /* #class-dashboard-dialog-content *::after { */
+    /* color: black !important; */
     /* background-color: transparent !important; */ /* Kept commented to allow chart fills etc. */
-    border-color: #ccc !important; 
-    box-shadow: none !important;
-  }
+    /* border-color: #ccc !important;  */
+    /* box-shadow: none !important; */
+  /* } */
 
-  #class-dashboard-dialog-content .card,
-  #class-dashboard-dialog-content .table {
-    background-color: white !important; 
-  }
+  /* #class-dashboard-dialog-content .card, */
+  /* #class-dashboard-dialog-content .table { */
+    /* background-color: white !important;  */
+  /* } */
 
-  #class-dashboard-dialog-content .text-primary {
-     color: #2c5282 !important; 
-  }
-  #class-dashboard-dialog-content .text-accent {
-     color: #276749 !important; 
-  }
-   #class-dashboard-dialog-content .text-muted-foreground {
-     color: #4a5568 !important; 
-   }
+  /* #class-dashboard-dialog-content .text-primary { */
+     /* color: #2c5282 !important;  */
+  /* } */
+  /* #class-dashboard-dialog-content .text-accent { */
+     /* color: #276749 !important;  */
+  /* } */
+   /* #class-dashboard-dialog-content .text-muted-foreground { */
+     /* color: #4a5568 !important;  */
+   /* } */
 
-  #class-dashboard-dialog-content [class~="bg-accent/10"] {
-    background-color: #f0fff4 !important;
-    border: 1px solid #a7f3d0 !important;
-  }
-  #class-dashboard-dialog-content .text-green-500 { color: green !important; }
-  #class-dashboard-dialog-content .text-yellow-500 { color: #b45309 !important; } 
-  #class-dashboard-dialog-content .text-red-500 { color: red !important; }
+  /* #class-dashboard-dialog-content [class~="bg-accent/10"] { */
+    /* background-color: #f0fff4 !important; */
+    /* border: 1px solid #a7f3d0 !important; */
+  /* } */
+  /* #class-dashboard-dialog-content .text-green-500 { color: green !important; } */
+  /* #class-dashboard-dialog-content .text-yellow-500 { color: #b45309 !important; }  */
+  /* #class-dashboard-dialog-content .text-red-500 { color: red !important; } */
 
-  #class-dashboard-dialog-content .dashboard-print-header {
-    display: block !important;
-    text-align: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #ccc;
-  }
-  #class-dashboard-dialog-content .dashboard-print-header h2 {
-    font-size: 1.25rem; 
-    font-weight: bold;
-    color: black !important;
-  }
-  #class-dashboard-dialog-content .dashboard-print-header p {
-    font-size: 0.875rem; 
-    color: black !important;
-  }
+  /* #class-dashboard-dialog-content .dashboard-print-header { */
+    /* display: block !important; */
+    /* text-align: center; */
+    /* margin-bottom: 1rem; */
+    /* padding-bottom: 0.5rem; */
+    /* border-bottom: 1px solid #ccc; */
+  /* } */
+  /* #class-dashboard-dialog-content .dashboard-print-header h2 { */
+    /* font-size: 1.25rem;  */
+    /* font-weight: bold; */
+    /* color: black !important; */
+  /* } */
+  /* #class-dashboard-dialog-content .dashboard-print-header p { */
+    /* font-size: 0.875rem;  */
+    /* color: black !important; */
+  /* } */
   
-  #class-dashboard-dialog-content .no-print,
-  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header) { 
-    display: none !important;
-  }
+  /* #class-dashboard-dialog-content .no-print, */
+  /* #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header) {  */
+    /* display: none !important; */
+  /* } */
 
-  #class-dashboard-dialog-content [class~="max-h-[calc(80vh-200px)]"] {
-    max-height: none !important;
-    overflow: visible !important;
-  }
-  #class-dashboard-dialog-content [data-radix-scroll-area-viewport] {
-     overflow: visible !important;
-     height: auto !important;
-  }
-  #class-dashboard-dialog-content [data-radix-scroll-area-thumb],
-  #class-dashboard-dialog-content [data-radix-scroll-area-scrollbar] { 
-      display: none !important;
-  }
+  /* #class-dashboard-dialog-content [class~="max-h-[calc(80vh-200px)]"] { */
+    /* max-height: none !important; */
+    /* overflow: visible !important; */
+  /* } */
+  /* #class-dashboard-dialog-content [data-radix-scroll-area-viewport] { */
+     /* overflow: visible !important; */
+     /* height: auto !important; */
+  /* } */
+  /* #class-dashboard-dialog-content [data-radix-scroll-area-thumb], */
+  /* #class-dashboard-dialog-content [data-radix-scroll-area-scrollbar] {  */
+      /* display: none !important; */
+  /* } */
 
-  #class-dashboard-dialog-content .card {
-    page-break-inside: avoid;
-  }
-  #class-dashboard-dialog-content .table {
-    page-break-inside: auto; 
-  }
-  #class-dashboard-dialog-content tr {
-    page-break-inside: avoid;
-  }
+  /* #class-dashboard-dialog-content .card { */
+    /* page-break-inside: avoid; */
+  /* } */
+  /* #class-dashboard-dialog-content .table { */
+    /* page-break-inside: auto;  */
+  /* } */
+  /* #class-dashboard-dialog-content tr { */
+    /* page-break-inside: avoid; */
+  /* } */
 
-  #class-dashboard-dialog-content > button[aria-label="Close"],
-  #class-dashboard-dialog-content .dialog-footer-print-hide {
-    display: none !important;
-  }
+  /* #class-dashboard-dialog-content > button[aria-label="Close"], */
+  /* #class-dashboard-dialog-content .dialog-footer-print-hide { */
+    /* display: none !important; */
+  /* } */
 
-  /* Chart specific print enhancements */
-  #class-dashboard-dialog-content .recharts-responsive-container {
-    width: 100% !important; /* Ensure chart container tries to use available width */
-  }
-  #class-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper {
-    width: 100% !important; 
-    height: auto !important; /* Allow responsive height adjustment */
-    min-height: 150px !important; /* Prevent collapsing, adjust as needed */
-  }
-  #class-dashboard-dialog-content .recharts-surface { /* The SVG element */
-    width: 100% !important;
+  /* Chart specific print enhancements - REMOVED */
+  /* #class-dashboard-dialog-content .recharts-responsive-container { */
+    /* width: 100% !important; */ /* Ensure chart container tries to use available width */
+  /* } */
+  /* #class-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper { */
+    /* width: 100% !important;  */
+    /* height: auto !important; */ /* Allow responsive height adjustment */
+    /* min-height: 150px !important; */ /* Prevent collapsing, adjust as needed */
+  /* } */
+  /* #class-dashboard-dialog-content .recharts-surface { */ /* The SVG element */
+    /* width: 100% !important; */
     /* Recharts usually sets height via inline style on SVG, let it do that or use 'auto' */
-    height: auto !important; 
-  }
-  #class-dashboard-dialog-content .recharts-tooltip-wrapper { /* Hide tooltips on print */
-    display: none !important;
-  }
-  #class-dashboard-dialog-content .recharts-legend-wrapper { /* Ensure legend is visible */
-    display: block !important; /* or flex, depending on its original display type */
-  }
+    /* height: auto !important;  */
+  /* } */
+  /* #class-dashboard-dialog-content .recharts-tooltip-wrapper { */ /* Hide tooltips on print */
+    /* display: none !important; */
+  /* } */
+  /* #class-dashboard-dialog-content .recharts-legend-wrapper { */ /* Ensure legend is visible */
+    /* display: block !important; */ /* or flex, depending on its original display type */
+  /* } */
 }
 
     

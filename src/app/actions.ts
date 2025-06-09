@@ -9,7 +9,7 @@ import {
   type GenerateReportInsightsOutput
 } from '@/ai/flows/generate-performance-summary'; 
 import { editImage, type EditImageInput, type EditImageOutput } from '@/ai/flows/edit-image-flow';
-import { generateClassInsights, type GenerateClassInsightsInput, type GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow';
+// import { generateClassInsights, type GenerateClassInsightsInput, type GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow'; // Removed
 import { z } from 'zod';
 
 // Schema for student feedback generation
@@ -104,8 +104,8 @@ export async function editImageWithAiAction(
     }
 }
 
-// Schema for Class Insights AI action
-// Re-using schemas from the flow definition (types are fine, Zod schema objects would be re-defined here if needed)
+// Class Insights Action and related schemas are removed
+/*
 const SubjectPerformanceStatActionSchema = z.object({
   subjectName: z.string(),
   averageMark: z.number().nullable(),
@@ -150,3 +150,4 @@ export async function getAiClassInsightsAction(
     return { success: false, error: errorMessage };
   }
 }
+*/
