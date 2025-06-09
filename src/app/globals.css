@@ -110,50 +110,35 @@ body {
 /* For on-screen A4-like preview */
 @media screen {
   #report-preview-container {
-    /* Provides a scrollable container for multiple A4 pages */
-    /* background-color: theme('colors.gray.100'); */
-    /* padding: 1rem; */
   }
   .a4-page-simulation {
-    width: 21cm; /* A4 width */
-    min-height: 29.7cm; /* A4 height */
-    padding: 1.5cm; /* Margins for the content within the A4 page */
+    width: 21cm; 
+    min-height: 29.7cm; 
+    padding: 1.5cm; 
     margin-left: auto;
     margin-right: auto;
-    /* margin-top: 1rem; */ /* Removed specific top margin for single view */
-    /* margin-bottom: 1rem; */ /* Removed specific bottom margin for single view */
-    border: 1px solid #D3D3D3; /* Light grey border for page */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); /* Subtle shadow for page */
-    background: white; /* White background for page */
+    border: 1px solid #D3D3D3; 
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); 
+    background: white; 
     box-sizing: border-box;
-    overflow: hidden; /* Content that overflows will be hidden on screen for this single page sim */
+    overflow: hidden; 
   }
 
-  /* Screen styles for one-at-a-time preview */
   .hidden-preview-screen {
     display: none;
   }
   .active-preview-screen {
     display: block; 
-    /* Add some margin around the active preview item if desired, 
-       as the previous loop's margin-top/bottom on a4-page-simulation was removed */
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
   }
 
-  /* Ensure the container for the active preview doesn't have excessive padding from its parent CardContent
-     if ReportPreview itself has outer margins/padding. CardContent p-0 ensures this is controlled by active-preview-screen. */
   #report-preview-container.p-0 .active-preview-screen {
-     /* margin-top: 0; 
-        margin-bottom: 0; 
-        These would be needed if #report-preview-container had padding itself.
-        Since it's p-0 md:p-2, the inner item's margin is fine.
-     */
   }
   
-  /* .dashboard-print-header { */ /* Removed as dashboard is removed */
-    /* display: none; */
-  /* } */
+  .dashboard-print-header {
+    display: none; 
+  }
 }
 
 
@@ -167,8 +152,8 @@ body {
     margin: 0 !important;
     padding: 0 !important;
     background-color: white !important;
-    -webkit-print-color-adjust: exact !important; /* Chrome, Safari, Edge */
-    print-color-adjust: exact !important; /* Firefox */
+    -webkit-print-color-adjust: exact !important; 
+    print-color-adjust: exact !important; 
   }
 
   #report-preview-container { 
@@ -186,22 +171,21 @@ body {
     overflow: visible !important; 
   }
   
-  /* Ensure all report preview items are displayed for printing */
   #report-preview-container .hidden-preview-screen {
     display: block !important;
   }
   #report-preview-container .active-preview-screen {
-    display: block !important; /* Ensure active also prints */
-    margin-top: 0 !important; /* Reset screen margins for print */
+    display: block !important; 
+    margin-top: 0 !important; 
     margin-bottom: 0 !important;
   }
-  #report-preview-container .report-preview-item { /* Generic class for all items */
+  #report-preview-container .report-preview-item { 
      display: block !important;
      margin: 0 !important;
   }
 
 
-  .a4-page-simulation { /* This is the root of ReportPreview, now #printable-report-area */
+  .a4-page-simulation { 
     width: 100% !important; 
     min-height: 0 !important; 
     height: auto !important; 
@@ -268,134 +252,141 @@ body {
     page-break-inside: avoid; 
   }
 
-  /* Styles for printing the Class Dashboard Dialog - REMOVED */
-  /* body > [data-radix-portal] > [data-radix-dialog-overlay], */
-  /* body > [data-radix-portal] > [data-radix-focus-guard] { */
-    /* display: none !important; */
-  /* } */
+  /* Styles for printing the Class Dashboard Dialog */
+  body > [data-radix-portal] > [data-radix-dialog-overlay],
+  body > [data-radix-portal] > [data-radix-focus-guard] {
+    display: none !important;
+  }
 
-  /* #class-dashboard-dialog-content { */
-    /* position: static !important;  */
-    /* display: block !important;  */
-    /* width: 100% !important; */
-    /* max-width: 100% !important; */
-    /* height: auto !important; */
-    /* min-height: 0 !important; */
-    /* transform: none !important;  */
-    /* margin: 0 !important; */
-    /* padding: 10mm !important;  */
-    /* border: none !important; */
-    /* box-shadow: none !important; */
-    /* background-color: white !important; */
-    /* color: black !important; */
-    /* overflow: visible !important;  */
-    /* border-radius: 0 !important; */
-    /* -webkit-print-color-adjust: exact !important; */
-    /* print-color-adjust: exact !important; */
-  /* } */
+  #class-dashboard-dialog-content {
+    position: static !important; 
+    display: block !important; 
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important; /* Allow content to determine height for print */
+    min-height: 0 !important; /* Override screen min-height if any */
+    max-height: none !important; /* Override screen max-height */
+    transform: none !important; 
+    margin: 0 !important;
+    padding: 10mm !important; 
+    border: none !important;
+    box-shadow: none !important;
+    background-color: white !important;
+    color: black !important;
+    overflow: visible !important; 
+    border-radius: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 
-  /* #class-dashboard-dialog-content *, */
-  /* #class-dashboard-dialog-content *::before, */
-  /* #class-dashboard-dialog-content *::after { */
-    /* color: black !important; */
-    /* background-color: transparent !important; */ /* Kept commented to allow chart fills etc. */
-    /* border-color: #ccc !important;  */
-    /* box-shadow: none !important; */
-  /* } */
-
-  /* #class-dashboard-dialog-content .card, */
-  /* #class-dashboard-dialog-content .table { */
-    /* background-color: white !important;  */
-  /* } */
-
-  /* #class-dashboard-dialog-content .text-primary { */
-     /* color: #2c5282 !important;  */
-  /* } */
-  /* #class-dashboard-dialog-content .text-accent { */
-     /* color: #276749 !important;  */
-  /* } */
-   /* #class-dashboard-dialog-content .text-muted-foreground { */
-     /* color: #4a5568 !important;  */
-   /* } */
-
-  /* #class-dashboard-dialog-content [class~="bg-accent/10"] { */
-    /* background-color: #f0fff4 !important; */
-    /* border: 1px solid #a7f3d0 !important; */
-  /* } */
-  /* #class-dashboard-dialog-content .text-green-500 { color: green !important; } */
-  /* #class-dashboard-dialog-content .text-yellow-500 { color: #b45309 !important; }  */
-  /* #class-dashboard-dialog-content .text-red-500 { color: red !important; } */
-
-  /* #class-dashboard-dialog-content .dashboard-print-header { */
-    /* display: block !important; */
-    /* text-align: center; */
-    /* margin-bottom: 1rem; */
-    /* padding-bottom: 0.5rem; */
-    /* border-bottom: 1px solid #ccc; */
-  /* } */
-  /* #class-dashboard-dialog-content .dashboard-print-header h2 { */
-    /* font-size: 1.25rem;  */
-    /* font-weight: bold; */
-    /* color: black !important; */
-  /* } */
-  /* #class-dashboard-dialog-content .dashboard-print-header p { */
-    /* font-size: 0.875rem;  */
-    /* color: black !important; */
-  /* } */
+  #class-dashboard-dialog-content *,
+  #class-dashboard-dialog-content *::before,
+  #class-dashboard-dialog-content *::after {
+    color: black !important;
+    /* background-color: transparent !important; */ /* Commented out to allow chart fills etc. to print if possible */
+    border-color: #ccc !important; 
+    box-shadow: none !important;
+  }
   
-  /* #class-dashboard-dialog-content .no-print, */
-  /* #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header) {  */
-    /* display: none !important; */
-  /* } */
+  #class-dashboard-dialog-content .card,
+  #class-dashboard-dialog-content .table {
+    background-color: white !important; /* Ensure card backgrounds are white for print */
+  }
 
-  /* #class-dashboard-dialog-content [class~="max-h-[calc(80vh-200px)]"] { */
-    /* max-height: none !important; */
-    /* overflow: visible !important; */
-  /* } */
-  /* #class-dashboard-dialog-content [data-radix-scroll-area-viewport] { */
-     /* overflow: visible !important; */
-     /* height: auto !important; */
-  /* } */
-  /* #class-dashboard-dialog-content [data-radix-scroll-area-thumb], */
-  /* #class-dashboard-dialog-content [data-radix-scroll-area-scrollbar] {  */
-      /* display: none !important; */
-  /* } */
+  /* Attempt to preserve some themed colors if possible, but prioritize black for text */
+   #class-dashboard-dialog-content .text-primary {
+     color: #2c5282 !important; /* A dark blue, adjust as needed */
+   }
+   #class-dashboard-dialog-content .text-accent {
+     color: #276749 !important; /* A dark green, adjust as needed */
+   }
+   #class-dashboard-dialog-content .text-muted-foreground {
+     color: #4a5568 !important; /* A dark gray, adjust as needed */
+   }
+   /* Ensure specific background colors for AI insights section are printable */
+  #class-dashboard-dialog-content [class~="bg-accent/10"] { /* Target classes like 'bg-accent/10' */
+    background-color: #f0fff4 !important; /* Example: light green, adjust if theme changes */
+    border: 1px solid #a7f3d0 !important; /* Add a light border for definition */
+  }
+  #class-dashboard-dialog-content .text-green-500 { color: green !important; }
+  #class-dashboard-dialog-content .text-yellow-500 { color: #b45309 !important; } /* Darker yellow for print */
+  #class-dashboard-dialog-content .text-red-500 { color: red !important; }
 
-  /* #class-dashboard-dialog-content .card { */
-    /* page-break-inside: avoid; */
-  /* } */
-  /* #class-dashboard-dialog-content .table { */
-    /* page-break-inside: auto;  */
-  /* } */
-  /* #class-dashboard-dialog-content tr { */
-    /* page-break-inside: avoid; */
-  /* } */
 
-  /* #class-dashboard-dialog-content > button[aria-label="Close"], */
-  /* #class-dashboard-dialog-content .dialog-footer-print-hide { */
-    /* display: none !important; */
-  /* } */
+  .dashboard-print-header { /* This is specifically for the print version of the header */
+    display: block !important;
+    text-align: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #ccc;
+  }
+  .dashboard-print-header h2 {
+    font-size: 1.25rem; /* 20px */
+    font-weight: bold;
+    color: black !important;
+  }
+  .dashboard-print-header p {
+    font-size: 0.875rem; /* 14px */
+    color: black !important;
+  }
+  
+  #class-dashboard-dialog-content .no-print,
+  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header) { /* Hide screen header if not also print header */
+    display: none !important;
+  }
+  #class-dashboard-dialog-content > button[aria-label="Close"], /* Hide the X close button */
+  #class-dashboard-dialog-content .dialog-footer-print-hide { /* Hide footer buttons */
+      display: none !important;
+  }
 
-  /* Chart specific print enhancements - REMOVED */
-  /* #class-dashboard-dialog-content .recharts-responsive-container { */
-    /* width: 100% !important; */ /* Ensure chart container tries to use available width */
-  /* } */
-  /* #class-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper { */
-    /* width: 100% !important;  */
-    /* height: auto !important; */ /* Allow responsive height adjustment */
-    /* min-height: 150px !important; */ /* Prevent collapsing, adjust as needed */
-  /* } */
-  /* #class-dashboard-dialog-content .recharts-surface { */ /* The SVG element */
-    /* width: 100% !important; */
+
+  /* Ensure scrollable areas expand for print */
+  #class-dashboard-dialog-content [class~="max-h-[calc(80vh-200px)]"], /* Generic example, adjust if class name changes */
+  #class-dashboard-dialog-content [class~="h-[90dvh]"] { /* Target the specific height class */
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+   #class-dashboard-dialog-content [data-radix-scroll-area-viewport] {
+     overflow: visible !important;
+     height: auto !important;
+   }
+  #class-dashboard-dialog-content [data-radix-scroll-area-thumb],
+  #class-dashboard-dialog-content [data-radix-scroll-area-scrollbar] { 
+      display: none !important;
+  }
+
+  /* Prevent cards/tables from breaking across pages where possible */
+  #class-dashboard-dialog-content .card {
+    page-break-inside: avoid;
+  }
+  #class-dashboard-dialog-content .table {
+    page-break-inside: auto; /* Tables can break if very long */
+  }
+  #class-dashboard-dialog-content tr {
+    page-break-inside: avoid; /* Keep table rows together */
+  }
+
+  /* Chart specific print enhancements */
+  #class-dashboard-dialog-content .recharts-responsive-container {
+    width: 100% !important; /* Ensure chart container tries to use available width */
+  }
+  #class-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper {
+    width: 100% !important; 
+    height: auto !important; /* Allow responsive height adjustment */
+    min-height: 150px !important; /* Prevent collapsing, adjust as needed */
+  }
+  #class-dashboard-dialog-content .recharts-surface { /* The SVG element */
+    width: 100% !important;
     /* Recharts usually sets height via inline style on SVG, let it do that or use 'auto' */
     /* height: auto !important;  */
-  /* } */
-  /* #class-dashboard-dialog-content .recharts-tooltip-wrapper { */ /* Hide tooltips on print */
-    /* display: none !important; */
-  /* } */
-  /* #class-dashboard-dialog-content .recharts-legend-wrapper { */ /* Ensure legend is visible */
-    /* display: block !important; */ /* or flex, depending on its original display type */
-  /* } */
+  }
+  #class-dashboard-dialog-content .recharts-tooltip-wrapper { /* Hide tooltips on print */
+    display: none !important;
+  }
+  #class-dashboard-dialog-content .recharts-legend-wrapper { /* Ensure legend is visible */
+    display: block !important; /* or flex, depending on its original display type */
+  }
 }
 
     

@@ -5,15 +5,15 @@
 import { generateStudentFeedback, type GenerateStudentFeedbackInput } from '@/ai/flows/generate-student-feedback';
 import { 
   generateReportInsights, 
-  type GenerateReportInsightsInput, // This is the TYPE for the flow's input
+  type GenerateReportInsightsInput, 
   type GenerateReportInsightsOutput
 } from '@/ai/flows/generate-performance-summary'; 
 import { editImage, type EditImageInput, type EditImageOutput } from '@/ai/flows/edit-image-flow';
-// import { 
-//   interpretSubjectCommand, 
-//   type InterpretSubjectCommandInput, 
-//   type InterpretSubjectCommandOutput 
-// } from '@/ai/flows/interpret-subject-command-flow'; // Removed
+import { 
+  generateClassInsights, 
+  type GenerateClassInsightsInput, 
+  type GenerateClassInsightsOutput 
+} from '@/ai/flows/generate-class-insights-flow';
 import { z } from 'zod';
 
 // Schema for student feedback generation
@@ -44,8 +44,6 @@ export async function getAiFeedbackAction(
   }
 }
 
-// Local Zod schema for validating input to getAiReportInsightsAction
-// This must be compatible with the GenerateReportInsightsInput TYPE from the flow
 const ActionFlowSubjectEntrySchema = z.object({
   subjectName: z.string(),
   continuousAssessment: z.number().nullable().optional(),
@@ -62,13 +60,10 @@ const ActionGenerateReportInsightsInputSchema = z.object({
 
 
 export async function getAiReportInsightsAction(
-  input: GenerateReportInsightsInput // Use the TYPE from the flow for the function signature
+  input: GenerateReportInsightsInput 
 ): Promise<{ success: boolean; insights?: GenerateReportInsightsOutput; error?: string }> {
   try {
-    // Validate input using the action's local schema
     const validatedInput = ActionGenerateReportInsightsInputSchema.parse(input);
-    
-    // Call the flow with the validated input. It will conform to GenerateReportInsightsInput type.
     const result = await generateReportInsights(validatedInput);
     return { success: true, insights: result };
   } catch (error) {
@@ -83,7 +78,6 @@ export async function getAiReportInsightsAction(
   }
 }
 
-// Schema for AI image editing
 const EditImageActionInputSchema = z.object({
     photoDataUri: z.string().min(1, "Image data URI is required."),
     prompt: z.string().min(1, "Edit prompt is required."),
@@ -108,27 +102,46 @@ export async function editImageWithAiAction(
     }
 }
 
-// Removed interpretSubjectCommandAction and its schema
-// // Schema for AI subject command interpretation
-// const InterpretSubjectCommandActionInputSchema = z.object({
-//     transcribedText: z.string().min(1, "Transcribed text cannot be empty."),
-// });
+// Schema for AI Class Insights
+const ActionSubjectPerformanceStatSchema = z.object({
+  subjectName: z.string(),
+  numBelowAverage: z.number(),
+  numAverage: z.number(),
+  numAboveAverage: z.number(),
+  classAverageForSubject: z.number().nullable(),
+});
 
-// export async function interpretSubjectCommandAction(
-//   input: InterpretSubjectCommandInput
-// ): Promise<{ success: boolean; command?: InterpretSubjectCommandOutput; error?: string }> {
-//   try {
-//     const validatedInput = InterpretSubjectCommandActionInputSchema.parse(input);
-//     const result = await interpretSubjectCommand(validatedInput);
-//     return { success: true, command: result };
-//   } catch (error) {
-//     console.error("Error interpreting subject command with AI:", error);
-//     let errorMessage = "Failed to interpret command. Please try again.";
-//     if (error instanceof z.ZodError) {
-//       errorMessage = "Invalid input for AI command interpretation: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
-//     } else if (error instanceof Error) {
-//       errorMessage = error.message;
-//     }
-//     return { success: false, error: errorMessage };
-//   }
-// }
+const ActionGenderPerformanceStatSchema = z.object({
+  gender: z.string(),
+  count: z.number(),
+  averageScore: z.number().nullable(),
+});
+
+const GenerateClassInsightsActionInputSchema = z.object({
+  className: z.string(),
+  academicTerm: z.string(),
+  overallClassAverage: z.number().nullable(),
+  totalStudents: z.number(),
+  subjectStats: z.array(ActionSubjectPerformanceStatSchema),
+  genderStats: z.array(ActionGenderPerformanceStatSchema),
+});
+
+
+export async function getAiClassInsightsAction(
+  input: GenerateClassInsightsInput
+): Promise<{ success: boolean; insights?: GenerateClassInsightsOutput; error?: string }> {
+  try {
+    const validatedInput = GenerateClassInsightsActionInputSchema.parse(input);
+    const result = await generateClassInsights(validatedInput);
+    return { success: true, insights: result };
+  } catch (error) {
+    console.error("Error generating AI class insights:", error);
+    let errorMessage = "Failed to generate AI class insights. Please try again.";
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for AI class insights: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}

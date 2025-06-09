@@ -5,16 +5,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ReportForm from '@/components/report-form';
 import ReportPreview from '@/components/report-preview';
 import ReportActions from '@/components/report-actions';
-// import ClassDashboard, { type ClassStatistics, type SubjectPerformanceStatForUI, type GenderPerformanceStatForUI } from '@/components/class-dashboard'; // Removed
+import ClassPerformanceDashboard, { type ClassStatistics } from '@/components/class-dashboard';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight } from 'lucide-react'; // Removed BarChartHorizontalBig
+import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
-// import { getAiClassInsightsAction } from '@/app/actions'; // Removed
-// import type { GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow'; // Removed
 
 
 // Helper function to calculate final mark for a single subject
@@ -54,6 +52,7 @@ function AppContent() {
   const { toast } = useToast();
 
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState<number>(0);
+  const [isClassDashboardOpen, setIsClassDashboardOpen] = useState(false);
 
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
@@ -128,7 +127,7 @@ function AppContent() {
 
       const newList = [...reportPrintList, reportWithEntryNumber];
       calculateAndSetRanks(newList);
-      setCurrentPreviewIndex(newList.length - 1); // View the newly added report
+      setCurrentPreviewIndex(newList.length - 1); 
 
       if (reportPrintList.length === 0) {
         setSessionDefaults({
@@ -256,6 +255,29 @@ function AppContent() {
     setCurrentPreviewIndex(prev => Math.max(0, prev - 1));
   };
 
+  const currentClassNameForDashboard = useMemo(() => {
+    if (reportPrintList.length > 0) {
+        const classNames = new Set(reportPrintList.map(r => r.className));
+        if (classNames.size === 1) {
+            return classNames.values().next().value;
+        }
+        // If multiple classes, use the class of the first report or a general term
+        return reportPrintList[0].className || "Mixed Classes"; 
+    }
+    return currentEditingReport.className || "N/A";
+  }, [reportPrintList, currentEditingReport.className]);
+
+  const currentAcademicTermForDashboard = useMemo(() => {
+     if (reportPrintList.length > 0) {
+        const terms = new Set(reportPrintList.map(r => r.academicTerm));
+        if (terms.size === 1) {
+            return terms.values().next().value;
+        }
+        return reportPrintList[0].academicTerm || "Multiple Terms";
+    }
+    return currentEditingReport.academicTerm || "N/A";
+  }, [reportPrintList, currentEditingReport.academicTerm]);
+
 
   return (
     <>
@@ -308,8 +330,17 @@ function AppContent() {
                 </div>
 
                 <div className="flex flex-col gap-2 items-stretch">
-                  {/* Action Buttons */}
                   <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+                     <Button 
+                        onClick={() => setIsClassDashboardOpen(true)} 
+                        disabled={reportsCount === 0} 
+                        variant="outline" 
+                        size="sm"
+                        title={reportsCount > 0 ? "View AI-powered class performance dashboard" : "Add reports to list to view dashboard"}
+                      >
+                       <BarChartHorizontalBig className="mr-2 h-4 w-4" /> 
+                       Class Dashboard
+                     </Button>
                     <Button onClick={handleDownloadData} disabled={reportsCount === 0} variant="outline" size="sm">
                       <Download className="mr-2 h-4 w-4" />
                       Download Data
@@ -341,7 +372,6 @@ function AppContent() {
               {reportsCount > 0 ? (
                 reportPrintList.map((reportData, index) => (
                   <React.Fragment key={reportData.id || `report-entry-${reportData.studentEntryNumber}`}>
-                    {/* Show actions only for the currently active preview */}
                     {index === currentPreviewIndex && (
                        <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
                          <ReportActions report={reportData} />
@@ -368,7 +398,15 @@ function AppContent() {
         <p>&copy; {new Date().getFullYear()} Report Card Generator. Professionally designed for educators.</p>
       </footer>
     </div>
-    {/* ClassDashboard component removed */}
+    {isClassDashboardOpen && (
+        <ClassPerformanceDashboard
+            isOpen={isClassDashboardOpen}
+            onOpenChange={setIsClassDashboardOpen}
+            reports={reportPrintList}
+            className={currentClassNameForDashboard}
+            academicTerm={currentAcademicTermForDashboard}
+        />
+    )}
     </>
   );
 }
