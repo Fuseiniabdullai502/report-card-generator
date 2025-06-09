@@ -9,11 +9,11 @@ import {
   type GenerateReportInsightsOutput
 } from '@/ai/flows/generate-performance-summary'; 
 import { editImage, type EditImageInput, type EditImageOutput } from '@/ai/flows/edit-image-flow';
-import { 
-  interpretSubjectCommand, 
-  type InterpretSubjectCommandInput, 
-  type InterpretSubjectCommandOutput 
-} from '@/ai/flows/interpret-subject-command-flow';
+// import { 
+//   interpretSubjectCommand, 
+//   type InterpretSubjectCommandInput, 
+//   type InterpretSubjectCommandOutput 
+// } from '@/ai/flows/interpret-subject-command-flow'; // Removed
 import { z } from 'zod';
 
 // Schema for student feedback generation
@@ -108,26 +108,27 @@ export async function editImageWithAiAction(
     }
 }
 
-// Schema for AI subject command interpretation
-const InterpretSubjectCommandActionInputSchema = z.object({
-    transcribedText: z.string().min(1, "Transcribed text cannot be empty."),
-});
+// Removed interpretSubjectCommandAction and its schema
+// // Schema for AI subject command interpretation
+// const InterpretSubjectCommandActionInputSchema = z.object({
+//     transcribedText: z.string().min(1, "Transcribed text cannot be empty."),
+// });
 
-export async function interpretSubjectCommandAction(
-  input: InterpretSubjectCommandInput
-): Promise<{ success: boolean; command?: InterpretSubjectCommandOutput; error?: string }> {
-  try {
-    const validatedInput = InterpretSubjectCommandActionInputSchema.parse(input);
-    const result = await interpretSubjectCommand(validatedInput);
-    return { success: true, command: result };
-  } catch (error) {
-    console.error("Error interpreting subject command with AI:", error);
-    let errorMessage = "Failed to interpret command. Please try again.";
-    if (error instanceof z.ZodError) {
-      errorMessage = "Invalid input for AI command interpretation: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    return { success: false, error: errorMessage };
-  }
-}
+// export async function interpretSubjectCommandAction(
+//   input: InterpretSubjectCommandInput
+// ): Promise<{ success: boolean; command?: InterpretSubjectCommandOutput; error?: string }> {
+//   try {
+//     const validatedInput = InterpretSubjectCommandActionInputSchema.parse(input);
+//     const result = await interpretSubjectCommand(validatedInput);
+//     return { success: true, command: result };
+//   } catch (error) {
+//     console.error("Error interpreting subject command with AI:", error);
+//     let errorMessage = "Failed to interpret command. Please try again.";
+//     if (error instanceof z.ZodError) {
+//       errorMessage = "Invalid input for AI command interpretation: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+//     } else if (error instanceof Error) {
+//       errorMessage = error.message;
+//     }
+//     return { success: false, error: errorMessage };
+//   }
+// }

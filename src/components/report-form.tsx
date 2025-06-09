@@ -1,9 +1,8 @@
 
 'use client';
 
-import type {ReportData, SubjectEntry} from '@/lib/schemas';
-import {ReportDataSchema}from '@/lib/schemas';
-import {zodResolver}from '@hookform/resolvers/zod';
+import { ReportDataSchema, type ReportData, type SubjectEntry } from '@/lib/schemas';
+import { zodResolver }from '@hookform/resolvers/zod';
 import {useForm, type SubmitHandler, useFieldArray}from 'react-hook-form';
 import {Button}from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle}from '@/components/ui/card';
@@ -13,10 +12,10 @@ import {Textarea}from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator}from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction, interpretSubjectCommandAction}from '@/app/actions';
+import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction }from '@/app/actions';
 import React, {useState, useTransition, useEffect}from 'react';
 import NextImage from 'next/image';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, LayoutTemplate, Mic } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, LayoutTemplate } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -79,7 +78,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
   const [isImageEditingAiLoading, startImageEditingAiTransition] = useTransition();
-  const [isInterpretingSubjectCommand, startInterpretingSubjectCommandTransition] = useTransition();
   const { toast } = useToast();
 
   const [customSubjects, setCustomSubjects] = useState<string[]>([]);
@@ -96,9 +94,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [customHobbyInputValue, setCustomHobbyInputValue] = useState('');
 
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
-
-  const [isVoiceCommandModalOpen, setIsVoiceCommandModalOpen] = useState(false);
-  const [voiceCommandInputText, setVoiceCommandInputText] = useState('');
 
 
   const studentNameHistory = React.useMemo(() => {
@@ -431,72 +426,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
           description: "An unexpected error occurred during AI image editing.",
           variant: "destructive",
         });
-      }
-    });
-  };
-
-  const handleInterpretSubjectCommand = () => {
-    if (!voiceCommandInputText.trim()) {
-      toast({ title: "Empty Command", description: "Please enter a voice command.", variant: "destructive" });
-      return;
-    }
-    if (fields.length === 0 && !voiceCommandInputText.toLowerCase().includes("add subject")) {
-        toast({ title: "No Subject Selected", description: "Please add a subject first or use 'add subject' command.", variant: "destructive" });
-        return;
-    }
-
-
-    startInterpretingSubjectCommandTransition(async () => {
-      try {
-        const result = await interpretSubjectCommandAction({ transcribedText: voiceCommandInputText });
-        if (result.success && result.command) {
-          const { action, updates } = result.command;
-          let commandApplied = false;
-
-          if (action === "updateCurrent" && updates && fields.length > 0) {
-            if (updates.subjectName) {
-              form.setValue(`subjects.${currentVisibleSubjectIndex}.subjectName`, updates.subjectName, { shouldValidate: true, shouldDirty: true });
-              commandApplied = true;
-            }
-            if (updates.caMark !== undefined) {
-              form.setValue(`subjects.${currentVisibleSubjectIndex}.continuousAssessment`, updates.caMark, { shouldValidate: true, shouldDirty: true });
-              commandApplied = true;
-            }
-            if (updates.examMark !== undefined) {
-              form.setValue(`subjects.${currentVisibleSubjectIndex}.examinationMark`, updates.examMark, { shouldValidate: true, shouldDirty: true });
-              commandApplied = true;
-            }
-             if (commandApplied) {
-                toast({ title: "Subject Updated", description: "Current subject details updated by voice command." });
-             } else {
-                toast({ title: "No Updates Applied", description: "Voice command for update did not specify any changes.", variant: "default" });
-             }
-          } else if (action === "addSubject") {
-            handleAddSubjectAndNavigate();
-            toast({ title: "Subject Added", description: "New subject added by voice command." });
-            commandApplied = true;
-          } else if (action === "removeSubject") {
-            if (fields.length > 0) {
-              handleRemoveCurrentSubject();
-              toast({ title: "Subject Removed", description: "Current subject removed by voice command." });
-              commandApplied = true;
-            } else {
-              toast({ title: "No Subject to Remove", description: "There are no subjects to remove.", variant: "destructive" });
-            }
-          } else if (action === "unknown") {
-            toast({ title: "Command Not Understood", description: "AI could not understand the subject command.", variant: "destructive" });
-          }
-          
-          if (commandApplied) {
-            setIsVoiceCommandModalOpen(false);
-            setVoiceCommandInputText('');
-          }
-
-        } else {
-          toast({ title: "AI Error", description: result.error || "Failed to interpret command.", variant: "destructive" });
-        }
-      } catch (error) {
-        toast({ title: "Command Error", description: "An error occurred while processing the command.", variant: "destructive" });
       }
     });
   };
@@ -1000,19 +929,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             <section className="space-y-6">
               <div className="flex justify-between items-center border-b pb-2 mb-4">
                 <h3 className="text-lg font-medium text-primary">Subject Marks</h3>
-                <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => {
-                        setVoiceCommandInputText(''); // Clear previous command
-                        setIsVoiceCommandModalOpen(true);
-                    }}
-                    title="Use voice command for subject input (simulated)"
-                >
-                    <Mic className="mr-2 h-4 w-4" />
-                    Speak Command
-                </Button>
               </div>
               
               <div className="flex items-center justify-between mt-2 mb-4">
@@ -1353,47 +1269,13 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
               />
             </section>
 
-            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading || isInterpretingSubjectCommand}>
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading }>
               <CheckSquare className="mr-2 h-4 w-4" /> Update Preview
             </Button>
           </form>
         </Form>
       </CardContent>
     </Card>
-
-    {/* Dialog for Simulated Voice Command Input */}
-    <Dialog open={isVoiceCommandModalOpen} onOpenChange={setIsVoiceCommandModalOpen}>
-        <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-                <DialogTitle className="flex items-center">
-                    <Mic className="mr-2 h-5 w-5 text-primary" />
-                    Speak Subject Command (Simulated)
-                </DialogTitle>
-                <DialogDescription>
-                    Type your command for the current subject (e.g., "set subject to English", "CA mark 45", "exam 80", "add new subject", "remove this subject").
-                    A real implementation would use your microphone.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <Input
-                    id="voiceCommandInput"
-                    placeholder="e.g., Mathematics CA 50 Exam 75"
-                    value={voiceCommandInputText}
-                    onChange={(e) => setVoiceCommandInputText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleInterpretSubjectCommand();}}}
-                    disabled={isInterpretingSubjectCommand}
-                />
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsVoiceCommandModalOpen(false)} disabled={isInterpretingSubjectCommand}>Cancel</Button>
-                <Button onClick={handleInterpretSubjectCommand} disabled={isInterpretingSubjectCommand || !voiceCommandInputText.trim()}>
-                    {isInterpretingSubjectCommand && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Process Command
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
-
 
     <Dialog open={isCustomSubjectDialogOpen} onOpenChange={setIsCustomSubjectDialogOpen}>
       <DialogContent className="sm:max-w-[425px]">
