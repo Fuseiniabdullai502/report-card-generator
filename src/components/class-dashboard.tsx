@@ -182,7 +182,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                   </CardHeader>
                   <CardContent>
                     {subjectChartData.length > 0 ? (
-                      <ChartContainer config={subjectChartConfig} className="min-h-[200px] w-full">
+                      <ChartContainer config={subjectChartConfig} className="min-h-[200px] w-full" data-testid="subject-barchart-container">
                         <ResponsiveContainer width="100%" height={300}>
                           <BarChart data={subjectChartData} margin={{ top: 5, right: 20, left: -20, bottom: 40 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -257,7 +257,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                     </CardHeader>
                     <CardContent>
                       {genderChartData.length > 0 ? (
-                        <ChartContainer config={genderChartConfig} className="min-h-[200px] w-full aspect-square">
+                        <ChartContainer config={genderChartConfig} className="min-h-[200px] w-full" data-testid="gender-piechart-container"> {/* Removed aspect-square */}
                           <ResponsiveContainer width="100%" height={250}>
                             <PieChart>
                               <ChartTooltip content={<ChartTooltipContent hideLabel />} />
@@ -382,5 +382,3 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
     </Dialog>
   );
 }
-
-    
