@@ -9,7 +9,11 @@ import {
   type GenerateReportInsightsOutput
 } from '@/ai/flows/generate-performance-summary'; 
 import { editImage, type EditImageInput, type EditImageOutput } from '@/ai/flows/edit-image-flow';
-// import { generateClassInsights, type GenerateClassInsightsInput, type GenerateClassInsightsOutput } from '@/ai/flows/generate-class-insights-flow'; // Removed
+import { 
+  interpretSubjectCommand, 
+  type InterpretSubjectCommandInput, 
+  type InterpretSubjectCommandOutput 
+} from '@/ai/flows/interpret-subject-command-flow';
 import { z } from 'zod';
 
 // Schema for student feedback generation
@@ -104,50 +108,26 @@ export async function editImageWithAiAction(
     }
 }
 
-// Class Insights Action and related schemas are removed
-/*
-const SubjectPerformanceStatActionSchema = z.object({
-  subjectName: z.string(),
-  averageMark: z.number().nullable(),
-  studentsAboveAverage: z.number(),
-  studentsAtAverage: z.number(),
-  studentsBelowAverage: z.number(),
-  passRate: z.number(),
+// Schema for AI subject command interpretation
+const InterpretSubjectCommandActionInputSchema = z.object({
+    transcribedText: z.string().min(1, "Transcribed text cannot be empty."),
 });
 
-const GenderPerformanceStatActionSchema = z.object({
-  gender: z.string(),
-  averageScore: z.number().nullable(),
-  count: z.number(),
-});
-
-const ClassInsightsActionInputSchema = z.object({
-  className: z.string().min(1, "Class name is required"),
-  totalStudents: z.number().min(1, "Total students must be at least 1"),
-  overallClassAverage: z.number().nullable(),
-  subjectStats: z.array(SubjectPerformanceStatActionSchema).min(1, "At least one subject statistic is required"),
-  genderStats: z.array(GenderPerformanceStatActionSchema),
-  passMark: z.number().default(50),
-});
-
-
-export async function getAiClassInsightsAction(
-  input: GenerateClassInsightsInput // Use the TYPE from the flow for the function signature
-): Promise<{ success: boolean; insights?: GenerateClassInsightsOutput; error?: string }> {
+export async function interpretSubjectCommandAction(
+  input: InterpretSubjectCommandInput
+): Promise<{ success: boolean; command?: InterpretSubjectCommandOutput; error?: string }> {
   try {
-    // Validate input specifically for this action before passing to the flow
-    const validatedInput = ClassInsightsActionInputSchema.parse(input);
-    const result = await generateClassInsights(validatedInput);
-    return { success: true, insights: result };
+    const validatedInput = InterpretSubjectCommandActionInputSchema.parse(input);
+    const result = await interpretSubjectCommand(validatedInput);
+    return { success: true, command: result };
   } catch (error) {
-    console.error("Error generating AI class insights:", error);
-    let errorMessage = "Failed to generate AI class insights. Please try again.";
+    console.error("Error interpreting subject command with AI:", error);
+    let errorMessage = "Failed to interpret command. Please try again.";
     if (error instanceof z.ZodError) {
-      errorMessage = "Invalid input for AI class insights: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+      errorMessage = "Invalid input for AI command interpretation: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
     } else if (error instanceof Error) {
-      errorMessage = error.message; 
+      errorMessage = error.message;
     }
     return { success: false, error: errorMessage };
   }
 }
-*/
