@@ -83,21 +83,44 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
     return null;
   }
 
-  if (!classStats) {
+  const handlePrintDashboard = () => {
+    window.print();
+  };
+
+  if (!classStats && !isLoading) { // Added check for isLoading to prevent showing this when dashboard is just loading stats
     return (
       <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DialogContent className="sm:max-w-md w-full p-0 flex flex-col items-center justify-center h-48" id="class-dashboard-dialog-content-loading">
-            <BarChart3 className="h-12 w-12 animate-pulse text-primary" />
-            <p className="mt-4 text-lg text-muted-foreground">Calculating class statistics...</p>
+        <DialogContent className="sm:max-w-md w-full p-6 flex flex-col items-center justify-center h-48" id="class-dashboard-dialog-content-placeholder">
+            <Info className="h-12 w-12 text-primary mb-3" />
+            <DialogTitle className="text-xl">No Data</DialogTitle>
+            <DialogDescription className="text-center mt-1">
+              Class statistics are not available. Please generate reports first.
+            </DialogDescription>
+             <DialogFooter className="mt-4">
+                <Button onClick={onClose}>Close</Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     );
   }
+  
+  // Show loading state for initial stats calculation or AI insights fetching
+  if ((!classStats && isLoading) || (classStats && isLoading && !aiAdvice)) {
+     return (
+      <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+        <DialogContent className="sm:max-w-md w-full p-6 flex flex-col items-center justify-center h-48" id="class-dashboard-dialog-content-loading">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="mt-4 text-lg text-muted-foreground">
+              { !classStats ? "Calculating class statistics..." : "Loading AI Insights..." }
+            </p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+  
+  // This null check is now safer because of the loading state above
+  if (!classStats) return null;
 
-
-  const handlePrintDashboard = () => {
-    window.print();
-  };
 
   const subjectChartData = classStats?.subjectStats
     .filter(s => s.averageMark !== null)
@@ -122,10 +145,10 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent 
-        className="sm:max-w-4xl w-full max-h-[88dvh] p-0 flex flex-col overflow-y-hidden" 
+        className="sm:max-w-4xl w-full h-[88dvh] p-0 flex flex-col overflow-y-hidden" 
         id="class-dashboard-dialog-content"
       >
-            <div className="dashboard-print-header">
+            <div className="dashboard-print-header p-4 border-b"> {/* Added padding and border for print consistency */}
               <h2 className="text-xl font-bold">Class Performance Dashboard: {classStats.className}</h2>
               <p className="text-sm">Date Printed: {new Date().toLocaleDateString()}</p>
             </div>
@@ -141,7 +164,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
               </DialogDescription>
             </DialogHeader>
 
-            <ScrollArea className="flex-1 min-h-0">
+            <ScrollArea className="flex-1 min-h-0 no-print"> {/* Added no-print */}
               <div className="p-4 space-y-6 overflow-x-auto">
                 <Card>
                   <CardHeader>
@@ -322,7 +345,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
-                    {isLoading ? (
+                    {isLoading && !aiAdvice ? ( // Show loading for AI if classStats are present but AI advice is still fetching
                         <div className="flex items-center justify-center py-8">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                             <p className="ml-3 text-muted-foreground">Loading AI Insights...</p>
@@ -349,8 +372,8 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
                     ) : (
                         <div className="flex flex-col items-center justify-center py-5 text-muted-foreground">
                           <Info className="h-8 w-8 mb-2 text-primary" />
-                          <p className="text-center">No AI insights available.</p>
-                          <p className="text-xs text-center mt-1">This could be due to an error or if insights generation was not triggered.</p>
+                          <p className="text-center">No AI insights available or failed to load.</p>
+                          <p className="text-xs text-center mt-1">This could be due to an error or if insights generation was not triggered or is still loading.</p>
                         </div>
                     )}
                     </CardContent>
@@ -358,7 +381,7 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
               </div>
             </ScrollArea>
 
-            <DialogFooter className="p-4 border-t dialog-footer-print-hide">
+            <DialogFooter className="p-4 border-t no-print"> {/* Added no-print */}
               <Button onClick={handlePrintDashboard} variant="outline">
                 <Printer className="mr-2 h-4 w-4" />
                 Print Dashboard
@@ -371,3 +394,4 @@ export default function ClassDashboard({ isOpen, onClose, classStats, aiAdvice, 
     </Dialog>
   );
 }
+
