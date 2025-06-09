@@ -16,7 +16,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, Users, TrendingUp, TrendingDown, Percent, PieChart, Brain, Printer, Loader2, AlertTriangle, Info } from 'lucide-react';
+import { BarChart3, Users, TrendingUp, Percent, PieChart, Brain, Printer, Loader2, AlertTriangle, Info } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
 import type { GenerateClassInsightsOutput, GenerateClassInsightsInput } from '@/ai/flows/generate-class-insights-flow';
@@ -27,7 +27,7 @@ interface ClassPerformanceDashboardProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   reports: ReportData[];
-  className: string;
+  classNameProp: string; // Renamed to avoid conflict with component's className prop
   academicTerm: string;
 }
 
@@ -73,7 +73,7 @@ export default function ClassPerformanceDashboard({
   isOpen,
   onOpenChange,
   reports,
-  className,
+  classNameProp, // Use renamed prop
   academicTerm,
 }: ClassPerformanceDashboardProps) {
   const [classStats, setClassStats] = useState<ClassStatistics | null>(null);
@@ -155,7 +155,7 @@ export default function ClassPerformanceDashboard({
       startTransition(async () => {
         try {
           const aiInput: GenerateClassInsightsInput = {
-            className,
+            className: classNameProp,
             academicTerm,
             overallClassAverage: newStats.overallClassAverage,
             totalStudents: newStats.totalStudents,
@@ -186,7 +186,7 @@ export default function ClassPerformanceDashboard({
       setClassStats(null);
       setAiAdvice(null);
     }
-  }, [isOpen, reports, className, academicTerm, toast]);
+  }, [isOpen, reports, classNameProp, academicTerm, toast]);
 
   const handlePrint = () => {
     const printContents = document.getElementById('class-dashboard-dialog-content')?.innerHTML;
@@ -194,19 +194,15 @@ export default function ClassPerformanceDashboard({
 
     if (printContents) {
         document.body.innerHTML = `<div class="print-container">${printContents}</div>`;
-        // Add a header for the printout that's normally hidden on screen
         const header = document.createElement('div');
-        header.className = 'dashboard-print-header'; // Use the class defined in globals.css
-        header.innerHTML = `<h2>Class Performance Dashboard: ${className} (${academicTerm})</h2> <p>Generated on: ${new Date().toLocaleDateString()}</p>`;
+        header.className = 'dashboard-print-header'; 
+        header.innerHTML = `<h2>Class Performance Dashboard: ${classNameProp} (${academicTerm})</h2> <p>Generated on: ${new Date().toLocaleDateString()}</p>`;
         document.querySelector('.print-container')?.prepend(header);
         
         window.print();
         document.body.innerHTML = originalContents;
-        // Re-initialize any event listeners if necessary, or reload the page/component state.
-        // For simplicity, we might need a way to re-trigger state if complex interactions are lost.
-        // However, for ShadCN dialogs, closing and reopening should restore it.
-        onOpenChange(false); // Close dialog, then it can be reopened which re-renders.
-         setTimeout(() => onOpenChange(true), 100); // Reopen to refresh content script state if needed
+        onOpenChange(false); 
+        setTimeout(() => onOpenChange(true), 100);
     } else {
          toast({title: "Print Error", description: "Could not find dashboard content to print.", variant: "destructive"});
     }
@@ -252,33 +248,33 @@ export default function ClassPerformanceDashboard({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
-        id="class-dashboard-dialog-content" // ID for print targeting
-        className="sm:max-w-4xl h-[90dvh] flex flex-col p-0 overflow-y-hidden" // Use dvh for dynamic viewport height
+        id="class-dashboard-dialog-content"
+        className="sm:max-w-4xl h-[90dvh] flex flex-col overflow-y-hidden" // Removed p-0, default p-6 will apply
       >
-        <DialogHeader className="p-4 border-b no-print">
+        <DialogHeader className="border-b no-print"> {/* Removed p-4 */}
           <DialogTitle className="flex items-center text-xl">
             <BarChart3 className="mr-2 h-6 w-6 text-primary" />
-            Class Performance Dashboard: {className}
+            Class Performance Dashboard: {classNameProp}
           </DialogTitle>
           <DialogDescription>
             {academicTerm} - Insights and statistics for the class.
           </DialogDescription>
-           <div id="dashboard-print-header" className="dashboard-print-header hidden print:block p-4 border-b">
-              <h2 className="text-lg font-bold">Class Performance Dashboard: {className} ({academicTerm})</h2>
-              <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
-          </div>
         </DialogHeader>
+        <div id="dashboard-print-header" className="dashboard-print-header hidden print:block p-4 border-b">
+            <h2 className="text-lg font-bold">Class Performance Dashboard: {classNameProp} ({academicTerm})</h2>
+            <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
+        </div>
 
         <ScrollArea className="flex-1 min-h-0 no-print" data-testid="dashboard-scroll-area">
-          <div className="p-4 space-y-6 overflow-x-auto"> {/* Added overflow-x-auto here */}
-            {!classStats && reports.length > 0 && (
+          <div className="space-y-6 overflow-x-auto"> {/* Removed p-4 */}
+            {!classStats && reports.length > 0 && isLoading && (
               <Card className="shadow-none">
                 <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Calculating class statistics...
                 </CardContent>
               </Card>
             )}
-            {reports.length === 0 && (
+            {reports.length === 0 && !isLoading && (
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center text-lg"><Info className="mr-2 h-5 w-5 text-blue-500" />No Reports Available</CardTitle>
@@ -288,6 +284,17 @@ export default function ClassPerformanceDashboard({
                     </CardContent>
                 </Card>
             )}
+            {!classStats && reports.length > 0 && !isLoading && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center text-lg"><AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />Data Error</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">Could not calculate class statistics. Please check report data or try again.</p>
+                    </CardContent>
+                </Card>
+            )}
+
 
             {classStats && (
               <>
@@ -359,6 +366,7 @@ export default function ClassPerformanceDashboard({
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center text-lg"><PieChart className="mr-2 h-5 w-5 text-purple-500" />Gender Performance</CardTitle>
+                         <CardDescription>Distribution and average performance by gender.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid md:grid-cols-2 gap-6 items-center">
                         <div className="h-[250px] w-full" data-testid="gender-piechart-container">
@@ -416,14 +424,14 @@ export default function ClassPerformanceDashboard({
                     </Card>
                 )}
                 
-                <Card className={cn("bg-accent/10 border-accent/30", isLoading && aiAdvice === null ? "" : "border-green-200 bg-green-50/50")}>
+                <Card className={cn("bg-accent/10 border-accent/30", isLoading && aiAdvice === null && classStats ? "" : "border-green-200 bg-green-50/50")}>
                   <CardHeader>
                     <CardTitle className="flex items-center text-lg">
-                        {isLoading && aiAdvice === null ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
+                        {isLoading && aiAdvice === null && classStats ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
                         AI Pedagogical Insights &amp; Advice
                     </CardTitle>
-                    {isLoading && aiAdvice === null && <CardDescription>Generating tailored advice for your class...</CardDescription>}
-                    {!isLoading && !aiAdvice && <CardDescription className="text-destructive-foreground/80">Could not load AI insights at this time. Please check your connection or try again later.</CardDescription>}
+                    {isLoading && aiAdvice === null && classStats && <CardDescription>Generating tailored advice for your class...</CardDescription>}
+                    {!isLoading && !aiAdvice && classStats && <CardDescription className="text-destructive-foreground/80">Could not load AI insights. Please check your connection or try again.</CardDescription>}
                   </CardHeader>
                   {aiAdvice && (
                     <CardContent className="space-y-3 text-sm">
@@ -457,7 +465,7 @@ export default function ClassPerformanceDashboard({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="p-4 border-t no-print dialog-footer-print-hide">
+        <DialogFooter className="border-t no-print dialog-footer-print-hide"> {/* Removed p-4 */}
           <Button variant="outline" onClick={handlePrint} disabled={!classStats || reports.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
@@ -470,3 +478,4 @@ export default function ClassPerformanceDashboard({
   );
 }
 
+    
