@@ -16,7 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { BarChart3, Users, TrendingUp, Percent, PieChart, Brain, Printer, Loader2, AlertTriangle, Info, MessageCircleQuestion } from 'lucide-react';
+import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, MessageCircleQuestion } from 'lucide-react'; // Renamed PieChart to LucidePieChart
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
 import type { GenerateClassInsightsOutput, GenerateClassInsightsInput } from '@/ai/flows/generate-class-insights-flow';
@@ -132,8 +132,9 @@ export default function ClassPerformanceDashboard({
             }
             genderMap.get(gender)!.scores.push(report.overallAverage);
          }
+        // Ensure count is incremented even if overallAverage is null for gender distribution purposes
         if (!genderMap.has(gender)) {
-            genderMap.set(gender, { scores: [], count: (genderMap.get(gender)?.count || 0) });
+             genderMap.set(gender, { scores: genderMap.get(gender)?.scores || [], count: 0 });
         }
         genderMap.get(gender)!.count++;
       });
@@ -228,7 +229,7 @@ export default function ClassPerformanceDashboard({
         </CardContent>
       );
     }
-    if (!aiAdvice && !isLoadingAi && classStats) {
+    if (!aiAdvice && !isLoadingAi && classStats && reports.length > 0) {
       return (
         <CardContent className="pt-4 text-muted-foreground">
           <div className="flex items-center">
@@ -318,8 +319,11 @@ export default function ClassPerformanceDashboard({
             <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
         </div>
 
-        <ScrollArea data-testid="dashboard-scroll-area" className="flex-1 min-h-0 w-full">
-          <div className="p-6 space-y-6 w-full">
+        <ScrollArea 
+            data-testid="dashboard-scroll-area" 
+            className="flex-1 min-h-0 w-full"
+        >
+          <div className="p-6 space-y-6"> {/* Removed w-full to allow content to define width */}
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
                 <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
@@ -417,7 +421,7 @@ export default function ClassPerformanceDashboard({
                 {classStats.genderStats.length > 0 && (
                  <Card className="shadow-md">
                     <CardHeader>
-                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 mb-3 flex items-center"><PieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics</CardTitle>
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 mb-3 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics</CardTitle> {/* Changed to LucidePieChart */}
                          <ShadcnCardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</ShadcnCardDescription>
                     </CardHeader>
                     <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center">
@@ -503,6 +507,3 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
-
-
-    
