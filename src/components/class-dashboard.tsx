@@ -7,16 +7,15 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
+  DialogFooter,
   DialogTitle,
   DialogClose,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, Users, TrendingUp, Percent, PieChart, Brain, Printer, Loader2, AlertTriangle, Info } from 'lucide-react';
+import { BarChart3, Users, TrendingUp, Percent, PieChart, Brain, Printer, Loader2, AlertTriangle, Info, MessageCircleQuestion } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
 import type { GenerateClassInsightsOutput, GenerateClassInsightsInput } from '@/ai/flows/generate-class-insights-flow';
@@ -27,7 +26,7 @@ interface ClassPerformanceDashboardProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   reports: ReportData[];
-  classNameProp: string; // Renamed to avoid conflict with component's className prop
+  classNameProp: string;
   academicTerm: string;
 }
 
@@ -52,13 +51,12 @@ export interface ClassStatistics {
   genderStats: GenderPerformanceStatForUI[];
 }
 
-// Helper to calculate final mark for a single subject for internal use
 function calculateInternalSubjectFinalMark(subject: SubjectEntry): number | null {
   const caMarkInput = subject.continuousAssessment;
   const examMarkInput = subject.examinationMark;
 
   if ((caMarkInput === null || caMarkInput === undefined) && (examMarkInput === null || examMarkInput === undefined)) {
-    return null; // Not enough data to calculate
+    return null;
   }
   const scaledCaMark = (caMarkInput !== null && caMarkInput !== undefined) ? (Number(caMarkInput) / 60) * 40 : 0;
   const scaledExamMark = (examMarkInput !== null && examMarkInput !== undefined) ? (Number(examMarkInput) / 100) * 60 : 0;
@@ -73,16 +71,18 @@ export default function ClassPerformanceDashboard({
   isOpen,
   onOpenChange,
   reports,
-  classNameProp, // Use renamed prop
+  classNameProp,
   academicTerm,
 }: ClassPerformanceDashboardProps) {
   const [classStats, setClassStats] = useState<ClassStatistics | null>(null);
   const [aiAdvice, setAiAdvice] = useState<GenerateClassInsightsOutput | null>(null);
-  const [isLoading, startTransition] = useTransition();
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [isLoadingAi, startAiTransition] = useTransition();
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen && reports.length > 0) {
+      setIsLoadingStats(true);
       // Calculate statistics
       const totalStudents = reports.length;
       let sumOfOverallAverages = 0;
@@ -131,14 +131,12 @@ export default function ClassPerformanceDashboard({
                 genderMap.set(gender, { scores: [], count: 0 });
             }
             genderMap.get(gender)!.scores.push(report.overallAverage);
-            genderMap.get(gender)!.count++;
-        } else {
-             // Still count student even if no average, for gender distribution
-            if (!genderMap.has(gender)) {
-                genderMap.set(gender, { scores: [], count: 0 });
-            }
-            genderMap.get(gender)!.count++;
+         }
+        // Always count student for gender distribution, even if no average score
+        if (!genderMap.has(gender)) {
+            genderMap.set(gender, { scores: [], count: (genderMap.get(gender)?.count || 0) });
         }
+        genderMap.get(gender)!.count++;
       });
       
       const genderStats: GenderPerformanceStatForUI[] = Array.from(genderMap.entries()).map(([gender, data]) => ({
@@ -149,42 +147,35 @@ export default function ClassPerformanceDashboard({
 
       const newStats = { overallClassAverage, totalStudents, subjectStats, genderStats };
       setClassStats(newStats);
+      setIsLoadingStats(false);
 
-      // Fetch AI insights
-      setAiAdvice(null); // Reset previous advice
-      startTransition(async () => {
+      setAiAdvice(null);
+      startAiTransition(async () => {
         try {
           const aiInput: GenerateClassInsightsInput = {
             className: classNameProp,
             academicTerm,
             overallClassAverage: newStats.overallClassAverage,
             totalStudents: newStats.totalStudents,
-            subjectStats: newStats.subjectStats.map(s => ({
-                subjectName: s.subjectName,
-                numBelowAverage: s.numBelowAverage,
-                numAverage: s.numAverage,
-                numAboveAverage: s.numAboveAverage,
-                classAverageForSubject: s.classAverageForSubject,
-            })),
-            genderStats: newStats.genderStats.map(g => ({
-                gender: g.gender,
-                count: g.count,
-                averageScore: g.averageScore,
-            })),
+            subjectStats: newStats.subjectStats.map(s => ({ ...s })),
+            genderStats: newStats.genderStats.map(g => ({ ...g })),
           };
           const result = await getAiClassInsightsAction(aiInput);
           if (result.success && result.insights) {
             setAiAdvice(result.insights);
           } else {
-            toast({ title: "AI Insights Error", description: result.error || "Failed to load AI insights.", variant: "destructive" });
+            setAiAdvice(null); // Ensure it's reset on error
+            toast({ title: "AI Insights Error", description: result.error || "Failed to load AI insights. The AI model might be unavailable or the request timed out.", variant: "destructive" });
           }
         } catch (error) {
-          toast({ title: "AI Insights Request Failed", description: "Could not fetch AI insights.", variant: "destructive" });
+          setAiAdvice(null);
+          toast({ title: "AI Insights Request Failed", description: "Could not fetch AI insights due to a network or server error.", variant: "destructive" });
         }
       });
     } else if (isOpen && reports.length === 0) {
       setClassStats(null);
       setAiAdvice(null);
+      setIsLoadingStats(false);
     }
   }, [isOpen, reports, classNameProp, academicTerm, toast]);
 
@@ -201,8 +192,10 @@ export default function ClassPerformanceDashboard({
         
         window.print();
         document.body.innerHTML = originalContents;
+        // Re-open dialog to restore state if needed, though direct DOM manipulation for print is tricky with React state
+        // This might require a more sophisticated print solution for complex stateful components
         onOpenChange(false); 
-        setTimeout(() => onOpenChange(true), 100);
+        setTimeout(() => onOpenChange(true), 100); // Small delay to allow DOM to reset
     } else {
          toast({title: "Print Error", description: "Could not find dashboard content to print.", variant: "destructive"});
     }
@@ -223,20 +216,91 @@ export default function ClassPerformanceDashboard({
       value: g.count,
     })) || [];
   }, [classStats]);
-  const GENDER_COLORS = ['#0088FE', '#FF8042', '#FFBB28', '#00C49F'];
+  const GENDER_COLORS = ['#0088FE', '#FF8042', '#FFBB28', '#00C49F', '#AF19FF'];
 
 
   const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
       return (
-        <div className="p-2 bg-background/80 border rounded-md shadow-lg backdrop-blur-sm">
+        <div className="p-2 bg-background/90 border rounded-md shadow-lg backdrop-blur-sm text-xs">
           <p className="label font-semibold text-foreground">{`${label}`}</p>
           {payload.map((entry, index) => (
-            <p key={`item-${index}`} style={{ color: entry.color }}>
+            <p key={`item-${index}`} style={{ color: entry.color }} className="capitalize">
               {`${entry.name}: ${entry.value}`}
             </p>
           ))}
         </div>
+      );
+    }
+    return null;
+  };
+
+  const renderAiInsights = () => {
+    if (isLoadingAi && !aiAdvice) {
+      return (
+        <CardContent className="pt-4 flex items-center justify-center text-muted-foreground">
+          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> Generating AI pedagogical insights...
+        </CardContent>
+      );
+    }
+    if (!aiAdvice && !isLoadingAi) {
+      return (
+        <CardContent className="pt-4 text-muted-foreground">
+          <div className="flex items-center">
+             <MessageCircleQuestion className="mr-2 h-5 w-5 text-destructive" />
+            <span>AI insights could not be loaded or are unavailable for this data.</span>
+          </div>
+        </CardContent>
+      );
+    }
+    if (aiAdvice) {
+       const { overallAssessment, strengths, areasForConcern, actionableAdvice } = aiAdvice;
+       const hasContent = overallAssessment || strengths?.length > 0 || areasForConcern?.length > 0 || actionableAdvice?.length > 0;
+
+       if (!hasContent) {
+        return (
+            <CardContent className="pt-4 text-muted-foreground">
+                 <div className="flex items-center">
+                    <Info className="mr-2 h-5 w-5 text-blue-500" />
+                    <span>AI analysis complete. No specific points were raised in the key categories for the provided data.</span>
+                </div>
+            </CardContent>
+        );
+       }
+
+      return (
+        <CardContent className="pt-4 space-y-3 text-sm whitespace-pre-wrap">
+          {overallAssessment && (
+            <div>
+              <h4 className="font-semibold text-green-700 dark:text-green-400">Overall Assessment:</h4>
+              <p className="text-muted-foreground pl-2">{overallAssessment}</p>
+            </div>
+          )}
+          {strengths && strengths.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-green-700 dark:text-green-400">Key Strengths:</h4>
+              <ul className="list-disc list-inside pl-2 text-muted-foreground">
+                {strengths.map((s, i) => <li key={`strength-${i}`}>{s}</li>)}
+              </ul>
+            </div>
+          )}
+          {areasForConcern && areasForConcern.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-yellow-700 dark:text-yellow-400">Areas for Concern:</h4>
+              <ul className="list-disc list-inside pl-2 text-muted-foreground">
+                {areasForConcern.map((a, i) => <li key={`concern-${i}`}>{a}</li>)}
+              </ul>
+            </div>
+          )}
+          {actionableAdvice && actionableAdvice.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-blue-700 dark:text-blue-400">Actionable Advice for Teacher:</h4>
+              <ul className="list-disc list-inside pl-2 text-muted-foreground">
+                {actionableAdvice.map((adv, i) => <li key={`advice-${i}`}>{adv}</li>)}
+              </ul>
+            </div>
+          )}
+        </CardContent>
       );
     }
     return null;
@@ -249,60 +313,60 @@ export default function ClassPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="class-dashboard-dialog-content"
-        className="sm:max-w-4xl h-[90dvh] flex flex-col overflow-y-hidden" // Removed p-0, default p-6 will apply
+        className="sm:max-w-4xl max-h-[90dvh] flex flex-col p-0 overflow-y-hidden"
       >
-        <DialogHeader className="border-b no-print"> {/* Removed p-4 */}
-          <DialogTitle className="flex items-center text-xl">
-            <BarChart3 className="mr-2 h-6 w-6 text-primary" />
+        <DialogHeader className="p-6 border-b no-print">
+          <DialogTitle className="text-xl font-bold text-primary flex items-center">
+            <BarChart3 className="mr-3 h-6 w-6" />
             Class Performance Dashboard: {classNameProp}
           </DialogTitle>
-          <DialogDescription>
+          <ShadcnCardDescription className="text-xs text-muted-foreground pt-1">
             {academicTerm} - Insights and statistics for the class.
-          </DialogDescription>
+          </ShadcnCardDescription>
         </DialogHeader>
-        <div id="dashboard-print-header" className="dashboard-print-header hidden print:block p-4 border-b">
-            <h2 className="text-lg font-bold">Class Performance Dashboard: {classNameProp} ({academicTerm})</h2>
+        
+        <div id="dashboard-print-header" className="dashboard-print-header hidden print:block p-6 border-b">
+            <h2 className="text-xl font-bold">Class Performance Dashboard: {classNameProp} ({academicTerm})</h2>
             <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
         </div>
 
         <ScrollArea className="flex-1 min-h-0 no-print" data-testid="dashboard-scroll-area">
-          <div className="space-y-6 overflow-x-auto"> {/* Removed p-4 */}
-            {!classStats && reports.length > 0 && isLoading && (
-              <Card className="shadow-none">
+          <div className="p-6 space-y-6 overflow-x-auto">
+            {(isLoadingStats && !classStats) && (
+              <Card className="shadow-md">
                 <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Calculating class statistics...
                 </CardContent>
               </Card>
             )}
-            {reports.length === 0 && !isLoading && (
-                 <Card>
+            {reports.length === 0 && !isLoadingStats && (
+                 <Card className="shadow-md">
                     <CardHeader>
-                        <CardTitle className="flex items-center text-lg"><Info className="mr-2 h-5 w-5 text-blue-500" />No Reports Available</CardTitle>
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 mb-3 flex items-center"><Info className="mr-2 h-5 w-5" />No Reports Available</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-4">
                         <p className="text-muted-foreground">There are no student reports in the print list to generate a class dashboard. Please add reports first.</p>
                     </CardContent>
                 </Card>
             )}
-            {!classStats && reports.length > 0 && !isLoading && (
-                 <Card>
+            {!classStats && reports.length > 0 && !isLoadingStats && (
+                 <Card className="shadow-md">
                     <CardHeader>
-                        <CardTitle className="flex items-center text-lg"><AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />Data Error</CardTitle>
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 mb-3 flex items-center"><AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />Data Error</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-4">
                         <p className="text-muted-foreground">Could not calculate class statistics. Please check report data or try again.</p>
                     </CardContent>
                 </Card>
             )}
 
-
             {classStats && (
               <>
-                <Card>
+                <Card className="shadow-md">
                   <CardHeader>
-                    <CardTitle className="flex items-center text-lg"><Users className="mr-2 h-5 w-5 text-primary" />Overall Snapshot</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 mb-3 flex items-center"><Users className="mr-2 h-5 w-5" />Overall Snapshot</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  <CardContent className="pt-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">Total Students</p>
                       <p className="font-semibold text-lg">{classStats.totalStudents}</p>
@@ -317,43 +381,43 @@ export default function ClassPerformanceDashboard({
                 </Card>
 
                 {classStats.subjectStats.length > 0 && (
-                  <Card>
+                  <Card className="shadow-md">
                     <CardHeader>
-                      <CardTitle className="flex items-center text-lg"><TrendingUp className="mr-2 h-5 w-5 text-green-500" />Subject Performance Details</CardTitle>
-                      <CardDescription>Distribution of students based on score bands per subject (Below Average &lt;40%, Average 40-59%, Above Average &ge;60%).</CardDescription>
+                      <CardTitle className="text-lg font-semibold text-primary border-b pb-2 mb-3 flex items-center"><TrendingUp className="mr-2 h-5 w-5 text-green-600" />Subject Performance</CardTitle>
+                      <ShadcnCardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject (Below Average &lt;40%, Average 40-59%, Above Average &ge;60%).</ShadcnCardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div className="h-[300px] w-full" data-testid="subject-barchart-container">
+                    <CardContent className="pt-4">
+                      <div className="h-[300px] w-full min-w-[500px]" data-testid="subject-barchart-container">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={subjectPerformanceChartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                            <XAxis dataKey="name" angle={-30} textAnchor="end" height={70} interval={0} tick={{ fontSize: 10 }} />
+                            <XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{ fontSize: 10 }} />
                             <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', fillOpacity: 0.3 }} />
-                            <Legend wrapperStyle={{fontSize: "12px"}} />
+                            <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
                             <Bar dataKey="Below Average (<40%)" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} barSize={15} />
                             <Bar dataKey="Average (40-59%)" fill="hsl(var(--primary) / 0.7)" radius={[4, 4, 0, 0]} barSize={15} />
                             <Bar dataKey="Above Average (>=60%)" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} barSize={15} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
-                       <Table className="mt-4 min-w-[700px]">
-                        <TableHeader>
+                       <Table className="mt-6 border rounded-md min-w-[700px]">
+                        <TableHeader className="bg-muted/50">
                           <TableRow>
-                            <TableHead>Subject</TableHead>
-                            <TableHead className="text-center">Class Avg (%)</TableHead>
-                            <TableHead className="text-center">Below Avg (&lt;40%)</TableHead>
-                            <TableHead className="text-center">Average (40-59%)</TableHead>
-                            <TableHead className="text-center">Above Avg (&ge;60%)</TableHead>
+                            <TableHead className="font-semibold py-2 px-3">Subject</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3">Class Avg (%)</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3 text-red-600 dark:text-red-400">Below Avg (&lt;40%)</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3 text-blue-600 dark:text-blue-400">Average (40-59%)</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3 text-green-600 dark:text-green-400">Above Avg (&ge;60%)</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {classStats.subjectStats.map(s => (
                             <TableRow key={s.subjectName}>
-                              <TableCell className="font-medium">{s.subjectName}</TableCell>
-                              <TableCell className="text-center">{s.classAverageForSubject?.toFixed(1) || 'N/A'}</TableCell>
-                              <TableCell className="text-center">{s.numBelowAverage}</TableCell>
-                              <TableCell className="text-center">{s.numAverage}</TableCell>
-                              <TableCell className="text-center">{s.numAboveAverage}</TableCell>
+                              <TableCell className="font-medium py-2 px-3">{s.subjectName}</TableCell>
+                              <TableCell className="text-center py-2 px-3">{s.classAverageForSubject?.toFixed(1) || 'N/A'}</TableCell>
+                              <TableCell className="text-center py-2 px-3">{s.numBelowAverage}</TableCell>
+                              <TableCell className="text-center py-2 px-3">{s.numAverage}</TableCell>
+                              <TableCell className="text-center py-2 px-3">{s.numAboveAverage}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -363,13 +427,13 @@ export default function ClassPerformanceDashboard({
                 )}
 
                 {classStats.genderStats.length > 0 && (
-                 <Card>
+                 <Card className="shadow-md">
                     <CardHeader>
-                        <CardTitle className="flex items-center text-lg"><PieChart className="mr-2 h-5 w-5 text-purple-500" />Gender Performance</CardTitle>
-                         <CardDescription>Distribution and average performance by gender.</CardDescription>
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 mb-3 flex items-center"><PieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics</CardTitle>
+                         <ShadcnCardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</ShadcnCardDescription>
                     </CardHeader>
-                    <CardContent className="grid md:grid-cols-2 gap-6 items-center">
-                        <div className="h-[250px] w-full" data-testid="gender-piechart-container">
+                    <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center">
+                        <div className="h-[250px] w-full min-w-[300px]" data-testid="gender-piechart-container">
                         <ResponsiveContainer width="100%" height="100%">
                             <RechartsPieChart>
                             <Pie
@@ -379,11 +443,12 @@ export default function ClassPerformanceDashboard({
                                 labelLine={false}
                                 label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
                                     const RADIAN = Math.PI / 180;
-                                    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                                    const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
                                     const x = cx + radius * Math.cos(-midAngle * RADIAN);
                                     const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                    if (percent * 100 < 5) return null; // Hide label if too small
                                     return (
-                                    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="12px">
+                                    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="11px" fontWeight="medium">
                                         {`${name} (${(percent * 100).toFixed(0)}%)`}
                                     </text>
                                     );
@@ -398,24 +463,24 @@ export default function ClassPerformanceDashboard({
                                 ))}
                             </Pie>
                             <Tooltip content={<CustomTooltip />} />
-                            <Legend wrapperStyle={{fontSize: "12px"}}/>
+                            <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
                             </RechartsPieChart>
                         </ResponsiveContainer>
                         </div>
-                        <Table className="min-w-[400px]">
-                        <TableHeader>
+                        <Table className="border rounded-md min-w-[300px]">
+                        <TableHeader className="bg-muted/50">
                             <TableRow>
-                            <TableHead>Gender</TableHead>
-                            <TableHead className="text-center">Count</TableHead>
-                            <TableHead className="text-center">Overall Avg (%)</TableHead>
+                            <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3">Count</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3">Overall Avg (%)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {classStats.genderStats.map(g => (
                             <TableRow key={g.gender}>
-                                <TableCell className="font-medium">{g.gender}</TableCell>
-                                <TableCell className="text-center">{g.count}</TableCell>
-                                <TableCell className="text-center">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell>
+                                <TableCell className="font-medium py-2 px-3">{g.gender}</TableCell>
+                                <TableCell className="text-center py-2 px-3">{g.count}</TableCell>
+                                <TableCell className="text-center py-2 px-3">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell>
                             </TableRow>
                             ))}
                         </TableBody>
@@ -424,48 +489,21 @@ export default function ClassPerformanceDashboard({
                     </Card>
                 )}
                 
-                <Card className={cn("bg-accent/10 border-accent/30", isLoading && aiAdvice === null && classStats ? "" : "border-green-200 bg-green-50/50")}>
+                <Card className={cn("shadow-md bg-accent/10 print:bg-green-50 border-green-200 dark:border-green-700")}>
                   <CardHeader>
-                    <CardTitle className="flex items-center text-lg">
-                        {isLoading && aiAdvice === null && classStats ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
+                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 mb-3 flex items-center">
+                        {isLoadingAi && !aiAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
                         AI Pedagogical Insights &amp; Advice
                     </CardTitle>
-                    {isLoading && aiAdvice === null && classStats && <CardDescription>Generating tailored advice for your class...</CardDescription>}
-                    {!isLoading && !aiAdvice && classStats && <CardDescription className="text-destructive-foreground/80">Could not load AI insights. Please check your connection or try again.</CardDescription>}
                   </CardHeader>
-                  {aiAdvice && (
-                    <CardContent className="space-y-3 text-sm">
-                      <div>
-                        <h4 className="font-semibold text-green-700">Overall Assessment:</h4>
-                        <p className="text-muted-foreground pl-2">{aiAdvice.overallAssessment}</p>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-green-700">Key Strengths:</h4>
-                        <ul className="list-disc list-inside pl-2 text-muted-foreground">
-                          {aiAdvice.strengths.map((s, i) => <li key={`strength-${i}`}>{s}</li>)}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-yellow-700">Areas for Concern:</h4>
-                        <ul className="list-disc list-inside pl-2 text-muted-foreground">
-                          {aiAdvice.areasForConcern.map((a, i) => <li key={`concern-${i}`}>{a}</li>)}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-blue-700">Actionable Advice for Teacher:</h4>
-                        <ul className="list-disc list-inside pl-2 text-muted-foreground">
-                          {aiAdvice.actionableAdvice.map((adv, i) => <li key={`advice-${i}`}>{adv}</li>)}
-                        </ul>
-                      </div>
-                    </CardContent>
-                  )}
+                  {renderAiInsights()}
                 </Card>
               </>
             )}
           </div>
         </ScrollArea>
 
-        <DialogFooter className="border-t no-print dialog-footer-print-hide"> {/* Removed p-4 */}
+        <DialogFooter className="p-6 border-t no-print dialog-footer-print-hide">
           <Button variant="outline" onClick={handlePrint} disabled={!classStats || reports.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
@@ -477,5 +515,3 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
-
-    

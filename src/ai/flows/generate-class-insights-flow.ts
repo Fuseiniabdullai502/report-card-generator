@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z}from 'genkit';
 
 const SubjectPerformanceStatSchema = z.object({
   subjectName: z.string(),
@@ -36,10 +36,10 @@ const GenerateClassInsightsInputSchema = z.object({
 export type GenerateClassInsightsInput = z.infer<typeof GenerateClassInsightsInputSchema>;
 
 const GenerateClassInsightsOutputSchema = z.object({
-  overallAssessment: z.string().describe('A general assessment of the class\'s performance.'),
-  strengths: z.array(z.string()).describe('Key strengths observed in the class.'),
-  areasForConcern: z.array(z.string()).describe('Areas that might need attention or improvement.'),
-  actionableAdvice: z.array(z.string()).describe('Specific, actionable advice for the teacher.'),
+  overallAssessment: z.string().describe('A general assessment of the class\'s performance. This could be an empty string if no specific assessment is made.').default(''),
+  strengths: z.array(z.string()).describe('Key strengths observed in the class. This could be an empty array.').default([]),
+  areasForConcern: z.array(z.string()).describe('Areas that might need attention or improvement. This could be an empty array.').default([]),
+  actionableAdvice: z.array(z.string()).describe('Specific, actionable advice for the teacher. This could be an empty array.').default([]),
 });
 export type GenerateClassInsightsOutput = z.infer<typeof GenerateClassInsightsOutputSchema>;
 
@@ -71,15 +71,26 @@ Gender Performance:
 {{/each}}
 
 Based on this data, provide:
-1.  **Overall Assessment**: A brief summary of the class's general performance level.
-2.  **Strengths**: Identify 2-3 key strengths of the class. These could be subjects where many students excel, strong performance by a particular group if significant, or overall high achievement if applicable.
-3.  **Areas for Concern**: Identify 2-3 areas that might need attention. This could be subjects with many struggling students, significant disparities, or overall low performance if applicable.
-4.  **Actionable Advice**: Provide 2-3 concise, practical, and actionable pieces of advice for the teacher to help improve learning outcomes, address weaknesses, or build on strengths.
+1.  **Overall Assessment**: A brief summary of the class's general performance level. If no strong assessment can be made, this can be a neutral statement or empty.
+2.  **Strengths**: Identify 2-3 key strengths of the class. These could be subjects where many students excel, strong performance by a particular group if significant, or overall high achievement if applicable. If no clear strengths, return an empty array.
+3.  **Areas for Concern**: Identify 2-3 areas that might need attention. This could be subjects with many struggling students, significant disparities, or overall low performance if applicable. If no clear concerns, return an empty array.
+4.  **Actionable Advice**: Provide 2-3 concise, practical, and actionable pieces of advice for the teacher to help improve learning outcomes, address weaknesses, or build on strengths. If no specific advice, return an empty array.
 
 Focus on constructive feedback. Be specific where possible, referencing subject names or patterns.
-Format the output as JSON matching the CGenerateClassInsightsOutputSchema.
-Ensure strengths, areasForConcern, and actionableAdvice are arrays of strings.
+Format the output as JSON matching the GenerateClassInsightsOutputSchema.
+Ensure overallAssessment is a string (can be empty), and strengths, areasForConcern, and actionableAdvice are arrays of strings (can be empty arrays).
+If the input data is insufficient to make a meaningful judgment on any part, provide an empty string or empty array for that part rather than making assumptions.
 `,
+  // It's good practice to set some safety settings, though for this content they might not be strictly necessary.
+  // Using less restrictive settings as an example.
+  config: {
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+    ],
+  },
 });
 
 const generateClassInsightsFlow = ai.defineFlow(
@@ -91,8 +102,18 @@ const generateClassInsightsFlow = ai.defineFlow(
   async (input) => {
     const {output} = await prompt(input);
     if (!output) {
-        throw new Error('AI failed to generate class insights. The model may not have returned the expected output format or the input was insufficient.');
+        // This case means the AI model call failed or did not return parsable JSON according to the schema.
+        // The schema now has defaults, so an empty object {} might be returned if the model sends nothing.
+        // However, if the model truly fails or sends malformed JSON, output will be null.
+        throw new Error('AI failed to generate class insights. The model may not have returned the expected output format, or the input was insufficient. Please check the data or try again.');
     }
-    return output;
+    // Ensure all parts of the output conform to the schema, especially if the model returns partial data.
+    // The Zod schema's .default() should handle missing fields if the AI returns a valid object.
+    return {
+        overallAssessment: output.overallAssessment || '',
+        strengths: output.strengths || [],
+        areasForConcern: output.areasForConcern || [],
+        actionableAdvice: output.actionableAdvice || [],
+    };
   }
 );
