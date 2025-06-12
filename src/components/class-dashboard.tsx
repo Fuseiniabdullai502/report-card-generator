@@ -11,9 +11,8 @@ import {
   DialogFooter,
   DialogTitle,
   DialogClose,
+  DialogDescription as ShadcnDialogDescription, // Renamed to avoid conflict if DialogDescription is used elsewhere
 } from '@/components/ui/dialog';
-// ScrollArea is being replaced by a simple div with overflow
-// import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart3, Users, TrendingUp, Percent, PieChart, Brain, Printer, Loader2, AlertTriangle, Info, MessageCircleQuestion } from 'lucide-react';
@@ -27,7 +26,7 @@ interface ClassPerformanceDashboardProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   reports: ReportData[];
-  classNameProp: string; // Renamed from className to avoid conflict
+  classNameProp: string;
   academicTerm: string;
 }
 
@@ -133,7 +132,6 @@ export default function ClassPerformanceDashboard({
             }
             genderMap.get(gender)!.scores.push(report.overallAverage);
          }
-        // Always count student for gender distribution, even if no average score
         if (!genderMap.has(gender)) {
             genderMap.set(gender, { scores: [], count: (genderMap.get(gender)?.count || 0) });
         }
@@ -150,7 +148,7 @@ export default function ClassPerformanceDashboard({
       setClassStats(newStats);
       setIsLoadingStats(false);
 
-      setAiAdvice(null); // Reset previous advice
+      setAiAdvice(null); 
       startAiTransition(async () => {
         try {
           const aiInput: GenerateClassInsightsInput = {
@@ -158,8 +156,8 @@ export default function ClassPerformanceDashboard({
             academicTerm,
             overallClassAverage: newStats.overallClassAverage,
             totalStudents: newStats.totalStudents,
-            subjectStats: newStats.subjectStats.map(s => ({ ...s })), // Shallow copy
-            genderStats: newStats.genderStats.map(g => ({ ...g })),   // Shallow copy
+            subjectStats: newStats.subjectStats.map(s => ({ ...s })),
+            genderStats: newStats.genderStats.map(g => ({ ...g })),
           };
           const result = await getAiClassInsightsAction(aiInput);
           if (result.success && result.insights) {
@@ -181,29 +179,11 @@ export default function ClassPerformanceDashboard({
   }, [isOpen, reports, classNameProp, academicTerm, toast]);
 
   const handlePrint = () => {
-    const printContents = document.getElementById('class-dashboard-dialog-content')?.innerHTML;
-    const originalContents = document.body.innerHTML;
-
-    if (printContents) {
-        document.body.innerHTML = `<div class="print-container">${printContents}</div>`;
-        const header = document.createElement('div');
-        header.className = 'dashboard-print-header'; 
-        header.innerHTML = `<h2>Class Performance Dashboard: ${classNameProp} (${academicTerm})</h2> <p>Generated on: ${new Date().toLocaleDateString()}</p>`;
-        
-        const container = document.querySelector('.print-container');
-        if (container) {
-            container.prepend(header);
-            // Remove no-print elements explicitly from the cloned content for printing
-            container.querySelectorAll('.no-print').forEach(el => el.remove());
-        }
-        
-        window.print();
-        document.body.innerHTML = originalContents;
-        onOpenChange(false); 
-        setTimeout(() => onOpenChange(true), 100); 
-    } else {
-         toast({title: "Print Error", description: "Could not find dashboard content to print.", variant: "destructive"});
+    if (!classStats || reports.length === 0) {
+      toast({title: "Nothing to Print", description: "Dashboard data is not available or no reports loaded.", variant: "destructive"});
+      return;
     }
+    window.print();
   };
 
   const subjectPerformanceChartData = useMemo(() => {
@@ -248,7 +228,7 @@ export default function ClassPerformanceDashboard({
         </CardContent>
       );
     }
-    if (!aiAdvice && !isLoadingAi && classStats) { // Only show error if stats are loaded but AI failed
+    if (!aiAdvice && !isLoadingAi && classStats) {
       return (
         <CardContent className="pt-4 text-muted-foreground">
           <div className="flex items-center">
@@ -311,7 +291,7 @@ export default function ClassPerformanceDashboard({
         </CardContent>
       );
     }
-    return null; // Default case if no conditions are met (e.g. initial state before loading starts)
+    return null;
   };
 
 
@@ -321,16 +301,16 @@ export default function ClassPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="class-dashboard-dialog-content"
-        className="sm:max-w-4xl max-h-[90dvh] flex flex-col p-0 overflow-hidden" // Dialog itself doesn't scroll
+        className="max-w-4xl max-h-[90dvh] flex flex-col p-0 overflow-hidden"
       >
         <DialogHeader className="p-6 border-b no-print shrink-0">
           <DialogTitle className="text-xl font-bold text-primary flex items-center">
             <BarChart3 className="mr-3 h-6 w-6" />
             Class Performance Dashboard: {classNameProp}
           </DialogTitle>
-          <ShadcnCardDescription className="text-xs text-muted-foreground pt-1">
-            {academicTerm} - Insights and statistics for the class.
-          </ShadcnCardDescription>
+          <ShadcnDialogDescription className="text-xs text-muted-foreground pt-1">
+            {academicTerm} - Insights and statistics for the class. Click "Print Dashboard" to open browser print preview.
+          </ShadcnDialogDescription>
         </DialogHeader>
         
         <div id="dashboard-print-header" className="dashboard-print-header hidden print:block p-6 border-b">
@@ -338,8 +318,8 @@ export default function ClassPerformanceDashboard({
             <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
         </div>
 
-        {/* This div handles vertical scrolling */}
-        <div data-testid="dashboard-scroll-container" className="flex-1 min-h-0 overflow-y-auto no-print">
+        {/* This div handles vertical scrolling. It should NOT be no-print. */}
+        <div data-testid="dashboard-scroll-container" className="flex-1 min-h-0 overflow-y-auto">
           {/* This inner div handles content padding and horizontal scrolling if needed */}
           <div className="p-6 space-y-6 overflow-x-auto">
             {(isLoadingStats && !classStats) && (
@@ -525,3 +505,6 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
+
+
+    
