@@ -343,15 +343,10 @@ body {
     max-height: none !important;
   }
   #class-dashboard-dialog-content [data-testid="dashboard-scroll-area"] > [data-radix-scroll-area-viewport] { /* The Viewport */
-    overflow-y: visible !important;
+    overflow: visible !important; /* Viewport handles both X and Y for print */
     height: auto !important;
     max-height: none !important;
-    display: block !important; /* Ensure viewport itself is block for content flow */
-  }
-   /* Ensure its inner content wrapper also expands if it had horizontal scroll */
-  #class-dashboard-dialog-content [data-testid="dashboard-scroll-area"] > [data-radix-scroll-area-viewport] > .overflow-x-auto { /* The div with p-6 */
-    overflow-x: visible !important;
-    height: auto !important; /* Allow height to grow based on content */
+    display: block !important; 
   }
   /* Hide the visual scrollbar itself during print */
   #class-dashboard-dialog-content [data-testid="dashboard-scroll-area"] > [data-radix-scroll-area-scrollbar] {
@@ -388,7 +383,3 @@ body {
     display: block !important; 
   }
 }
-
-    
-
-    

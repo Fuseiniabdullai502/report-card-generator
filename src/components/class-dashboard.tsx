@@ -319,7 +319,7 @@ export default function ClassPerformanceDashboard({
         </div>
 
         <ScrollArea data-testid="dashboard-scroll-area" className="flex-1 min-h-0">
-          <div className="p-6 space-y-6 overflow-x-auto">
+          <div className="p-6 space-y-6"> {/* Removed overflow-x-auto here */}
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
                 <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
@@ -503,5 +503,3 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
-
-    
