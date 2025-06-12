@@ -263,9 +263,9 @@ body {
     display: block !important; 
     width: 100% !important;
     max-width: 100% !important;
-    height: auto !important; /* Allow content to determine height for print */
-    min-height: 0 !important; /* Override screen min-height if any */
-    max-height: none !important; /* Override screen max-height */
+    height: auto !important; 
+    min-height: 0 !important; 
+    max-height: none !important; 
     transform: none !important; 
     margin: 0 !important;
     padding: 10mm !important; 
@@ -283,37 +283,35 @@ body {
   #class-dashboard-dialog-content *::before,
   #class-dashboard-dialog-content *::after {
     color: black !important;
-    /* background-color: transparent !important; */ /* Commented out to allow chart fills etc. to print if possible */
+    /* background-color: transparent !important; */ /* Keep some colored backgrounds */
     border-color: #ccc !important; 
     box-shadow: none !important;
   }
   
   #class-dashboard-dialog-content .card,
   #class-dashboard-dialog-content .table {
-    background-color: white !important; /* Ensure card backgrounds are white for print */
+    background-color: white !important; 
   }
 
-  /* Attempt to preserve some themed colors if possible, but prioritize black for text */
    #class-dashboard-dialog-content .text-primary {
-     color: #2c5282 !important; /* A dark blue, adjust as needed */
+     color: #2c5282 !important; 
    }
    #class-dashboard-dialog-content .text-accent {
-     color: #276749 !important; /* A dark green, adjust as needed */
+     color: #276749 !important; 
    }
    #class-dashboard-dialog-content .text-muted-foreground {
-     color: #4a5568 !important; /* A dark gray, adjust as needed */
+     color: #4a5568 !important; 
    }
-   /* Ensure specific background colors for AI insights section are printable */
-  #class-dashboard-dialog-content [class~="bg-accent/10"] { /* Target classes like 'bg-accent/10' */
-    background-color: #f0fff4 !important; /* Example: light green, adjust if theme changes */
-    border: 1px solid #a7f3d0 !important; /* Add a light border for definition */
+  #class-dashboard-dialog-content [class~="bg-accent/10"] { 
+    background-color: #f0fff4 !important; 
+    border: 1px solid #a7f3d0 !important; 
   }
   #class-dashboard-dialog-content .text-green-500 { color: green !important; }
-  #class-dashboard-dialog-content .text-yellow-500 { color: #b45309 !important; } /* Darker yellow for print */
+  #class-dashboard-dialog-content .text-yellow-500 { color: #b45309 !important; } 
   #class-dashboard-dialog-content .text-red-500 { color: red !important; }
 
 
-  .dashboard-print-header { /* This is specifically for the print version of the header */
+  .dashboard-print-header { 
     display: block !important;
     text-align: center;
     margin-bottom: 1rem;
@@ -321,71 +319,65 @@ body {
     border-bottom: 1px solid #ccc;
   }
   .dashboard-print-header h2 {
-    font-size: 1.25rem; /* 20px */
+    font-size: 1.25rem; 
     font-weight: bold;
     color: black !important;
   }
   .dashboard-print-header p {
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem; 
     color: black !important;
   }
   
   #class-dashboard-dialog-content .no-print,
-  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header) { /* Hide screen header if not also print header */
+  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header) { 
     display: none !important;
   }
-  #class-dashboard-dialog-content > button[aria-label="Close"], /* Hide the X close button */
-  #class-dashboard-dialog-content .dialog-footer-print-hide { /* Hide footer buttons */
+  #class-dashboard-dialog-content > button[aria-label="Close"], 
+  #class-dashboard-dialog-content .dialog-footer-print-hide { 
       display: none !important;
   }
-
 
   /* Ensure scrollable areas expand for print */
-  #class-dashboard-dialog-content [class~="max-h-[calc(80vh-200px)]"], /* Generic example, adjust if class name changes */
-  #class-dashboard-dialog-content [class~="h-[90dvh]"] { /* Target the specific height class */
-    max-height: none !important;
+  /* Target the new data-testid for the scroll container */
+  #class-dashboard-dialog-content [data-testid="dashboard-scroll-container"] {
+    overflow-y: visible !important;
     height: auto !important;
-    overflow: visible !important;
+    max-height: none !important;
   }
-   #class-dashboard-dialog-content [data-radix-scroll-area-viewport] {
-     overflow: visible !important;
-     height: auto !important;
-   }
-  #class-dashboard-dialog-content [data-radix-scroll-area-thumb],
-  #class-dashboard-dialog-content [data-radix-scroll-area-scrollbar] { 
-      display: none !important;
+  /* Ensure its inner content wrapper also expands if it had horizontal scroll */
+   #class-dashboard-dialog-content [data-testid="dashboard-scroll-container"] > .overflow-x-auto {
+    overflow-x: visible !important;
   }
+
 
   /* Prevent cards/tables from breaking across pages where possible */
   #class-dashboard-dialog-content .card {
     page-break-inside: avoid;
   }
   #class-dashboard-dialog-content .table {
-    page-break-inside: auto; /* Tables can break if very long */
+    page-break-inside: auto; 
   }
   #class-dashboard-dialog-content tr {
-    page-break-inside: avoid; /* Keep table rows together */
+    page-break-inside: avoid; 
   }
 
   /* Chart specific print enhancements */
   #class-dashboard-dialog-content .recharts-responsive-container {
-    width: 100% !important; /* Ensure chart container tries to use available width */
+    width: 100% !important; 
   }
   #class-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper {
     width: 100% !important; 
-    height: auto !important; /* Allow responsive height adjustment */
-    min-height: 150px !important; /* Prevent collapsing, adjust as needed */
+    height: auto !important; 
+    min-height: 150px !important; 
   }
-  #class-dashboard-dialog-content .recharts-surface { /* The SVG element */
+  #class-dashboard-dialog-content .recharts-surface { 
     width: 100% !important;
-    /* Recharts usually sets height via inline style on SVG, let it do that or use 'auto' */
-    /* height: auto !important;  */
   }
-  #class-dashboard-dialog-content .recharts-tooltip-wrapper { /* Hide tooltips on print */
+  #class-dashboard-dialog-content .recharts-tooltip-wrapper { 
     display: none !important;
   }
-  #class-dashboard-dialog-content .recharts-legend-wrapper { /* Ensure legend is visible */
-    display: block !important; /* or flex, depending on its original display type */
+  #class-dashboard-dialog-content .recharts-legend-wrapper { 
+    display: block !important; 
   }
 }
 

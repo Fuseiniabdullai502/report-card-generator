@@ -12,7 +12,8 @@ import {
   DialogTitle,
   DialogClose,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+// ScrollArea is being replaced by a simple div with overflow
+// import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart3, Users, TrendingUp, Percent, PieChart, Brain, Printer, Loader2, AlertTriangle, Info, MessageCircleQuestion } from 'lucide-react';
@@ -26,7 +27,7 @@ interface ClassPerformanceDashboardProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   reports: ReportData[];
-  classNameProp: string;
+  classNameProp: string; // Renamed from className to avoid conflict
   academicTerm: string;
 }
 
@@ -149,7 +150,7 @@ export default function ClassPerformanceDashboard({
       setClassStats(newStats);
       setIsLoadingStats(false);
 
-      setAiAdvice(null);
+      setAiAdvice(null); // Reset previous advice
       startAiTransition(async () => {
         try {
           const aiInput: GenerateClassInsightsInput = {
@@ -157,15 +158,15 @@ export default function ClassPerformanceDashboard({
             academicTerm,
             overallClassAverage: newStats.overallClassAverage,
             totalStudents: newStats.totalStudents,
-            subjectStats: newStats.subjectStats.map(s => ({ ...s })),
-            genderStats: newStats.genderStats.map(g => ({ ...g })),
+            subjectStats: newStats.subjectStats.map(s => ({ ...s })), // Shallow copy
+            genderStats: newStats.genderStats.map(g => ({ ...g })),   // Shallow copy
           };
           const result = await getAiClassInsightsAction(aiInput);
           if (result.success && result.insights) {
             setAiAdvice(result.insights);
           } else {
-            setAiAdvice(null); // Ensure it's reset on error
-            toast({ title: "AI Insights Error", description: result.error || "Failed to load AI insights. The AI model might be unavailable or the request timed out.", variant: "destructive" });
+            setAiAdvice(null); 
+            toast({ title: "AI Insights Error", description: result.error || "Failed to load AI insights. The model might be unavailable or the request timed out.", variant: "destructive" });
           }
         } catch (error) {
           setAiAdvice(null);
@@ -188,14 +189,18 @@ export default function ClassPerformanceDashboard({
         const header = document.createElement('div');
         header.className = 'dashboard-print-header'; 
         header.innerHTML = `<h2>Class Performance Dashboard: ${classNameProp} (${academicTerm})</h2> <p>Generated on: ${new Date().toLocaleDateString()}</p>`;
-        document.querySelector('.print-container')?.prepend(header);
+        
+        const container = document.querySelector('.print-container');
+        if (container) {
+            container.prepend(header);
+            // Remove no-print elements explicitly from the cloned content for printing
+            container.querySelectorAll('.no-print').forEach(el => el.remove());
+        }
         
         window.print();
         document.body.innerHTML = originalContents;
-        // Re-open dialog to restore state if needed, though direct DOM manipulation for print is tricky with React state
-        // This might require a more sophisticated print solution for complex stateful components
         onOpenChange(false); 
-        setTimeout(() => onOpenChange(true), 100); // Small delay to allow DOM to reset
+        setTimeout(() => onOpenChange(true), 100); 
     } else {
          toast({title: "Print Error", description: "Could not find dashboard content to print.", variant: "destructive"});
     }
@@ -243,7 +248,7 @@ export default function ClassPerformanceDashboard({
         </CardContent>
       );
     }
-    if (!aiAdvice && !isLoadingAi) {
+    if (!aiAdvice && !isLoadingAi && classStats) { // Only show error if stats are loaded but AI failed
       return (
         <CardContent className="pt-4 text-muted-foreground">
           <div className="flex items-center">
@@ -255,7 +260,10 @@ export default function ClassPerformanceDashboard({
     }
     if (aiAdvice) {
        const { overallAssessment, strengths, areasForConcern, actionableAdvice } = aiAdvice;
-       const hasContent = overallAssessment || strengths?.length > 0 || areasForConcern?.length > 0 || actionableAdvice?.length > 0;
+       const hasContent = (overallAssessment && overallAssessment.trim() !== '') || 
+                          (strengths && strengths.length > 0 && strengths.some(s => s.trim() !== '')) || 
+                          (areasForConcern && areasForConcern.length > 0 && areasForConcern.some(a => a.trim() !== '')) || 
+                          (actionableAdvice && actionableAdvice.length > 0 && actionableAdvice.some(ad => ad.trim() !== ''));
 
        if (!hasContent) {
         return (
@@ -269,41 +277,41 @@ export default function ClassPerformanceDashboard({
        }
 
       return (
-        <CardContent className="pt-4 space-y-3 text-sm whitespace-pre-wrap">
-          {overallAssessment && (
+        <CardContent className="pt-4 space-y-3 text-sm">
+          {overallAssessment && overallAssessment.trim() !== '' && (
             <div>
               <h4 className="font-semibold text-green-700 dark:text-green-400">Overall Assessment:</h4>
-              <p className="text-muted-foreground pl-2">{overallAssessment}</p>
+              <p className="text-muted-foreground pl-2 whitespace-pre-wrap">{overallAssessment}</p>
             </div>
           )}
-          {strengths && strengths.length > 0 && (
+          {strengths && strengths.length > 0 && strengths.some(s => s.trim() !== '') && (
             <div>
               <h4 className="font-semibold text-green-700 dark:text-green-400">Key Strengths:</h4>
-              <ul className="list-disc list-inside pl-2 text-muted-foreground">
-                {strengths.map((s, i) => <li key={`strength-${i}`}>{s}</li>)}
+              <ul className="list-disc list-inside pl-2 text-muted-foreground whitespace-pre-wrap">
+                {strengths.filter(s => s.trim() !== '').map((s, i) => <li key={`strength-${i}`}>{s}</li>)}
               </ul>
             </div>
           )}
-          {areasForConcern && areasForConcern.length > 0 && (
+          {areasForConcern && areasForConcern.length > 0 && areasForConcern.some(a => a.trim() !== '') && (
             <div>
               <h4 className="font-semibold text-yellow-700 dark:text-yellow-400">Areas for Concern:</h4>
-              <ul className="list-disc list-inside pl-2 text-muted-foreground">
-                {areasForConcern.map((a, i) => <li key={`concern-${i}`}>{a}</li>)}
+              <ul className="list-disc list-inside pl-2 text-muted-foreground whitespace-pre-wrap">
+                {areasForConcern.filter(a => a.trim() !== '').map((a, i) => <li key={`concern-${i}`}>{a}</li>)}
               </ul>
             </div>
           )}
-          {actionableAdvice && actionableAdvice.length > 0 && (
+          {actionableAdvice && actionableAdvice.length > 0 && actionableAdvice.some(ad => ad.trim() !== '') && (
             <div>
               <h4 className="font-semibold text-blue-700 dark:text-blue-400">Actionable Advice for Teacher:</h4>
-              <ul className="list-disc list-inside pl-2 text-muted-foreground">
-                {actionableAdvice.map((adv, i) => <li key={`advice-${i}`}>{adv}</li>)}
+              <ul className="list-disc list-inside pl-2 text-muted-foreground whitespace-pre-wrap">
+                {actionableAdvice.filter(adv => adv.trim() !== '').map((adv, i) => <li key={`advice-${i}`}>{adv}</li>)}
               </ul>
             </div>
           )}
         </CardContent>
       );
     }
-    return null;
+    return null; // Default case if no conditions are met (e.g. initial state before loading starts)
   };
 
 
@@ -313,9 +321,9 @@ export default function ClassPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="class-dashboard-dialog-content"
-        className="sm:max-w-4xl max-h-[90dvh] flex flex-col p-0 overflow-y-hidden"
+        className="sm:max-w-4xl max-h-[90dvh] flex flex-col p-0 overflow-hidden" // Dialog itself doesn't scroll
       >
-        <DialogHeader className="p-6 border-b no-print">
+        <DialogHeader className="p-6 border-b no-print shrink-0">
           <DialogTitle className="text-xl font-bold text-primary flex items-center">
             <BarChart3 className="mr-3 h-6 w-6" />
             Class Performance Dashboard: {classNameProp}
@@ -330,7 +338,9 @@ export default function ClassPerformanceDashboard({
             <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
         </div>
 
-        <ScrollArea className="flex-1 min-h-0 no-print" data-testid="dashboard-scroll-area">
+        {/* This div handles vertical scrolling */}
+        <div data-testid="dashboard-scroll-container" className="flex-1 min-h-0 overflow-y-auto no-print">
+          {/* This inner div handles content padding and horizontal scrolling if needed */}
           <div className="p-6 space-y-6 overflow-x-auto">
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
@@ -446,7 +456,7 @@ export default function ClassPerformanceDashboard({
                                     const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
                                     const x = cx + radius * Math.cos(-midAngle * RADIAN);
                                     const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                                    if (percent * 100 < 5) return null; // Hide label if too small
+                                    if (percent * 100 < 5) return null; 
                                     return (
                                     <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="11px" fontWeight="medium">
                                         {`${name} (${(percent * 100).toFixed(0)}%)`}
@@ -501,9 +511,9 @@ export default function ClassPerformanceDashboard({
               </>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="p-6 border-t no-print dialog-footer-print-hide">
+        <DialogFooter className="p-6 border-t no-print dialog-footer-print-hide shrink-0">
           <Button variant="outline" onClick={handlePrint} disabled={!classStats || reports.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
