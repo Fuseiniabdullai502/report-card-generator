@@ -283,7 +283,6 @@ body {
   #class-dashboard-dialog-content *::before,
   #class-dashboard-dialog-content *::after {
     color: black !important;
-    /* background-color: transparent !important; */ /* Keep some colored backgrounds */
     border-color: #ccc !important; 
     box-shadow: none !important;
   }
@@ -338,17 +337,26 @@ body {
   }
 
   /* Ensure scrollable areas expand for print */
-  /* Target the new data-testid for the scroll container */
-  #class-dashboard-dialog-content [data-testid="dashboard-scroll-container"] {
-    overflow-y: visible !important;
+  #class-dashboard-dialog-content [data-testid="dashboard-scroll-area"] { /* The ScrollArea Root */
+    overflow: visible !important;
     height: auto !important;
     max-height: none !important;
   }
-  /* Ensure its inner content wrapper also expands if it had horizontal scroll */
-   #class-dashboard-dialog-content [data-testid="dashboard-scroll-container"] > .overflow-x-auto {
-    overflow-x: visible !important;
+  #class-dashboard-dialog-content [data-testid="dashboard-scroll-area"] > [data-radix-scroll-area-viewport] { /* The Viewport */
+    overflow-y: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    display: block !important; /* Ensure viewport itself is block for content flow */
   }
-
+   /* Ensure its inner content wrapper also expands if it had horizontal scroll */
+  #class-dashboard-dialog-content [data-testid="dashboard-scroll-area"] > [data-radix-scroll-area-viewport] > .overflow-x-auto { /* The div with p-6 */
+    overflow-x: visible !important;
+    height: auto !important; /* Allow height to grow based on content */
+  }
+  /* Hide the visual scrollbar itself during print */
+  #class-dashboard-dialog-content [data-testid="dashboard-scroll-area"] > [data-radix-scroll-area-scrollbar] {
+    display: none !important;
+  }
 
   /* Prevent cards/tables from breaking across pages where possible */
   #class-dashboard-dialog-content .card {
@@ -380,5 +388,7 @@ body {
     display: block !important; 
   }
 }
+
+    
 
     

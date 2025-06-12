@@ -11,10 +11,11 @@ import {
   DialogFooter,
   DialogTitle,
   DialogClose,
-  DialogDescription as ShadcnDialogDescription, // Renamed to avoid conflict if DialogDescription is used elsewhere
+  DialogDescription as ShadcnDialogDescription,
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area'; // Import ScrollArea
 import { BarChart3, Users, TrendingUp, Percent, PieChart, Brain, Printer, Loader2, AlertTriangle, Info, MessageCircleQuestion } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
@@ -83,7 +84,6 @@ export default function ClassPerformanceDashboard({
   useEffect(() => {
     if (isOpen && reports.length > 0) {
       setIsLoadingStats(true);
-      // Calculate statistics
       const totalStudents = reports.length;
       let sumOfOverallAverages = 0;
       let studentsWithOverallAverage = 0;
@@ -318,9 +318,7 @@ export default function ClassPerformanceDashboard({
             <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
         </div>
 
-        {/* This div handles vertical scrolling. It should NOT be no-print. */}
-        <div data-testid="dashboard-scroll-container" className="flex-1 min-h-0 overflow-y-auto">
-          {/* This inner div handles content padding and horizontal scrolling if needed */}
+        <ScrollArea data-testid="dashboard-scroll-area" className="flex-1 min-h-0">
           <div className="p-6 space-y-6 overflow-x-auto">
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
@@ -491,7 +489,7 @@ export default function ClassPerformanceDashboard({
               </>
             )}
           </div>
-        </div>
+        </ScrollArea>
 
         <DialogFooter className="p-6 border-t no-print dialog-footer-print-hide shrink-0">
           <Button variant="outline" onClick={handlePrint} disabled={!classStats || reports.length === 0}>
@@ -505,6 +503,5 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
-
 
     
