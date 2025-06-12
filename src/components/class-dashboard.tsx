@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area'; // Import ScrollArea
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { BarChart3, Users, TrendingUp, Percent, PieChart, Brain, Printer, Loader2, AlertTriangle, Info, MessageCircleQuestion } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
@@ -301,7 +301,7 @@ export default function ClassPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="class-dashboard-dialog-content"
-        className="max-w-4xl max-h-[90dvh] flex flex-col p-0 overflow-hidden"
+        className="max-w-4xl w-[90vw] h-[85dvh] flex flex-col p-0 overflow-hidden"
       >
         <DialogHeader className="p-6 border-b no-print shrink-0">
           <DialogTitle className="text-xl font-bold text-primary flex items-center">
@@ -318,8 +318,8 @@ export default function ClassPerformanceDashboard({
             <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
         </div>
 
-        <ScrollArea data-testid="dashboard-scroll-area" className="flex-1 min-h-0">
-          <div className="p-6 space-y-6"> {/* Removed overflow-x-auto here */}
+        <ScrollArea data-testid="dashboard-scroll-area" className="flex-1 min-h-0 w-full">
+          <div className="p-6 space-y-6 w-full">
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
                 <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
@@ -503,3 +503,6 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
+
+
+    
