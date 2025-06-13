@@ -320,9 +320,9 @@ export default function ClassPerformanceDashboard({
 
         <ScrollArea 
             data-testid="dashboard-scroll-area" 
-            className="flex-1 min-h-0 w-full"
+            className="flex-1 min-h-0 w-full overflow-hidden" 
         >
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6" style={{ width: 'max-content', minWidth: '100%' }}>
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
                 <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
@@ -506,3 +506,6 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
+
+
+    
