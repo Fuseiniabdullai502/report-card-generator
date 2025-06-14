@@ -483,10 +483,11 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       reader.onloadend = () => {
         const originalDataUri = reader.result as string;
 
-        if (typeof originalDataUri !== 'string' || !originalDataUri.startsWith('data:image/')) {
+        const allowedMimePattern = /^data:image\/(png|jpeg|gif|svg\+xml);base64,/;
+        if (typeof originalDataUri !== 'string' || !allowedMimePattern.test(originalDataUri)) {
           toast({
-            title: "Invalid File Type",
-            description: "The selected file does not appear to be a valid image (e.g., JPG, PNG, GIF). Please choose a different file.",
+            title: "Invalid File Type/Format",
+            description: "Please upload a valid image (PNG, JPEG, GIF, SVG) in Base64 data URI format. Other formats might not display correctly.",
             variant: "destructive",
           });
           if (event.target) event.target.value = '';
@@ -711,7 +712,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                             type="file"
                             id="schoolLogoUpload"
                             className="hidden"
-                            accept="image/*"
+                            accept="image/png, image/jpeg, image/gif, image/svg+xml"
                             onChange={(e) => handleImageUpload(e, 'schoolLogoDataUri')}
                           />
                           <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('schoolLogoUpload')?.click()}>
@@ -839,7 +840,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                             type="file"
                             id="studentPhotoUpload"
                             className="hidden"
-                            accept="image/*"
+                            accept="image/png, image/jpeg, image/gif, image/svg+xml"
                             onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')}
                           />
                            <div className="flex flex-wrap gap-2 items-start">
@@ -1366,3 +1367,5 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
+
+    
