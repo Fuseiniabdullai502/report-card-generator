@@ -303,7 +303,7 @@ export default function ClassPerformanceDashboard({
         id="class-dashboard-dialog-content"
         className="max-w-4xl w-[90vw] max-h-[calc(100dvh-8rem)] flex flex-col p-0 overflow-hidden"
       >
-        <DialogHeader className="p-6 border-b no-print shrink-0">
+        <DialogHeader className="p-6 border-b shrink-0 no-print">
           <DialogTitle className="text-xl font-bold text-primary flex items-center">
             <BarChart3 className="mr-3 h-6 w-6" />
             Class Performance Dashboard: {classNameProp}
@@ -320,9 +320,9 @@ export default function ClassPerformanceDashboard({
 
         <ScrollArea 
             data-testid="dashboard-scroll-area" 
-            className="flex-1 min-h-0 w-full overflow-hidden" 
+            className="flex-1 min-h-0" 
         >
-          <div className="p-6 space-y-6" style={{ width: 'max-content', minWidth: '100%' }}>
+          <div className="p-6 space-y-6">
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
                 <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
@@ -494,7 +494,7 @@ export default function ClassPerformanceDashboard({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="p-6 border-t no-print dialog-footer-print-hide shrink-0">
+        <DialogFooter className="p-6 border-t shrink-0 no-print dialog-footer-print-hide">
           <Button variant="outline" onClick={handlePrint} disabled={!classStats || reports.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
@@ -506,6 +506,5 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
-
 
     
