@@ -139,6 +139,12 @@ body {
   .dashboard-print-header {
     display: none; 
   }
+
+  /* Force scroll for class dashboard dialog content on screen */
+  #class-dashboard-dialog-content {
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+  }
 }
 
 

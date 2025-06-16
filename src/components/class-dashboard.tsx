@@ -7,14 +7,14 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogHeader as ShadcnDialogHeader, // Renamed import
-  DialogFooter as ShadcnDialogFooter, // Renamed import
-  DialogTitle as ShadcnDialogTitle,   // Renamed import
+  DialogHeader as ShadcnDialogHeader,
+  DialogFooter as ShadcnDialogFooter,
+  DialogTitle as ShadcnDialogTitle,
   DialogClose,
-  DialogDescription as ShadcnDialogDescription, // Renamed import
+  DialogDescription as ShadcnDialogDescription,
 } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader as ShadcnCardHeader, CardTitle as ShadcnCardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card'; // Renamed Card imports
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader as ShadcnUITableHeader, TableRow } from '@/components/ui/table'; // Renamed TableHeader import
 import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
@@ -302,9 +302,9 @@ export default function ClassPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="class-dashboard-dialog-content"
-        className="max-w-4xl w-[90vw] max-h-[calc(100dvh-8rem)] flex flex-col overflow-x-auto overflow-y-auto"
+        className="max-w-4xl w-[90vw] max-h-[calc(100dvh-8rem)] flex flex-col"
       >
-        <ShadcnDialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b mb-0 bg-background sticky top-0 z-10">
+        <ShadcnDialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
           <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
             <BarChart3 className="mr-3 h-6 w-6" />
             Class Performance Dashboard: {classNameProp}
@@ -319,7 +319,7 @@ export default function ClassPerformanceDashboard({
             <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
         </div>
 
-        <div className="flex-1 min-h-0 min-w-0 p-6 space-y-6">
+        <div className="flex-1 min-h-0 min-w-0 p-6 space-y-6"> {/* Main content wrapper */}
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
                 <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
@@ -329,9 +329,9 @@ export default function ClassPerformanceDashboard({
             )}
             {reports.length === 0 && !isLoadingStats && (
                  <Card className="shadow-md">
-                    <ShadcnCardHeader className="pb-3">
-                        <ShadcnCardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Info className="mr-2 h-5 w-5" />No Reports Available</ShadcnCardTitle>
-                    </ShadcnCardHeader>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Info className="mr-2 h-5 w-5" />No Reports Available</CardTitle>
+                    </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">There are no student reports in the print list to generate a class dashboard. Please add reports first.</p>
                     </CardContent>
@@ -339,9 +339,9 @@ export default function ClassPerformanceDashboard({
             )}
             {!classStats && reports.length > 0 && !isLoadingStats && (
                  <Card className="shadow-md">
-                    <ShadcnCardHeader className="pb-3">
-                        <ShadcnCardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />Data Error</ShadcnCardTitle>
-                    </ShadcnCardHeader>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />Data Error</CardTitle>
+                    </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">Could not calculate class statistics. Please check report data or try again.</p>
                     </CardContent>
@@ -351,9 +351,9 @@ export default function ClassPerformanceDashboard({
             {classStats && (
               <>
                 <Card className="shadow-md">
-                  <ShadcnCardHeader className="pb-3">
-                    <ShadcnCardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Users className="mr-2 h-5 w-5" />Overall Snapshot</ShadcnCardTitle>
-                  </ShadcnCardHeader>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Users className="mr-2 h-5 w-5" />Overall Snapshot</CardTitle>
+                  </CardHeader>
                   <CardContent className="pt-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">Total Students</p>
@@ -370,10 +370,10 @@ export default function ClassPerformanceDashboard({
 
                 {classStats.subjectStats.length > 0 && (
                   <Card className="shadow-md">
-                    <ShadcnCardHeader className="pb-3">
-                      <ShadcnCardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><TrendingUp className="mr-2 h-5 w-5 text-green-600" />Subject Performance</ShadcnCardTitle>
-                      <ShadcnCardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject (Below Average &lt;40%, Average 40-59%, Above Average &ge;60%).</ShadcnCardDescription>
-                    </ShadcnCardHeader>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><TrendingUp className="mr-2 h-5 w-5 text-green-600" />Subject Performance</CardTitle>
+                      <CardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject (Below Average &lt;40%, Average 40-59%, Above Average &ge;60%).</CardDescription>
+                    </CardHeader>
                     <CardContent className="pt-4">
                       <div data-testid="subject-barchart-container" className="h-[300px] min-w-[500px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -389,7 +389,7 @@ export default function ClassPerformanceDashboard({
                         </ResponsiveContainer>
                       </div>
                        <Table className="mt-6 border rounded-md min-w-[700px] bg-card">
-                        <TableHeader className="bg-muted/50">
+                        <ShadcnUITableHeader className="bg-muted/50">
                           <TableRow>
                             <TableHead className="font-semibold py-2 px-3">Subject</TableHead>
                             <TableHead className="text-center font-semibold py-2 px-3">Class Avg (%)</TableHead>
@@ -397,7 +397,7 @@ export default function ClassPerformanceDashboard({
                             <TableHead className="text-center font-semibold py-2 px-3 text-blue-600 dark:text-blue-400">Average (40-59%)</TableHead>
                             <TableHead className="text-center font-semibold py-2 px-3 text-green-600 dark:text-green-400">Above Avg (&ge;60%)</TableHead>
                           </TableRow>
-                        </TableHeader>
+                        </ShadcnUITableHeader>
                         <TableBody>
                           {classStats.subjectStats.map(s => (
                             <TableRow key={s.subjectName}>
@@ -416,10 +416,10 @@ export default function ClassPerformanceDashboard({
 
                 {classStats.genderStats.length > 0 && (
                  <Card className="shadow-md">
-                    <ShadcnCardHeader className="pb-3">
-                        <ShadcnCardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics</ShadcnCardTitle>
-                         <ShadcnCardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</ShadcnCardDescription>
-                    </ShadcnCardHeader>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics</CardTitle>
+                         <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</CardDescription>
+                    </CardHeader>
                     <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center">
                         <div data-testid="gender-piechart-container" className="h-[250px] min-w-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -456,13 +456,13 @@ export default function ClassPerformanceDashboard({
                         </ResponsiveContainer>
                         </div>
                         <Table className="border rounded-md min-w-[300px] bg-card">
-                        <TableHeader className="bg-muted/50">
+                        <ShadcnUITableHeader className="bg-muted/50">
                             <TableRow>
                             <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
                             <TableHead className="text-center font-semibold py-2 px-3">Count</TableHead>
                             <TableHead className="text-center font-semibold py-2 px-3">Overall Avg (%)</TableHead>
                             </TableRow>
-                        </TableHeader>
+                        </ShadcnUITableHeader>
                         <TableBody>
                             {classStats.genderStats.map(g => (
                             <TableRow key={g.gender}>
@@ -478,19 +478,19 @@ export default function ClassPerformanceDashboard({
                 )}
                 
                 <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50")}>
-                  <ShadcnCardHeader className="pb-3">
-                    <ShadcnCardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
                         {isLoadingAi && !aiAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
                         AI Pedagogical Insights &amp; Advice
-                    </ShadcnCardTitle>
-                  </ShadcnCardHeader>
+                    </CardTitle>
+                  </CardHeader>
                   {renderAiInsights()}
                 </Card>
               </>
             )}
           </div>
 
-        <ShadcnDialogFooter className="shrink-0 border-t px-6 pb-6 pt-4 mt-0 bg-background sticky bottom-0 z-10 dialog-footer-print-hide">
+        <ShadcnDialogFooter className="shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide">
           <Button variant="outline" onClick={handlePrint} disabled={!classStats || reports.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
@@ -505,3 +505,4 @@ export default function ClassPerformanceDashboard({
     
 
     
+
