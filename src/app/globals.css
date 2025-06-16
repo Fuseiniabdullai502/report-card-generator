@@ -336,22 +336,15 @@ body {
       display: none !important;
   }
 
-  /* Ensure scrollable areas expand for print */
-  #class-dashboard-dialog-content [data-testid="dashboard-scroll-area"] { /* The ScrollArea Root */
+  /* Print styles for content previously in ScrollArea (now directly in DialogContent) */
+  /* No specific rules needed for a removed ScrollArea */
+  /* Ensure DialogContent itself expands for print */
+  #class-dashboard-dialog-content > .p-6.space-y-6 { /* Target the main content div */
     overflow: visible !important;
     height: auto !important;
     max-height: none !important;
   }
-  #class-dashboard-dialog-content [data-testid="dashboard-scroll-area"] > [data-radix-scroll-area-viewport] { /* The Viewport */
-    overflow: visible !important; /* Viewport handles both X and Y for print */
-    height: auto !important;
-    max-height: none !important;
-    display: block !important; 
-  }
-  /* Hide the visual scrollbar itself during print */
-  #class-dashboard-dialog-content [data-testid="dashboard-scroll-area"] > [data-radix-scroll-area-scrollbar] {
-    display: none !important;
-  }
+
 
   /* Prevent cards/tables from breaking across pages where possible */
   #class-dashboard-dialog-content .card {
@@ -383,3 +376,6 @@ body {
     display: block !important; 
   }
 }
+
+
+    
