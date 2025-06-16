@@ -7,16 +7,15 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogHeader as ShadcnDialogHeader, // Renamed import
-  DialogFooter as ShadcnDialogFooter, // Renamed import
-  DialogTitle as ShadcnDialogTitle,   // Renamed import
+  DialogHeader as ShadcnDialogHeader,
+  DialogFooter as ShadcnDialogFooter,
+  DialogTitle as ShadcnDialogTitle,
   DialogClose,
-  DialogDescription as ShadcnDialogDescription, // Renamed import
+  DialogDescription as ShadcnDialogDescription,
 } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader as ShadcnCardHeader, CardTitle as ShadcnCardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card'; // Renamed imports
+import { Card, CardContent, CardHeader as ShadcnCardHeader, CardTitle as ShadcnCardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-// ScrollArea is removed
-import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, MessageCircleQuestion } from 'lucide-react'; // Renamed PieChart import
+import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
 import type { GenerateClassInsightsOutput, GenerateClassInsightsInput } from '@/ai/flows/generate-class-insights-flow';
@@ -156,8 +155,8 @@ export default function ClassPerformanceDashboard({
             academicTerm,
             overallClassAverage: newStats.overallClassAverage,
             totalStudents: newStats.totalStudents,
-            subjectStats: newStats.subjectStats.map(s => ({ ...s })),
-            genderStats: newStats.genderStats.map(g => ({ ...g })),
+            subjectStats: newStats.subjectStats.map(s => ({ ...s })), // Ensure proper cloning if needed
+            genderStats: newStats.genderStats.map(g => ({ ...g })),   // Ensure proper cloning if needed
           };
           const result = await getAiClassInsightsAction(aiInput);
           if (result.success && result.insights) {
@@ -176,7 +175,7 @@ export default function ClassPerformanceDashboard({
       setAiAdvice(null);
       setIsLoadingStats(false);
     }
-  }, [isOpen, reports, classNameProp, academicTerm, toast]);
+  }, [isOpen, reports, classNameProp, academicTerm, toast]); // Removed startAiTransition from deps
 
   const handlePrint = () => {
     if (!classStats || reports.length === 0) {
@@ -232,7 +231,7 @@ export default function ClassPerformanceDashboard({
       return (
         <CardContent className="pt-4 text-muted-foreground">
           <div className="flex items-center">
-             <MessageCircleQuestion className="mr-2 h-5 w-5 text-destructive" />
+             <AlertTriangle className="mr-2 h-5 w-5 text-destructive" />
             <span>AI insights could not be loaded or are unavailable for this data.</span>
           </div>
         </CardContent>
@@ -250,7 +249,7 @@ export default function ClassPerformanceDashboard({
             <CardContent className="pt-4 text-muted-foreground">
                  <div className="flex items-center">
                     <Info className="mr-2 h-5 w-5 text-blue-500" />
-                    <span>AI analysis complete. No specific points were raised in the key categories for the provided data.</span>
+                    <span>AI analysis complete. No specific points were raised by the AI for the provided data.</span>
                 </div>
             </CardContent>
         );
@@ -301,7 +300,7 @@ export default function ClassPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="class-dashboard-dialog-content"
-        className="max-w-4xl w-[90vw] max-h-[calc(100dvh-8rem)] flex flex-col overflow-auto" // Changed overflow-hidden to overflow-auto
+        className="max-w-4xl w-[90vw] max-h-[calc(100dvh-8rem)] flex flex-col overflow-auto"
       >
         <ShadcnDialogHeader className="shrink-0 border-b px-6 pt-6 pb-4 no-print">
           <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
@@ -318,8 +317,7 @@ export default function ClassPerformanceDashboard({
             <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
         </div>
 
-        {/* ScrollArea removed, content div is now a direct child */}
-        <div className="flex-1 p-6 space-y-6 min-h-0"> {/* Added flex-1 and min-h-0 for proper flex behavior if DialogContent itself doesn't handle all scrolling perfectly */}
+        <div className="flex-1 min-h-0 p-6 space-y-6">
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
                 <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
@@ -375,7 +373,7 @@ export default function ClassPerformanceDashboard({
                       <ShadcnCardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject (Below Average &lt;40%, Average 40-59%, Above Average &ge;60%).</ShadcnCardDescription>
                     </ShadcnCardHeader>
                     <CardContent className="pt-4">
-                      <div className="h-[300px] min-w-[500px]" data-testid="subject-barchart-container"> {/* Removed w-full */}
+                      <div className="h-[300px] min-w-[500px]" data-testid="subject-barchart-container">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={subjectPerformanceChartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                             <XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{ fontSize: 10 }} />
@@ -421,7 +419,7 @@ export default function ClassPerformanceDashboard({
                          <ShadcnCardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</ShadcnCardDescription>
                     </ShadcnCardHeader>
                     <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center">
-                        <div className="h-[250px] min-w-[300px]" data-testid="gender-piechart-container"> {/* Removed w-full */}
+                        <div className="h-[250px] min-w-[300px]" data-testid="gender-piechart-container">
                         <ResponsiveContainer width="100%" height="100%">
                             <RechartsPieChart>
                             <Pie
@@ -477,7 +475,7 @@ export default function ClassPerformanceDashboard({
                     </Card>
                 )}
                 
-                <Card className={cn("shadow-md bg-accent/10 print:bg-green-50 border-green-200 dark:border-green-700")}>
+                <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50")}>
                   <ShadcnCardHeader className="pb-3">
                     <ShadcnCardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
                         {isLoadingAi && !aiAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
@@ -502,6 +500,4 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
-    
-
     
