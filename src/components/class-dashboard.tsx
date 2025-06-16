@@ -155,8 +155,8 @@ export default function ClassPerformanceDashboard({
             academicTerm,
             overallClassAverage: newStats.overallClassAverage,
             totalStudents: newStats.totalStudents,
-            subjectStats: newStats.subjectStats.map(s => ({ ...s })), // Ensure proper cloning if needed
-            genderStats: newStats.genderStats.map(g => ({ ...g })),   // Ensure proper cloning if needed
+            subjectStats: newStats.subjectStats.map(s => ({ ...s })), 
+            genderStats: newStats.genderStats.map(g => ({ ...g })),   
           };
           const result = await getAiClassInsightsAction(aiInput);
           if (result.success && result.insights) {
@@ -167,7 +167,7 @@ export default function ClassPerformanceDashboard({
           }
         } catch (error) {
           setAiAdvice(null);
-          toast({ title: "AI Insights Request Failed", description: "Could not fetch AI insights due to a network or server error.", variant: "destructive" });
+          toast({ title: "AI Insights Request Failed", description: "Could not fetch AI insights due to a client-side error before or after the AI call.", variant: "destructive" });
         }
       });
     } else if (isOpen && reports.length === 0) {
@@ -175,7 +175,7 @@ export default function ClassPerformanceDashboard({
       setAiAdvice(null);
       setIsLoadingStats(false);
     }
-  }, [isOpen, reports, classNameProp, academicTerm, toast]); // Removed startAiTransition from deps
+  }, [isOpen, reports, classNameProp, academicTerm, toast]); 
 
   const handlePrint = () => {
     if (!classStats || reports.length === 0) {
@@ -222,17 +222,19 @@ export default function ClassPerformanceDashboard({
   const renderAiInsights = () => {
     if (isLoadingAi && !aiAdvice) {
       return (
-        <CardContent className="pt-4 flex items-center justify-center text-muted-foreground">
+        <CardContent className="pt-4 flex items-center justify-center text-accent-foreground/80">
           <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> Generating AI pedagogical insights...
         </CardContent>
       );
     }
     if (!aiAdvice && !isLoadingAi && classStats && reports.length > 0) {
       return (
-        <CardContent className="pt-4 text-muted-foreground">
-          <div className="flex items-center">
-             <AlertTriangle className="mr-2 h-5 w-5 text-destructive" />
-            <span>AI insights could not be loaded or are unavailable for this data.</span>
+        <CardContent className="pt-4 text-accent-foreground/90">
+          <div className="flex items-start">
+             <AlertTriangle className="mr-2 h-5 w-5 text-destructive shrink-0" />
+            <span className="text-sm">
+                AI insights could not be loaded. This might be due to a configuration issue or a problem reaching the AI service. Please check server console logs for detailed errors if the issue persists.
+            </span>
           </div>
         </CardContent>
       );
@@ -246,9 +248,9 @@ export default function ClassPerformanceDashboard({
 
        if (!hasContent) {
         return (
-            <CardContent className="pt-4 text-muted-foreground">
+            <CardContent className="pt-4 text-accent-foreground/80">
                  <div className="flex items-center">
-                    <Info className="mr-2 h-5 w-5 text-blue-500" />
+                    <Info className="mr-2 h-5 w-5 text-blue-400" />
                     <span>AI analysis complete. No specific points were raised by the AI for the provided data.</span>
                 </div>
             </CardContent>
@@ -256,33 +258,33 @@ export default function ClassPerformanceDashboard({
        }
 
       return (
-        <CardContent className="pt-4 space-y-3 text-sm">
+        <CardContent className="pt-4 space-y-3 text-sm text-accent-foreground">
           {overallAssessment && overallAssessment.trim() !== '' && (
             <div>
-              <h4 className="font-semibold text-green-700 dark:text-green-400">Overall Assessment:</h4>
-              <p className="text-muted-foreground pl-2 whitespace-pre-wrap">{overallAssessment}</p>
+              <h4 className="font-semibold text-green-500 dark:text-green-300">Overall Assessment:</h4>
+              <p className="pl-2 whitespace-pre-wrap">{overallAssessment}</p>
             </div>
           )}
           {strengths && strengths.length > 0 && strengths.some(s => s.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-green-700 dark:text-green-400">Key Strengths:</h4>
-              <ul className="list-disc list-inside pl-2 text-muted-foreground whitespace-pre-wrap">
+              <h4 className="font-semibold text-green-500 dark:text-green-300">Key Strengths:</h4>
+              <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {strengths.filter(s => s.trim() !== '').map((s, i) => <li key={`strength-${i}`}>{s}</li>)}
               </ul>
             </div>
           )}
           {areasForConcern && areasForConcern.length > 0 && areasForConcern.some(a => a.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-yellow-700 dark:text-yellow-400">Areas for Concern:</h4>
-              <ul className="list-disc list-inside pl-2 text-muted-foreground whitespace-pre-wrap">
+              <h4 className="font-semibold text-yellow-500 dark:text-yellow-300">Areas for Concern:</h4>
+              <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {areasForConcern.filter(a => a.trim() !== '').map((a, i) => <li key={`concern-${i}`}>{a}</li>)}
               </ul>
             </div>
           )}
           {actionableAdvice && actionableAdvice.length > 0 && actionableAdvice.some(ad => ad.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-blue-700 dark:text-blue-400">Actionable Advice for Teacher:</h4>
-              <ul className="list-disc list-inside pl-2 text-muted-foreground whitespace-pre-wrap">
+              <h4 className="font-semibold text-blue-500 dark:text-blue-300">Actionable Advice for Teacher:</h4>
+              <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {actionableAdvice.filter(adv => adv.trim() !== '').map((adv, i) => <li key={`advice-${i}`}>{adv}</li>)}
               </ul>
             </div>
@@ -500,4 +502,6 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
+    
+
     
