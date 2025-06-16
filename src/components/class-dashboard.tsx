@@ -251,7 +251,7 @@ export default function ClassPerformanceDashboard({
             <CardContent className="pt-4 text-accent-foreground/80">
                  <div className="flex items-center">
                     <Info className="mr-2 h-5 w-5 text-blue-400" />
-                    <span>AI analysis complete. No specific points were raised by the AI for the provided data.</span>
+                    <span className="text-sm">AI analysis complete. No specific points were raised by the AI for the provided data.</span>
                 </div>
             </CardContent>
         );
@@ -261,13 +261,13 @@ export default function ClassPerformanceDashboard({
         <CardContent className="pt-4 space-y-3 text-sm text-accent-foreground">
           {overallAssessment && overallAssessment.trim() !== '' && (
             <div>
-              <h4 className="font-semibold text-green-500 dark:text-green-300">Overall Assessment:</h4>
+              <h4 className="font-semibold text-green-600 dark:text-green-400">Overall Assessment:</h4>
               <p className="pl-2 whitespace-pre-wrap">{overallAssessment}</p>
             </div>
           )}
           {strengths && strengths.length > 0 && strengths.some(s => s.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-green-500 dark:text-green-300">Key Strengths:</h4>
+              <h4 className="font-semibold text-green-600 dark:text-green-400">Key Strengths:</h4>
               <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {strengths.filter(s => s.trim() !== '').map((s, i) => <li key={`strength-${i}`}>{s}</li>)}
               </ul>
@@ -275,7 +275,7 @@ export default function ClassPerformanceDashboard({
           )}
           {areasForConcern && areasForConcern.length > 0 && areasForConcern.some(a => a.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-yellow-500 dark:text-yellow-300">Areas for Concern:</h4>
+              <h4 className="font-semibold text-yellow-600 dark:text-yellow-400">Areas for Concern:</h4>
               <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {areasForConcern.filter(a => a.trim() !== '').map((a, i) => <li key={`concern-${i}`}>{a}</li>)}
               </ul>
@@ -283,7 +283,7 @@ export default function ClassPerformanceDashboard({
           )}
           {actionableAdvice && actionableAdvice.length > 0 && actionableAdvice.some(ad => ad.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-blue-500 dark:text-blue-300">Actionable Advice for Teacher:</h4>
+              <h4 className="font-semibold text-blue-600 dark:text-blue-400">Actionable Advice for Teacher:</h4>
               <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {actionableAdvice.filter(adv => adv.trim() !== '').map((adv, i) => <li key={`advice-${i}`}>{adv}</li>)}
               </ul>
@@ -302,9 +302,9 @@ export default function ClassPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="class-dashboard-dialog-content"
-        className="max-w-4xl w-[90vw] max-h-[calc(100dvh-8rem)] flex flex-col overflow-auto"
+        className="max-w-4xl w-[90vw] max-h-[calc(100dvh-8rem)] flex flex-col overflow-auto bg-background"
       >
-        <ShadcnDialogHeader className="shrink-0 border-b px-6 pt-6 pb-4 no-print">
+        <ShadcnDialogHeader className="shrink-0 border-b px-6 pt-6 pb-4 no-print bg-background sticky top-0 z-10">
           <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
             <BarChart3 className="mr-3 h-6 w-6" />
             Class Performance Dashboard: {classNameProp}
@@ -388,7 +388,7 @@ export default function ClassPerformanceDashboard({
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
-                       <Table className="mt-6 border rounded-md min-w-[700px]">
+                       <Table className="mt-6 border rounded-md min-w-[700px] bg-card">
                         <TableHeader className="bg-muted/50">
                           <TableRow>
                             <TableHead className="font-semibold py-2 px-3">Subject</TableHead>
@@ -455,7 +455,7 @@ export default function ClassPerformanceDashboard({
                             </RechartsPieChart>
                         </ResponsiveContainer>
                         </div>
-                        <Table className="border rounded-md min-w-[300px]">
+                        <Table className="border rounded-md min-w-[300px] bg-card">
                         <TableHeader className="bg-muted/50">
                             <TableRow>
                             <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
@@ -490,7 +490,7 @@ export default function ClassPerformanceDashboard({
             )}
           </div>
 
-        <ShadcnDialogFooter className="shrink-0 border-t px-6 pb-6 pt-4 no-print dialog-footer-print-hide">
+        <ShadcnDialogFooter className="shrink-0 border-t px-6 pb-6 pt-4 no-print dialog-footer-print-hide bg-background sticky bottom-0 z-10">
           <Button variant="outline" onClick={handlePrint} disabled={!classStats || reports.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
