@@ -7,13 +7,13 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogHeader as ShadcnDialogHeader,
-  DialogFooter as ShadcnDialogFooter,
-  DialogTitle as ShadcnDialogTitle,
+  DialogHeader as ShadcnDialogHeader, // Renamed import
+  DialogFooter as ShadcnDialogFooter, // Renamed import
+  DialogTitle as ShadcnDialogTitle,   // Renamed import
   DialogClose,
-  DialogDescription as ShadcnDialogDescription,
+  DialogDescription as ShadcnDialogDescription, // Renamed import
 } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader as ShadcnCardHeader, CardTitle as ShadcnCardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader as ShadcnCardHeader, CardTitle as ShadcnCardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card'; // Renamed Card imports
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
@@ -219,7 +219,7 @@ export default function ClassPerformanceDashboard({
     return null;
   };
 
-  const renderAiInsights = () => {
+ const renderAiInsights = () => {
     if (isLoadingAi && !aiAdvice) {
       return (
         <CardContent className="pt-4 flex items-center justify-center text-accent-foreground/80">
@@ -302,9 +302,9 @@ export default function ClassPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="class-dashboard-dialog-content"
-        className="max-w-4xl w-[90vw] max-h-[calc(100dvh-8rem)] flex flex-col overflow-auto bg-background"
+        className="max-w-4xl w-[90vw] max-h-[calc(100dvh-8rem)] flex flex-col overflow-x-auto overflow-y-auto"
       >
-        <ShadcnDialogHeader className="shrink-0 border-b px-6 pt-6 pb-4 no-print bg-background sticky top-0 z-10">
+        <ShadcnDialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b mb-0 bg-background sticky top-0 z-10">
           <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
             <BarChart3 className="mr-3 h-6 w-6" />
             Class Performance Dashboard: {classNameProp}
@@ -319,7 +319,7 @@ export default function ClassPerformanceDashboard({
             <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
         </div>
 
-        <div className="flex-1 min-h-0 p-6 space-y-6">
+        <div className="flex-1 min-h-0 min-w-0 p-6 space-y-6">
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
                 <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
@@ -375,7 +375,7 @@ export default function ClassPerformanceDashboard({
                       <ShadcnCardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject (Below Average &lt;40%, Average 40-59%, Above Average &ge;60%).</ShadcnCardDescription>
                     </ShadcnCardHeader>
                     <CardContent className="pt-4">
-                      <div className="h-[300px] min-w-[500px]" data-testid="subject-barchart-container">
+                      <div data-testid="subject-barchart-container" className="h-[300px] min-w-[500px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={subjectPerformanceChartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                             <XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{ fontSize: 10 }} />
@@ -421,7 +421,7 @@ export default function ClassPerformanceDashboard({
                          <ShadcnCardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</ShadcnCardDescription>
                     </ShadcnCardHeader>
                     <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center">
-                        <div className="h-[250px] min-w-[300px]" data-testid="gender-piechart-container">
+                        <div data-testid="gender-piechart-container" className="h-[250px] min-w-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <RechartsPieChart>
                             <Pie
@@ -490,7 +490,7 @@ export default function ClassPerformanceDashboard({
             )}
           </div>
 
-        <ShadcnDialogFooter className="shrink-0 border-t px-6 pb-6 pt-4 no-print dialog-footer-print-hide bg-background sticky bottom-0 z-10">
+        <ShadcnDialogFooter className="shrink-0 border-t px-6 pb-6 pt-4 mt-0 bg-background sticky bottom-0 z-10 dialog-footer-print-hide">
           <Button variant="outline" onClick={handlePrint} disabled={!classStats || reports.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
