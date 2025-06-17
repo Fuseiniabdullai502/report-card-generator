@@ -139,7 +139,6 @@ body {
   .dashboard-print-header {
     display: none; 
   }
-
 }
 
 
@@ -269,7 +268,7 @@ body {
     max-height: none !important; 
     transform: none !important; 
     margin: 0 !important;
-    padding: 10mm !important; 
+    padding: 0 !important; /* Remove dialog padding for print */
     border: none !important;
     box-shadow: none !important;
     background-color: white !important;
@@ -279,6 +278,15 @@ body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+  
+  /* Ensure the inner scroll container is fully visible for printing */
+  #class-dashboard-dialog-content [data-testid="dashboard-inner-scroll-container"] {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 10mm !important; /* Apply padding to the inner container for print */
+  }
+
 
   #class-dashboard-dialog-content *,
   #class-dashboard-dialog-content *::before,
@@ -306,9 +314,14 @@ body {
     background-color: #f0fff4 !important; 
     border: 1px solid #a7f3d0 !important; 
   }
-  #class-dashboard-dialog-content .text-green-500 { color: green !important; }
-  #class-dashboard-dialog-content .text-yellow-500 { color: #b45309 !important; } 
-  #class-dashboard-dialog-content .text-red-500 { color: red !important; }
+  #class-dashboard-dialog-content .text-green-500,
+  #class-dashboard-dialog-content .text-green-600 { color: green !important; }
+  #class-dashboard-dialog-content .text-yellow-500,
+  #class-dashboard-dialog-content .text-yellow-600 { color: #b45309 !important; } 
+  #class-dashboard-dialog-content .text-red-500,
+  #class-dashboard-dialog-content .text-red-600 { color: red !important; }
+  #class-dashboard-dialog-content .text-blue-500,
+  #class-dashboard-dialog-content .text-blue-600 { color: #2b6cb0 !important; }
 
 
   .dashboard-print-header { 
@@ -335,13 +348,6 @@ body {
   #class-dashboard-dialog-content > button[aria-label="Close"], 
   #class-dashboard-dialog-content .dialog-footer-print-hide { 
       display: none !important;
-  }
-
-  /* Print styles for content previously in ScrollArea (now directly in DialogContent) */
-  #class-dashboard-dialog-content > .flex-1.min-h-0.min-w-0.overflow-y-auto.overflow-x-auto.p-6.space-y-6 { /* Target the main content div */
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
   }
 
 
@@ -379,3 +385,6 @@ body {
 
     
 
+
+
+    
