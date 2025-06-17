@@ -7,14 +7,14 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogHeader as ShadcnDialogHeader,
-  DialogFooter as ShadcnDialogFooter,
-  DialogTitle as ShadcnDialogTitle,
+  DialogHeader as ShadcnDialogHeader, // Renamed to avoid conflict
+  DialogFooter as ShadcnDialogFooter, // Renamed to avoid conflict
+  DialogTitle as ShadcnDialogTitle,   // Renamed to avoid conflict
   DialogClose,
-  DialogDescription as ShadcnDialogDescription,
+  DialogDescription as ShadcnDialogDescription, // Renamed to avoid conflict
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader as ShadcnUITableHeader, TableRow } from '@/components/ui/table'; // Renamed TableHeader import
+import { Table, TableBody, TableCell, TableHead, TableHeader as ShadcnUITableHeader, TableRow } from '@/components/ui/table';
 import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
@@ -261,13 +261,13 @@ export default function ClassPerformanceDashboard({
         <CardContent className="pt-4 space-y-3 text-sm text-accent-foreground">
           {overallAssessment && overallAssessment.trim() !== '' && (
             <div>
-              <h4 className="font-semibold text-green-600 dark:text-green-400">Overall Assessment:</h4>
+              <h4 className="font-semibold text-green-500 dark:text-green-400">Overall Assessment:</h4>
               <p className="pl-2 whitespace-pre-wrap">{overallAssessment}</p>
             </div>
           )}
           {strengths && strengths.length > 0 && strengths.some(s => s.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-green-600 dark:text-green-400">Key Strengths:</h4>
+              <h4 className="font-semibold text-green-500 dark:text-green-400">Key Strengths:</h4>
               <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {strengths.filter(s => s.trim() !== '').map((s, i) => <li key={`strength-${i}`}>{s}</li>)}
               </ul>
@@ -275,7 +275,7 @@ export default function ClassPerformanceDashboard({
           )}
           {areasForConcern && areasForConcern.length > 0 && areasForConcern.some(a => a.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-yellow-600 dark:text-yellow-400">Areas for Concern:</h4>
+              <h4 className="font-semibold text-yellow-500 dark:text-yellow-400">Areas for Concern:</h4>
               <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {areasForConcern.filter(a => a.trim() !== '').map((a, i) => <li key={`concern-${i}`}>{a}</li>)}
               </ul>
@@ -283,7 +283,7 @@ export default function ClassPerformanceDashboard({
           )}
           {actionableAdvice && actionableAdvice.length > 0 && actionableAdvice.some(ad => ad.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-blue-600 dark:text-blue-400">Actionable Advice for Teacher:</h4>
+              <h4 className="font-semibold text-blue-500 dark:text-blue-400">Actionable Advice for Teacher:</h4>
               <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {actionableAdvice.filter(adv => adv.trim() !== '').map((adv, i) => <li key={`advice-${i}`}>{adv}</li>)}
               </ul>
@@ -302,7 +302,7 @@ export default function ClassPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="class-dashboard-dialog-content"
-        className="max-w-4xl w-[90vw] max-h-[calc(100dvh-8rem)] flex flex-col"
+        className="max-w-4xl w-[90vw] h-[90vh] flex flex-col overflow-hidden"
       >
         <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
           <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
@@ -319,7 +319,7 @@ export default function ClassPerformanceDashboard({
             <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
         </div>
 
-        <div className="flex-1 min-h-0 min-w-0 p-6 space-y-6"> {/* Main content wrapper */}
+        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto p-6 space-y-6">
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
                 <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
@@ -503,7 +503,7 @@ export default function ClassPerformanceDashboard({
   );
 }
     
-
     
+
 
 

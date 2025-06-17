@@ -140,11 +140,6 @@ body {
     display: none; 
   }
 
-  /* Force scroll for class dashboard dialog content on screen */
-  #class-dashboard-dialog-content {
-    overflow-y: auto !important;
-    overflow-x: auto !important;
-  }
 }
 
 
@@ -343,9 +338,7 @@ body {
   }
 
   /* Print styles for content previously in ScrollArea (now directly in DialogContent) */
-  /* No specific rules needed for a removed ScrollArea */
-  /* Ensure DialogContent itself expands for print */
-  #class-dashboard-dialog-content > .p-6.space-y-6 { /* Target the main content div */
+  #class-dashboard-dialog-content > .flex-1.min-h-0.min-w-0.overflow-y-auto.overflow-x-auto.p-6.space-y-6 { /* Target the main content div */
     overflow: visible !important;
     height: auto !important;
     max-height: none !important;
@@ -385,3 +378,4 @@ body {
 
 
     
+
