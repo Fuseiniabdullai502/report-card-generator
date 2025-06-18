@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ReportDataSchema, type ReportData, type SubjectEntry } from '@/lib/schemas';
@@ -26,6 +27,8 @@ interface ReportFormProps {
   initialData?: Partial<ReportData>;
   reportPrintListForHistory?: ReportData[];
 }
+
+const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 
 const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
@@ -137,14 +140,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
 
-
-  const studentNameHistory = React.useMemo(() => {
-    if (!reportPrintListForHistory) return [];
-    const names = reportPrintListForHistory.map(report => report.studentName).filter(Boolean);
-    return [...new Set(names)];
-  }, [reportPrintListForHistory]);
-
-
   const form = useForm<ReportData>({
     resolver: zodResolver(ReportDataSchema),
     defaultValues: {
@@ -197,6 +192,60 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const watchedClassName = form.watch('className');
   const watchedHobbies = form.watch('hobbies') || [];
   const watchedSubjects = form.watch('subjects');
+  const watchedStudentName = form.watch('studentName');
+
+
+  // Update studentNameHistory to include names from localStorage
+  const studentNameHistory = React.useMemo(() => {
+    const namesFromList = reportPrintListForHistory?.map(report => report.studentName).filter(Boolean) || [];
+    let namesFromStorage: string[] = [];
+    if (typeof window !== 'undefined') { 
+      try {
+        const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
+        if (storedProfilesRaw) {
+          const profiles: Record<string, { studentName: string }> = JSON.parse(storedProfilesRaw);
+          namesFromStorage = Object.values(profiles).map(p => p.studentName); // Get actual names
+        }
+      } catch (e) {
+        console.error("Error reading student names from localStorage for history:", e);
+      }
+    }
+    return [...new Set([...namesFromList, ...namesFromStorage])];
+  }, [reportPrintListForHistory]);
+
+  // Effect for pre-filling student photo
+  useEffect(() => {
+    if (
+      (watchedAcademicTerm === 'Second Term' || watchedAcademicTerm === 'Third Term') &&
+      watchedStudentName &&
+      !form.getValues('studentPhotoDataUri') 
+    ) {
+      if (typeof window !== 'undefined') {
+        try {
+          const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
+          if (storedProfilesRaw) {
+            const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string }> = JSON.parse(storedProfilesRaw);
+            
+            // Find profile by studentName. For more accuracy, one might use a composite key (name + class) if stored that way.
+            const studentProfile = Object.values(profiles).find(p => p.studentName === watchedStudentName);
+
+            if (studentProfile && studentProfile.studentPhotoDataUri) {
+              // Optional: Could add a check here: studentProfile.className === form.getValues('className')
+              form.setValue('studentPhotoDataUri', studentProfile.studentPhotoDataUri, { shouldDirty: true });
+              toast({
+                title: "Student Photo Pre-filled",
+                description: `Photo for ${watchedStudentName} has been loaded from First Term data.`,
+                variant: "default",
+                duration: 3000,
+              });
+            }
+          }
+        } catch (e) {
+          console.error("Error reading student profiles from localStorage for pre-fill:", e);
+        }
+      }
+    }
+  }, [watchedStudentName, watchedAcademicTerm, form, toast]);
 
 
   const isPromotionStatusApplicable = React.useMemo(() => {
@@ -227,7 +276,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         instructorContact: initialData.instructorContact || '',
         subjects: initialData.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
         studentEntryNumber: initialData.studentEntryNumber || undefined,
-        promotionStatus: initialData.promotionStatus || undefined, // Keep initial if set
+        promotionStatus: initialData.promotionStatus || undefined, 
         studentPhotoDataUri: initialData.studentPhotoDataUri || undefined,
         headMasterSignatureDataUri: initialData.headMasterSignatureDataUri || undefined,
       });
@@ -273,9 +322,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
           form.setValue('promotionStatus', 'Repeated', { shouldDirty: true, shouldValidate: true });
         }
       }
-      // If average is null (e.g., no marks yet), do nothing, allowing manual selection or existing value.
     }
-  }, [isPromotionStatusApplicable, watchedSubjects, form.setValue]);
+  }, [isPromotionStatusApplicable, watchedSubjects, form]);
 
 
   const handleAddCustomSubjectToListAndForm = () => {
@@ -344,7 +392,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     }
 
     if (!predefinedHobbiesList.includes(newHobby) && !customHobbies.includes(newHobby)) {
-      setCustomHobbies(prev => [...prev, ...newHobby]);
+      setCustomHobbies(prev => [...prev, newHobby]);
     }
     toast({
       title: "Hobby Added",

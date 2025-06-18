@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
 
+const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 
 // Helper function to calculate final mark for a single subject
 function calculateSubjectFinalMark(subject: SubjectEntry): number {
@@ -125,6 +126,32 @@ function AppContent() {
         studentEntryNumber: nextStudentEntryNumber,
       };
 
+      // Save student profile to localStorage if it's First Term
+      if (reportWithEntryNumber.academicTerm === 'First Term' && reportWithEntryNumber.studentName) {
+        try {
+          const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
+          const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
+          
+          // Using studentName as the primary key for simplicity. Could be composite (name + class) for more uniqueness.
+          const profileKey = reportWithEntryNumber.studentName; 
+          
+          profiles[profileKey] = {
+            studentName: reportWithEntryNumber.studentName,
+            studentPhotoDataUri: reportWithEntryNumber.studentPhotoDataUri,
+            className: reportWithEntryNumber.className 
+          };
+          localStorage.setItem(STUDENT_PROFILES_STORAGE_KEY, JSON.stringify(profiles));
+        } catch (e) {
+          console.error("Error saving student profile to localStorage:", e);
+          toast({
+            title: "Storage Error",
+            description: "Could not save student profile data for pre-filling.",
+            variant: "destructive",
+          });
+        }
+      }
+
+
       const newList = [...reportPrintList, reportWithEntryNumber];
       calculateAndSetRanks(newList);
       setCurrentPreviewIndex(newList.length - 1); 
@@ -163,7 +190,7 @@ function AppContent() {
                          : newFormBase.totalSchoolDays,
         headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
         instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact,
-        studentName: '',
+        studentName: '', // Clear student-specific fields for the next entry
         daysAttended: null,
         parentEmail: '',
         parentPhoneNumber: '',
@@ -178,7 +205,7 @@ function AppContent() {
         id: undefined,
         overallAverage: undefined,
         rank: undefined,
-        studentPhotoDataUri: undefined,
+        studentPhotoDataUri: undefined, // Clear photo for next entry; pre-fill logic in form will handle it
       };
       setCurrentEditingReport(newCurrentEditingReport);
 
@@ -302,7 +329,7 @@ function AppContent() {
           />
           <Button onClick={handleAddToList} className="w-full" variant="default">
             <ListPlus className="mr-2 h-4 w-4" />
-            Add Current Report to Print &amp; Rank List
+            Add Current Report to Print & Rank List
           </Button>
         </section>
 
@@ -403,7 +430,7 @@ function AppContent() {
             isOpen={isClassDashboardOpen}
             onOpenChange={setIsClassDashboardOpen}
             reports={reportPrintList}
-            className={currentClassNameForDashboard}
+            classNameProp={currentClassNameForDashboard}
             academicTerm={currentAcademicTermForDashboard}
         />
     )}
