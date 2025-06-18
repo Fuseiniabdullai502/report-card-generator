@@ -1,4 +1,3 @@
-
 'use client';
 
 import { ReportDataSchema, type ReportData, type SubjectEntry } from '@/lib/schemas';
@@ -73,6 +72,49 @@ const reportTemplateOptions = [
     { id: 'academicRed', name: 'Academic Red' },
     { id: 'creativeTeal', name: 'Creative Teal' },
 ];
+
+// Helper function to calculate final mark for a single subject from form data
+function calculateSubjectFinalMarkForForm(subject: SubjectEntry): number | null {
+  const caMarkInput = subject.continuousAssessment;
+  const examMarkInput = subject.examinationMark;
+
+  if ((caMarkInput === null || caMarkInput === undefined || Number.isNaN(Number(caMarkInput))) && 
+      (examMarkInput === null || examMarkInput === undefined || Number.isNaN(Number(examMarkInput)))) {
+    return null; // No valid marks, cannot calculate
+  }
+
+  const caVal = (caMarkInput !== null && caMarkInput !== undefined && !Number.isNaN(Number(caMarkInput))) ? Number(caMarkInput) : 0;
+  const examVal = (examMarkInput !== null && examMarkInput !== undefined && !Number.isNaN(Number(examMarkInput))) ? Number(examMarkInput) : 0;
+
+  const scaledCaMark = (caVal / 60) * 40;
+  const scaledExamMark = (examVal / 100) * 60;
+  
+  let finalPercentageMark = scaledCaMark + scaledExamMark;
+  finalPercentageMark = Math.min(Math.max(finalPercentageMark, 0), 100); // Ensure it's between 0 and 100
+  return parseFloat(finalPercentageMark.toFixed(1));
+}
+
+// Helper function to calculate overall average from form data
+function calculateOverallAverageForForm(subjects: SubjectEntry[]): number | null {
+  if (!subjects || subjects.length === 0) return null;
+
+  let totalScore = 0;
+  let validSubjectCount = 0;
+
+  subjects.forEach(subject => {
+    if (subject.subjectName && subject.subjectName.trim() !== '') {
+      const finalMark = calculateSubjectFinalMarkForForm(subject);
+      if (finalMark !== null) {
+        totalScore += finalMark;
+        validSubjectCount++;
+      }
+    }
+  });
+
+  if (validSubjectCount === 0) return null;
+  return parseFloat((totalScore / validSubjectCount).toFixed(2));
+}
+
 
 export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
@@ -154,6 +196,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const watchedAcademicTerm = form.watch('academicTerm');
   const watchedClassName = form.watch('className');
   const watchedHobbies = form.watch('hobbies') || [];
+  const watchedSubjects = form.watch('subjects');
 
 
   const isPromotionStatusApplicable = React.useMemo(() => {
@@ -184,7 +227,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         instructorContact: initialData.instructorContact || '',
         subjects: initialData.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
         studentEntryNumber: initialData.studentEntryNumber || undefined,
-        promotionStatus: initialData.promotionStatus || undefined,
+        promotionStatus: initialData.promotionStatus || undefined, // Keep initial if set
         studentPhotoDataUri: initialData.studentPhotoDataUri || undefined,
         headMasterSignatureDataUri: initialData.headMasterSignatureDataUri || undefined,
       });
@@ -214,9 +257,25 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   useEffect(() => {
     if (!isPromotionStatusApplicable) {
-      form.setValue('promotionStatus', undefined);
+      form.setValue('promotionStatus', undefined, { shouldDirty: true, shouldValidate: true });
     }
   }, [isPromotionStatusApplicable, form]);
+
+  // Effect to automatically set promotion status for Third Term
+  useEffect(() => {
+    if (isPromotionStatusApplicable) {
+      const currentOverallAverage = calculateOverallAverageForForm(watchedSubjects);
+
+      if (currentOverallAverage !== null) {
+        if (currentOverallAverage >= 40) {
+          form.setValue('promotionStatus', 'Promoted', { shouldDirty: true, shouldValidate: true });
+        } else {
+          form.setValue('promotionStatus', 'Repeated', { shouldDirty: true, shouldValidate: true });
+        }
+      }
+      // If average is null (e.g., no marks yet), do nothing, allowing manual selection or existing value.
+    }
+  }, [isPromotionStatusApplicable, watchedSubjects, form.setValue]);
 
 
   const handleAddCustomSubjectToListAndForm = () => {
@@ -895,7 +954,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                             type="file"
                             id="headMasterSignatureUpload"
                             className="hidden"
-                            accept="image/png, image/jpeg, image/svg+xml"
+                            accept="image/png, image/jpeg, image/gif, image/svg+xml"
                             onChange={(e) => handleImageUpload(e, 'headMasterSignatureDataUri')}
                           />
                           <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('headMasterSignatureUpload')?.click()}>
