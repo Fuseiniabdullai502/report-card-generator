@@ -167,7 +167,12 @@ export default function ClassPerformanceDashboard({
           }
         } catch (error) {
           setAiAdvice(null);
-          toast({ title: "AI Insights Request Failed", description: "Could not fetch AI insights due to a client-side error before or after the AI call.", variant: "destructive" });
+          console.error("Client-side error during AI insights fetch transition:", error);
+          toast({ 
+            title: "AI Insights Request Failed", 
+            description: `A client-side error occurred: ${error instanceof Error ? error.message : String(error)}. Please check the browser console.`, 
+            variant: "destructive" 
+          });
         }
       });
     } else if (isOpen && reports.length === 0) {
@@ -230,11 +235,22 @@ export default function ClassPerformanceDashboard({
     if (!aiAdvice && !isLoadingAi && classStats && reports.length > 0) {
       return (
         <CardContent className="pt-4 text-accent-foreground/90">
-          <div className="flex items-start">
-             <AlertTriangle className="mr-2 h-5 w-5 text-destructive shrink-0" />
-            <span className="text-sm">
-                AI insights could not be loaded. This might be due to a configuration issue or a problem reaching the AI service. Please check server console logs for detailed errors if the issue persists.
-            </span>
+          <div className="flex items-start p-4 bg-destructive/10 border border-destructive/30 rounded-md">
+            <AlertTriangle className="mr-3 h-6 w-6 text-destructive shrink-0 mt-1" />
+            <div>
+              <p className="font-semibold text-destructive">AI Insights Unavailable</p>
+              <p className="text-sm mt-1">
+                The AI insights could not be generated. This is often due to:
+              </p>
+              <ul className="list-disc list-inside text-sm mt-1 pl-2 space-y-0.5">
+                <li>Missing or invalid <code className="bg-destructive/20 px-1 rounded text-xs font-mono">GOOGLE_API_KEY</code> in your environment setup.</li>
+                <li>Temporary issues with the AI service.</li>
+                <li>The provided class data might be insufficient or in an unexpected format for the AI.</li>
+              </ul>
+              <p className="text-sm mt-2">
+                <strong>Please check your server console logs for specific error messages.</strong> These logs provide crucial details for diagnosing the problem.
+              </p>
+            </div>
           </div>
         </CardContent>
       );
@@ -249,8 +265,8 @@ export default function ClassPerformanceDashboard({
        if (!hasContent) {
         return (
             <CardContent className="pt-4 text-accent-foreground/80">
-                 <div className="flex items-center">
-                    <Info className="mr-2 h-5 w-5 text-blue-400" />
+                 <div className="flex items-center p-3 bg-blue-500/10 border border-blue-500/30 rounded-md">
+                    <Info className="mr-2 h-5 w-5 text-blue-400 shrink-0" />
                     <span className="text-sm">AI analysis complete. No specific points were raised by the AI for the provided data.</span>
                 </div>
             </CardContent>
@@ -261,13 +277,13 @@ export default function ClassPerformanceDashboard({
         <CardContent className="pt-4 space-y-3 text-sm text-accent-foreground">
           {overallAssessment && overallAssessment.trim() !== '' && (
             <div>
-              <h4 className="font-semibold text-green-600 dark:text-green-400">Overall Assessment:</h4>
+              <h4 className="font-semibold text-green-500 dark:text-green-400">Overall Assessment:</h4>
               <p className="pl-2 whitespace-pre-wrap">{overallAssessment}</p>
             </div>
           )}
           {strengths && strengths.length > 0 && strengths.some(s => s.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-green-600 dark:text-green-400">Key Strengths:</h4>
+              <h4 className="font-semibold text-green-500 dark:text-green-400">Key Strengths:</h4>
               <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {strengths.filter(s => s.trim() !== '').map((s, i) => <li key={`strength-${i}`}>{s}</li>)}
               </ul>
@@ -275,7 +291,7 @@ export default function ClassPerformanceDashboard({
           )}
           {areasForConcern && areasForConcern.length > 0 && areasForConcern.some(a => a.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-yellow-600 dark:text-yellow-400">Areas for Concern:</h4>
+              <h4 className="font-semibold text-yellow-500 dark:text-yellow-400">Areas for Concern:</h4>
               <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {areasForConcern.filter(a => a.trim() !== '').map((a, i) => <li key={`concern-${i}`}>{a}</li>)}
               </ul>
@@ -283,7 +299,7 @@ export default function ClassPerformanceDashboard({
           )}
           {actionableAdvice && actionableAdvice.length > 0 && actionableAdvice.some(ad => ad.trim() !== '') && (
             <div>
-              <h4 className="font-semibold text-blue-600 dark:text-blue-400">Actionable Advice for Teacher:</h4>
+              <h4 className="font-semibold text-blue-500 dark:text-blue-400">Actionable Advice for Teacher:</h4>
               <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {actionableAdvice.filter(adv => adv.trim() !== '').map((adv, i) => <li key={`advice-${i}`}>{adv}</li>)}
               </ul>
