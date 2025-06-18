@@ -13,9 +13,10 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSep
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction }from '@/app/actions';
-import React, {useState, useTransition, useEffect}from 'react';
+import type { GenerateReportInsightsInput, GenerateReportInsightsOutput } from '@/ai/flows/generate-performance-summary';
+import React, {useState, useTransition, useEffect, useMemo}from 'react';
 import NextImage from 'next/image';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, LayoutTemplate } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, LayoutTemplate, History } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -139,6 +140,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [customHobbyInputValue, setCustomHobbyInputValue] = useState('');
 
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
+  const [comparisonTermSelection, setComparisonTermSelection] = useState<string>('none');
+
 
   const form = useForm<ReportData>({
     resolver: zodResolver(ReportDataSchema),
@@ -226,11 +229,9 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
           if (storedProfilesRaw) {
             const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string }> = JSON.parse(storedProfilesRaw);
             
-            // Find profile by studentName. For more accuracy, one might use a composite key (name + class) if stored that way.
             const studentProfile = Object.values(profiles).find(p => p.studentName === watchedStudentName);
 
             if (studentProfile && studentProfile.studentPhotoDataUri) {
-              // Optional: Could add a check here: studentProfile.className === form.getValues('className')
               form.setValue('studentPhotoDataUri', studentProfile.studentPhotoDataUri, { shouldDirty: true });
               toast({
                 title: "Student Photo Pre-filled",
@@ -281,6 +282,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         headMasterSignatureDataUri: initialData.headMasterSignatureDataUri || undefined,
       });
       setCurrentVisibleSubjectIndex(0);
+      setComparisonTermSelection('none'); // Reset comparison on new initial data
 
       if (initialData.className && !classLevels.includes(initialData.className) && !customClassNames.includes(initialData.className)) {
         setCustomClassNames(prev => [...prev, initialData.className!]);
@@ -404,22 +406,64 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
 
   const handleGenerateAiReportInsights = async () => {
-    const { studentName, className, subjects, daysAttended, totalSchoolDays } = form.getValues();
-    if (!studentName || !className || !subjects || subjects.some(s => !s.subjectName)) {
+    const formValues = form.getValues();
+    const { studentName, className, subjects, daysAttended, totalSchoolDays, academicTerm: currentAcademicTerm } = formValues;
+
+    if (!studentName || !className || !currentAcademicTerm || !subjects || subjects.some(s => !s.subjectName)) {
       toast({
         title: "Missing Information",
-        description: "Please fill in student name, class name, and ensure all subjects have names before generating AI insights.",
+        description: "Please fill in student name, class name, academic term, and ensure all subjects have names before generating AI insights.",
         variant: "destructive",
       });
-      form.trigger(['studentName', 'className', 'subjects']);
+      form.trigger(['studentName', 'className', 'academicTerm', 'subjects']);
       return;
     }
 
+    let previousTermsDataForAI: GenerateReportInsightsInput['previousTermsData'] = [];
+
+    if (comparisonTermSelection !== 'none' && reportPrintListForHistory) {
+      const targetTerms: string[] = [];
+      if (comparisonTermSelection === 'term1') targetTerms.push('First Term');
+      if (comparisonTermSelection === 'term2') targetTerms.push('Second Term');
+      if (comparisonTermSelection === 'term1_and_term2') {
+        targetTerms.push('First Term');
+        targetTerms.push('Second Term');
+      }
+      
+      previousTermsDataForAI = reportPrintListForHistory
+        .filter(report => 
+          report.studentName === studentName && 
+          report.academicTerm && 
+          targetTerms.includes(report.academicTerm) &&
+          report.academicTerm !== currentAcademicTerm // Ensure not comparing with current term itself
+        )
+        .map(report => ({
+          termName: report.academicTerm!,
+          subjects: report.subjects.map(s => ({
+            subjectName: s.subjectName,
+            continuousAssessment: s.continuousAssessment === undefined || s.continuousAssessment === null ? null : Number(s.continuousAssessment),
+            examinationMark: s.examinationMark === undefined || s.examinationMark === null ? null : Number(s.examinationMark),
+          })),
+          overallAverage: report.overallAverage === undefined || report.overallAverage === null ? null : Number(report.overallAverage),
+        }));
+
+      if (previousTermsDataForAI.length === 0 && comparisonTermSelection !== 'none') {
+        toast({
+            title: "No Comparison Data",
+            description: `Could not find previous term data for ${studentName} for the selected comparison term(s) in the current session's history. AI insights will be generated without comparison.`,
+            variant: "default",
+            duration: 5000,
+          });
+      }
+    }
+
+
     startReportInsightsAiTransition(async () => {
       try {
-        const result = await getAiReportInsightsAction({
+        const aiInput: GenerateReportInsightsInput = {
           studentName,
           className,
+          currentAcademicTerm,
           daysAttended,
           totalSchoolDays,
           subjects: subjects.map(s => ({
@@ -427,7 +471,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             continuousAssessment: s.continuousAssessment === undefined || s.continuousAssessment === null ? null : Number(s.continuousAssessment),
             examinationMark: s.examinationMark === undefined || s.examinationMark === null ? null : Number(s.examinationMark),
           })),
-        });
+          previousTermsData: previousTermsDataForAI!.length > 0 ? previousTermsDataForAI : undefined,
+        };
+        
+        const result = await getAiReportInsightsAction(aiInput);
 
         if (result.success && result.insights) {
           form.setValue('performanceSummary', result.insights.performanceSummary);
@@ -640,6 +687,31 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       }
     }
   };
+  
+  const comparisonOptions = useMemo(() => {
+    const options = [{ label: "No Comparison", value: "none" }];
+    if (watchedAcademicTerm === "Second Term") {
+      options.push({ label: "Compare with First Term", value: "term1" });
+    } else if (watchedAcademicTerm === "Third Term") {
+      options.push({ label: "Compare with First Term", value: "term1" });
+      options.push({ label: "Compare with Second Term", value: "term2" });
+      options.push({ label: "Compare with Term 1 & Term 2", value: "term1_and_term2" });
+    }
+    return options;
+  }, [watchedAcademicTerm]);
+
+  // Reset comparison selection if academic term changes to one where current selection is invalid
+  useEffect(() => {
+    if (watchedAcademicTerm === "First Term" && comparisonTermSelection !== "none") {
+      setComparisonTermSelection("none");
+    }
+    if (watchedAcademicTerm === "Second Term" && comparisonTermSelection === "term2") {
+       setComparisonTermSelection("none"); // Can't compare Term 2 with Term 2
+    }
+     if (watchedAcademicTerm === "Second Term" && comparisonTermSelection === "term1_and_term2") {
+       setComparisonTermSelection("term1"); 
+    }
+  }, [watchedAcademicTerm, comparisonTermSelection]);
 
 
   return (
@@ -865,7 +937,17 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center"><Type className="mr-2 h-4 w-4" />Academic Term</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select 
+                        onValueChange={(value) => {
+                            field.onChange(value);
+                            // Reset comparison if term changes to something incompatible with current selection
+                            if (value === "First Term") setComparisonTermSelection("none");
+                            if (value === "Second Term" && (comparisonTermSelection === "term2" || comparisonTermSelection === "term1_and_term2")) {
+                                setComparisonTermSelection("term1");
+                            }
+                        }} 
+                        value={field.value || ''}
+                       >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select academic term" />
@@ -1212,24 +1294,48 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             <Separator />
 
             <section className="space-y-6">
-               <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4 flex justify-between items-center">
-                Overall Performance &amp; Feedback
-                <Button
-                    type="button"
-                    onClick={handleGenerateAiReportInsights}
-                    disabled={isReportInsightsAiLoading}
-                    variant="outline"
-                    size="sm"
-                    className="ml-auto"
-                >
-                    {isReportInsightsAiLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                    <Bot className="mr-2 h-4 w-4 animate-pulse" />
+               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 mb-4 gap-2">
+                <h3 className="text-lg font-medium text-primary">Overall Performance &amp; Feedback</h3>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                     {watchedAcademicTerm !== "First Term" && (
+                        <div className="w-full sm:w-auto">
+                            <Label htmlFor="comparisonTermSelect" className="text-xs text-muted-foreground mb-1 block">Compare With</Label>
+                            <Select
+                                value={comparisonTermSelection}
+                                onValueChange={setComparisonTermSelection}
+                                disabled={watchedAcademicTerm === "First Term"}
+                            >
+                                <SelectTrigger id="comparisonTermSelect" className="h-9 text-xs w-full sm:w-auto">
+                                <SelectValue placeholder="Select comparison term" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                {comparisonOptions.map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                    {opt.label}
+                                    </SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     )}
-                    Generate AI Insights
-                </Button>
-               </h3>
+                    <Button
+                        type="button"
+                        onClick={handleGenerateAiReportInsights}
+                        disabled={isReportInsightsAiLoading}
+                        variant="outline"
+                        size="sm"
+                        className="w-full sm:w-auto self-end sm:self-center"
+                        title="Generate insights on performance summary, strengths, and areas for improvement"
+                    >
+                        {isReportInsightsAiLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                        <Bot className="mr-2 h-4 w-4 animate-pulse" />
+                        )}
+                        Generate AI Insights
+                    </Button>
+                </div>
+               </div>
               <FormField
                 control={form.control}
                 name="performanceSummary"
@@ -1474,5 +1580,3 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
-
-    

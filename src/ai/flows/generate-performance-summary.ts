@@ -2,10 +2,11 @@
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow for generating a student's performance summary,
- * strengths, and areas for improvement based on their subject marks and attendance.
+ * strengths, and areas for improvement based on their subject marks, attendance, and optionally,
+ * performance from previous terms for comparison.
  *
- * - generateReportInsights - A function that takes student, class, attendance, and subject data
- *   and returns AI-generated insights.
+ * - generateReportInsights - A function that takes student, class, attendance, subject data,
+ *   and optional previous term data, then returns AI-generated insights.
  * - GenerateReportInsightsInput - The input type for the generateReportInsights function.
  * - GenerateReportInsightsOutput - The return type for the generateReportInsights function.
  */
@@ -20,13 +21,23 @@ const FlowSubjectEntrySchema = z.object({
   examinationMark: z.number().nullable().optional(),
 });
 
+// Define the schema for previous term performance data - NOT EXPORTED
+const PreviousTermPerformanceSchema = z.object({
+  termName: z.string().describe("The name of the previous academic term (e.g., 'First Term')."),
+  subjects: z.array(FlowSubjectEntrySchema).describe("An array of subjects with their marks for that term."),
+  overallAverage: z.number().nullable().optional().describe("The student's overall average for that term, if available."),
+  // Optionally, add daysAttended and totalSchoolDays for that term if needed for deeper comparison
+});
+
 // Define the Zod schema for the input - NOT EXPORTED
 const GenerateReportInsightsInputSchema = z.object({
   studentName: z.string().describe('The name of the student.'),
   className: z.string().describe('The name of the class.'),
-  daysAttended: z.number().nullable().optional().describe('Number of days the student attended school.'),
-  totalSchoolDays: z.number().nullable().optional().describe('Total number of school days in the term.'),
-  subjects: z.array(FlowSubjectEntrySchema).describe('An array of subjects with their marks. CA is out of 60, Exam is out of 100.'),
+  currentAcademicTerm: z.string().describe('The academic term for which this report is being generated (e.g., "Second Term").'),
+  daysAttended: z.number().nullable().optional().describe('Number of days the student attended school in the current term.'),
+  totalSchoolDays: z.number().nullable().optional().describe('Total number of school days in the current term.'),
+  subjects: z.array(FlowSubjectEntrySchema).describe('An array of subjects with their marks for the current term. CA is out of 60, Exam is out of 100.'),
+  previousTermsData: z.array(PreviousTermPerformanceSchema).optional().describe("Performance data from previous academic terms for comparison."),
 });
 
 export type GenerateReportInsightsInput = z.infer<
@@ -37,13 +48,13 @@ export type GenerateReportInsightsInput = z.infer<
 const GenerateReportInsightsOutputSchema = z.object({
   performanceSummary: z
     .string()
-    .describe('The AI-generated overall performance summary for the student.'),
+    .describe('The AI-generated overall performance summary for the student, including comparison if previous data was provided.'),
   strengths: z
     .string()
-    .describe("The AI-generated list of the student's key strengths."),
+    .describe("The AI-generated list of the student's key strengths, considering progress or sustained performance."),
   areasForImprovement: z
     .string()
-    .describe('The AI-generated list of areas where the student can improve.'),
+    .describe('The AI-generated list of areas where the student can improve, considering any decline or persistent challenges.'),
 });
 
 export type GenerateReportInsightsOutput = z.infer<
@@ -60,20 +71,20 @@ const generateReportInsightsPrompt = ai.definePrompt({
   name: 'generateReportInsightsPrompt',
   input: {schema: GenerateReportInsightsInputSchema},
   output: {schema: GenerateReportInsightsOutputSchema},
-  prompt: `You are an academic advisor tasked with writing comprehensive insights for a student's report card.
-Analyze the student's performance based on their subject marks and attendance data provided below.
+  prompt: `You are an academic advisor tasked with writing comprehensive insights for a student's report card for the {{{currentAcademicTerm}}}.
+Analyze the student's performance based on their subject marks and attendance data provided below for the current term.
 
 Student Name: {{{studentName}}}
 Class Name: {{{className}}}
 
-Attendance:
+Current Term ({{{currentAcademicTerm}}}) Attendance:
 {{#if daysAttended}}
 Days Attended: {{{daysAttended}}}{{#if totalSchoolDays}} out of {{{totalSchoolDays}}}{{/if}} days.
 {{else}}
-Attendance data not available.
+Attendance data not available for the current term.
 {{/if}}
 
-Subject Performance Details:
+Current Term ({{{currentAcademicTerm}}}) Subject Performance Details:
 {{#each subjects}}
 - Subject: {{subjectName}}
   Continuous Assessment (CA): {{#if continuousAssessment}}{{continuousAssessment}} out of 60{{else}}N/A{{/if}}
@@ -94,12 +105,33 @@ Important Grading Information:
   - 40-49: D (Unsatisfactory)
   - Below 40: F (Fail)
 
-Based on all this information (subject performance, calculated final scores, grades, AND attendance):
-1.  Write a concise and constructive **overall performance summary**.
-2.  Identify and list the student's key **strengths**. These could include subjects where they excelled, consistent high performance, positive learning attitudes suggested by marks, or positive aspects reflected by good attendance (if applicable).
-3.  Identify and list **areas for improvement**. These could include subjects that require more attention, inconsistent performance, or areas where poor attendance (if applicable) might be a factor or concern.
+{{#if previousTermsData.length}}
+Previous Term Performance for Comparison:
+{{#each previousTermsData}}
+- {{termName}}:
+  {{#if overallAverage}}Overall Average for {{termName}}: {{overallAverage}}%{{else}}Overall Average for {{termName}}: N/A{{/if}}
+  Subject Performance in {{termName}}:
+  {{#each subjects}}
+  - {{subjectName}}: {{#if continuousAssessment}}CA: {{continuousAssessment}}/60{{else}}CA: N/A{{/if}}, {{#if examinationMark}}Exam: {{examinationMark}}/100{{else}}Exam: N/A{{/if}} (Final Score for this subject in {{../termName}} would be calculated using the grading info above)
+  {{/each}}
+{{/each}}
+
+Based on ALL available information (current term performance, attendance, AND comparative analysis if previous term data is provided):
+1.  Write a concise and constructive **overall performance summary**. If previous term data is available, explicitly compare the student's current performance with their performance in the previous term(s). Highlight trends such as improvement, decline, or consistency in specific subjects or overall.
+2.  Identify and list the student's key **strengths**. If previous term data is available, consider progress or sustained high performance.
+3.  Identify and list **areas for improvement**. If previous term data is available, consider any decline in performance or persistent challenges.
 
 Generate only the text for these three sections. Ensure the tone is balanced and suitable for a student report card.
+{{else}}
+(No previous term data was provided for comparison.)
+
+Based on the current term's information (subject performance and attendance):
+1.  Write a concise and constructive **overall performance summary**.
+2.  Identify and list the student's key **strengths**.
+3.  Identify and list **areas for improvement**.
+
+Generate only the text for these three sections. Ensure the tone is balanced and suitable for a student report card.
+{{/if}}
 `,
 });
 
@@ -117,4 +149,3 @@ const generateReportInsightsFlow = ai.defineFlow(
     return output;
   }
 );
-

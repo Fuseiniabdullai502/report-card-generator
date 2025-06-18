@@ -44,18 +44,29 @@ export async function getAiFeedbackAction(
   }
 }
 
+// Schema for subject entries in actions
 const ActionFlowSubjectEntrySchema = z.object({
   subjectName: z.string(),
   continuousAssessment: z.number().nullable().optional(),
   examinationMark: z.number().nullable().optional(),
 });
 
+// Schema for previous term performance data in actions
+const ActionPreviousTermPerformanceSchema = z.object({
+  termName: z.string(),
+  subjects: z.array(ActionFlowSubjectEntrySchema),
+  overallAverage: z.number().nullable().optional(),
+});
+
+// Schema for AI Report Insights generation in actions
 const ActionGenerateReportInsightsInputSchema = z.object({
   studentName: z.string().describe('The name of the student.'),
   className: z.string().describe('The name of the class.'),
+  currentAcademicTerm: z.string().describe('The academic term for the report.'),
   daysAttended: z.number().nullable().optional().describe('Number of days the student attended school.'),
   totalSchoolDays: z.number().nullable().optional().describe('Total number of school days in the term.'),
-  subjects: z.array(ActionFlowSubjectEntrySchema).describe('An array of subjects with their marks. CA is out of 60, Exam is out of 100.'),
+  subjects: z.array(ActionFlowSubjectEntrySchema).describe('An array of subjects with their marks for the current term. CA is out of 60, Exam is out of 100.'),
+  previousTermsData: z.array(ActionPreviousTermPerformanceSchema).optional().describe("Performance data from previous terms for comparison."),
 });
 
 
