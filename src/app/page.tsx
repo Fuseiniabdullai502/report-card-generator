@@ -156,13 +156,14 @@ function AppContent() {
       calculateAndSetRanks(newList);
       setCurrentPreviewIndex(newList.length - 1); 
 
-      if (reportPrintList.length === 0) {
+      if (reportPrintList.length === 0) { // This condition means it's the first report being added
         setSessionDefaults({
           schoolName: currentEditingReport.schoolName,
           schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
           className: currentEditingReport.className,
           academicYear: currentEditingReport.academicYear,
           academicTerm: currentEditingReport.academicTerm,
+          selectedTemplateId: currentEditingReport.selectedTemplateId, // Capture template
           totalSchoolDays: currentEditingReport.totalSchoolDays,
           headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
           instructorContact: currentEditingReport.instructorContact,
@@ -182,14 +183,15 @@ function AppContent() {
         schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
         schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBase.schoolLogoDataUri,
         className: sessionDefaults.className ?? newFormBase.className,
-        gender: newFormBase.gender,
-        academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear,
-        academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm,
+        gender: newFormBase.gender, // Always reset gender for new student
+        academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear, // Persist
+        academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm, // Persist
+        selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBase.selectedTemplateId, // Persist
         totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null
                          ? sessionDefaults.totalSchoolDays
-                         : newFormBase.totalSchoolDays,
-        headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
-        instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact,
+                         : newFormBase.totalSchoolDays, // Persist
+        headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri, // Persist
+        instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact, // Persist
         studentName: '', // Clear student-specific fields for the next entry
         daysAttended: null,
         parentEmail: '',
@@ -222,7 +224,7 @@ function AppContent() {
     setReportPrintList([]);
     setNextStudentEntryNumber(1);
     setCurrentPreviewIndex(0);
-    setSessionDefaults({});
+    setSessionDefaults({}); // Clear all session defaults
     toast({
       title: "Print List Cleared",
       description: "All reports have been removed and ranking reset. Session defaults cleared.",
