@@ -6,16 +6,17 @@ import ReportForm from '@/components/report-form';
 import ReportPreview from '@/components/report-preview';
 import ReportActions from '@/components/report-actions';
 import ClassPerformanceDashboard from '@/components/class-dashboard';
-import SchoolPerformanceDashboard from '@/components/school-dashboard'; // Import new dashboard
+import SchoolPerformanceDashboard from '@/components/school-dashboard';
+import ImportStudentsDialog from '@/components/import-students-dialog'; // New import
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building } from 'lucide-react'; // Added Building icon
+import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload } from 'lucide-react'; // Added Upload icon
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
 
-const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
+export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1'; // Export for use in dialog
 
 // Helper function to calculate final mark for a single subject
 function calculateSubjectFinalMark(subject: SubjectEntry): number {
@@ -55,7 +56,8 @@ function AppContent() {
 
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState<number>(0);
   const [isClassDashboardOpen, setIsClassDashboardOpen] = useState(false);
-  const [isSchoolDashboardOpen, setIsSchoolDashboardOpen] = useState(false); // State for school dashboard
+  const [isSchoolDashboardOpen, setIsSchoolDashboardOpen] = useState(false);
+  const [isImportStudentsDialogOpen, setIsImportStudentsDialogOpen] = useState(false);
 
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
@@ -128,18 +130,18 @@ function AppContent() {
         studentEntryNumber: nextStudentEntryNumber,
       };
 
-      // Save student profile to localStorage if it's First Term
       if (reportWithEntryNumber.academicTerm === 'First Term' && reportWithEntryNumber.studentName) {
         try {
           const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
-          const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
+          const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
           
           const profileKey = reportWithEntryNumber.studentName; 
           
           profiles[profileKey] = {
             studentName: reportWithEntryNumber.studentName,
             studentPhotoDataUri: reportWithEntryNumber.studentPhotoDataUri,
-            className: reportWithEntryNumber.className 
+            className: reportWithEntryNumber.className,
+            gender: reportWithEntryNumber.gender, // Save gender
           };
           localStorage.setItem(STUDENT_PROFILES_STORAGE_KEY, JSON.stringify(profiles));
         } catch (e) {
@@ -317,10 +319,102 @@ function AppContent() {
       if (uniqueTerms.size === 1) {
         return uniqueTerms.values().next().value;
       }
-      return "Multiple Terms Summary"; // Or a specific term if all reports are for one
+      return "Multiple Terms Summary"; 
     }
     return currentEditingReport.academicTerm || "Term Summary";
   }, [reportPrintList, currentEditingReport.academicTerm]);
+
+  const handleImportStudents = (selectedStudentNames: string[], destinationClass: string) => {
+    if (selectedStudentNames.length === 0 || !destinationClass) {
+      toast({ title: "Import Error", description: "No students selected or destination class missing.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
+      const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
+      
+      const importedReports: ReportData[] = [];
+      let currentImportEntryNumber = nextStudentEntryNumber;
+
+      selectedStudentNames.forEach(studentName => {
+        const profile = Object.values(profiles).find(p => p.studentName === studentName);
+        if (profile) {
+          const newFormBase = JSON.parse(JSON.stringify(defaultReportData));
+          const importedReport: ReportData = {
+            ...newFormBase,
+            id: `report-${Date.now()}-${Math.random()}-${studentName}`,
+            studentEntryNumber: currentImportEntryNumber++,
+            studentName: profile.studentName,
+            gender: profile.gender,
+            studentPhotoDataUri: profile.studentPhotoDataUri,
+            className: destinationClass, // Set to new class
+            // Use session defaults for school info, academic year/term, template
+            schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
+            schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBase.schoolLogoDataUri,
+            academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear,
+            academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm,
+            selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBase.selectedTemplateId,
+            totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null
+                             ? sessionDefaults.totalSchoolDays
+                             : newFormBase.totalSchoolDays,
+            headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
+            instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact,
+            // Reset performance fields
+            daysAttended: null,
+            parentEmail: '',
+            parentPhoneNumber: '',
+            performanceSummary: '',
+            strengths: '',
+            areasForImprovement: '',
+            hobbies: [],
+            teacherFeedback: '',
+            subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+            promotionStatus: undefined,
+            overallAverage: undefined,
+            rank: undefined,
+          };
+          importedReports.push(importedReport);
+        }
+      });
+
+      if (importedReports.length > 0) {
+        const newList = [...reportPrintList, ...importedReports];
+        calculateAndSetRanks(newList);
+        setCurrentPreviewIndex(newList.length - 1); // Preview the last imported student
+        setNextStudentEntryNumber(currentImportEntryNumber);
+        
+        toast({
+          title: "Students Imported",
+          description: `${importedReports.length} student(s) imported to ${destinationClass} and added to the print list.`,
+        });
+
+        // Reset current editing form to a fresh state with session defaults
+        const newFormBase = JSON.parse(JSON.stringify(defaultReportData));
+        setCurrentEditingReport({
+            ...newFormBase,
+            schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
+            schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBase.schoolLogoDataUri,
+            className: sessionDefaults.className ?? newFormBase.className, // Or maybe destinationClass? Or leave blank?
+            academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear,
+            academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm,
+            selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBase.selectedTemplateId,
+            totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null
+                         ? sessionDefaults.totalSchoolDays
+                         : newFormBase.totalSchoolDays,
+            headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
+            instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact,
+        });
+
+      } else {
+        toast({ title: "No Students Imported", description: "Could not find matching profiles for selected students.", variant: "destructive" });
+      }
+    } catch (e) {
+      console.error("Error importing students:", e);
+      toast({ title: "Import Failed", description: "An error occurred while importing students.", variant: "destructive" });
+    }
+    setIsImportStudentsDialogOpen(false);
+  };
 
 
   return (
@@ -375,6 +469,15 @@ function AppContent() {
 
                 <div className="flex flex-col gap-2 items-stretch">
                   <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+                    <Button 
+                        onClick={() => setIsImportStudentsDialogOpen(true)} 
+                        variant="outline" 
+                        size="sm"
+                        title="Import student data from previous term/class"
+                      >
+                       <Upload className="mr-2 h-4 w-4" /> 
+                       Import Promoted Students
+                     </Button>
                      <Button 
                         onClick={() => setIsClassDashboardOpen(true)} 
                         disabled={reportsCount === 0} 
@@ -470,6 +573,13 @@ function AppContent() {
             academicTermProp={academicTermForSchoolDashboard}
         />
     )}
+    {isImportStudentsDialogOpen && (
+      <ImportStudentsDialog
+        isOpen={isImportStudentsDialogOpen}
+        onOpenChange={setIsImportStudentsDialogOpen}
+        onImport={handleImportStudents}
+      />
+    )}
     </>
   );
 }
@@ -480,4 +590,3 @@ export default function Home() {
     <AppContent />
   );
 }
-
