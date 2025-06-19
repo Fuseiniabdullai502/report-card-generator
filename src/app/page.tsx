@@ -11,7 +11,7 @@ import ImportStudentsDialog from '@/components/import-students-dialog';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // Added import
 import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
@@ -59,7 +59,7 @@ function AppContent() {
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
-      teacherId: undefined,
+      teacherId: undefined, // Auth removed
     };
   });
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
@@ -132,18 +132,22 @@ function AppContent() {
   useEffect(() => {
     setIsLoadingReports(true);
     const reportsCollectionRef = collection(db, 'reports');
-    const q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
+    const q = query(reportsCollectionRef, orderBy('createdAt', 'asc')); // Using createdAt from Firestore
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedReports: ReportData[] = [];
       let maxEntryNum = 0;
       querySnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp | null };
+        // The data from Firestore should already be mostly aligned with ReportData.
+        // We'll use the Firestore doc.id as the primary 'id' for the report.
+        // 'clientSideId' is the id that was generated in the form.
+        const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp | null; clientSideId?: string };
         fetchedReports.push({
-            ...data,
-            id: doc.id, // Use Firestore doc ID as the main ID
+            ...data, // Spread all fields from Firestore
+            id: doc.id, // Use Firestore document ID as the main ID for reportPrintList items
             subjects: data.subjects || [],
             hobbies: data.hobbies || [],
+            // Convert Firestore Timestamp to Date for client-side use if needed by ReportPreview or elsewhere
             createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : undefined,
         });
         if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
@@ -184,7 +188,6 @@ function AppContent() {
       return;
     }
 
-    // Explicitly check for required fields before attempting to save
     if (!currentEditingReport.studentName || 
         !currentEditingReport.className || 
         !currentEditingReport.performanceSummary || 
@@ -197,46 +200,68 @@ function AppContent() {
         });
         return;
     }
-
-    // Ensure createdAt is a serverTimestamp for new Firestore entries
-    // The existing id on currentEditingReport is client-side; Firestore will generate its own.
-    // overallAverage and rank are calculated and not saved directly this way.
-    const { overallAverage, rank, id: clientSideId, ...reportDataForFirestore } = currentEditingReport;
-
-    const reportToSave = {
-      ...reportDataForFirestore,
-      studentEntryNumber: nextStudentEntryNumber, // Use the managed nextStudentEntryNumber
-      createdAt: serverTimestamp(), // Use Firestore server timestamp for new entries
-      teacherId: undefined, // Explicitly undefined as auth is removed
+    
+    // Explicitly construct the object for Firestore to avoid undefined values
+    const reportToSaveForFirestore = {
+      studentEntryNumber: nextStudentEntryNumber,
+      studentName: currentEditingReport.studentName,
+      className: currentEditingReport.className,
+      gender: currentEditingReport.gender ?? null,
+      schoolName: currentEditingReport.schoolName,
+      schoolLogoDataUri: currentEditingReport.schoolLogoDataUri ?? null,
+      academicYear: currentEditingReport.academicYear,
+      academicTerm: currentEditingReport.academicTerm,
+      selectedTemplateId: currentEditingReport.selectedTemplateId,
+      daysAttended: currentEditingReport.daysAttended ?? null,
+      totalSchoolDays: currentEditingReport.totalSchoolDays ?? null,
+      parentEmail: currentEditingReport.parentEmail || "", // Empty string is fine
+      parentPhoneNumber: currentEditingReport.parentPhoneNumber || "", // Empty string is fine
+      performanceSummary: currentEditingReport.performanceSummary,
+      strengths: currentEditingReport.strengths,
+      areasForImprovement: currentEditingReport.areasForImprovement,
+      hobbies: currentEditingReport.hobbies || [],
+      teacherFeedback: currentEditingReport.teacherFeedback || "", // Empty string is fine
+      instructorContact: currentEditingReport.instructorContact || "", // Empty string is fine
+      subjects: currentEditingReport.subjects.map(s => ({
+        subjectName: s.subjectName,
+        continuousAssessment: s.continuousAssessment ?? null,
+        examinationMark: s.examinationMark ?? null,
+      })),
+      promotionStatus: currentEditingReport.promotionStatus ?? null,
+      studentPhotoDataUri: currentEditingReport.studentPhotoDataUri ?? null,
+      headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri ?? null,
+      clientSideId: currentEditingReport.id, // Persist the ID used in form/preview
+      createdAt: serverTimestamp(),
+      // teacherId is omitted as auth is removed
     };
 
 
     try {
-      await addDoc(collection(db, 'reports'), reportToSave);
+      await addDoc(collection(db, 'reports'), reportToSaveForFirestore);
       toast({
         title: "Report Submitted",
-        description: `${currentEditingReport.studentName}'s report submitted. List will update.`,
+        description: `${currentEditingReport.studentName}'s report submitted to Firestore. List will update.`,
       });
     } catch (error) {
       console.error("Detailed Firestore Save Error: ", error);
       toast({
         title: "Firestore Save Error",
-        description: `Could not save report. Check console for details. Error: ${error instanceof Error ? error.message : String(error)}`,
+        description: `Could not save report. ${error instanceof Error ? error.message : String(error)}`,
         variant: "destructive",
       });
       return;
     }
 
-    if (reportToSave.academicTerm === 'First Term' && reportToSave.studentName) {
+    if (reportToSaveForFirestore.academicTerm === 'First Term' && reportToSaveForFirestore.studentName) {
       try {
         const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
         const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
-        const profileKey = reportToSave.studentName;
+        const profileKey = reportToSaveForFirestore.studentName;
         profiles[profileKey] = {
-          studentName: reportToSave.studentName,
-          studentPhotoDataUri: reportToSave.studentPhotoDataUri,
-          className: reportToSave.className,
-          gender: reportToSave.gender,
+          studentName: reportToSaveForFirestore.studentName,
+          studentPhotoDataUri: reportToSaveForFirestore.studentPhotoDataUri ?? undefined, // Store as undefined if null
+          className: reportToSaveForFirestore.className,
+          gender: reportToSaveForFirestore.gender ?? undefined, // Store as undefined if null
         };
         localStorage.setItem(STUDENT_PROFILES_STORAGE_KEY, JSON.stringify(profiles));
       } catch (e) {
@@ -296,18 +321,21 @@ function AppContent() {
   };
 
   const handleClearList = () => {
+    // This now only clears the local view. Deleting from Firestore is a separate, more complex operation.
     setReportPrintList([]);
     setCurrentPreviewIndex(0);
-    setSessionDefaults({});
+    // setSessionDefaults({}); // Keep session defaults for now
     toast({
       title: "Local View Cleared",
-      description: "Your local view of reports has been cleared. Data in the database is not affected. Firestore sync will repopulate if data exists.",
+      description: "Your local view of reports has been cleared. Data in Firestore is not affected. The list will repopulate from Firestore if data exists.",
     });
+    // Reset form to next entry number based on potentially still existing Firestore data
     const newBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
     setCurrentEditingReport({
         ...newBase,
+        ...sessionDefaults, // Re-apply session defaults
         id: `unsaved-${Date.now()}`,
-        studentEntryNumber: nextStudentEntryNumber,
+        studentEntryNumber: nextStudentEntryNumber, // Keep current nextStudentEntryNumber
         createdAt: undefined,
         overallAverage: undefined,
         rank: undefined,
@@ -410,29 +438,30 @@ function AppContent() {
       selectedStudentNames.forEach((studentName, index) => {
         const profile = Object.values(profiles).find(p => p.studentName === studentName);
         if (profile) {
-          const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
-          const importedReportForFirestore: Omit<ReportData, 'id' | 'overallAverage' | 'rank'> & { createdAt: any } = {
-            ...newFormBase,
+          // const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
+          
+          const importedReportForFirestore = {
             studentEntryNumber: currentImportEntryNumberBase + index,
             createdAt: serverTimestamp(),
             studentName: profile.studentName,
-            gender: profile.gender,
-            studentPhotoDataUri: profile.studentPhotoDataUri,
+            gender: profile.gender ?? null,
+            studentPhotoDataUri: profile.studentPhotoDataUri ?? null,
             className: destinationClass,
-            schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
-            schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBase.schoolLogoDataUri,
-            academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear,
-            academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm,
-            selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBase.selectedTemplateId,
-            totalSchoolDays: sessionDefaults.totalSchoolDays ?? newFormBase.totalSchoolDays,
-            headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
-            instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact,
+            schoolName: sessionDefaults.schoolName ?? defaultReportData.schoolName,
+            schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? null,
+            academicYear: sessionDefaults.academicYear ?? defaultReportData.academicYear,
+            academicTerm: sessionDefaults.academicTerm ?? defaultReportData.academicTerm,
+            selectedTemplateId: sessionDefaults.selectedTemplateId ?? defaultReportData.selectedTemplateId,
+            totalSchoolDays: sessionDefaults.totalSchoolDays ?? null,
+            headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? null,
+            instructorContact: sessionDefaults.instructorContact || "",
             daysAttended: null, parentEmail: '', parentPhoneNumber: '',
             performanceSummary: '', strengths: '', areasForImprovement: '',
             hobbies: [], teacherFeedback: '',
             subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
-            promotionStatus: undefined,
-            teacherId: undefined,
+            promotionStatus: null,
+            clientSideId: `imported-${Date.now()}-${index}`, // A unique client-side ID for this imported record
+             // teacherId is omitted
           };
           reportsToImportPromises.push(addDoc(collection(db, 'reports'), importedReportForFirestore));
         }
@@ -445,6 +474,8 @@ function AppContent() {
               title: "Students Imported",
               description: `${reportsToImportPromises.length} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
             });
+            // nextStudentEntryNumber will be updated by the Firestore listener effect eventually.
+            // Reset the form for a new entry
             const newNextEntryNumForForm = currentImportEntryNumberBase + reportsToImportPromises.length;
             const newFormBaseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
             setCurrentEditingReport({
@@ -459,7 +490,7 @@ function AppContent() {
                 headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBaseReset.headMasterSignatureDataUri,
                 instructorContact: sessionDefaults.instructorContact ?? newFormBaseReset.instructorContact,
                 id: `unsaved-${Date.now()}`,
-                studentEntryNumber: newNextEntryNumForForm,
+                studentEntryNumber: newNextEntryNumForForm, // Set to next available
                 createdAt: undefined,
                 overallAverage: undefined,
                 rank: undefined,
@@ -610,7 +641,7 @@ function AppContent() {
                     </div>
                   </React.Fragment>
                 ))
-              ) : currentEditingReport ? (
+              ) : currentEditingReport ? ( // Show currentEditingReport if list is empty
                 <>
                   <div className="report-preview-item active-preview-screen">
                     <ReportPreview key={currentEditingReport.id} data={currentEditingReport} />
@@ -668,3 +699,4 @@ export default function Home() {
     <AppContent />
   );
 }
+
