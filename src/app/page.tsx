@@ -11,15 +11,15 @@ import ImportStudentsDialog from '@/components/import-students-dialog';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert'; // Keep if used elsewhere, or remove if not
 import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
-import { useAuth } from '@/contexts/auth-context';
+// Removed useAuth import
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
-import LoginButton from '@/components/login-button'; // Import the LoginButton
+import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
+// Removed LoginButton import
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 
@@ -52,7 +52,7 @@ function formatRankString(rankNumber: number, isTie: boolean): string {
 }
 
 function AppContent() {
-  const { user, loading: authLoading } = useAuth();
+  // Removed useAuth() and authLoading
   const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(() => JSON.parse(JSON.stringify({
     ...defaultReportData,
   })));
@@ -124,29 +124,20 @@ function AppContent() {
   }, [currentPreviewIndex]);
 
   useEffect(() => {
-    if (authLoading) {
-      setIsLoadingReports(true);
-      return;
-    }
-    if (!user) {
-      setReportPrintList([]);
-      setIsLoadingReports(false);
-      setNextStudentEntryNumber(1);
-      return;
-    }
-
+    // Removed authLoading and user checks for fetching
     setIsLoadingReports(true);
     const reportsCollectionRef = collection(db, 'reports');
-    const q = query(reportsCollectionRef, where('teacherId', '==', user.uid), orderBy('createdAt', 'asc'));
+    // Query all reports, not filtered by teacherId
+    const q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedReports: ReportData[] = [];
       let maxEntryNum = 0;
       querySnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp };
+        const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp }; // teacherId might be missing now
         fetchedReports.push({
             ...data,
-            id: doc.id,
+            id: doc.id, // Use Firestore doc ID as the report ID
         });
         if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
             maxEntryNum = data.studentEntryNumber;
@@ -162,7 +153,7 @@ function AppContent() {
     });
 
     return () => unsubscribe();
-  }, [user, authLoading, calculateAndSetRanks, toast]);
+  }, [calculateAndSetRanks, toast]); // Removed user and authLoading from dependencies
 
 
   const handleFormUpdate = (data: ReportData) => {
@@ -183,17 +174,13 @@ function AppContent() {
         return;
       }
 
-    if (!user) {
-      toast({ title: "Not Logged In", description: "You must be logged in to save reports to the database.", variant: "destructive" });
-      return;
-    }
-
+    // Removed user check for saving
     const reportId = `report-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const reportWithMetadata: ReportData = {
+    const reportWithMetadata: Omit<ReportData, 'teacherId'> & {createdAt: any} = { // teacherId removed
       ...currentEditingReport,
       id: reportId,
       studentEntryNumber: nextStudentEntryNumber,
-      teacherId: user.uid,
+      // teacherId: user.uid, // Removed teacherId
       createdAt: serverTimestamp(),
     };
 
@@ -273,7 +260,10 @@ function AppContent() {
       subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
       promotionStatus: undefined,
       studentPhotoDataUri: undefined,
-    });
+      // Ensure id and studentEntryNumber are not carried over to new form base from defaultReportData context
+      id: undefined,
+      studentEntryNumber: undefined,
+    } as ReportData); // Cast to ReportData, accepting id and studentEntryNumber as undefined
   };
 
   const handleClearList = () => {
@@ -284,7 +274,7 @@ function AppContent() {
       title: "Local View Cleared",
       description: "Your local view of reports has been cleared. Data in the database is not affected.",
     });
-    setCurrentEditingReport(JSON.parse(JSON.stringify({ ...defaultReportData })));
+    setCurrentEditingReport(JSON.parse(JSON.stringify({ ...defaultReportData } as ReportData))); // Cast as ReportData
   }
 
   const handlePrint = () => {
@@ -367,10 +357,7 @@ function AppContent() {
   }, [reportPrintList, currentEditingReport.academicTerm, reportsCount]);
 
  const handleImportStudents = (selectedStudentNames: string[], destinationClass: string) => {
-    if (!user) {
-      toast({ title: "Login Required", description: "Please log in to import students and save their reports.", variant: "destructive" });
-      return;
-    }
+    // Removed user check
     if (selectedStudentNames.length === 0 || !destinationClass) {
       toast({ title: "Import Error", description: "No students selected or destination class missing.", variant: "destructive" });
       return;
@@ -388,11 +375,11 @@ function AppContent() {
         if (profile) {
           const reportId = `report-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-imported`;
           const newFormBase = JSON.parse(JSON.stringify(defaultReportData));
-          const importedReport: ReportData = {
+          const importedReport: Omit<ReportData, 'teacherId'> & {createdAt: any} = { // teacherId removed
             ...newFormBase,
             id: reportId,
             studentEntryNumber: currentImportEntryNumber++,
-            teacherId: user.uid,
+            // teacherId: user.uid, // Removed teacherId
             createdAt: serverTimestamp(),
             studentName: profile.studentName,
             gender: profile.gender,
@@ -436,7 +423,9 @@ function AppContent() {
                 totalSchoolDays: sessionDefaults.totalSchoolDays ?? newFormBaseReset.totalSchoolDays,
                 headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBaseReset.headMasterSignatureDataUri,
                 instructorContact: sessionDefaults.instructorContact ?? newFormBaseReset.instructorContact,
-            });
+                id: undefined,
+                studentEntryNumber: undefined,
+            } as ReportData); // Cast as ReportData
           })
           .catch(error => {
             console.error("Error importing students to Firestore:", error);
@@ -452,37 +441,7 @@ function AppContent() {
     setIsImportStudentsDialogOpen(false);
   };
 
-  if (authLoading) {
-     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-3 text-muted-foreground">Authenticating...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col items-center justify-center font-body bg-background text-foreground">
-        <BookMarked className="h-16 w-16 text-primary mb-6" />
-        <h1 className="text-3xl font-bold text-primary mb-3">Report Card Generator</h1>
-        <p className="text-muted-foreground mb-6 text-center max-w-md">
-          Welcome! Please sign in with your Google account to create, manage, and save student report cards.
-        </p>
-        <Alert variant="default" className="max-w-md mb-6 bg-primary/10 border-primary/30">
-          <AlertTriangle className="h-5 w-5 text-primary" />
-          <AlertDescription className="text-primary/90">
-            Authentication is required to access the application and securely store your data.
-          </AlertDescription>
-        </Alert>
-        <LoginButton /> {/* Replaced placeholder with LoginButton */}
-         <div className="absolute top-4 right-4">
-          <ThemeToggleButton />
-        </div>
-      </div>
-    );
-  }
-
+  // Removed authLoading check and login screen. App content renders directly.
 
   return (
     <>
@@ -494,7 +453,7 @@ function AppContent() {
         </div>
         <p className="text-muted-foreground mt-2 text-sm sm:text-base">Easily create, customize, rank, and print student report cards.</p>
          <div className="absolute top-0 right-0 flex items-center gap-2">
-          <p className="text-xs text-muted-foreground hidden sm:block">Logged in as: {user.email}</p>
+          {/* User email display removed */}
           <ThemeToggleButton />
         </div>
       </header>

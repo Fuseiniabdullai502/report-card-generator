@@ -3,7 +3,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/contexts/auth-context'; // Added AuthProvider
+// Removed AuthProvider import
 
 const APP_NAME = 'Report Card Generator';
 const APP_DESCRIPTION = 'Easily create, customize, rank, and print student terminal reports. An AI-powered tool for educators.';
@@ -84,10 +84,9 @@ export default function RootLayout({
           defaultTheme="light"
           storageKey="report-card-theme"
         >
-          <AuthProvider> {/* AuthProvider wraps the children */}
-            {children}
-            <Toaster />
-          </AuthProvider>
+          {/* AuthProvider removed from here */}
+          {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
