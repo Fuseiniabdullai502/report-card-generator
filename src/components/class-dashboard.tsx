@@ -318,7 +318,7 @@ export default function ClassPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="class-dashboard-dialog-content"
-        className="max-w-4xl w-[90vw] h-[90vh] flex flex-col overflow-y-auto overflow-x-auto"
+        className="max-w-4xl w-[90vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden"
       >
         <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
           <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
@@ -332,7 +332,7 @@ export default function ClassPerformanceDashboard({
         
         <div 
           data-testid="dashboard-inner-scroll-container"
-          className="h-[90vh] overflow-y-auto overflow-x-auto p-6 space-y-6"
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-6 space-y-6"
         >
             <div id="dashboard-print-header" className="dashboard-print-header hidden print:block px-6 pt-6 pb-4 mb-4 border-b">
                 <h2 className="text-xl font-bold">Class Performance Dashboard: {classNameProp} ({academicTerm})</h2>
@@ -522,6 +522,7 @@ export default function ClassPerformanceDashboard({
   );
 }
     
+			
     
 
 
@@ -529,3 +530,4 @@ export default function ClassPerformanceDashboard({
 
 
     
+
