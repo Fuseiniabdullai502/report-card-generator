@@ -169,6 +169,11 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       promotionStatus: initialData?.promotionStatus || undefined,
       studentPhotoDataUri: initialData?.studentPhotoDataUri || undefined,
       headMasterSignatureDataUri: initialData?.headMasterSignatureDataUri || undefined,
+      id: initialData?.id || `unsaved-${Date.now()}`, // Ensure ID is part of defaultValues
+      // Other fields from ReportData if not covered above
+      overallAverage: initialData?.overallAverage || undefined,
+      rank: initialData?.rank || undefined,
+      createdAt: initialData?.createdAt || undefined,
     },
   });
 
@@ -256,33 +261,18 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   useEffect(() => {
     if (initialData) {
-      form.reset({
-        studentName: initialData.studentName || '',
-        className: initialData.className || '',
-        gender: initialData.gender || '',
-        schoolName: initialData.schoolName || 'Faacom Academy',
-        schoolLogoDataUri: initialData.schoolLogoDataUri || undefined,
-        academicYear: initialData.academicYear || '2023-2024',
-        academicTerm: initialData.academicTerm || 'First Term',
-        selectedTemplateId: initialData.selectedTemplateId || 'default',
+      const fullInitialData = {
+        ...initialData,
+        id: initialData.id || `unsaved-${Date.now()}`, // Ensure ID always exists for form.reset
+        studentEntryNumber: initialData.studentEntryNumber || form.getValues('studentEntryNumber') || 1, // Persist or get current
+        subjects: initialData.subjects?.length ? initialData.subjects : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+        hobbies: initialData.hobbies || [],
         daysAttended: initialData.daysAttended === undefined ? null : initialData.daysAttended,
         totalSchoolDays: initialData.totalSchoolDays === undefined ? null : initialData.totalSchoolDays,
-        parentEmail: initialData.parentEmail || '',
-        parentPhoneNumber: initialData.parentPhoneNumber || '',
-        performanceSummary: initialData.performanceSummary || '',
-        strengths: initialData.strengths || '',
-        areasForImprovement: initialData.areasForImprovement || '',
-        hobbies: initialData.hobbies || [],
-        teacherFeedback: initialData.teacherFeedback || '',
-        instructorContact: initialData.instructorContact || '',
-        subjects: initialData.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
-        studentEntryNumber: initialData.studentEntryNumber || undefined,
-        promotionStatus: initialData.promotionStatus || undefined, 
-        studentPhotoDataUri: initialData.studentPhotoDataUri || undefined,
-        headMasterSignatureDataUri: initialData.headMasterSignatureDataUri || undefined,
-      });
+      };
+      form.reset(fullInitialData as ReportData); // Cast because initialData is Partial
       setCurrentVisibleSubjectIndex(0);
-      setComparisonTermSelection('none'); // Reset comparison on new initial data
+      setComparisonTermSelection('none'); 
 
       if (initialData.className && !classLevels.includes(initialData.className) && !customClassNames.includes(initialData.className)) {
         setCustomClassNames(prev => [...prev, initialData.className!]);
@@ -584,34 +574,46 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     });
   };
 
-
   const onSubmit: SubmitHandler<ReportData> = (data) => {
     const promotionStatusApplicableCheck = data.academicTerm === 'Third Term' && data.className && !tertiaryLevelClasses.includes(data.className);
-    const processedData = {
-      ...data,
-      daysAttended: data.daysAttended === '' || data.daysAttended === undefined ? null : Number(data.daysAttended),
-      totalSchoolDays: data.totalSchoolDays === '' || data.totalSchoolDays === undefined ? null : Number(data.totalSchoolDays),
+    
+    const parseNumeric = (value: any): number | null => {
+      if (value === null || value === undefined || value === '') return null;
+      const num = Number(value);
+      return Number.isNaN(num) ? null : num;
+    };
+  
+    const processedData: ReportData = {
+      ...data, 
+      id: data.id || `unsaved-${Date.now()}`, // Ensure ID is present, RHF data should have it from defaultValues
+      studentEntryNumber: data.studentEntryNumber || 1, // Ensure studentEntryNumber is present
+      daysAttended: parseNumeric(data.daysAttended),
+      totalSchoolDays: parseNumeric(data.totalSchoolDays),
       subjects: data.subjects.map(s => ({
-        ...s,
-        continuousAssessment: s.continuousAssessment === undefined || s.continuousAssessment === null ? null : Number(s.continuousAssessment),
-        examinationMark: s.examinationMark === undefined || s.examinationMark === null ? null : Number(s.examinationMark),
+        subjectName: s.subjectName,
+        continuousAssessment: parseNumeric(s.continuousAssessment),
+        examinationMark: parseNumeric(s.examinationMark),
       })),
       promotionStatus: promotionStatusApplicableCheck ? data.promotionStatus : undefined,
       studentPhotoDataUri: data.studentPhotoDataUri || undefined,
+      schoolLogoDataUri: data.schoolLogoDataUri || undefined,
       headMasterSignatureDataUri: data.headMasterSignatureDataUri || undefined,
       instructorContact: data.instructorContact || '',
-      schoolLogoDataUri: data.schoolLogoDataUri || undefined,
-      studentEntryNumber: data.studentEntryNumber || undefined,
       hobbies: data.hobbies || [],
       parentEmail: data.parentEmail || '',
       parentPhoneNumber: data.parentPhoneNumber || '',
+      // Ensure other fields from ReportData that might be optional or processed are here
+      overallAverage: data.overallAverage || undefined,
+      rank: data.rank || undefined,
+      createdAt: data.createdAt || undefined, 
     };
     onFormUpdate(processedData);
-     toast({
+    toast({
         title: "Preview Updated",
         description: "The report preview has been updated with the latest information.",
-      });
+    });
   };
+
 
   const handleAddSubjectAndNavigate = () => {
     const newIndex = fields.length;
@@ -1580,4 +1582,3 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
-
