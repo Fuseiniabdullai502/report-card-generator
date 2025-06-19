@@ -379,7 +379,7 @@ export default function SchoolPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="school-dashboard-dialog-content"
-        className="max-w-5xl w-[95vw] h-[90vh] flex flex-col"
+        className="max-w-5xl w-[95vw] h-[90vh] flex flex-col overflow-hidden"
       >
         <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
           <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
@@ -614,3 +614,5 @@ export default function SchoolPerformanceDashboard({
     </Dialog>
   );
 }
+
+    
