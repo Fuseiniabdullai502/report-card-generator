@@ -139,6 +139,12 @@ body {
   .dashboard-print-header {
     display: none; 
   }
+
+  /* Specific overflow rules for screen if necessary */
+  /* #class-dashboard-dialog-content {
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+  } */
 }
 
 
@@ -196,6 +202,7 @@ body {
     background-color: white !important;
     box-sizing: border-box !important;
     overflow: visible !important; 
+    font-size: 9pt !important; /* Base font size for individual reports */
   }
 
   .a4-page-simulation:not(:first-child) {
@@ -215,6 +222,7 @@ body {
 
   .a4-page-simulation img {
     max-width: 100% !important; 
+    height: auto !important;
     page-break-inside: avoid;
   }
 
@@ -263,28 +271,30 @@ body {
     display: block !important; 
     width: 100% !important;
     max-width: 100% !important;
-    height: auto !important; 
+    height: auto !important; /* Let content determine height for print initially */
     min-height: 0 !important; 
     max-height: none !important; 
     transform: none !important; 
     margin: 0 !important;
-    padding: 0 !important; /* Remove dialog padding for print */
+    padding: 0 !important; /* Dialog padding removed, inner container has it */
     border: none !important;
     box-shadow: none !important;
     background-color: white !important;
     color: black !important;
-    overflow: visible !important; 
+    overflow: visible !important; /* Changed from hidden to visible */
     border-radius: 0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    font-size: 8pt !important; /* Base font size for dashboard print */
   }
   
-  /* Ensure the inner scroll container is fully visible for printing */
   #class-dashboard-dialog-content [data-testid="dashboard-inner-scroll-container"] {
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
-    padding: 10mm !important; /* Apply padding to the inner container for print */
+    overflow: hidden !important; /* Clip content that doesn't fit on one page */
+    /* A4 Portrait height (297mm) - top/bottom padding (2 * 10mm) = 277mm */
+    max-height: 277mm !important; 
+    height: 277mm !important; 
+    padding: 10mm !important; /* Apply A4-like margins */
+    box-sizing: border-box !important;
   }
 
 
@@ -300,6 +310,23 @@ body {
   #class-dashboard-dialog-content .table {
     background-color: white !important; 
   }
+  #class-dashboard-dialog-content .card {
+    page-break-inside: avoid !important;
+    margin-bottom: 6px !important; /* Reduced margin for cards */
+  }
+  #class-dashboard-dialog-content .card-header {
+    padding: 6px !important; /* Reduced padding */
+  }
+  #class-dashboard-dialog-content .card-title {
+    font-size: 10pt !important; /* Reduced title font size */
+  }
+  #class-dashboard-dialog-content .card-description {
+    font-size: 7pt !important; /* Reduced description font size */
+  }
+  #class-dashboard-dialog-content .card-content {
+    padding: 6px !important; /* Reduced padding */
+  }
+
 
    #class-dashboard-dialog-content .text-primary {
      color: #2c5282 !important; 
@@ -342,7 +369,9 @@ body {
   }
   
   #class-dashboard-dialog-content .no-print,
-  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header) { 
+  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header), /* Original header */
+  #class-dashboard-dialog-content > .sticky.top-0, /* Sticky header */
+  #class-dashboard-dialog-content > .sticky.bottom-0 /* Sticky footer */ { 
     display: none !important;
   }
   #class-dashboard-dialog-content > button[aria-label="Close"], 
@@ -351,25 +380,42 @@ body {
   }
 
 
-  /* Prevent cards/tables from breaking across pages where possible */
-  #class-dashboard-dialog-content .card {
-    page-break-inside: avoid;
-  }
   #class-dashboard-dialog-content .table {
-    page-break-inside: auto; 
+    min-width: 0 !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+    /* font-size is inherited */
   }
+  #class-dashboard-dialog-content .table th,
+  #class-dashboard-dialog-content .table td {
+    word-break: break-word !important;
+    padding: 2px 3px !important; /* Tighter padding */
+    white-space: normal !important;
+    font-size: 7pt !important;
+  }
+  #class-dashboard-dialog-content .table th {
+    font-size: 7pt !important; /* Slightly smaller for headers if needed */
+  }
+
   #class-dashboard-dialog-content tr {
-    page-break-inside: avoid; 
+    page-break-inside: avoid !important; 
   }
 
   /* Chart specific print enhancements */
+  #class-dashboard-dialog-content [data-testid="subject-barchart-container"],
+  #class-dashboard-dialog-content [data-testid="gender-piechart-container"] {
+    min-width: 0 !important;
+    width: 100% !important;
+    height: 120px !important; /* Reduced chart height for print */
+    margin-top: 4px !important;
+    margin-bottom: 8px !important;
+  }
   #class-dashboard-dialog-content .recharts-responsive-container {
     width: 100% !important; 
   }
   #class-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper {
     width: 100% !important; 
-    height: auto !important; 
-    min-height: 150px !important; 
+    height: 100% !important; 
   }
   #class-dashboard-dialog-content .recharts-surface { 
     width: 100% !important;
@@ -379,12 +425,25 @@ body {
   }
   #class-dashboard-dialog-content .recharts-legend-wrapper { 
     display: block !important; 
+    font-size: 6pt !important;
+    padding-top: 2px !important;
+  }
+   #class-dashboard-dialog-content .recharts-legend-wrapper ul {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+  #class-dashboard-dialog-content .recharts-legend-item {
+    margin-right: 4px !important;
+  }
+   #class-dashboard-dialog-content .recharts-cartesian-axis-tick text {
+    font-size: 6pt !important;
   }
 }
-
-
     
 
 
+
+    
 
     
