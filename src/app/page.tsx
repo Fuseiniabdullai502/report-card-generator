@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, where } from 'firebase/firestore';
+import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore'; // Removed 'where' as it's not used currently
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 
@@ -51,14 +51,15 @@ function formatRankString(rankNumber: number, isTie: boolean): string {
 
 function AppContent() {
   const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(() => {
-    const base = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank'>;
+    const base = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
     return {
       ...base,
       id: `unsaved-${Date.now()}`,
-      studentEntryNumber: 1, 
+      studentEntryNumber: 1,
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
+      teacherId: undefined,
     };
   });
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
@@ -138,13 +139,13 @@ function AppContent() {
       const fetchedReports: ReportData[] = [];
       let maxEntryNum = 0;
       querySnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp }; // Assuming createdAt is Firestore Timestamp
+        const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp | null };
         fetchedReports.push({
             ...data,
-            id: doc.id, 
-            // Ensure subjects and hobbies are arrays even if Firestore returns undefined
+            id: doc.id,
             subjects: data.subjects || [],
             hobbies: data.hobbies || [],
+            createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : undefined, // Convert Firestore Timestamp to Date or undefined
         });
         if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
             maxEntryNum = data.studentEntryNumber;
@@ -153,12 +154,14 @@ function AppContent() {
       calculateAndSetRanks(fetchedReports);
       setNextStudentEntryNumber(maxEntryNum + 1);
       setIsLoadingReports(false);
-      
+
       if (fetchedReports.length === 0) {
+        const baseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
         setCurrentEditingReport(prev => ({
-          ...prev,
+          ...baseReset, // Use a fresh base
+          ...sessionDefaults, // Apply session defaults over the fresh base
           studentEntryNumber: maxEntryNum + 1,
-          id: `unsaved-${Date.now()}` // ensure id is fresh if list becomes empty
+          id: `unsaved-${Date.now()}`
         }));
       }
     }, (error) => {
@@ -168,12 +171,10 @@ function AppContent() {
     });
 
     return () => unsubscribe();
-  }, [calculateAndSetRanks, toast]);
+  }, [calculateAndSetRanks, toast, sessionDefaults]);
 
 
   const handleFormUpdate = (data: ReportData) => {
-    // Ensure that when the form updates currentEditingReport, it's a new object
-    // and carries over the necessary `id` and `studentEntryNumber` if they exist on `data`
     setCurrentEditingReport({ ...data });
   };
 
@@ -192,17 +193,17 @@ function AppContent() {
         return;
       }
 
-    const reportWithMetadata: Omit<ReportData, 'id' | 'overallAverage' | 'rank'> & { createdAt: any } = {
+    const reportWithMetadata = {
       ...currentEditingReport,
-      studentEntryNumber: nextStudentEntryNumber, 
+      studentEntryNumber: nextStudentEntryNumber,
       createdAt: serverTimestamp(),
-      // Remove id, overallAverage, rank before saving, as Firestore generates its own ID
-      // and overallAverage/rank are calculated dynamically or not persisted this way.
+      teacherId: undefined, // Explicitly undefined as auth is removed
+      // overallAverage and rank are not part of this initial save object
     };
-    
-    // Firestore expects a plain object without the 'id' field for addDoc,
-    // as it will generate its own document ID.
-    // Other fields like overallAverage and rank are typically not stored or calculated differently.
+
+    // Remove id, overallAverage, and rank before saving.
+    // Firestore generates its own document ID.
+    // overallAverage and rank are calculated client-side or not persisted this way.
     const { id, overallAverage, rank, ...reportToSave } = reportWithMetadata;
 
 
@@ -213,12 +214,14 @@ function AppContent() {
         description: `${currentEditingReport.studentName}'s report submitted to Firestore. List will update.`,
       });
     } catch (error) {
-      console.error("Error adding report to Firestore: ", error);
+      console.error("Detailed Firestore Save Error: ", error);
       toast({
         title: "Firestore Save Error",
-        description: "Could not save report to the database.",
+        description: `Could not save report. Check console for details. Error: ${error instanceof Error ? error.message : String(error)}`,
         variant: "destructive",
       });
+      // Do not proceed with resetting the form or incrementing numbers if save failed.
+      return;
     }
 
     // LocalStorage profile saving logic
@@ -226,7 +229,7 @@ function AppContent() {
       try {
         const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
         const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
-        const profileKey = reportWithMetadata.studentName; // Assuming studentName is unique enough for this demo
+        const profileKey = reportWithMetadata.studentName;
         profiles[profileKey] = {
           studentName: reportWithMetadata.studentName,
           studentPhotoDataUri: reportWithMetadata.studentPhotoDataUri,
@@ -238,9 +241,9 @@ function AppContent() {
         console.error("Error saving student profile to localStorage:", e);
       }
     }
-    
-    // Session defaults logic
-    if (reportPrintList.length === 0 && !sessionDefaults.schoolName) {
+
+    // Session defaults logic - Apply these *before* creating the new form state
+    if (Object.keys(sessionDefaults).length === 0) { // Only set if not already set
       setSessionDefaults({
         schoolName: currentEditingReport.schoolName,
         schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
@@ -253,29 +256,31 @@ function AppContent() {
         instructorContact: currentEditingReport.instructorContact,
       });
     }
-    
-    const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
-    setNextStudentEntryNumber(newNextStudentEntryNumber);
 
-    // Reset form for next entry
-    const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank'>;
+    const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
+    // nextStudentEntryNumber will be updated by Firestore listener, so direct set here is more for immediate UI consistency
+    // setNextStudentEntryNumber(newNextStudentEntryNumber);
+
+
+    // Reset form for next entry using a fresh default base and then apply session defaults
+    const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
     setCurrentEditingReport({
       ...newFormBase,
-      schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
-      schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBase.schoolLogoDataUri,
-      className: sessionDefaults.className ?? newFormBase.className,
-      gender: undefined,
-      academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear,
-      academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm,
-      selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBase.selectedTemplateId,
+      // Apply session defaults, ensuring they don't override completely empty fields if session default is also empty for that
+      schoolName: sessionDefaults.schoolName || newFormBase.schoolName,
+      schoolLogoDataUri: sessionDefaults.schoolLogoDataUri || newFormBase.schoolLogoDataUri,
+      className: sessionDefaults.className || newFormBase.className,
+      academicYear: sessionDefaults.academicYear || newFormBase.academicYear,
+      academicTerm: sessionDefaults.academicTerm || newFormBase.academicTerm,
+      selectedTemplateId: sessionDefaults.selectedTemplateId || newFormBase.selectedTemplateId,
       totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null
                        ? sessionDefaults.totalSchoolDays
                        : newFormBase.totalSchoolDays,
-      headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
-      instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact,
-      id: `unsaved-${Date.now()}`, 
-      studentEntryNumber: newNextStudentEntryNumber,
+      headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri || newFormBase.headMasterSignatureDataUri,
+      instructorContact: sessionDefaults.instructorContact || newFormBase.instructorContact,
+      // Reset student-specific fields
       studentName: '',
+      gender: undefined,
       daysAttended: null,
       parentEmail: '',
       parentPhoneNumber: '',
@@ -287,31 +292,35 @@ function AppContent() {
       subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
       promotionStatus: undefined,
       studentPhotoDataUri: undefined,
+      // Dynamic fields for the new unsaved report
+      id: `unsaved-${Date.now()}`,
+      studentEntryNumber: newNextStudentEntryNumber, // Use the incremented number for the new form
+      createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
-      createdAt: undefined,
+      teacherId: undefined,
     });
   };
 
   const handleClearList = () => {
-    // This function now only clears the local view.
-    // Deleting from Firestore would require a separate, more deliberate action.
     setReportPrintList([]);
     setCurrentPreviewIndex(0);
+    // Reset session defaults when list is cleared to allow new defaults on next add
     setSessionDefaults({});
     toast({
       title: "Local View Cleared",
-      description: "Your local view of reports has been cleared. Data in the database is not affected.",
+      description: "Your local view of reports has been cleared. Data in the database is not affected. Firestore sync will repopulate if data exists.",
     });
-    // Reset form to a new entry state, using the current nextStudentEntryNumber
-    const newBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank'>;
-    setCurrentEditingReport({ 
+    // Reset form to a new entry state, using the current nextStudentEntryNumber from Firestore sync (or its last known value)
+    const newBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
+    setCurrentEditingReport({
         ...newBase,
         id: `unsaved-${Date.now()}`,
-        studentEntryNumber: nextStudentEntryNumber, // Use current nextStudentEntryNumber from Firestore sync
+        studentEntryNumber: nextStudentEntryNumber,
         createdAt: undefined,
         overallAverage: undefined,
         rank: undefined,
+        teacherId: undefined,
      });
   }
 
@@ -405,16 +414,15 @@ function AppContent() {
       const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
 
       const reportsToImportPromises: Promise<void>[] = [];
-      let currentImportEntryNumber = nextStudentEntryNumber;
+      let currentImportEntryNumberBase = nextStudentEntryNumber; // Base for this batch
 
-      selectedStudentNames.forEach(studentName => {
+      selectedStudentNames.forEach((studentName, index) => {
         const profile = Object.values(profiles).find(p => p.studentName === studentName);
         if (profile) {
-          
-          const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank'>;
+          const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
           const importedReportForFirestore: Omit<ReportData, 'id' | 'overallAverage' | 'rank'> & { createdAt: any } = {
             ...newFormBase,
-            studentEntryNumber: currentImportEntryNumber++,
+            studentEntryNumber: currentImportEntryNumberBase + index, // Increment for each student in batch
             createdAt: serverTimestamp(),
             studentName: profile.studentName,
             gender: profile.gender,
@@ -433,6 +441,7 @@ function AppContent() {
             hobbies: [], teacherFeedback: '',
             subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
             promotionStatus: undefined,
+            teacherId: undefined,
           };
           reportsToImportPromises.push(addDoc(collection(db, 'reports'), importedReportForFirestore));
         }
@@ -445,18 +454,17 @@ function AppContent() {
               title: "Students Imported",
               description: `${reportsToImportPromises.length} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
             });
-            
             // nextStudentEntryNumber will be updated by Firestore listener reacting to new docs.
-            // Reset form to a clean state.
-            const newNextEntryNumForForm = currentImportEntryNumber; // use the last number from this batch
-            setNextStudentEntryNumber(newNextEntryNumForForm); 
+            // Form reset to a clean state, using the next available entry number after this batch.
+            const newNextEntryNumForForm = currentImportEntryNumberBase + reportsToImportPromises.length;
+            // setNextStudentEntryNumber(newNextEntryNumForForm); // Let Firestore listener handle this primarily
 
-            const newFormBaseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank'>;
+            const newFormBaseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
             setCurrentEditingReport({
                 ...newFormBaseReset,
                 schoolName: sessionDefaults.schoolName ?? newFormBaseReset.schoolName,
                 schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBaseReset.schoolLogoDataUri,
-                className: sessionDefaults.className ?? newFormBaseReset.className,
+                className: sessionDefaults.className ?? newFormBaseReset.className, // Could be destinationClass or session default
                 academicYear: sessionDefaults.academicYear ?? newFormBaseReset.academicYear,
                 academicTerm: sessionDefaults.academicTerm ?? newFormBaseReset.academicTerm,
                 selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBaseReset.selectedTemplateId,
@@ -468,6 +476,7 @@ function AppContent() {
                 createdAt: undefined,
                 overallAverage: undefined,
                 rank: undefined,
+                teacherId: undefined,
             });
           })
           .catch(error => {
@@ -542,7 +551,7 @@ function AppContent() {
                         variant="outline"
                         size="sm"
                         title="Import student data from previous term/class"
-                        disabled={isLoadingReports} // Can still import even if current list is loading, as it uses localStorage
+                        disabled={isLoadingReports}
                       >
                        <Upload className="mr-2 h-4 w-4" />
                        Import Promoted Students
@@ -584,7 +593,7 @@ function AppContent() {
               </div>
               <CardDescription className="mt-2 md:mt-1 space-y-1">
                 <span>
-                  {reportsCount > 0 
+                  {reportsCount > 0
                     ? 'This area shows one report at a time from the list. Use navigation buttons if multiple reports are in the list.'
                     : 'This area shows a live preview of the form data. Click "Add Current Report..." to save it to the database.'}
                 </span>
@@ -595,7 +604,13 @@ function AppContent() {
               </CardDescription>
             </CardHeader>
             <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">
-              {reportsCount > 0 ? (
+              {isLoadingReports && reportsCount === 0 ? (
+                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
+                  <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+                  <h3 className="text-lg font-semibold">Loading Reports...</h3>
+                  <p>Fetching your report data from the cloud.</p>
+                </div>
+              ) : reportsCount > 0 && reportPrintList[currentPreviewIndex] ? (
                 reportPrintList.map((reportData, index) => (
                   <React.Fragment key={reportData.id || `report-entry-${reportData.studentEntryNumber}`}>
                     {index === currentPreviewIndex && (
@@ -608,12 +623,6 @@ function AppContent() {
                     </div>
                   </React.Fragment>
                 ))
-              ) : isLoadingReports ? (
-                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
-                  <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
-                  <h3 className="text-lg font-semibold">Loading Reports...</h3>
-                  <p>Fetching your report data from the cloud.</p>
-                </div>
               ) : currentEditingReport ? (
                 <>
                   <div className="report-preview-item active-preview-screen">
@@ -623,8 +632,9 @@ function AppContent() {
               ) : (
                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
                   <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
-                  <h3 className="text-xl font-semibold mb-2">Form is Empty</h3>
+                  <h3 className="text-xl font-semibold mb-2">Form is Empty or No Reports Loaded</h3>
                   <p>Fill out the form and click "Update Preview" or "Add Current Report..." to save it.</p>
+                  <p className="text-xs mt-1">If reports should be loading, please check your connection or refresh.</p>
                 </div>
               )}
             </CardContent>
@@ -671,3 +681,5 @@ export default function Home() {
     <AppContent />
   );
 }
+
+    
