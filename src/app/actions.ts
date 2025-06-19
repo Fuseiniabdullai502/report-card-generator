@@ -14,6 +14,11 @@ import {
   type GenerateClassInsightsInput, 
   type GenerateClassInsightsOutput 
 } from '@/ai/flows/generate-class-insights-flow';
+import {
+  generateSchoolInsights,
+  type GenerateSchoolInsightsInput,
+  type GenerateSchoolInsightsOutput,
+} from '@/ai/flows/generate-school-insights-flow';
 import { z } from 'zod';
 
 // Schema for student feedback generation
@@ -150,6 +155,57 @@ export async function getAiClassInsightsAction(
     let errorMessage = "Failed to generate AI class insights. Please try again.";
     if (error instanceof z.ZodError) {
       errorMessage = "Invalid input for AI class insights: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Schemas for AI School Insights
+const ActionSchoolSubjectPerformanceStatSchema = z.object({
+  subjectName: z.string(),
+  numBelowAverage: z.number(),
+  numAverage: z.number(),
+  numAboveAverage: z.number(),
+  schoolAverageForSubject: z.number().nullable(),
+});
+
+const ActionSchoolGenderPerformanceStatSchema = z.object({
+  gender: z.string(),
+  count: z.number(),
+  averageScore: z.number().nullable(),
+});
+
+const ActionClassSummarySchema = z.object({
+  className: z.string(),
+  classAverage: z.number().nullable(),
+  numberOfStudents: z.number(),
+});
+
+const GenerateSchoolInsightsActionInputSchema = z.object({
+  schoolName: z.string(),
+  academicTerm: z.string(),
+  overallSchoolAverage: z.number().nullable(),
+  totalStudentsInSchool: z.number(),
+  numberOfClassesRepresented: z.number(),
+  classSummaries: z.array(ActionClassSummarySchema),
+  overallSubjectStatsForSchool: z.array(ActionSchoolSubjectPerformanceStatSchema),
+  overallGenderStatsForSchool: z.array(ActionSchoolGenderPerformanceStatSchema),
+});
+
+export async function getAiSchoolInsightsAction(
+  input: GenerateSchoolInsightsInput
+): Promise<{ success: boolean; insights?: GenerateSchoolInsightsOutput; error?: string }> {
+  try {
+    const validatedInput = GenerateSchoolInsightsActionInputSchema.parse(input);
+    const result = await generateSchoolInsights(validatedInput);
+    return { success: true, insights: result };
+  } catch (error) {
+    console.error("Error generating AI school insights:", error);
+    let errorMessage = "Failed to generate AI school insights. Please try again.";
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for AI school insights: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }

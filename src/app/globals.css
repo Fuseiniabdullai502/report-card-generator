@@ -139,12 +139,9 @@ body {
   .dashboard-print-header {
     display: none; 
   }
-
-  /* Specific overflow rules for screen if necessary */
-  /* #class-dashboard-dialog-content {
-    overflow-y: auto !important;
-    overflow-x: auto !important;
-  } */
+  .school-dashboard-print-header {
+    display: none;
+  }
 }
 
 
@@ -260,183 +257,226 @@ body {
     page-break-inside: avoid; 
   }
 
-  /* Styles for printing the Class Dashboard Dialog */
+  /* Styles for printing Dialogs (Class & School Dashboards) */
   body > [data-radix-portal] > [data-radix-dialog-overlay],
   body > [data-radix-portal] > [data-radix-focus-guard] {
     display: none !important;
   }
 
-  #class-dashboard-dialog-content {
+  #class-dashboard-dialog-content,
+  #school-dashboard-dialog-content {
     position: static !important; 
     display: block !important; 
     width: 100% !important;
     max-width: 100% !important;
-    height: auto !important; /* Let content determine height for print initially */
+    height: auto !important; 
     min-height: 0 !important; 
     max-height: none !important; 
     transform: none !important; 
     margin: 0 !important;
-    padding: 0 !important; /* Dialog padding removed, inner container has it */
+    padding: 0 !important; 
     border: none !important;
     box-shadow: none !important;
     background-color: white !important;
     color: black !important;
-    overflow: visible !important; /* Changed from hidden to visible */
+    overflow: visible !important; 
     border-radius: 0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    font-size: 8pt !important; /* Base font size for dashboard print */
+    font-size: 8pt !important; /* Base font size for dashboards */
   }
   
-  #class-dashboard-dialog-content [data-testid="dashboard-inner-scroll-container"] {
+  #class-dashboard-dialog-content [data-testid="dashboard-inner-scroll-container"],
+  #school-dashboard-dialog-content [data-testid="school-dashboard-inner-scroll-container"] {
     overflow: hidden !important; /* Clip content that doesn't fit on one page */
-    /* A4 Portrait height (297mm) - top/bottom padding (2 * 10mm) = 277mm */
     max-height: 277mm !important; 
     height: 277mm !important; 
-    padding: 10mm !important; /* Apply A4-like margins */
+    padding: 10mm !important; 
     box-sizing: border-box !important;
   }
 
-
   #class-dashboard-dialog-content *,
   #class-dashboard-dialog-content *::before,
-  #class-dashboard-dialog-content *::after {
+  #class-dashboard-dialog-content *::after,
+  #school-dashboard-dialog-content *,
+  #school-dashboard-dialog-content *::before,
+  #school-dashboard-dialog-content *::after {
     color: black !important;
     border-color: #ccc !important; 
     box-shadow: none !important;
   }
   
   #class-dashboard-dialog-content .card,
-  #class-dashboard-dialog-content .table {
+  #class-dashboard-dialog-content .table,
+  #school-dashboard-dialog-content .card,
+  #school-dashboard-dialog-content .table {
     background-color: white !important; 
   }
-  #class-dashboard-dialog-content .card {
+  #class-dashboard-dialog-content .card,
+  #school-dashboard-dialog-content .card {
     page-break-inside: avoid !important;
-    margin-bottom: 6px !important; /* Reduced margin for cards */
+    margin-bottom: 6px !important; 
   }
-  #class-dashboard-dialog-content .card-header {
-    padding: 6px !important; /* Reduced padding */
+  #class-dashboard-dialog-content .card-header,
+  #school-dashboard-dialog-content .card-header {
+    padding: 6px !important; 
   }
-  #class-dashboard-dialog-content .card-title {
-    font-size: 10pt !important; /* Reduced title font size */
+  #class-dashboard-dialog-content .card-title,
+  #school-dashboard-dialog-content .card-title {
+    font-size: 10pt !important; 
   }
-  #class-dashboard-dialog-content .card-description {
-    font-size: 7pt !important; /* Reduced description font size */
+  #class-dashboard-dialog-content .card-description,
+  #school-dashboard-dialog-content .card-description {
+    font-size: 7pt !important; 
   }
-  #class-dashboard-dialog-content .card-content {
-    padding: 6px !important; /* Reduced padding */
+  #class-dashboard-dialog-content .card-content,
+  #school-dashboard-dialog-content .card-content {
+    padding: 6px !important; 
   }
 
-
-   #class-dashboard-dialog-content .text-primary {
+   #class-dashboard-dialog-content .text-primary,
+   #school-dashboard-dialog-content .text-primary {
      color: #2c5282 !important; 
    }
-   #class-dashboard-dialog-content .text-accent {
+   #class-dashboard-dialog-content .text-accent,
+   #school-dashboard-dialog-content .text-accent {
      color: #276749 !important; 
    }
-   #class-dashboard-dialog-content .text-muted-foreground {
+   #class-dashboard-dialog-content .text-muted-foreground,
+   #school-dashboard-dialog-content .text-muted-foreground {
      color: #4a5568 !important; 
    }
-  #class-dashboard-dialog-content [class~="bg-accent/10"] { 
+  #class-dashboard-dialog-content [class~="bg-accent/10"],
+  #school-dashboard-dialog-content [class~="bg-accent/10"] { 
     background-color: #f0fff4 !important; 
     border: 1px solid #a7f3d0 !important; 
   }
-  #class-dashboard-dialog-content .text-green-500,
-  #class-dashboard-dialog-content .text-green-600 { color: green !important; }
-  #class-dashboard-dialog-content .text-yellow-500,
-  #class-dashboard-dialog-content .text-yellow-600 { color: #b45309 !important; } 
-  #class-dashboard-dialog-content .text-red-500,
-  #class-dashboard-dialog-content .text-red-600 { color: red !important; }
-  #class-dashboard-dialog-content .text-blue-500,
-  #class-dashboard-dialog-content .text-blue-600 { color: #2b6cb0 !important; }
+  #class-dashboard-dialog-content .text-green-500, #class-dashboard-dialog-content .text-green-600,
+  #school-dashboard-dialog-content .text-green-500, #school-dashboard-dialog-content .text-green-600,
+  #school-dashboard-dialog-content .text-green-600 { color: green !important; }
+
+  #class-dashboard-dialog-content .text-yellow-500, #class-dashboard-dialog-content .text-yellow-600,
+  #school-dashboard-dialog-content .text-yellow-500, #school-dashboard-dialog-content .text-yellow-600,
+  #school-dashboard-dialog-content .text-yellow-600 { color: #b45309 !important; } 
+
+  #class-dashboard-dialog-content .text-red-500, #class-dashboard-dialog-content .text-red-600,
+  #school-dashboard-dialog-content .text-red-500, #school-dashboard-dialog-content .text-red-600 { color: red !important; }
+  
+  #class-dashboard-dialog-content .text-blue-500, #class-dashboard-dialog-content .text-blue-600,
+  #school-dashboard-dialog-content .text-blue-500, #school-dashboard-dialog-content .text-blue-600,
+  #school-dashboard-dialog-content .text-blue-600 { color: #2b6cb0 !important; }
+
+  #school-dashboard-dialog-content .text-purple-600 { color: #553c9a !important;}
 
 
-  .dashboard-print-header { 
+  .dashboard-print-header, 
+  .school-dashboard-print-header { 
     display: block !important;
     text-align: center;
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid #ccc;
   }
-  .dashboard-print-header h2 {
+  .dashboard-print-header h2,
+  .school-dashboard-print-header h2 {
     font-size: 1.25rem; 
     font-weight: bold;
     color: black !important;
   }
-  .dashboard-print-header p {
+  .dashboard-print-header p,
+  .school-dashboard-print-header p {
     font-size: 0.875rem; 
     color: black !important;
   }
   
   #class-dashboard-dialog-content .no-print,
-  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header), /* Original header */
-  #class-dashboard-dialog-content > .sticky.top-0, /* Sticky header */
-  #class-dashboard-dialog-content > .sticky.bottom-0 /* Sticky footer */ { 
+  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header), 
+  #class-dashboard-dialog-content > .sticky.top-0, 
+  #class-dashboard-dialog-content > .sticky.bottom-0,
+  #school-dashboard-dialog-content .no-print,
+  #school-dashboard-dialog-content > .dialog-header:not(.school-dashboard-print-header),
+  #school-dashboard-dialog-content > .sticky.top-0,
+  #school-dashboard-dialog-content > .sticky.bottom-0 { 
     display: none !important;
   }
   #class-dashboard-dialog-content > button[aria-label="Close"], 
-  #class-dashboard-dialog-content .dialog-footer-print-hide { 
+  #class-dashboard-dialog-content .dialog-footer-print-hide,
+  #school-dashboard-dialog-content > button[aria-label="Close"],
+  #school-dashboard-dialog-content .dialog-footer-print-hide { 
       display: none !important;
   }
 
-
-  #class-dashboard-dialog-content .table {
+  #class-dashboard-dialog-content .table,
+  #school-dashboard-dialog-content .table {
     min-width: 0 !important;
     width: 100% !important;
     table-layout: fixed !important;
-    /* font-size is inherited */
   }
   #class-dashboard-dialog-content .table th,
-  #class-dashboard-dialog-content .table td {
+  #class-dashboard-dialog-content .table td,
+  #school-dashboard-dialog-content .table th,
+  #school-dashboard-dialog-content .table td {
     word-break: break-word !important;
-    padding: 2px 3px !important; /* Tighter padding */
+    padding: 2px 3px !important; 
     white-space: normal !important;
     font-size: 7pt !important;
   }
-  #class-dashboard-dialog-content .table th {
-    font-size: 7pt !important; /* Slightly smaller for headers if needed */
+  #class-dashboard-dialog-content .table th,
+  #school-dashboard-dialog-content .table th {
+    font-size: 7pt !important; 
   }
 
-  #class-dashboard-dialog-content tr {
+  #class-dashboard-dialog-content tr,
+  #school-dashboard-dialog-content tr {
     page-break-inside: avoid !important; 
   }
 
   /* Chart specific print enhancements */
   #class-dashboard-dialog-content [data-testid="subject-barchart-container"],
-  #class-dashboard-dialog-content [data-testid="gender-piechart-container"] {
+  #class-dashboard-dialog-content [data-testid="gender-piechart-container"],
+  #school-dashboard-dialog-content [data-testid="school-subject-barchart-container"],
+  #school-dashboard-dialog-content [data-testid="school-gender-piechart-container"] {
     min-width: 0 !important;
     width: 100% !important;
-    height: 120px !important; /* Reduced chart height for print */
+    height: 120px !important; 
     margin-top: 4px !important;
     margin-bottom: 8px !important;
   }
-  #class-dashboard-dialog-content .recharts-responsive-container {
+  #class-dashboard-dialog-content .recharts-responsive-container,
+  #school-dashboard-dialog-content .recharts-responsive-container {
     width: 100% !important; 
   }
-  #class-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper {
+  #class-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper,
+  #school-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper {
     width: 100% !important; 
     height: 100% !important; 
   }
-  #class-dashboard-dialog-content .recharts-surface { 
+  #class-dashboard-dialog-content .recharts-surface,
+  #school-dashboard-dialog-content .recharts-surface { 
     width: 100% !important;
   }
-  #class-dashboard-dialog-content .recharts-tooltip-wrapper { 
+  #class-dashboard-dialog-content .recharts-tooltip-wrapper,
+  #school-dashboard-dialog-content .recharts-tooltip-wrapper { 
     display: none !important;
   }
-  #class-dashboard-dialog-content .recharts-legend-wrapper { 
+  #class-dashboard-dialog-content .recharts-legend-wrapper,
+  #school-dashboard-dialog-content .recharts-legend-wrapper { 
     display: block !important; 
     font-size: 6pt !important;
     padding-top: 2px !important;
   }
-   #class-dashboard-dialog-content .recharts-legend-wrapper ul {
+   #class-dashboard-dialog-content .recharts-legend-wrapper ul,
+   #school-dashboard-dialog-content .recharts-legend-wrapper ul {
     display: flex !important;
     flex-wrap: wrap !important;
     justify-content: center !important;
   }
-  #class-dashboard-dialog-content .recharts-legend-item {
+  #class-dashboard-dialog-content .recharts-legend-item,
+  #school-dashboard-dialog-content .recharts-legend-item {
     margin-right: 4px !important;
   }
-   #class-dashboard-dialog-content .recharts-cartesian-axis-tick text {
+   #class-dashboard-dialog-content .recharts-cartesian-axis-tick text,
+   #school-dashboard-dialog-content .recharts-cartesian-axis-tick text {
     font-size: 6pt !important;
   }
 }

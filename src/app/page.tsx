@@ -6,10 +6,11 @@ import ReportForm from '@/components/report-form';
 import ReportPreview from '@/components/report-preview';
 import ReportActions from '@/components/report-actions';
 import ClassPerformanceDashboard from '@/components/class-dashboard';
+import SchoolPerformanceDashboard from '@/components/school-dashboard'; // Import new dashboard
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building } from 'lucide-react'; // Added Building icon
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
@@ -54,6 +55,7 @@ function AppContent() {
 
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState<number>(0);
   const [isClassDashboardOpen, setIsClassDashboardOpen] = useState(false);
+  const [isSchoolDashboardOpen, setIsSchoolDashboardOpen] = useState(false); // State for school dashboard
 
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
@@ -132,7 +134,6 @@ function AppContent() {
           const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
           const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
           
-          // Using studentName as the primary key for simplicity. Could be composite (name + class) for more uniqueness.
           const profileKey = reportWithEntryNumber.studentName; 
           
           profiles[profileKey] = {
@@ -156,14 +157,14 @@ function AppContent() {
       calculateAndSetRanks(newList);
       setCurrentPreviewIndex(newList.length - 1); 
 
-      if (reportPrintList.length === 0) { // This condition means it's the first report being added
+      if (reportPrintList.length === 0) { 
         setSessionDefaults({
           schoolName: currentEditingReport.schoolName,
           schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
           className: currentEditingReport.className,
           academicYear: currentEditingReport.academicYear,
           academicTerm: currentEditingReport.academicTerm,
-          selectedTemplateId: currentEditingReport.selectedTemplateId, // Capture template
+          selectedTemplateId: currentEditingReport.selectedTemplateId,
           totalSchoolDays: currentEditingReport.totalSchoolDays,
           headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
           instructorContact: currentEditingReport.instructorContact,
@@ -183,16 +184,16 @@ function AppContent() {
         schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
         schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBase.schoolLogoDataUri,
         className: sessionDefaults.className ?? newFormBase.className,
-        gender: newFormBase.gender, // Always reset gender for new student
-        academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear, // Persist
-        academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm, // Persist
-        selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBase.selectedTemplateId, // Persist
+        gender: newFormBase.gender, 
+        academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear, 
+        academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm, 
+        selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBase.selectedTemplateId, 
         totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null
                          ? sessionDefaults.totalSchoolDays
-                         : newFormBase.totalSchoolDays, // Persist
-        headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri, // Persist
-        instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact, // Persist
-        studentName: '', // Clear student-specific fields for the next entry
+                         : newFormBase.totalSchoolDays, 
+        headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri, 
+        instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact, 
+        studentName: '', 
         daysAttended: null,
         parentEmail: '',
         parentPhoneNumber: '',
@@ -207,7 +208,7 @@ function AppContent() {
         id: undefined,
         overallAverage: undefined,
         rank: undefined,
-        studentPhotoDataUri: undefined, // Clear photo for next entry; pre-fill logic in form will handle it
+        studentPhotoDataUri: undefined, 
       };
       setCurrentEditingReport(newCurrentEditingReport);
 
@@ -224,7 +225,7 @@ function AppContent() {
     setReportPrintList([]);
     setNextStudentEntryNumber(1);
     setCurrentPreviewIndex(0);
-    setSessionDefaults({}); // Clear all session defaults
+    setSessionDefaults({}); 
     toast({
       title: "Print List Cleared",
       description: "All reports have been removed and ranking reset. Session defaults cleared.",
@@ -290,7 +291,6 @@ function AppContent() {
         if (classNames.size === 1) {
             return classNames.values().next().value;
         }
-        // If multiple classes, use the class of the first report or a general term
         return reportPrintList[0].className || "Mixed Classes"; 
     }
     return currentEditingReport.className || "N/A";
@@ -305,6 +305,21 @@ function AppContent() {
         return reportPrintList[0].academicTerm || "Multiple Terms";
     }
     return currentEditingReport.academicTerm || "N/A";
+  }, [reportPrintList, currentEditingReport.academicTerm]);
+
+  const schoolNameForDashboard = useMemo(() => {
+    return sessionDefaults.schoolName || currentEditingReport.schoolName || "School";
+  }, [sessionDefaults.schoolName, currentEditingReport.schoolName]);
+
+  const academicTermForSchoolDashboard = useMemo(() => {
+    if (reportPrintList.length > 0) {
+      const uniqueTerms = new Set(reportPrintList.map(r => r.academicTerm));
+      if (uniqueTerms.size === 1) {
+        return uniqueTerms.values().next().value;
+      }
+      return "Multiple Terms Summary"; // Or a specific term if all reports are for one
+    }
+    return currentEditingReport.academicTerm || "Term Summary";
   }, [reportPrintList, currentEditingReport.academicTerm]);
 
 
@@ -370,6 +385,16 @@ function AppContent() {
                        <BarChartHorizontalBig className="mr-2 h-4 w-4" /> 
                        Class Dashboard
                      </Button>
+                     <Button 
+                        onClick={() => setIsSchoolDashboardOpen(true)} 
+                        disabled={reportsCount === 0} 
+                        variant="outline" 
+                        size="sm"
+                        title={reportsCount > 0 ? "View AI-powered school overview dashboard" : "Add reports to list to view dashboard"}
+                      >
+                       <Building className="mr-2 h-4 w-4" /> 
+                       School Overview
+                     </Button>
                     <Button onClick={handleDownloadData} disabled={reportsCount === 0} variant="outline" size="sm">
                       <Download className="mr-2 h-4 w-4" />
                       Download Data
@@ -434,6 +459,15 @@ function AppContent() {
             reports={reportPrintList}
             classNameProp={currentClassNameForDashboard}
             academicTerm={currentAcademicTermForDashboard}
+        />
+    )}
+    {isSchoolDashboardOpen && (
+        <SchoolPerformanceDashboard
+            isOpen={isSchoolDashboardOpen}
+            onOpenChange={setIsSchoolDashboardOpen}
+            allReports={reportPrintList}
+            schoolNameProp={schoolNameForDashboard}
+            academicTermProp={academicTermForSchoolDashboard}
         />
     )}
     </>
