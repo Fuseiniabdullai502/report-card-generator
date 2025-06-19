@@ -8,7 +8,7 @@
  * - GenerateClassInsightsOutput - The return type for the generateClassInsights function.
  */
 
-import {ai} from '@/ai/genkit';
+import {sirAi} from '@/ai/genkit';
 import {z}from 'genkit';
 
 const SubjectPerformanceStatSchema = z.object({
@@ -47,7 +47,7 @@ export async function generateClassInsights(input: GenerateClassInsightsInput): 
   return generateClassInsightsFlow(input);
 }
 
-const prompt = ai.definePrompt({
+const prompt = sirAi.definePrompt({
   name: 'generateClassInsightsPrompt',
   input: {schema: GenerateClassInsightsInputSchema},
   output: {schema: GenerateClassInsightsOutputSchema},
@@ -93,7 +93,7 @@ If the input data is insufficient to make a meaningful judgment on any part, pro
   },
 });
 
-const generateClassInsightsFlow = ai.defineFlow(
+const generateClassInsightsFlow = sirAi.defineFlow(
   {
     name: 'generateClassInsightsFlow',
     inputSchema: GenerateClassInsightsInputSchema,
@@ -117,3 +117,4 @@ const generateClassInsightsFlow = ai.defineFlow(
     };
   }
 );
+

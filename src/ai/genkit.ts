@@ -2,16 +2,16 @@
 import { genkit, type GenkitPlugin, type Genkit as GenkitInstance } from 'genkit'; // Updated Genkit import for type
 import { googleAI } from '@genkit-ai/googleai';
 
-let initializedAi: GenkitInstance;
+let genkitInstance: GenkitInstance;
 
 try {
   // Attempt to initialize with Google AI
   const mainPlugins: GenkitPlugin[] = [googleAI()];
-  initializedAi = genkit({
+  genkitInstance = genkit({
     plugins: mainPlugins,
     model: 'googleai/gemini-2.0-flash', // This model is from the googleAI plugin
   });
-  console.log("Genkit initialized successfully with GoogleAI plugin.");
+  console.log("Genkit initialized successfully with GoogleAI plugin as sirAi.");
 } catch (error) {
   console.error(
     'CRITICAL: Failed to initialize Genkit with GoogleAI plugin. AI features will NOT work. This is often due to missing or invalid GOOGLE_API_KEY or other Google AI credentials in the environment.',
@@ -21,7 +21,7 @@ try {
   // This allows the server to start for non-AI parts of the app.
   // Operations requiring a model will likely fail later with clearer errors.
   try {
-    initializedAi = genkit({
+    genkitInstance = genkit({
       plugins: [], // No plugins
       // No default model is specified here; operations will need to specify one or will fail.
     });
@@ -34,4 +34,5 @@ try {
   }
 }
 
-export const ai = initializedAi;
+export const sirAi = genkitInstance;
+

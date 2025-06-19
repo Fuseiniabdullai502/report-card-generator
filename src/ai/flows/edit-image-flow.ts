@@ -8,7 +8,7 @@
  * - EditImageOutput - The return type for the editImage function.
  */
 
-import {ai} from '@/ai/genkit';
+import {sirAi} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const EditImageInputSchema = z.object({
@@ -30,14 +30,14 @@ export async function editImage(input: EditImageInput): Promise<EditImageOutput>
   return editImageFlow(input);
 }
 
-const editImageFlow = ai.defineFlow(
+const editImageFlow = sirAi.defineFlow(
   {
     name: 'editImageFlow',
     inputSchema: EditImageInputSchema,
     outputSchema: EditImageOutputSchema,
   },
   async ({ photoDataUri, prompt }) => {
-    const { media } = await ai.generate({
+    const { media } = await sirAi.generate({
       model: 'googleai/gemini-2.0-flash-exp', // IMPORTANT: Use this model for image generation/editing
       prompt: [
         { media: { url: photoDataUri } },
@@ -55,3 +55,4 @@ const editImageFlow = ai.defineFlow(
     return { editedPhotoDataUri: media.url };
   }
 );
+
