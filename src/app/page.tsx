@@ -11,15 +11,13 @@ import ImportStudentsDialog from '@/components/import-students-dialog';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert'; // Keep if used elsewhere, or remove if not
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
-// Removed useAuth import
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
-// Removed LoginButton import
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 
@@ -52,10 +50,18 @@ function formatRankString(rankNumber: number, isTie: boolean): string {
 }
 
 function AppContent() {
-  // Removed useAuth() and authLoading
-  const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(() => JSON.parse(JSON.stringify({
-    ...defaultReportData,
-  })));
+  const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(() => {
+    const base = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'teacherId' | 'createdAt' | 'overallAverage' | 'rank'>;
+    return {
+      ...base,
+      id: `unsaved-${Date.now()}`,
+      studentEntryNumber: 1, // Initial placeholder, will be updated
+      teacherId: undefined,
+      createdAt: undefined,
+      overallAverage: undefined,
+      rank: undefined,
+    };
+  });
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
   const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
   const [sessionDefaults, setSessionDefaults] = useState<Partial<ReportData>>({});
@@ -124,20 +130,18 @@ function AppContent() {
   }, [currentPreviewIndex]);
 
   useEffect(() => {
-    // Removed authLoading and user checks for fetching
     setIsLoadingReports(true);
     const reportsCollectionRef = collection(db, 'reports');
-    // Query all reports, not filtered by teacherId
     const q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedReports: ReportData[] = [];
       let maxEntryNum = 0;
       querySnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp }; // teacherId might be missing now
+        const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp };
         fetchedReports.push({
             ...data,
-            id: doc.id, // Use Firestore doc ID as the report ID
+            id: doc.id, 
         });
         if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
             maxEntryNum = data.studentEntryNumber;
@@ -146,6 +150,13 @@ function AppContent() {
       calculateAndSetRanks(fetchedReports);
       setNextStudentEntryNumber(maxEntryNum + 1);
       setIsLoadingReports(false);
+      // Update currentEditingReport's studentEntryNumber if list is empty
+      if (fetchedReports.length === 0) {
+        setCurrentEditingReport(prev => ({
+          ...prev,
+          studentEntryNumber: maxEntryNum + 1,
+        }));
+      }
     }, (error) => {
       console.error("Error fetching reports from Firestore:", error);
       toast({ title: "Error Fetching Reports", description: "Could not load reports from the database.", variant: "destructive" });
@@ -153,7 +164,7 @@ function AppContent() {
     });
 
     return () => unsubscribe();
-  }, [calculateAndSetRanks, toast]); // Removed user and authLoading from dependencies
+  }, [calculateAndSetRanks, toast]);
 
 
   const handleFormUpdate = (data: ReportData) => {
@@ -174,14 +185,13 @@ function AppContent() {
         return;
       }
 
-    // Removed user check for saving
-    const reportId = `report-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const reportWithMetadata: Omit<ReportData, 'teacherId'> & {createdAt: any} = { // teacherId removed
+    const reportWithMetadata: ReportData = {
       ...currentEditingReport,
-      id: reportId,
-      studentEntryNumber: nextStudentEntryNumber,
-      // teacherId: user.uid, // Removed teacherId
+      studentEntryNumber: nextStudentEntryNumber, 
       createdAt: serverTimestamp(),
+      // Ensure fields like overallAverage and rank are not carried over if they were on currentEditingReport
+      overallAverage: undefined,
+      rank: undefined,
     };
 
 
@@ -230,16 +240,17 @@ function AppContent() {
         instructorContact: currentEditingReport.instructorContact,
       });
     }
+    
+    const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
+    setNextStudentEntryNumber(newNextStudentEntryNumber);
 
-    setNextStudentEntryNumber(prevNumber => prevNumber + 1);
-
-    const newFormBase = JSON.parse(JSON.stringify(defaultReportData));
+    const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'teacherId' | 'createdAt' | 'overallAverage' | 'rank'>;
     setCurrentEditingReport({
       ...newFormBase,
       schoolName: sessionDefaults.schoolName ?? newFormBase.schoolName,
       schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBase.schoolLogoDataUri,
       className: sessionDefaults.className ?? newFormBase.className,
-      gender: newFormBase.gender,
+      gender: undefined, // Reset gender
       academicYear: sessionDefaults.academicYear ?? newFormBase.academicYear,
       academicTerm: sessionDefaults.academicTerm ?? newFormBase.academicTerm,
       selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBase.selectedTemplateId,
@@ -248,6 +259,8 @@ function AppContent() {
                        : newFormBase.totalSchoolDays,
       headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
       instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact,
+      id: `unsaved-${Date.now()}`, 
+      studentEntryNumber: newNextStudentEntryNumber,
       studentName: '',
       daysAttended: null,
       parentEmail: '',
@@ -260,10 +273,11 @@ function AppContent() {
       subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
       promotionStatus: undefined,
       studentPhotoDataUri: undefined,
-      // Ensure id and studentEntryNumber are not carried over to new form base from defaultReportData context
-      id: undefined,
-      studentEntryNumber: undefined,
-    } as ReportData); // Cast to ReportData, accepting id and studentEntryNumber as undefined
+      overallAverage: undefined,
+      rank: undefined,
+      teacherId: undefined,
+      createdAt: undefined,
+    });
   };
 
   const handleClearList = () => {
@@ -274,7 +288,16 @@ function AppContent() {
       title: "Local View Cleared",
       description: "Your local view of reports has been cleared. Data in the database is not affected.",
     });
-    setCurrentEditingReport(JSON.parse(JSON.stringify({ ...defaultReportData } as ReportData))); // Cast as ReportData
+    const newBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'teacherId' | 'createdAt' | 'overallAverage' | 'rank'>;
+    setCurrentEditingReport({ 
+        ...newBase,
+        id: `unsaved-${Date.now()}`,
+        studentEntryNumber: nextStudentEntryNumber, // Use current nextStudentEntryNumber
+        teacherId: undefined,
+        createdAt: undefined,
+        overallAverage: undefined,
+        rank: undefined,
+     });
   }
 
   const handlePrint = () => {
@@ -357,7 +380,6 @@ function AppContent() {
   }, [reportPrintList, currentEditingReport.academicTerm, reportsCount]);
 
  const handleImportStudents = (selectedStudentNames: string[], destinationClass: string) => {
-    // Removed user check
     if (selectedStudentNames.length === 0 || !destinationClass) {
       toast({ title: "Import Error", description: "No students selected or destination class missing.", variant: "destructive" });
       return;
@@ -373,13 +395,12 @@ function AppContent() {
       selectedStudentNames.forEach(studentName => {
         const profile = Object.values(profiles).find(p => p.studentName === studentName);
         if (profile) {
-          const reportId = `report-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-imported`;
-          const newFormBase = JSON.parse(JSON.stringify(defaultReportData));
-          const importedReport: Omit<ReportData, 'teacherId'> & {createdAt: any} = { // teacherId removed
+          const reportId = `imported-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'teacherId' | 'createdAt' | 'overallAverage' | 'rank'>;
+          const importedReport: ReportData = {
             ...newFormBase,
             id: reportId,
             studentEntryNumber: currentImportEntryNumber++,
-            // teacherId: user.uid, // Removed teacherId
             createdAt: serverTimestamp(),
             studentName: profile.studentName,
             gender: profile.gender,
@@ -398,6 +419,7 @@ function AppContent() {
             hobbies: [], teacherFeedback: '',
             subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
             promotionStatus: undefined, overallAverage: undefined, rank: undefined,
+            teacherId: undefined, 
           };
           reportsToImportPromises.push(addDoc(collection(db, 'reports'), importedReport));
         }
@@ -410,8 +432,11 @@ function AppContent() {
               title: "Students Imported",
               description: `${reportsToImportPromises.length} student(s) imported to ${destinationClass} and saved. List will update.`,
             });
-            setNextStudentEntryNumber(currentImportEntryNumber);
-            const newFormBaseReset = JSON.parse(JSON.stringify(defaultReportData));
+            
+            const newNextEntryNumForForm = currentImportEntryNumber;
+            setNextStudentEntryNumber(newNextEntryNumForForm); // Update the main counter
+
+            const newFormBaseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'teacherId' | 'createdAt' | 'overallAverage' | 'rank'>;
             setCurrentEditingReport({
                 ...newFormBaseReset,
                 schoolName: sessionDefaults.schoolName ?? newFormBaseReset.schoolName,
@@ -423,9 +448,13 @@ function AppContent() {
                 totalSchoolDays: sessionDefaults.totalSchoolDays ?? newFormBaseReset.totalSchoolDays,
                 headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBaseReset.headMasterSignatureDataUri,
                 instructorContact: sessionDefaults.instructorContact ?? newFormBaseReset.instructorContact,
-                id: undefined,
-                studentEntryNumber: undefined,
-            } as ReportData); // Cast as ReportData
+                id: `unsaved-${Date.now()}`,
+                studentEntryNumber: newNextEntryNumForForm,
+                teacherId: undefined,
+                createdAt: undefined,
+                overallAverage: undefined,
+                rank: undefined,
+            });
           })
           .catch(error => {
             console.error("Error importing students to Firestore:", error);
@@ -441,7 +470,6 @@ function AppContent() {
     setIsImportStudentsDialogOpen(false);
   };
 
-  // Removed authLoading check and login screen. App content renders directly.
 
   return (
     <>
@@ -453,7 +481,6 @@ function AppContent() {
         </div>
         <p className="text-muted-foreground mt-2 text-sm sm:text-base">Easily create, customize, rank, and print student report cards.</p>
          <div className="absolute top-0 right-0 flex items-center gap-2">
-          {/* User email display removed */}
           <ThemeToggleButton />
         </div>
       </header>
@@ -479,7 +506,7 @@ function AppContent() {
                   <div className="flex items-center gap-2">
                     <Eye className="mr-1 h-5 w-5 md:h-6 md:w-6 text-primary" />
                     <CardTitle className="font-headline text-lg md:text-xl">
-                      {reportsCount > 0 ? `Report ${currentPreviewIndex + 1} of ${reportsCount}` : `Report Print Preview (0 Reports)`}
+                      {reportsCount > 0 ? `Report ${currentPreviewIndex + 1} of ${reportsCount}` : `Report Print Preview`}
                     </CardTitle>
                   </div>
                   {reportsCount > 1 && (
@@ -534,7 +561,7 @@ function AppContent() {
                       <Printer className="mr-2 h-4 w-4" />
                       Print All ({reportsCount})
                     </Button>
-                    <Button onClick={handleClearList} disabled={reportsCount === 0 || isLoadingReports} variant="destructive" size="sm">
+                    <Button onClick={handleClearList} disabled={isLoadingReports && reportsCount === 0} variant="destructive" size="sm">
                       <Trash2 className="mr-2 h-4 w-4" />
                       Clear Local View
                     </Button>
@@ -543,7 +570,9 @@ function AppContent() {
               </div>
               <CardDescription className="mt-2 md:mt-1 space-y-1">
                 <span>
-                  This area shows one report at a time. Use navigation buttons if multiple reports are in the list. "Print All" prints all reports.
+                  {reportsCount > 0 
+                    ? 'This area shows one report at a time from the list. Use navigation buttons if multiple reports are in the list.'
+                    : 'This area shows a live preview of the form data. Click "Add Current Report..." to save it.'}
                 </span>
                 <span className="block text-xs italic">
                   <Share2 className="inline-block mr-1 h-3 w-3 text-muted-foreground" /> Share options (Email/WhatsApp) below each report will open your default app.
@@ -552,13 +581,7 @@ function AppContent() {
               </CardDescription>
             </CardHeader>
             <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">
-              {isLoadingReports && reportsCount === 0 ? (
-                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
-                  <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
-                  <h3 className="text-lg font-semibold">Loading Reports...</h3>
-                  <p>Fetching your report data from the cloud.</p>
-                </div>
-              ) : reportsCount > 0 ? (
+              {reportsCount > 0 ? (
                 reportPrintList.map((reportData, index) => (
                   <React.Fragment key={reportData.id || `report-entry-${reportData.studentEntryNumber}`}>
                     {index === currentPreviewIndex && (
@@ -571,12 +594,24 @@ function AppContent() {
                     </div>
                   </React.Fragment>
                 ))
+              ) : isLoadingReports ? (
+                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
+                  <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+                  <h3 className="text-lg font-semibold">Loading Reports...</h3>
+                  <p>Fetching your report data from the cloud.</p>
+                </div>
+              ) : currentEditingReport ? (
+                <>
+                  {/* No ReportActions for unsaved form data preview to avoid confusion */}
+                  <div className="report-preview-item active-preview-screen">
+                    <ReportPreview data={currentEditingReport} />
+                  </div>
+                </>
               ) : (
                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
                   <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
-                  <h3 className="text-xl font-semibold mb-2">No Reports Available</h3>
-                  <p>Fill out the form, then click "Add Current Report to Print List" to create new reports.</p>
-                   <p className="text-sm mt-1">Your saved reports will appear here automatically.</p>
+                  <h3 className="text-xl font-semibold mb-2">Form is Empty</h3>
+                  <p>Fill out the form and click "Update Preview" or "Add Current Report to Print List".</p>
                 </div>
               )}
             </CardContent>
@@ -623,3 +658,4 @@ export default function Home() {
     <AppContent />
   );
 }
+
