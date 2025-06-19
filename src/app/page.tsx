@@ -11,14 +11,15 @@ import ImportStudentsDialog from '@/components/import-students-dialog';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert'; // Added import
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
-import { useAuth } from '@/contexts/auth-context'; // Import useAuth
-import { db } from '@/lib/firebase'; // Import Firestore db instance
+import { useAuth } from '@/contexts/auth-context';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
+import LoginButton from '@/components/login-button'; // Import the LoginButton
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 
@@ -51,10 +52,9 @@ function formatRankString(rankNumber: number, isTie: boolean): string {
 }
 
 function AppContent() {
-  const { user, loading: authLoading } = useAuth(); // Get user from AuthContext
+  const { user, loading: authLoading } = useAuth();
   const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(() => JSON.parse(JSON.stringify({
-    ...defaultReportData, 
-    // id and studentEntryNumber will be set before saving or adding to list
+    ...defaultReportData,
   })));
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
   const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
@@ -123,7 +123,6 @@ function AppContent() {
 
   }, [currentPreviewIndex]);
 
-  // Fetch reports from Firestore
   useEffect(() => {
     if (authLoading) {
       setIsLoadingReports(true);
@@ -132,7 +131,7 @@ function AppContent() {
     if (!user) {
       setReportPrintList([]);
       setIsLoadingReports(false);
-      setNextStudentEntryNumber(1); // Reset entry number if user logs out
+      setNextStudentEntryNumber(1);
       return;
     }
 
@@ -145,13 +144,9 @@ function AppContent() {
       let maxEntryNum = 0;
       querySnapshot.forEach((doc) => {
         const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp };
-        // Convert Firestore Timestamp to Date if needed, or keep as is if schema supports it
-        // For simplicity, we assume ReportData can handle Timestamp or it's converted/ignored
-        fetchedReports.push({ 
-            ...data, 
-            id: doc.id, // Use Firestore doc id as the primary id now for fetched reports
-            // If createdAt is a Firestore Timestamp, you might want to convert it:
-            // createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : new Date(), 
+        fetchedReports.push({
+            ...data,
+            id: doc.id,
         });
         if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
             maxEntryNum = data.studentEntryNumber;
@@ -166,7 +161,7 @@ function AppContent() {
       setIsLoadingReports(false);
     });
 
-    return () => unsubscribe(); // Cleanup listener
+    return () => unsubscribe();
   }, [user, authLoading, calculateAndSetRanks, toast]);
 
 
@@ -190,54 +185,34 @@ function AppContent() {
 
     if (!user) {
       toast({ title: "Not Logged In", description: "You must be logged in to save reports to the database.", variant: "destructive" });
-      // Optionally, could add to a temporary local list if offline functionality is desired later
-      // For now, we just prevent DB save.
-      // The code below still adds to local list and resets form.
-      // If strict online-only, return here.
+      return;
     }
-    
+
     const reportId = `report-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const reportWithMetadata: ReportData = {
       ...currentEditingReport,
-      id: reportId, // Persist this locally generated ID
+      id: reportId,
       studentEntryNumber: nextStudentEntryNumber,
-      teacherId: user ? user.uid : undefined,
-      createdAt: serverTimestamp(), // This will be handled by Firestore on save
+      teacherId: user.uid,
+      createdAt: serverTimestamp(),
     };
 
 
-    if (user) { // Only attempt Firestore save if user is logged in
-        try {
-          await addDoc(collection(db, 'reports'), reportWithMetadata);
-          toast({
-            title: "Report Submitted",
-            description: `${currentEditingReport.studentName}'s report submitted. List will update.`,
-          });
-        } catch (error) {
-          console.error("Error adding report to Firestore: ", error);
-          toast({
-            title: "Firestore Save Error",
-            description: "Could not save report to the database. It's added to local view only for now.",
-            variant: "destructive",
-          });
-           // Fallback: add to local list if DB save fails but user is logged in (temporary measure)
-          // const newList = [...reportPrintList, reportWithMetadata];
-          // calculateAndSetRanks(newList);
-          // setCurrentPreviewIndex(newList.length - 1);
-        }
-    } else {
-        // If user is not logged in, and we decide to allow local-only list for demo/offline:
-        // const newList = [...reportPrintList, {...reportWithMetadata, teacherId: undefined, createdAt: new Date()}]; // Use client date
-        // calculateAndSetRanks(newList);
-        // setCurrentPreviewIndex(newList.length - 1);
-        // toast({
-        //   title: "Report Added Locally",
-        //   description: "Report added to local list. Login to save to database.",
-        // });
+    try {
+      await addDoc(collection(db, 'reports'), reportWithMetadata);
+      toast({
+        title: "Report Submitted",
+        description: `${currentEditingReport.studentName}'s report submitted. List will update.`,
+      });
+    } catch (error) {
+      console.error("Error adding report to Firestore: ", error);
+      toast({
+        title: "Firestore Save Error",
+        description: "Could not save report to the database.",
+        variant: "destructive",
+      });
     }
 
-
-    // Save student profile to localStorage for "First Term"
     if (reportWithMetadata.academicTerm === 'First Term' && reportWithMetadata.studentName) {
       try {
         const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
@@ -255,8 +230,7 @@ function AppContent() {
       }
     }
 
-    // Update session defaults if this is the first report being added via Firestore/locally
-    if (reportPrintList.length === 0 && !sessionDefaults.schoolName) { 
+    if (reportPrintList.length === 0 && !sessionDefaults.schoolName) {
       setSessionDefaults({
         schoolName: currentEditingReport.schoolName,
         schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
@@ -271,8 +245,7 @@ function AppContent() {
     }
 
     setNextStudentEntryNumber(prevNumber => prevNumber + 1);
-    
-    // Reset form for next entry
+
     const newFormBase = JSON.parse(JSON.stringify(defaultReportData));
     setCurrentEditingReport({
       ...newFormBase,
@@ -288,8 +261,7 @@ function AppContent() {
                        : newFormBase.totalSchoolDays,
       headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
       instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact,
-      // Explicitly clear student-specific fields
-      studentName: '', 
+      studentName: '',
       daysAttended: null,
       parentEmail: '',
       parentPhoneNumber: '',
@@ -305,15 +277,9 @@ function AppContent() {
   };
 
   const handleClearList = () => {
-    // For now, this only clears the local list. Deleting from Firestore is a separate, more complex feature.
     setReportPrintList([]);
     setCurrentPreviewIndex(0);
-    // Resetting nextStudentEntryNumber might not be desired if new entries should continue sequence
-    // For a "clear session" type action, resetting it makes sense.
-    // If data is primarily from Firestore, this might need to persist on user or be fetched.
-    // For now, keep local reset.
-    // setNextStudentEntryNumber(1); 
-    setSessionDefaults({}); 
+    setSessionDefaults({});
     toast({
       title: "Local View Cleared",
       description: "Your local view of reports has been cleared. Data in the database is not affected.",
@@ -356,7 +322,7 @@ function AppContent() {
     URL.revokeObjectURL(dataUrl);
     toast({ title: "Data Downloaded", description: "Current report list data has been downloaded." });
   };
-  
+
   const reportsCount = reportPrintList.length;
 
   const handleNextPreview = () => {
@@ -371,10 +337,9 @@ function AppContent() {
     if (reportsCount > 0 && reportPrintList[currentPreviewIndex]) {
       return reportPrintList[currentPreviewIndex].className || "N/A";
     }
-    // If list is empty or currentPreviewIndex is out of bounds due to async update
     const classNamesInList = new Set(reportPrintList.map(r => r.className).filter(Boolean));
     if (classNamesInList.size === 1) return classNamesInList.values().next().value;
-    if (classNamesInList.size > 1) return "Multiple Classes"; // Or some other placeholder
+    if (classNamesInList.size > 1) return "Multiple Classes";
     return currentEditingReport.className || "N/A";
   }, [reportPrintList, currentPreviewIndex, currentEditingReport.className, reportsCount]);
 
@@ -396,7 +361,7 @@ function AppContent() {
     if (reportsCount > 0) {
       const uniqueTerms = new Set(reportPrintList.map(r => r.academicTerm).filter(Boolean));
       if (uniqueTerms.size === 1) return uniqueTerms.values().next().value;
-      return "Multiple Terms Summary"; 
+      return "Multiple Terms Summary";
     }
     return currentEditingReport.academicTerm || "Term Summary";
   }, [reportPrintList, currentEditingReport.academicTerm, reportsCount]);
@@ -414,7 +379,7 @@ function AppContent() {
     try {
       const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
       const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
-      
+
       const reportsToImportPromises: Promise<void>[] = [];
       let currentImportEntryNumber = nextStudentEntryNumber;
 
@@ -441,7 +406,6 @@ function AppContent() {
             totalSchoolDays: sessionDefaults.totalSchoolDays ?? newFormBase.totalSchoolDays,
             headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBase.headMasterSignatureDataUri,
             instructorContact: sessionDefaults.instructorContact ?? newFormBase.instructorContact,
-            // Reset performance fields
             daysAttended: null, parentEmail: '', parentPhoneNumber: '',
             performanceSummary: '', strengths: '', areasForImprovement: '',
             hobbies: [], teacherFeedback: '',
@@ -460,7 +424,6 @@ function AppContent() {
               description: `${reportsToImportPromises.length} student(s) imported to ${destinationClass} and saved. List will update.`,
             });
             setNextStudentEntryNumber(currentImportEntryNumber);
-            // Form reset happens after any add/import
             const newFormBaseReset = JSON.parse(JSON.stringify(defaultReportData));
             setCurrentEditingReport({
                 ...newFormBaseReset,
@@ -512,10 +475,7 @@ function AppContent() {
             Authentication is required to access the application and securely store your data.
           </AlertDescription>
         </Alert>
-        {/* FirebaseUI or custom login button would go here. For now, this placeholder indicates the state. */}
-        <p className="text-sm text-muted-foreground">
-          (Login component/integration would be here. The app currently requires manual Firebase setup for login.)
-        </p>
+        <LoginButton /> {/* Replaced placeholder with LoginButton */}
          <div className="absolute top-4 right-4">
           <ThemeToggleButton />
         </div>
@@ -577,34 +537,34 @@ function AppContent() {
 
                 <div className="flex flex-col gap-2 items-stretch">
                   <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-                    <Button 
-                        onClick={() => setIsImportStudentsDialogOpen(true)} 
-                        variant="outline" 
+                    <Button
+                        onClick={() => setIsImportStudentsDialogOpen(true)}
+                        variant="outline"
                         size="sm"
                         title="Import student data from previous term/class"
                         disabled={isLoadingReports}
                       >
-                       <Upload className="mr-2 h-4 w-4" /> 
+                       <Upload className="mr-2 h-4 w-4" />
                        Import Promoted Students
                      </Button>
-                     <Button 
-                        onClick={() => setIsClassDashboardOpen(true)} 
-                        disabled={reportsCount === 0 || isLoadingReports} 
-                        variant="outline" 
+                     <Button
+                        onClick={() => setIsClassDashboardOpen(true)}
+                        disabled={reportsCount === 0 || isLoadingReports}
+                        variant="outline"
                         size="sm"
                         title={reportsCount > 0 ? "View AI-powered class performance dashboard" : "Add reports to list to view dashboard"}
                       >
-                       <BarChartHorizontalBig className="mr-2 h-4 w-4" /> 
+                       <BarChartHorizontalBig className="mr-2 h-4 w-4" />
                        Class Dashboard
                      </Button>
-                     <Button 
-                        onClick={() => setIsSchoolDashboardOpen(true)} 
-                        disabled={reportsCount === 0 || isLoadingReports} 
-                        variant="outline" 
+                     <Button
+                        onClick={() => setIsSchoolDashboardOpen(true)}
+                        disabled={reportsCount === 0 || isLoadingReports}
+                        variant="outline"
                         size="sm"
                         title={reportsCount > 0 ? "View AI-powered school overview dashboard" : "Add reports to list to view dashboard"}
                       >
-                       <Building className="mr-2 h-4 w-4" /> 
+                       <Building className="mr-2 h-4 w-4" />
                        School Overview
                      </Button>
                     <Button onClick={handleDownloadData} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm">
@@ -701,8 +661,6 @@ function AppContent() {
 
 export default function Home() {
   return (
-    // AuthProvider is in RootLayout, so AppContent has access to useAuth()
     <AppContent />
   );
 }
-
