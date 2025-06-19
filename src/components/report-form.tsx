@@ -149,7 +149,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       studentName: initialData?.studentName || '',
       className: initialData?.className || '',
       gender: initialData?.gender || '',
-      schoolName: initialData?.schoolName || 'Springfield Elementary',
+      schoolName: initialData?.schoolName || 'Faacom Academy',
       schoolLogoDataUri: initialData?.schoolLogoDataUri || undefined,
       academicYear: initialData?.academicYear || '2023-2024',
       academicTerm: initialData?.academicTerm || 'First Term',
@@ -260,7 +260,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         studentName: initialData.studentName || '',
         className: initialData.className || '',
         gender: initialData.gender || '',
-        schoolName: initialData.schoolName || 'Springfield Elementary',
+        schoolName: initialData.schoolName || 'Faacom Academy',
         schoolLogoDataUri: initialData.schoolLogoDataUri || undefined,
         academicYear: initialData.academicYear || '2023-2024',
         academicTerm: initialData.academicTerm || 'First Term',
@@ -847,7 +847,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     <FormItem>
                       <FormLabel className="flex items-center"><Building className="mr-2 h-4 w-4" />School Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Springfield Elementary" {...field} />
+                        <Input placeholder="e.g., Faacom Academy" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1580,3 +1580,4 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
+

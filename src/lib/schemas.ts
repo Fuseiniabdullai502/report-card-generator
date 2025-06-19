@@ -24,7 +24,7 @@ export const ReportDataSchema = z.object({
   studentName: z.string().min(1, 'Student name is required'),
   className: z.string().min(1, 'Class name is required'),
   gender: z.string().optional(),
-  schoolName: z.string().optional().default('Springfield Elementary'),
+  schoolName: z.string().optional().default('Faacom Academy'),
   schoolLogoDataUri: z.string().optional().describe("A data URI of the school's logo."),
   academicYear: z.string().optional().default('2023-2024'),
   academicTerm: z.string().optional().default('First Term'),
@@ -73,7 +73,7 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   studentName: '',
   className: '',
   gender: undefined,
-  schoolName: 'Springfield Elementary',
+  schoolName: 'Faacom Academy',
   schoolLogoDataUri: undefined,
   academicYear: '2023-2024',
   academicTerm: 'First Term',
@@ -93,3 +93,4 @@ export const defaultReportData: Omit<ReportData, 'overallAverage' | 'rank' | 'id
   studentPhotoDataUri: undefined,
   headMasterSignatureDataUri: undefined,
 };
+
