@@ -11,7 +11,7 @@ import ImportStudentsDialog from '@/components/import-students-dialog';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // Added import
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
@@ -59,7 +59,7 @@ function AppContent() {
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
-      teacherId: undefined, // Auth removed
+      teacherId: undefined, 
     };
   });
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
@@ -132,22 +132,18 @@ function AppContent() {
   useEffect(() => {
     setIsLoadingReports(true);
     const reportsCollectionRef = collection(db, 'reports');
-    const q = query(reportsCollectionRef, orderBy('createdAt', 'asc')); // Using createdAt from Firestore
+    const q = query(reportsCollectionRef, orderBy('createdAt', 'asc')); 
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedReports: ReportData[] = [];
       let maxEntryNum = 0;
       querySnapshot.forEach((doc) => {
-        // The data from Firestore should already be mostly aligned with ReportData.
-        // We'll use the Firestore doc.id as the primary 'id' for the report.
-        // 'clientSideId' is the id that was generated in the form.
         const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp | null; clientSideId?: string };
         fetchedReports.push({
-            ...data, // Spread all fields from Firestore
-            id: doc.id, // Use Firestore document ID as the main ID for reportPrintList items
+            ...data, 
+            id: doc.id, 
             subjects: data.subjects || [],
             hobbies: data.hobbies || [],
-            // Convert Firestore Timestamp to Date for client-side use if needed by ReportPreview or elsewhere
             createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : undefined,
         });
         if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
@@ -201,7 +197,6 @@ function AppContent() {
         return;
     }
     
-    // Explicitly construct the object for Firestore to avoid undefined values
     const reportToSaveForFirestore = {
       studentEntryNumber: nextStudentEntryNumber,
       studentName: currentEditingReport.studentName,
@@ -214,14 +209,14 @@ function AppContent() {
       selectedTemplateId: currentEditingReport.selectedTemplateId,
       daysAttended: currentEditingReport.daysAttended ?? null,
       totalSchoolDays: currentEditingReport.totalSchoolDays ?? null,
-      parentEmail: currentEditingReport.parentEmail || "", // Empty string is fine
-      parentPhoneNumber: currentEditingReport.parentPhoneNumber || "", // Empty string is fine
+      parentEmail: currentEditingReport.parentEmail || "", 
+      parentPhoneNumber: currentEditingReport.parentPhoneNumber || "", 
       performanceSummary: currentEditingReport.performanceSummary,
       strengths: currentEditingReport.strengths,
       areasForImprovement: currentEditingReport.areasForImprovement,
       hobbies: currentEditingReport.hobbies || [],
-      teacherFeedback: currentEditingReport.teacherFeedback || "", // Empty string is fine
-      instructorContact: currentEditingReport.instructorContact || "", // Empty string is fine
+      teacherFeedback: currentEditingReport.teacherFeedback || "", 
+      instructorContact: currentEditingReport.instructorContact || "", 
       subjects: currentEditingReport.subjects.map(s => ({
         subjectName: s.subjectName,
         continuousAssessment: s.continuousAssessment ?? null,
@@ -230,9 +225,8 @@ function AppContent() {
       promotionStatus: currentEditingReport.promotionStatus ?? null,
       studentPhotoDataUri: currentEditingReport.studentPhotoDataUri ?? null,
       headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri ?? null,
-      clientSideId: currentEditingReport.id, // Persist the ID used in form/preview
+      clientSideId: currentEditingReport.id, 
       createdAt: serverTimestamp(),
-      // teacherId is omitted as auth is removed
     };
 
 
@@ -259,9 +253,9 @@ function AppContent() {
         const profileKey = reportToSaveForFirestore.studentName;
         profiles[profileKey] = {
           studentName: reportToSaveForFirestore.studentName,
-          studentPhotoDataUri: reportToSaveForFirestore.studentPhotoDataUri ?? undefined, // Store as undefined if null
+          studentPhotoDataUri: reportToSaveForFirestore.studentPhotoDataUri ?? undefined, 
           className: reportToSaveForFirestore.className,
-          gender: reportToSaveForFirestore.gender ?? undefined, // Store as undefined if null
+          gender: reportToSaveForFirestore.gender ?? undefined, 
         };
         localStorage.setItem(STUDENT_PROFILES_STORAGE_KEY, JSON.stringify(profiles));
       } catch (e) {
@@ -285,8 +279,9 @@ function AppContent() {
 
     const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
     const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
+    
     setCurrentEditingReport({
-      ...newFormBase,
+      // Start with session defaults or fallback to newFormBase for these general fields
       schoolName: sessionDefaults.schoolName || newFormBase.schoolName,
       schoolLogoDataUri: sessionDefaults.schoolLogoDataUri || newFormBase.schoolLogoDataUri,
       className: sessionDefaults.className || newFormBase.className,
@@ -298,44 +293,47 @@ function AppContent() {
                        : newFormBase.totalSchoolDays,
       headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri || newFormBase.headMasterSignatureDataUri,
       instructorContact: sessionDefaults.instructorContact || newFormBase.instructorContact,
-      studentName: '',
-      gender: undefined,
-      daysAttended: null,
-      parentEmail: '',
-      parentPhoneNumber: '',
-      performanceSummary: '',
-      strengths: '',
-      areasForImprovement: '',
-      hobbies: [],
-      teacherFeedback: '',
-      subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
-      promotionStatus: undefined,
-      studentPhotoDataUri: undefined,
+
+      // Explicitly reset student-specific fields to their defaults from newFormBase
+      studentName: newFormBase.studentName, // Should be ''
+      gender: newFormBase.gender, // Should be undefined
+      daysAttended: newFormBase.daysAttended, // Should be null
+      parentEmail: newFormBase.parentEmail, // Should be ''
+      parentPhoneNumber: newFormBase.parentPhoneNumber, // Should be ''
+      performanceSummary: newFormBase.performanceSummary, // Should be ''
+      strengths: newFormBase.strengths, // Should be ''
+      areasForImprovement: newFormBase.areasForImprovement, // Should be ''
+      hobbies: newFormBase.hobbies, // Should be []
+      teacherFeedback: newFormBase.teacherFeedback, // Should be ''
+      subjects: newFormBase.subjects, // Should be [{ subjectName: '', continuousAssessment: null, examinationMark: null }]
+      promotionStatus: newFormBase.promotionStatus, // Should be undefined
+      studentPhotoDataUri: newFormBase.studentPhotoDataUri, // Should be undefined
+
+      // New unique ID and entry number for the next form
       id: `unsaved-${Date.now()}`,
       studentEntryNumber: newNextStudentEntryNumber,
+      
+      // These should always be undefined/null for a new form state
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
-      teacherId: undefined,
+      teacherId: undefined, // Auth removed
     });
   };
 
   const handleClearList = () => {
-    // This now only clears the local view. Deleting from Firestore is a separate, more complex operation.
     setReportPrintList([]);
     setCurrentPreviewIndex(0);
-    // setSessionDefaults({}); // Keep session defaults for now
     toast({
       title: "Local View Cleared",
       description: "Your local view of reports has been cleared. Data in Firestore is not affected. The list will repopulate from Firestore if data exists.",
     });
-    // Reset form to next entry number based on potentially still existing Firestore data
     const newBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
     setCurrentEditingReport({
         ...newBase,
-        ...sessionDefaults, // Re-apply session defaults
+        ...sessionDefaults, 
         id: `unsaved-${Date.now()}`,
-        studentEntryNumber: nextStudentEntryNumber, // Keep current nextStudentEntryNumber
+        studentEntryNumber: nextStudentEntryNumber, 
         createdAt: undefined,
         overallAverage: undefined,
         rank: undefined,
@@ -438,8 +436,6 @@ function AppContent() {
       selectedStudentNames.forEach((studentName, index) => {
         const profile = Object.values(profiles).find(p => p.studentName === studentName);
         if (profile) {
-          // const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
-          
           const importedReportForFirestore = {
             studentEntryNumber: currentImportEntryNumberBase + index,
             createdAt: serverTimestamp(),
@@ -460,8 +456,7 @@ function AppContent() {
             hobbies: [], teacherFeedback: '',
             subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
             promotionStatus: null,
-            clientSideId: `imported-${Date.now()}-${index}`, // A unique client-side ID for this imported record
-             // teacherId is omitted
+            clientSideId: `imported-${Date.now()}-${index}`, 
           };
           reportsToImportPromises.push(addDoc(collection(db, 'reports'), importedReportForFirestore));
         }
@@ -474,12 +469,9 @@ function AppContent() {
               title: "Students Imported",
               description: `${reportsToImportPromises.length} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
             });
-            // nextStudentEntryNumber will be updated by the Firestore listener effect eventually.
-            // Reset the form for a new entry
             const newNextEntryNumForForm = currentImportEntryNumberBase + reportsToImportPromises.length;
             const newFormBaseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
             setCurrentEditingReport({
-                ...newFormBaseReset,
                 schoolName: sessionDefaults.schoolName ?? newFormBaseReset.schoolName,
                 schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBaseReset.schoolLogoDataUri,
                 className: sessionDefaults.className ?? newFormBaseReset.className,
@@ -489,8 +481,23 @@ function AppContent() {
                 totalSchoolDays: sessionDefaults.totalSchoolDays ?? newFormBaseReset.totalSchoolDays,
                 headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBaseReset.headMasterSignatureDataUri,
                 instructorContact: sessionDefaults.instructorContact ?? newFormBaseReset.instructorContact,
+                
+                studentName: newFormBaseReset.studentName, 
+                gender: newFormBaseReset.gender, 
+                studentPhotoDataUri: newFormBaseReset.studentPhotoDataUri, 
+                subjects: newFormBaseReset.subjects,
+                daysAttended: newFormBaseReset.daysAttended,
+                parentEmail: newFormBaseReset.parentEmail,
+                parentPhoneNumber: newFormBaseReset.parentPhoneNumber,
+                performanceSummary: newFormBaseReset.performanceSummary,
+                strengths: newFormBaseReset.strengths,
+                areasForImprovement: newFormBaseReset.areasForImprovement,
+                hobbies: newFormBaseReset.hobbies,
+                teacherFeedback: newFormBaseReset.teacherFeedback,
+                promotionStatus: newFormBaseReset.promotionStatus,
+
                 id: `unsaved-${Date.now()}`,
-                studentEntryNumber: newNextEntryNumForForm, // Set to next available
+                studentEntryNumber: newNextEntryNumForForm, 
                 createdAt: undefined,
                 overallAverage: undefined,
                 rank: undefined,
@@ -641,7 +648,7 @@ function AppContent() {
                     </div>
                   </React.Fragment>
                 ))
-              ) : currentEditingReport ? ( // Show currentEditingReport if list is empty
+              ) : currentEditingReport ? ( 
                 <>
                   <div className="report-preview-item active-preview-screen">
                     <ReportPreview key={currentEditingReport.id} data={currentEditingReport} />
