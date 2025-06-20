@@ -275,9 +275,11 @@ function AppContent() {
     setSessionDefaults(newSessionDefaults);
 
     const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
+    // Deep clone defaultReportData to avoid mutating the original object
     const studentSpecificDefaults = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
 
     setCurrentEditingReport({
+      // Preserve session defaults
       schoolName: newSessionDefaults.schoolName,
       schoolLogoDataUri: newSessionDefaults.schoolLogoDataUri,
       className: newSessionDefaults.className,
@@ -288,6 +290,7 @@ function AppContent() {
       headMasterSignatureDataUri: newSessionDefaults.headMasterSignatureDataUri,
       instructorContact: newSessionDefaults.instructorContact,
 
+      // Reset student-specific fields using the cloned defaults
       studentName: studentSpecificDefaults.studentName,
       gender: studentSpecificDefaults.gender,
       daysAttended: studentSpecificDefaults.daysAttended,
@@ -302,13 +305,15 @@ function AppContent() {
       promotionStatus: studentSpecificDefaults.promotionStatus,
       studentPhotoDataUri: studentSpecificDefaults.studentPhotoDataUri,
 
+      // System-managed fields for the new entry
       id: `unsaved-${Date.now()}`, 
       studentEntryNumber: newNextStudentEntryNumber,
 
+      // Fields that are not part of the form's direct input for a new entry
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
-      teacherId: undefined,
+      teacherId: undefined, 
     });
     setNextStudentEntryNumber(newNextStudentEntryNumber);
   };
@@ -469,31 +474,35 @@ function AppContent() {
               description: `${reportsToImportPromises.length} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
             });
             const newNextEntryNumForForm = currentImportEntryNumberBase + reportsToImportPromises.length;
-            const newFormBaseReset = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
-            setCurrentEditingReport({
-                schoolName: sessionDefaults.schoolName ?? newFormBaseReset.schoolName,
-                schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBaseReset.schoolLogoDataUri,
-                className: destinationClass, 
-                academicYear: sessionDefaults.academicYear ?? newFormBaseReset.academicYear,
-                academicTerm: sessionDefaults.academicTerm ?? newFormBaseReset.academicTerm,
-                selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBaseReset.selectedTemplateId,
-                totalSchoolDays: sessionDefaults.totalSchoolDays ?? newFormBaseReset.totalSchoolDays,
-                headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBaseReset.headMasterSignatureDataUri,
-                instructorContact: sessionDefaults.instructorContact ?? newFormBaseReset.instructorContact,
+            // Deep clone defaultReportData for resetting student-specific fields
+            const studentSpecificDefaultsForImport = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
 
-                studentName: newFormBaseReset.studentName,
-                gender: newFormBaseReset.gender,
-                studentPhotoDataUri: newFormBaseReset.studentPhotoDataUri,
-                subjects: newFormBaseReset.subjects.map(s => ({...s})),
-                daysAttended: newFormBaseReset.daysAttended,
-                parentEmail: newFormBaseReset.parentEmail,
-                parentPhoneNumber: newFormBaseReset.parentPhoneNumber,
-                performanceSummary: newFormBaseReset.performanceSummary,
-                strengths: newFormBaseReset.strengths,
-                areasForImprovement: newFormBaseReset.areasForImprovement,
-                hobbies: [...newFormBaseReset.hobbies],
-                teacherFeedback: newFormBaseReset.teacherFeedback,
-                promotionStatus: newFormBaseReset.promotionStatus,
+            setCurrentEditingReport({
+                // Session defaults, now explicitly including the new destinationClass
+                schoolName: sessionDefaults.schoolName ?? studentSpecificDefaultsForImport.schoolName,
+                schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? studentSpecificDefaultsForImport.schoolLogoDataUri,
+                className: destinationClass, 
+                academicYear: sessionDefaults.academicYear ?? studentSpecificDefaultsForImport.academicYear,
+                academicTerm: sessionDefaults.academicTerm ?? studentSpecificDefaultsForImport.academicTerm,
+                selectedTemplateId: sessionDefaults.selectedTemplateId ?? studentSpecificDefaultsForImport.selectedTemplateId,
+                totalSchoolDays: sessionDefaults.totalSchoolDays ?? studentSpecificDefaultsForImport.totalSchoolDays,
+                headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? studentSpecificDefaultsForImport.headMasterSignatureDataUri,
+                instructorContact: sessionDefaults.instructorContact ?? studentSpecificDefaultsForImport.instructorContact,
+
+                // Reset student-specific fields
+                studentName: studentSpecificDefaultsForImport.studentName,
+                gender: studentSpecificDefaultsForImport.gender,
+                studentPhotoDataUri: studentSpecificDefaultsForImport.studentPhotoDataUri,
+                subjects: studentSpecificDefaultsForImport.subjects.map(s => ({...s})),
+                daysAttended: studentSpecificDefaultsForImport.daysAttended,
+                parentEmail: studentSpecificDefaultsForImport.parentEmail,
+                parentPhoneNumber: studentSpecificDefaultsForImport.parentPhoneNumber,
+                performanceSummary: studentSpecificDefaultsForImport.performanceSummary,
+                strengths: studentSpecificDefaultsForImport.strengths,
+                areasForImprovement: studentSpecificDefaultsForImport.areasForImprovement,
+                hobbies: [...studentSpecificDefaultsForImport.hobbies],
+                teacherFeedback: studentSpecificDefaultsForImport.teacherFeedback,
+                promotionStatus: studentSpecificDefaultsForImport.promotionStatus,
 
                 id: `unsaved-${Date.now()}`,
                 studentEntryNumber: newNextEntryNumForForm, 
@@ -648,8 +657,8 @@ function AppContent() {
                 ))
               ) : currentEditingReport ? ( 
                 <>
-                  <div className="report-preview-item active-preview-screen">
-                    <ReportPreview key={currentEditingReport.id} data={currentEditingReport} />
+                  <div className="report-preview-item active-preview-screen" key={currentEditingReport.id}>
+                    <ReportPreview data={currentEditingReport} />
                   </div>
                 </>
               ) : (

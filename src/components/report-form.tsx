@@ -30,7 +30,7 @@ interface ReportFormProps {
   onSaveReport: (data: ReportData) => Promise<void>;
 }
 
-export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1'; // Ensure this key is exported or consistent
+export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1'; 
 
 const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
@@ -146,8 +146,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     resolver: zodResolver(ReportDataSchema),
     defaultValues: initialData ? 
       {
-        ...schemaDefaultReportData, // Start with schema defaults
-        ...initialData, // Override with any initialData provided
+        ...schemaDefaultReportData, 
+        ...initialData, 
         id: initialData.id || `unsaved-${Date.now()}`,
         studentEntryNumber: initialData.studentEntryNumber || 1,
         subjects: initialData.subjects?.length ? initialData.subjects.map(s => ({...s})) : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
@@ -173,7 +173,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         setCurrentVisibleSubjectIndex(fields.length - 1);
       }
     } else {
-      if (fields.length === 0) { // Should not happen if defaultValues ensure at least one subject
+      if (fields.length === 0) { 
         append({ subjectName: '', continuousAssessment: null, examinationMark: null });
         setCurrentVisibleSubjectIndex(0);
       }
@@ -239,63 +239,32 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     return watchedAcademicTerm === 'Third Term' && !tertiaryLevelClasses.includes(watchedClassName);
   }, [watchedAcademicTerm, watchedClassName]);
 
-  useEffect(() => {
+ useEffect(() => {
     if (initialData) {
-      // Construct a complete ReportData object for reset, ensuring all fields are present
-      const fullInitialData: ReportData = {
-        studentName: initialData.studentName || '',
-        className: initialData.className || '',
-        gender: initialData.gender || undefined,
-        schoolName: initialData.schoolName || 'Faacom Academy',
-        schoolLogoDataUri: initialData.schoolLogoDataUri || undefined,
-        academicYear: initialData.academicYear || '2023-2024',
-        academicTerm: initialData.academicTerm || 'First Term',
-        selectedTemplateId: initialData.selectedTemplateId || 'default',
-        daysAttended: initialData.daysAttended === undefined ? null : initialData.daysAttended,
-        totalSchoolDays: initialData.totalSchoolDays === undefined ? null : initialData.totalSchoolDays,
-        parentEmail: initialData.parentEmail || '',
-        parentPhoneNumber: initialData.parentPhoneNumber || '',
-        performanceSummary: initialData.performanceSummary || '',
-        strengths: initialData.strengths || '',
-        areasForImprovement: initialData.areasForImprovement || '',
-        hobbies: initialData.hobbies || [],
-        teacherFeedback: initialData.teacherFeedback || '',
-        instructorContact: initialData.instructorContact || '',
-        subjects: initialData.subjects?.length ? initialData.subjects.map(s => ({...s})) : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
-        studentEntryNumber: initialData.studentEntryNumber || 1,
-        promotionStatus: initialData.promotionStatus || undefined,
-        studentPhotoDataUri: initialData.studentPhotoDataUri || undefined,
-        headMasterSignatureDataUri: initialData.headMasterSignatureDataUri || undefined,
-        id: initialData.id || `unsaved-${Date.now()}`,
-        overallAverage: initialData.overallAverage || undefined,
-        rank: initialData.rank || undefined,
-        createdAt: initialData.createdAt || undefined,
-        teacherId: initialData.teacherId || undefined,
-      };
-      form.reset(fullInitialData); // This is the key to update the form with new initialData
-      setCurrentVisibleSubjectIndex(0);
-      setComparisonTermSelection('none');
+        form.reset(initialData);
 
-      // Update custom lists if initialData contains new items not already tracked
-      if (initialData.className && !classLevels.includes(initialData.className) && !customClassNames.includes(initialData.className)) {
-        setCustomClassNames(prev => [...new Set([...prev, initialData.className!])]);
-      }
-      if (initialData.hobbies) {
-        const newCustomHobbies = initialData.hobbies.filter(hobby => !predefinedHobbiesList.includes(hobby) && !customHobbies.includes(hobby));
-        if (newCustomHobbies.length > 0) {
-          setCustomHobbies(prev => [...new Set([...prev, ...newCustomHobbies])]);
+        // Update local custom lists if initialData contains new items not already tracked
+        if (initialData.className && !classLevels.includes(initialData.className) && !customClassNames.includes(initialData.className)) {
+            setCustomClassNames(prev => [...new Set([...prev, initialData.className!])]);
         }
-      }
-      if (initialData.subjects) {
-        const newCustomSubjectsFromInitial = initialData.subjects
-          .map(s => s.subjectName)
-          .filter(name => name && !predefinedSubjectsList.includes(name) && !customSubjects.includes(name));
-        if (newCustomSubjectsFromInitial.length > 0) {
-          setCustomSubjects(prev => [...new Set([...prev, ...newCustomSubjectsFromInitial])]);
+        if (initialData.hobbies) {
+            const newCustomHobbies = initialData.hobbies.filter(hobby => !predefinedHobbiesList.includes(hobby) && !customHobbies.includes(hobby));
+            if (newCustomHobbies.length > 0) {
+            setCustomHobbies(prev => [...new Set([...prev, ...newCustomHobbies])]);
+            }
         }
-      }
+        if (initialData.subjects) {
+            const newCustomSubjectsFromInitial = initialData.subjects
+            .map(s => s.subjectName)
+            .filter(name => name && !predefinedSubjectsList.includes(name) && !customSubjects.includes(name));
+            if (newCustomSubjectsFromInitial.length > 0) {
+            setCustomSubjects(prev => [...new Set([...prev, ...newCustomSubjectsFromInitial])]);
+            }
+        }
+        setCurrentVisibleSubjectIndex(0);
+        setComparisonTermSelection('none');
     }
-  }, [initialData, form, customClassNames, customHobbies, customSubjects]);
+}, [initialData, form]); // Only depend on initialData and form instance for this effect
 
 
   useEffect(() => {
@@ -496,8 +465,9 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   };
 
   const onSubmitForPreview: SubmitHandler<ReportData> = (data) => {
+    // This function now directly uses `data` from RHF, which is already validated
     const processedData: ReportData = {
-      ...data,
+      ...data, // Start with validated form data
       id: data.id || `preview-${Date.now()}`, // Ensure ID for preview
       studentEntryNumber: data.studentEntryNumber,
       daysAttended: parseNumeric(data.daysAttended),
@@ -508,6 +478,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         examinationMark: parseNumeric(s.examinationMark),
       })),
       promotionStatus: isPromotionStatusApplicable ? data.promotionStatus : undefined,
+      // Keep optional URI fields as they are from form (string or undefined)
       studentPhotoDataUri: data.studentPhotoDataUri || undefined,
       schoolLogoDataUri: data.schoolLogoDataUri || undefined,
       headMasterSignatureDataUri: data.headMasterSignatureDataUri || undefined,
@@ -515,7 +486,9 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       hobbies: data.hobbies || [],
       parentEmail: data.parentEmail || '',
       parentPhoneNumber: data.parentPhoneNumber || '',
-      // overallAverage, rank, createdAt, teacherId are not part of form data, should come from initialData or be undefined
+      // OverallAverage, rank, etc. might be part of `data` if `initialData` had them,
+      // but they are primarily for display and calculated/set elsewhere.
+      // For preview, we pass them as is if they exist on `data`.
       overallAverage: data.overallAverage || undefined,
       rank: data.rank || undefined,
       createdAt: data.createdAt || undefined,
@@ -526,21 +499,18 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   };
   
   const onSubmitForSave: SubmitHandler<ReportData> = async (dataFromRHF) => {
-     // Ensure all critical fields are validated by RHF schema first
-    // dataFromRHF here is already validated by RHF if form.handleSubmit was used correctly
     const processedDataForSave: ReportData = {
-      ...dataFromRHF, // Spread all fields from RHF validated data
+      ...dataFromRHF,
       id: dataFromRHF.id || `save-attempt-${Date.now()}`,
       studentEntryNumber: dataFromRHF.studentEntryNumber,
       daysAttended: parseNumeric(dataFromRHF.daysAttended),
       totalSchoolDays: parseNumeric(dataFromRHF.totalSchoolDays),
       subjects: dataFromRHF.subjects.map(s => ({
-          subjectName: s.subjectName || '', // Ensure empty string if undefined
+          subjectName: s.subjectName || '',
           continuousAssessment: parseNumeric(s.continuousAssessment),
           examinationMark: parseNumeric(s.examinationMark),
       })),
-      promotionStatus: isPromotionStatusApplicable ? dataFromRHF.promotionStatus : undefined, // Use undefined if not applicable
-      // Ensure optional strings are "" if undefined, and other optionals are undefined or null
+      promotionStatus: isPromotionStatusApplicable ? dataFromRHF.promotionStatus : undefined, 
       studentPhotoDataUri: dataFromRHF.studentPhotoDataUri || null,
       schoolLogoDataUri: dataFromRHF.schoolLogoDataUri || null,
       headMasterSignatureDataUri: dataFromRHF.headMasterSignatureDataUri || null,
@@ -548,10 +518,9 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       hobbies: dataFromRHF.hobbies || [],
       parentEmail: dataFromRHF.parentEmail || "",
       parentPhoneNumber: dataFromRHF.parentPhoneNumber || "",
-      // These are calculated/set server-side or in page.tsx, so pass as is or undefined
       overallAverage: dataFromRHF.overallAverage || undefined,
       rank: dataFromRHF.rank || undefined,
-      createdAt: dataFromRHF.createdAt || undefined, // Firestore handles serverTimestamp
+      createdAt: dataFromRHF.createdAt || undefined, 
       teacherId: dataFromRHF.teacherId || undefined,
     };
     await onSaveReport(processedDataForSave);
@@ -644,7 +613,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       <CardHeader>
         <div className="flex items-center gap-2">
           <Edit3 className="h-6 w-6 text-primary" />
-          <CardTitle className="font-headline text-2xl">Report Details</CardTitle>
+          <CardTitle className="font-headline text-2xl">Report Details (Entry #{form.getValues('studentEntryNumber') || initialData?.studentEntryNumber || 'N/A'})</CardTitle>
         </div>
         <CardDescription>Enter student information, performance, and subject marks.</CardDescription>
       </CardHeader>
@@ -1405,7 +1374,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                 </Button>
                 <Button
                     type="button"
-                    onClick={form.handleSubmit(onSubmitForSave)} // Use RHF's handleSubmit here
+                    onClick={form.handleSubmit(onSubmitForSave)} 
                     className="w-full sm:w-auto"
                     variant="default"
                     disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading }
