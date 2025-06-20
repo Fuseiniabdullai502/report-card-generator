@@ -199,32 +199,32 @@ function AppContent() {
     
     const reportToSaveForFirestore = {
       studentEntryNumber: nextStudentEntryNumber,
-      studentName: currentEditingReport.studentName,
-      className: currentEditingReport.className,
-      gender: currentEditingReport.gender ?? null,
-      schoolName: currentEditingReport.schoolName,
-      schoolLogoDataUri: currentEditingReport.schoolLogoDataUri ?? null,
-      academicYear: currentEditingReport.academicYear,
-      academicTerm: currentEditingReport.academicTerm,
-      selectedTemplateId: currentEditingReport.selectedTemplateId,
-      daysAttended: currentEditingReport.daysAttended ?? null,
-      totalSchoolDays: currentEditingReport.totalSchoolDays ?? null,
+      studentName: currentEditingReport.studentName || '',
+      className: currentEditingReport.className || '',
+      gender: currentEditingReport.gender || null,
+      schoolName: currentEditingReport.schoolName || '',
+      schoolLogoDataUri: currentEditingReport.schoolLogoDataUri || null,
+      academicYear: currentEditingReport.academicYear || '',
+      academicTerm: currentEditingReport.academicTerm || '',
+      selectedTemplateId: currentEditingReport.selectedTemplateId || 'default',
+      daysAttended: currentEditingReport.daysAttended === undefined ? null : currentEditingReport.daysAttended,
+      totalSchoolDays: currentEditingReport.totalSchoolDays === undefined ? null : currentEditingReport.totalSchoolDays,
       parentEmail: currentEditingReport.parentEmail || "", 
       parentPhoneNumber: currentEditingReport.parentPhoneNumber || "", 
-      performanceSummary: currentEditingReport.performanceSummary,
-      strengths: currentEditingReport.strengths,
-      areasForImprovement: currentEditingReport.areasForImprovement,
+      performanceSummary: currentEditingReport.performanceSummary || '',
+      strengths: currentEditingReport.strengths || '',
+      areasForImprovement: currentEditingReport.areasForImprovement || '',
       hobbies: currentEditingReport.hobbies || [],
       teacherFeedback: currentEditingReport.teacherFeedback || "", 
       instructorContact: currentEditingReport.instructorContact || "", 
       subjects: currentEditingReport.subjects.map(s => ({
-        subjectName: s.subjectName,
-        continuousAssessment: s.continuousAssessment ?? null,
-        examinationMark: s.examinationMark ?? null,
+        subjectName: s.subjectName || '',
+        continuousAssessment: s.continuousAssessment === undefined ? null : s.continuousAssessment,
+        examinationMark: s.examinationMark === undefined ? null : s.examinationMark,
       })),
-      promotionStatus: currentEditingReport.promotionStatus ?? null,
-      studentPhotoDataUri: currentEditingReport.studentPhotoDataUri ?? null,
-      headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri ?? null,
+      promotionStatus: currentEditingReport.promotionStatus || null,
+      studentPhotoDataUri: currentEditingReport.studentPhotoDataUri || null,
+      headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri || null,
       clientSideId: currentEditingReport.id, 
       createdAt: serverTimestamp(),
     };
@@ -263,6 +263,7 @@ function AppContent() {
       }
     }
 
+    // Establish session defaults if this is the first report added.
     if (Object.keys(sessionDefaults).length === 0) {
       setSessionDefaults({
         schoolName: currentEditingReport.schoolName,
@@ -278,36 +279,37 @@ function AppContent() {
     }
 
     const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
+    // Use a fresh copy of defaultReportData for student-specific fields
     const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
     
-    setCurrentEditingReport({
-      // Start with session defaults or fallback to newFormBase for these general fields
-      schoolName: sessionDefaults.schoolName || newFormBase.schoolName,
-      schoolLogoDataUri: sessionDefaults.schoolLogoDataUri || newFormBase.schoolLogoDataUri,
-      className: sessionDefaults.className || newFormBase.className,
-      academicYear: sessionDefaults.academicYear || newFormBase.academicYear,
-      academicTerm: sessionDefaults.academicTerm || newFormBase.academicTerm,
-      selectedTemplateId: sessionDefaults.selectedTemplateId || newFormBase.selectedTemplateId,
-      totalSchoolDays: sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null
-                       ? sessionDefaults.totalSchoolDays
-                       : newFormBase.totalSchoolDays,
-      headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri || newFormBase.headMasterSignatureDataUri,
-      instructorContact: sessionDefaults.instructorContact || newFormBase.instructorContact,
+    setCurrentEditingReport(prev => ({
+      // Session-specific fields: use established sessionDefaults, or current values if sessionDefaults not yet set
+      schoolName: sessionDefaults.schoolName ?? prev.schoolName,
+      schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? prev.schoolLogoDataUri,
+      className: sessionDefaults.className ?? prev.className,
+      academicYear: sessionDefaults.academicYear ?? prev.academicYear,
+      academicTerm: sessionDefaults.academicTerm ?? prev.academicTerm,
+      selectedTemplateId: sessionDefaults.selectedTemplateId ?? prev.selectedTemplateId,
+      totalSchoolDays: (sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null) 
+                       ? sessionDefaults.totalSchoolDays 
+                       : prev.totalSchoolDays,
+      headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? prev.headMasterSignatureDataUri,
+      instructorContact: sessionDefaults.instructorContact ?? prev.instructorContact,
 
-      // Explicitly reset student-specific fields to their defaults from newFormBase
-      studentName: newFormBase.studentName, // Should be ''
-      gender: newFormBase.gender, // Should be undefined
-      daysAttended: newFormBase.daysAttended, // Should be null
-      parentEmail: newFormBase.parentEmail, // Should be ''
-      parentPhoneNumber: newFormBase.parentPhoneNumber, // Should be ''
-      performanceSummary: newFormBase.performanceSummary, // Should be ''
-      strengths: newFormBase.strengths, // Should be ''
-      areasForImprovement: newFormBase.areasForImprovement, // Should be ''
-      hobbies: newFormBase.hobbies, // Should be []
-      teacherFeedback: newFormBase.teacherFeedback, // Should be ''
-      subjects: newFormBase.subjects, // Should be [{ subjectName: '', continuousAssessment: null, examinationMark: null }]
-      promotionStatus: newFormBase.promotionStatus, // Should be undefined
-      studentPhotoDataUri: newFormBase.studentPhotoDataUri, // Should be undefined
+      // Student-specific fields: always reset from newFormBase (which is a fresh default)
+      studentName: newFormBase.studentName,
+      gender: newFormBase.gender, // default is undefined
+      daysAttended: newFormBase.daysAttended, // default is null
+      parentEmail: newFormBase.parentEmail, // default is ''
+      parentPhoneNumber: newFormBase.parentPhoneNumber, // default is ''
+      performanceSummary: newFormBase.performanceSummary, // default is ''
+      strengths: newFormBase.strengths, // default is ''
+      areasForImprovement: newFormBase.areasForImprovement, // default is ''
+      hobbies: [...newFormBase.hobbies], // ensures new array
+      teacherFeedback: newFormBase.teacherFeedback, // default is ''
+      subjects: newFormBase.subjects.map(s => ({...s})), // ensures new array of new objects
+      promotionStatus: newFormBase.promotionStatus, // default is undefined
+      studentPhotoDataUri: newFormBase.studentPhotoDataUri, // default is undefined
 
       // New unique ID and entry number for the next form
       id: `unsaved-${Date.now()}`,
@@ -317,8 +319,8 @@ function AppContent() {
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
-      teacherId: undefined, // Auth removed
-    });
+      teacherId: undefined, 
+    }));
   };
 
   const handleClearList = () => {
