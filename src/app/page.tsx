@@ -59,7 +59,7 @@ function AppContent() {
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
-      teacherId: undefined, 
+      teacherId: undefined,
     };
   });
   const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
@@ -132,7 +132,7 @@ function AppContent() {
   useEffect(() => {
     setIsLoadingReports(true);
     const reportsCollectionRef = collection(db, 'reports');
-    const q = query(reportsCollectionRef, orderBy('createdAt', 'asc')); 
+    const q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedReports: ReportData[] = [];
@@ -140,8 +140,8 @@ function AppContent() {
       querySnapshot.forEach((doc) => {
         const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp | null; clientSideId?: string };
         fetchedReports.push({
-            ...data, 
-            id: doc.id, 
+            ...data,
+            id: doc.id,
             subjects: data.subjects || [],
             hobbies: data.hobbies || [],
             createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : undefined,
@@ -158,9 +158,13 @@ function AppContent() {
         const baseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
         setCurrentEditingReport(prev => ({
           ...baseReset,
-          ...sessionDefaults,
+          ...sessionDefaults, // Apply any existing session defaults
           studentEntryNumber: maxEntryNum + 1,
-          id: `unsaved-${Date.now()}`
+          id: `unsaved-${Date.now()}`,
+          createdAt: undefined,
+          overallAverage: undefined,
+          rank: undefined,
+          teacherId: undefined,
         }));
       }
     }, (error) => {
@@ -184,10 +188,10 @@ function AppContent() {
       return;
     }
 
-    if (!currentEditingReport.studentName || 
-        !currentEditingReport.className || 
-        !currentEditingReport.performanceSummary || 
-        !currentEditingReport.strengths || 
+    if (!currentEditingReport.studentName ||
+        !currentEditingReport.className ||
+        !currentEditingReport.performanceSummary ||
+        !currentEditingReport.strengths ||
         !currentEditingReport.areasForImprovement) {
         toast({
           title: "Incomplete Report Data",
@@ -196,27 +200,27 @@ function AppContent() {
         });
         return;
     }
-    
+
     const reportToSaveForFirestore = {
       studentEntryNumber: nextStudentEntryNumber,
       studentName: currentEditingReport.studentName || '',
       className: currentEditingReport.className || '',
       gender: currentEditingReport.gender || null,
-      schoolName: currentEditingReport.schoolName || '',
+      schoolName: currentEditingReport.schoolName || 'Faacom Academy',
       schoolLogoDataUri: currentEditingReport.schoolLogoDataUri || null,
-      academicYear: currentEditingReport.academicYear || '',
-      academicTerm: currentEditingReport.academicTerm || '',
+      academicYear: currentEditingReport.academicYear || '2023-2024',
+      academicTerm: currentEditingReport.academicTerm || 'First Term',
       selectedTemplateId: currentEditingReport.selectedTemplateId || 'default',
       daysAttended: currentEditingReport.daysAttended === undefined ? null : currentEditingReport.daysAttended,
       totalSchoolDays: currentEditingReport.totalSchoolDays === undefined ? null : currentEditingReport.totalSchoolDays,
-      parentEmail: currentEditingReport.parentEmail || "", 
-      parentPhoneNumber: currentEditingReport.parentPhoneNumber || "", 
+      parentEmail: currentEditingReport.parentEmail || "",
+      parentPhoneNumber: currentEditingReport.parentPhoneNumber || "",
       performanceSummary: currentEditingReport.performanceSummary || '',
       strengths: currentEditingReport.strengths || '',
       areasForImprovement: currentEditingReport.areasForImprovement || '',
       hobbies: currentEditingReport.hobbies || [],
-      teacherFeedback: currentEditingReport.teacherFeedback || "", 
-      instructorContact: currentEditingReport.instructorContact || "", 
+      teacherFeedback: currentEditingReport.teacherFeedback || "",
+      instructorContact: currentEditingReport.instructorContact || "",
       subjects: currentEditingReport.subjects.map(s => ({
         subjectName: s.subjectName || '',
         continuousAssessment: s.continuousAssessment === undefined ? null : s.continuousAssessment,
@@ -225,7 +229,7 @@ function AppContent() {
       promotionStatus: currentEditingReport.promotionStatus || null,
       studentPhotoDataUri: currentEditingReport.studentPhotoDataUri || null,
       headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri || null,
-      clientSideId: currentEditingReport.id, 
+      clientSideId: currentEditingReport.id,
       createdAt: serverTimestamp(),
     };
 
@@ -253,9 +257,9 @@ function AppContent() {
         const profileKey = reportToSaveForFirestore.studentName;
         profiles[profileKey] = {
           studentName: reportToSaveForFirestore.studentName,
-          studentPhotoDataUri: reportToSaveForFirestore.studentPhotoDataUri ?? undefined, 
+          studentPhotoDataUri: reportToSaveForFirestore.studentPhotoDataUri ?? undefined,
           className: reportToSaveForFirestore.className,
-          gender: reportToSaveForFirestore.gender ?? undefined, 
+          gender: reportToSaveForFirestore.gender ?? undefined,
         };
         localStorage.setItem(STUDENT_PROFILES_STORAGE_KEY, JSON.stringify(profiles));
       } catch (e) {
@@ -263,64 +267,61 @@ function AppContent() {
       }
     }
 
-    // Establish session defaults if this is the first report added.
-    if (Object.keys(sessionDefaults).length === 0) {
-      setSessionDefaults({
-        schoolName: currentEditingReport.schoolName,
-        schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
-        className: currentEditingReport.className,
-        academicYear: currentEditingReport.academicYear,
-        academicTerm: currentEditingReport.academicTerm,
-        selectedTemplateId: currentEditingReport.selectedTemplateId,
-        totalSchoolDays: currentEditingReport.totalSchoolDays,
-        headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
-        instructorContact: currentEditingReport.instructorContact,
-      });
-    }
+    // Establish session defaults based on the report that was JUST added
+    const newSessionDefaults = {
+      schoolName: reportToSaveForFirestore.schoolName,
+      schoolLogoDataUri: reportToSaveForFirestore.schoolLogoDataUri,
+      className: reportToSaveForFirestore.className,
+      academicYear: reportToSaveForFirestore.academicYear,
+      academicTerm: reportToSaveForFirestore.academicTerm,
+      selectedTemplateId: reportToSaveForFirestore.selectedTemplateId,
+      totalSchoolDays: reportToSaveForFirestore.totalSchoolDays,
+      headMasterSignatureDataUri: reportToSaveForFirestore.headMasterSignatureDataUri,
+      instructorContact: reportToSaveForFirestore.instructorContact,
+    };
+    setSessionDefaults(newSessionDefaults); // Update the sessionDefaults state
 
     const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
     // Use a fresh copy of defaultReportData for student-specific fields
-    const newFormBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
-    
-    setCurrentEditingReport(prev => ({
-      // Session-specific fields: use established sessionDefaults, or current values if sessionDefaults not yet set
-      schoolName: sessionDefaults.schoolName ?? prev.schoolName,
-      schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? prev.schoolLogoDataUri,
-      className: sessionDefaults.className ?? prev.className,
-      academicYear: sessionDefaults.academicYear ?? prev.academicYear,
-      academicTerm: sessionDefaults.academicTerm ?? prev.academicTerm,
-      selectedTemplateId: sessionDefaults.selectedTemplateId ?? prev.selectedTemplateId,
-      totalSchoolDays: (sessionDefaults.totalSchoolDays !== undefined && sessionDefaults.totalSchoolDays !== null) 
-                       ? sessionDefaults.totalSchoolDays 
-                       : prev.totalSchoolDays,
-      headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? prev.headMasterSignatureDataUri,
-      instructorContact: sessionDefaults.instructorContact ?? prev.instructorContact,
+    const studentSpecificDefaults = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
 
-      // Student-specific fields: always reset from newFormBase (which is a fresh default)
-      studentName: newFormBase.studentName,
-      gender: newFormBase.gender, // default is undefined
-      daysAttended: newFormBase.daysAttended, // default is null
-      parentEmail: newFormBase.parentEmail, // default is ''
-      parentPhoneNumber: newFormBase.parentPhoneNumber, // default is ''
-      performanceSummary: newFormBase.performanceSummary, // default is ''
-      strengths: newFormBase.strengths, // default is ''
-      areasForImprovement: newFormBase.areasForImprovement, // default is ''
-      hobbies: [...newFormBase.hobbies], // ensures new array
-      teacherFeedback: newFormBase.teacherFeedback, // default is ''
-      subjects: newFormBase.subjects.map(s => ({...s})), // ensures new array of new objects
-      promotionStatus: newFormBase.promotionStatus, // default is undefined
-      studentPhotoDataUri: newFormBase.studentPhotoDataUri, // default is undefined
+    setCurrentEditingReport({
+      // Session-specific fields from the report just added (now the session defaults)
+      schoolName: newSessionDefaults.schoolName,
+      schoolLogoDataUri: newSessionDefaults.schoolLogoDataUri,
+      className: newSessionDefaults.className,
+      academicYear: newSessionDefaults.academicYear,
+      academicTerm: newSessionDefaults.academicTerm,
+      selectedTemplateId: newSessionDefaults.selectedTemplateId,
+      totalSchoolDays: newSessionDefaults.totalSchoolDays,
+      headMasterSignatureDataUri: newSessionDefaults.headMasterSignatureDataUri,
+      instructorContact: newSessionDefaults.instructorContact,
+
+      // Student-specific fields: always reset from studentSpecificDefaults
+      studentName: studentSpecificDefaults.studentName,
+      gender: studentSpecificDefaults.gender,
+      daysAttended: studentSpecificDefaults.daysAttended,
+      parentEmail: studentSpecificDefaults.parentEmail,
+      parentPhoneNumber: studentSpecificDefaults.parentPhoneNumber,
+      performanceSummary: studentSpecificDefaults.performanceSummary,
+      strengths: studentSpecificDefaults.strengths,
+      areasForImprovement: studentSpecificDefaults.areasForImprovement,
+      hobbies: [...studentSpecificDefaults.hobbies],
+      teacherFeedback: studentSpecificDefaults.teacherFeedback,
+      subjects: studentSpecificDefaults.subjects.map(s => ({...s})),
+      promotionStatus: studentSpecificDefaults.promotionStatus,
+      studentPhotoDataUri: studentSpecificDefaults.studentPhotoDataUri,
 
       // New unique ID and entry number for the next form
       id: `unsaved-${Date.now()}`,
       studentEntryNumber: newNextStudentEntryNumber,
-      
+
       // These should always be undefined/null for a new form state
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
-      teacherId: undefined, 
-    }));
+      teacherId: undefined,
+    });
   };
 
   const handleClearList = () => {
@@ -333,9 +334,9 @@ function AppContent() {
     const newBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
     setCurrentEditingReport({
         ...newBase,
-        ...sessionDefaults, 
+        ...sessionDefaults,
         id: `unsaved-${Date.now()}`,
-        studentEntryNumber: nextStudentEntryNumber, 
+        studentEntryNumber: nextStudentEntryNumber,
         createdAt: undefined,
         overallAverage: undefined,
         rank: undefined,
@@ -458,7 +459,7 @@ function AppContent() {
             hobbies: [], teacherFeedback: '',
             subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
             promotionStatus: null,
-            clientSideId: `imported-${Date.now()}-${index}`, 
+            clientSideId: `imported-${Date.now()}-${index}`,
           };
           reportsToImportPromises.push(addDoc(collection(db, 'reports'), importedReportForFirestore));
         }
@@ -476,17 +477,17 @@ function AppContent() {
             setCurrentEditingReport({
                 schoolName: sessionDefaults.schoolName ?? newFormBaseReset.schoolName,
                 schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBaseReset.schoolLogoDataUri,
-                className: sessionDefaults.className ?? newFormBaseReset.className,
+                className: sessionDefaults.className ?? newFormBaseReset.className, // Should be destinationClass or sessionDefault's class
                 academicYear: sessionDefaults.academicYear ?? newFormBaseReset.academicYear,
                 academicTerm: sessionDefaults.academicTerm ?? newFormBaseReset.academicTerm,
                 selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBaseReset.selectedTemplateId,
                 totalSchoolDays: sessionDefaults.totalSchoolDays ?? newFormBaseReset.totalSchoolDays,
                 headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? newFormBaseReset.headMasterSignatureDataUri,
                 instructorContact: sessionDefaults.instructorContact ?? newFormBaseReset.instructorContact,
-                
-                studentName: newFormBaseReset.studentName, 
-                gender: newFormBaseReset.gender, 
-                studentPhotoDataUri: newFormBaseReset.studentPhotoDataUri, 
+
+                studentName: newFormBaseReset.studentName,
+                gender: newFormBaseReset.gender,
+                studentPhotoDataUri: newFormBaseReset.studentPhotoDataUri,
                 subjects: newFormBaseReset.subjects,
                 daysAttended: newFormBaseReset.daysAttended,
                 parentEmail: newFormBaseReset.parentEmail,
@@ -499,7 +500,7 @@ function AppContent() {
                 promotionStatus: newFormBaseReset.promotionStatus,
 
                 id: `unsaved-${Date.now()}`,
-                studentEntryNumber: newNextEntryNumForForm, 
+                studentEntryNumber: newNextEntryNumForForm,
                 createdAt: undefined,
                 overallAverage: undefined,
                 rank: undefined,
@@ -650,7 +651,7 @@ function AppContent() {
                     </div>
                   </React.Fragment>
                 ))
-              ) : currentEditingReport ? ( 
+              ) : currentEditingReport ? (
                 <>
                   <div className="report-preview-item active-preview-screen">
                     <ReportPreview key={currentEditingReport.id} data={currentEditingReport} />
@@ -708,4 +709,3 @@ export default function Home() {
     <AppContent />
   );
 }
-
