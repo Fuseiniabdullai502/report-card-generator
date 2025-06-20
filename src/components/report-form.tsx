@@ -1,7 +1,7 @@
 
 'use client';
 
-import { ReportDataSchema, type ReportData, type SubjectEntry } from '@/lib/schemas';
+import { ReportDataSchema, type ReportData, type SubjectEntry, defaultReportData as schemaDefaultReportData } from '@/lib/schemas';
 import { zodResolver }from '@hookform/resolvers/zod';
 import {useForm, type SubmitHandler, useFieldArray}from 'react-hook-form';
 import {Button}from '@/components/ui/button';
@@ -27,10 +27,10 @@ interface ReportFormProps {
   onFormUpdate: (data: ReportData) => void;
   initialData?: Partial<ReportData>;
   reportPrintListForHistory?: ReportData[];
-  onSaveReport: (data: ReportData) => Promise<void>; // New prop for saving
+  onSaveReport: (data: ReportData) => Promise<void>;
 }
 
-const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
+export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1'; // Ensure this key is exported or consistent
 
 const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
@@ -78,15 +78,12 @@ const reportTemplateOptions = [
     { id: 'creativeTeal', name: 'Creative Teal' },
 ];
 
-// Helper function to parse numeric input, returning number or null
 const parseNumeric = (value: any): number | null => {
   if (value === null || value === undefined || value === '') return null;
   const num = Number(value);
   return Number.isNaN(num) ? null : num;
 };
 
-
-// Helper function to calculate final mark for a single subject from form data
 function calculateSubjectFinalMarkForForm(subject: SubjectEntry): number | null {
   const caMarkInput = subject.continuousAssessment;
   const examMarkInput = subject.examinationMark;
@@ -95,25 +92,19 @@ function calculateSubjectFinalMarkForForm(subject: SubjectEntry): number | null 
       (examMarkInput === null || examMarkInput === undefined || Number.isNaN(Number(examMarkInput)))) {
     return null;
   }
-
   const caVal = (caMarkInput !== null && caMarkInput !== undefined && !Number.isNaN(Number(caMarkInput))) ? Number(caMarkInput) : 0;
   const examVal = (examMarkInput !== null && examMarkInput !== undefined && !Number.isNaN(Number(examMarkInput))) ? Number(examMarkInput) : 0;
-
   const scaledCaMark = (caVal / 60) * 40;
   const scaledExamMark = (examVal / 100) * 60;
-
   let finalPercentageMark = scaledCaMark + scaledExamMark;
   finalPercentageMark = Math.min(Math.max(finalPercentageMark, 0), 100);
   return parseFloat(finalPercentageMark.toFixed(1));
 }
 
-// Helper function to calculate overall average from form data
 function calculateOverallAverageForForm(subjects: SubjectEntry[]): number | null {
   if (!subjects || subjects.length === 0) return null;
-
   let totalScore = 0;
   let validSubjectCount = 0;
-
   subjects.forEach(subject => {
     if (subject.subjectName && subject.subjectName.trim() !== '') {
       const finalMark = calculateSubjectFinalMarkForForm(subject);
@@ -123,7 +114,6 @@ function calculateOverallAverageForForm(subjects: SubjectEntry[]): number | null
       }
     }
   });
-
   if (validSubjectCount === 0) return null;
   return parseFloat((totalScore / validSubjectCount).toFixed(2));
 }
@@ -154,35 +144,22 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const form = useForm<ReportData>({
     resolver: zodResolver(ReportDataSchema),
-    defaultValues: {
-      studentName: initialData?.studentName || '',
-      className: initialData?.className || '',
-      gender: initialData?.gender || undefined,
-      schoolName: initialData?.schoolName || 'Faacom Academy',
-      schoolLogoDataUri: initialData?.schoolLogoDataUri || undefined,
-      academicYear: initialData?.academicYear || '2023-2024',
-      academicTerm: initialData?.academicTerm || 'First Term',
-      selectedTemplateId: initialData?.selectedTemplateId || 'default',
-      daysAttended: initialData?.daysAttended === undefined ? null : initialData.daysAttended,
-      totalSchoolDays: initialData?.totalSchoolDays === undefined ? null : initialData.totalSchoolDays,
-      parentEmail: initialData?.parentEmail || '',
-      parentPhoneNumber: initialData?.parentPhoneNumber || '',
-      performanceSummary: initialData?.performanceSummary || '',
-      strengths: initialData?.strengths || '',
-      areasForImprovement: initialData?.areasForImprovement || '',
-      hobbies: initialData?.hobbies || [],
-      teacherFeedback: initialData?.teacherFeedback || '',
-      instructorContact: initialData?.instructorContact || '',
-      subjects: initialData?.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
-      studentEntryNumber: initialData?.studentEntryNumber || 1, // Initialized properly from prop
-      promotionStatus: initialData?.promotionStatus || undefined,
-      studentPhotoDataUri: initialData?.studentPhotoDataUri || undefined,
-      headMasterSignatureDataUri: initialData?.headMasterSignatureDataUri || undefined,
-      id: initialData?.id || `unsaved-${Date.now()}`,
-      overallAverage: initialData?.overallAverage || undefined,
-      rank: initialData?.rank || undefined,
-      createdAt: initialData?.createdAt || undefined,
-    },
+    defaultValues: initialData ? 
+      {
+        ...schemaDefaultReportData, // Start with schema defaults
+        ...initialData, // Override with any initialData provided
+        id: initialData.id || `unsaved-${Date.now()}`,
+        studentEntryNumber: initialData.studentEntryNumber || 1,
+        subjects: initialData.subjects?.length ? initialData.subjects.map(s => ({...s})) : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+        hobbies: initialData.hobbies || [],
+      } : 
+      {
+        ...schemaDefaultReportData,
+        id: `unsaved-${Date.now()}`,
+        studentEntryNumber: 1,
+        subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+        hobbies: [],
+      }
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -196,7 +173,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         setCurrentVisibleSubjectIndex(fields.length - 1);
       }
     } else {
-      if (fields.length === 0) {
+      if (fields.length === 0) { // Should not happen if defaultValues ensure at least one subject
         append({ subjectName: '', continuousAssessment: null, examinationMark: null });
         setCurrentVisibleSubjectIndex(0);
       }
@@ -264,6 +241,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   useEffect(() => {
     if (initialData) {
+      // Construct a complete ReportData object for reset, ensuring all fields are present
       const fullInitialData: ReportData = {
         studentName: initialData.studentName || '',
         className: initialData.className || '',
@@ -294,29 +272,30 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         createdAt: initialData.createdAt || undefined,
         teacherId: initialData.teacherId || undefined,
       };
-      form.reset(fullInitialData);
+      form.reset(fullInitialData); // This is the key to update the form with new initialData
       setCurrentVisibleSubjectIndex(0);
       setComparisonTermSelection('none');
 
+      // Update custom lists if initialData contains new items not already tracked
       if (initialData.className && !classLevels.includes(initialData.className) && !customClassNames.includes(initialData.className)) {
         setCustomClassNames(prev => [...new Set([...prev, initialData.className!])]);
       }
       if (initialData.hobbies) {
-        const newCustomHobbies = initialData.hobbies.filter(hobby => !predefinedHobbiesList.includes(hobby));
+        const newCustomHobbies = initialData.hobbies.filter(hobby => !predefinedHobbiesList.includes(hobby) && !customHobbies.includes(hobby));
         if (newCustomHobbies.length > 0) {
           setCustomHobbies(prev => [...new Set([...prev, ...newCustomHobbies])]);
         }
       }
       if (initialData.subjects) {
-        const newCustomSubjects = initialData.subjects
+        const newCustomSubjectsFromInitial = initialData.subjects
           .map(s => s.subjectName)
-          .filter(name => name && !predefinedSubjectsList.includes(name));
-        if (newCustomSubjects.length > 0) {
-          setCustomSubjects(prev => [...new Set([...prev, ...newCustomSubjects])]);
+          .filter(name => name && !predefinedSubjectsList.includes(name) && !customSubjects.includes(name));
+        if (newCustomSubjectsFromInitial.length > 0) {
+          setCustomSubjects(prev => [...new Set([...prev, ...newCustomSubjectsFromInitial])]);
         }
       }
     }
-  }, [initialData, form, append]); // Removed custom lists from dependencies as they are managed internally or via initialData
+  }, [initialData, form, customClassNames, customHobbies, customSubjects]);
 
 
   useEffect(() => {
@@ -516,12 +495,11 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     });
   };
 
-  // For "Update Preview" button
   const onSubmitForPreview: SubmitHandler<ReportData> = (data) => {
     const processedData: ReportData = {
       ...data,
-      id: data.id || `preview-${Date.now()}`,
-      studentEntryNumber: data.studentEntryNumber || 1,
+      id: data.id || `preview-${Date.now()}`, // Ensure ID for preview
+      studentEntryNumber: data.studentEntryNumber,
       daysAttended: parseNumeric(data.daysAttended),
       totalSchoolDays: parseNumeric(data.totalSchoolDays),
       subjects: data.subjects.map(s => ({
@@ -537,6 +515,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       hobbies: data.hobbies || [],
       parentEmail: data.parentEmail || '',
       parentPhoneNumber: data.parentPhoneNumber || '',
+      // overallAverage, rank, createdAt, teacherId are not part of form data, should come from initialData or be undefined
       overallAverage: data.overallAverage || undefined,
       rank: data.rank || undefined,
       createdAt: data.createdAt || undefined,
@@ -545,34 +524,37 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     onFormUpdate(processedData);
     toast({ title: "Preview Updated", description: "Report preview reflects current form data." });
   };
-
-  // For "Add to List" button
+  
   const onSubmitForSave: SubmitHandler<ReportData> = async (dataFromRHF) => {
+     // Ensure all critical fields are validated by RHF schema first
+    // dataFromRHF here is already validated by RHF if form.handleSubmit was used correctly
     const processedDataForSave: ReportData = {
-        ...dataFromRHF,
-        id: dataFromRHF.id || `save-attempt-${Date.now()}`, // Should be set by form state from initialData
-        studentEntryNumber: dataFromRHF.studentEntryNumber, // Should be set by form state
-        daysAttended: parseNumeric(dataFromRHF.daysAttended),
-        totalSchoolDays: parseNumeric(dataFromRHF.totalSchoolDays),
-        subjects: dataFromRHF.subjects.map(s => ({
-            subjectName: s.subjectName,
-            continuousAssessment: parseNumeric(s.continuousAssessment),
-            examinationMark: parseNumeric(s.examinationMark),
-        })),
-        promotionStatus: isPromotionStatusApplicable ? dataFromRHF.promotionStatus : undefined,
-        studentPhotoDataUri: dataFromRHF.studentPhotoDataUri || undefined,
-        schoolLogoDataUri: dataFromRHF.schoolLogoDataUri || undefined,
-        headMasterSignatureDataUri: dataFromRHF.headMasterSignatureDataUri || undefined,
-        instructorContact: dataFromRHF.instructorContact || '',
-        hobbies: dataFromRHF.hobbies || [],
-        parentEmail: dataFromRHF.parentEmail || '',
-        parentPhoneNumber: dataFromRHF.parentPhoneNumber || '',
-        overallAverage: dataFromRHF.overallAverage || undefined, // Recalculated by page.tsx before display
-        rank: dataFromRHF.rank || undefined, // Recalculated by page.tsx
-        createdAt: dataFromRHF.createdAt || undefined, // Firestore handles this
-        teacherId: dataFromRHF.teacherId || undefined,
+      ...dataFromRHF, // Spread all fields from RHF validated data
+      id: dataFromRHF.id || `save-attempt-${Date.now()}`,
+      studentEntryNumber: dataFromRHF.studentEntryNumber,
+      daysAttended: parseNumeric(dataFromRHF.daysAttended),
+      totalSchoolDays: parseNumeric(dataFromRHF.totalSchoolDays),
+      subjects: dataFromRHF.subjects.map(s => ({
+          subjectName: s.subjectName || '', // Ensure empty string if undefined
+          continuousAssessment: parseNumeric(s.continuousAssessment),
+          examinationMark: parseNumeric(s.examinationMark),
+      })),
+      promotionStatus: isPromotionStatusApplicable ? dataFromRHF.promotionStatus : undefined, // Use undefined if not applicable
+      // Ensure optional strings are "" if undefined, and other optionals are undefined or null
+      studentPhotoDataUri: dataFromRHF.studentPhotoDataUri || null,
+      schoolLogoDataUri: dataFromRHF.schoolLogoDataUri || null,
+      headMasterSignatureDataUri: dataFromRHF.headMasterSignatureDataUri || null,
+      instructorContact: dataFromRHF.instructorContact || "",
+      hobbies: dataFromRHF.hobbies || [],
+      parentEmail: dataFromRHF.parentEmail || "",
+      parentPhoneNumber: dataFromRHF.parentPhoneNumber || "",
+      // These are calculated/set server-side or in page.tsx, so pass as is or undefined
+      overallAverage: dataFromRHF.overallAverage || undefined,
+      rank: dataFromRHF.rank || undefined,
+      createdAt: dataFromRHF.createdAt || undefined, // Firestore handles serverTimestamp
+      teacherId: dataFromRHF.teacherId || undefined,
     };
-    await onSaveReport(processedDataForSave); // Call the prop from page.tsx
+    await onSaveReport(processedDataForSave);
   };
 
 
@@ -588,7 +570,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       return;
     }
     remove(currentVisibleSubjectIndex);
-    // Adjust currentVisibleSubjectIndex if needed
     if (currentVisibleSubjectIndex >= fields.length -1 && fields.length > 1) {
         setCurrentVisibleSubjectIndex(fields.length - 2);
     }
@@ -669,7 +650,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          {/* The main form tag will now handle onSubmitForPreview via a button type="submit" */}
           <form onSubmit={form.handleSubmit(onSubmitForPreview)} className="space-y-8">
 
             <section className="space-y-6">
@@ -1060,7 +1040,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             <Separator />
 
             <section className="space-y-6">
-              <div className="flex justify-between items-center border-b pb-2 mb-4">
+              <div className="flex items-center justify-between mt-2 mb-4">
                 <h3 className="text-lg font-medium text-primary">Subject Marks</h3>
               </div>
 
@@ -1346,7 +1326,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                               {hobby}
                             </DropdownMenuCheckboxItem>
                           ))}
-                          {customHobbies.length > 0 && <DropdownMenuSeparator />}
                           {customHobbies.map((hobby) => (
                              <DropdownMenuCheckboxItem
                               key={hobby}
@@ -1426,7 +1405,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                 </Button>
                 <Button
                     type="button"
-                    onClick={() => form.handleSubmit(onSubmitForSave)()}
+                    onClick={form.handleSubmit(onSubmitForSave)} // Use RHF's handleSubmit here
                     className="w-full sm:w-auto"
                     variant="default"
                     disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading }
@@ -1530,3 +1509,4 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   );
 }
 
+    
