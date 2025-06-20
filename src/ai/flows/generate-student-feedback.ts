@@ -48,7 +48,7 @@ const generateStudentFeedbackPrompt = sirAi.definePrompt({
   output: {schema: GenerateStudentFeedbackOutputSchema},
   prompt: `You are a helpful teacher providing feedback to students.
 
-  Based on the student's performance data, generate personalized feedback that is specific and constructive.
+  Based on the student's performance data, generate **concise (1-2 sentences)** personalized feedback that is specific and constructive. Focus on the most impactful points.
 
   Student Name: {{{studentName}}}
   Class Name: {{{className}}}

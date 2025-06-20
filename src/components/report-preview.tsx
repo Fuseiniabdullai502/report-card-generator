@@ -30,7 +30,7 @@ const getTemplateSpecificStyles = (templateId?: string): TemplateStyles => {
         headerTitleClass: 'text-2xl font-headline font-bold text-blue-700',
         headerSubtitleClass: 'text-blue-600 font-semibold',
         sectionTitleClass: 'text-base font-headline font-semibold mb-1.5 text-blue-700 border-b border-blue-300 pb-0.5',
-        sectionContainerClass: 'p-3 border border-blue-300 rounded-md shadow-sm',
+        sectionContainerClass: 'p-2 border border-blue-300 rounded-md shadow-sm', // p-2 from p-3
         tableHeaderClass: 'bg-blue-100',
         overallReportBorderClass: 'border border-blue-400',
         mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-3 text-blue-700',
@@ -41,7 +41,7 @@ const getTemplateSpecificStyles = (templateId?: string): TemplateStyles => {
         headerTitleClass: 'text-2xl font-headline font-bold text-green-700',
         headerSubtitleClass: 'text-green-600 font-semibold',
         sectionTitleClass: 'text-base font-headline font-semibold mb-1.5 text-green-700 border-b border-green-300 pb-0.5',
-        sectionContainerClass: 'p-3 border border-green-300 rounded-md shadow-sm',
+        sectionContainerClass: 'p-2 border border-green-300 rounded-md shadow-sm', // p-2 from p-3
         tableHeaderClass: 'bg-green-100',
         overallReportBorderClass: 'border border-green-400',
         mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-3 text-green-700',
@@ -52,7 +52,7 @@ const getTemplateSpecificStyles = (templateId?: string): TemplateStyles => {
         headerTitleClass: 'text-xl font-headline font-semibold text-gray-700',
         headerSubtitleClass: 'text-gray-500 font-normal text-xs',
         sectionTitleClass: 'text-sm font-headline font-medium mb-1 text-gray-600 border-b border-gray-200 pb-0.5',
-        sectionContainerClass: 'p-2 border border-gray-200 rounded shadow-none',
+        sectionContainerClass: 'p-2 border border-gray-200 rounded shadow-none', // p-2 from p-3 (though it was already p-2 in previous diff)
         tableHeaderClass: 'bg-gray-100',
         overallReportBorderClass: 'border border-gray-300 shadow-sm',
         mainHeaderTextClass: 'text-2xl font-headline font-medium text-center mt-2 text-gray-600',
@@ -63,7 +63,7 @@ const getTemplateSpecificStyles = (templateId?: string): TemplateStyles => {
         headerTitleClass: 'text-2xl font-headline font-bold text-red-700',
         headerSubtitleClass: 'text-red-600 font-semibold',
         sectionTitleClass: 'text-base font-headline font-bold mb-1.5 text-red-700 border-b border-red-200 pb-0.5',
-        sectionContainerClass: 'p-3 border border-red-200 rounded-md',
+        sectionContainerClass: 'p-2 border border-red-200 rounded-md', // p-2 from p-3
         tableHeaderClass: 'bg-red-50',
         overallReportBorderClass: 'border border-red-300',
         mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-3 text-red-700',
@@ -74,7 +74,7 @@ const getTemplateSpecificStyles = (templateId?: string): TemplateStyles => {
         headerTitleClass: 'text-2xl font-headline font-bold text-teal-700',
         headerSubtitleClass: 'text-teal-600 font-semibold',
         sectionTitleClass: 'text-base font-headline font-semibold mb-1.5 text-teal-700 border-b border-teal-300 pb-0.5 italic',
-        sectionContainerClass: 'p-3 border border-teal-300 rounded-lg shadow-sm',
+        sectionContainerClass: 'p-2 border border-teal-300 rounded-lg shadow-sm', // p-2 from p-3
         tableHeaderClass: 'bg-teal-100',
         overallReportBorderClass: 'border border-teal-400',
         mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-3 text-teal-700',
@@ -85,7 +85,7 @@ const getTemplateSpecificStyles = (templateId?: string): TemplateStyles => {
         headerTitleClass: 'text-2xl font-headline font-bold text-primary',
         headerSubtitleClass: 'text-muted-foreground font-semibold',
         sectionTitleClass: 'text-base font-headline font-semibold mb-1.5 text-primary border-b pb-0.5',
-        sectionContainerClass: 'p-3 border border-gray-200 rounded-md shadow-sm',
+        sectionContainerClass: 'p-2 border border-gray-200 rounded-md shadow-sm', // p-2 from p-3
         tableHeaderClass: 'bg-gray-50',
         overallReportBorderClass: 'border border-gray-300',
         mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-3 text-gray-700',
@@ -151,7 +151,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 
   return (
     <div id="printable-report-area" className={cn("a4-page-simulation flex flex-col text-sm", templateStyles.overallReportBorderClass)}>
-      <header className={cn("mb-6", templateStyles.headerContainerClass)}>
+      <header className={cn("mb-4", templateStyles.headerContainerClass)}> {/* mb-4 from mb-6 */}
         <div className="flex justify-between items-start">
           <div>
             <h2 className={templateStyles.headerTitleClass}>{data.schoolName || 'School Name'}</h2>
@@ -174,7 +174,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         <h1 className={templateStyles.mainHeaderTextClass}>Student Report Card</h1>
       </header>
 
-      <section className="mb-4 flex justify-between items-start">
+      <section className="mb-3 flex justify-between items-start"> {/* mb-3 from mb-4 */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs flex-grow pr-4">
           <div>
             <span className="font-semibold text-gray-600">Student Name:</span>
@@ -228,7 +228,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 
 
       {data.subjects && data.subjects.length > 0 && (
-        <section className="mb-4">
+        <section className="mb-3"> {/* mb-3 from mb-4 */}
           <h3 className={templateStyles.sectionTitleClass}>Subject Performance</h3>
           <Table className={cn("border rounded-md text-xs", templateStyles.overallReportBorderClass)}>
             <TableHeader>
@@ -262,7 +262,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         </section>
       )}
 
-      <div className="space-y-4 flex-grow text-xs">
+      <div className="space-y-3 flex-grow text-xs"> {/* space-y-3 from space-y-4 */}
         {data.performanceSummary && (
           <ReportSection title="Overall Performance Summary" templateStyles={templateStyles}>
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.performanceSummary}</p>
@@ -294,7 +294,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         )}
       </div>
 
-      <footer className="mt-8 pt-4 border-t border-gray-300 text-[10px] text-gray-600">
+      <footer className="mt-6 pt-3 border-t border-gray-300 text-[10px] text-gray-600"> {/* mt-6 pt-3 from mt-8 pt-4 */}
         <div className="flex justify-between items-end">
           <div>
             <p><span className="font-semibold">Date Issued:</span> {currentDate}</p>
@@ -344,3 +344,4 @@ function ReportSection({ title, children, templateStyles, highlightColor }: Repo
     </div>
   );
 }
+
