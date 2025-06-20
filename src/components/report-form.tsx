@@ -13,10 +13,10 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSep
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction }from '@/app/actions';
-import type { GenerateReportInsightsInput, GenerateReportInsightsOutput } from '@/ai/flows/generate-performance-summary';
+import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
 import React, {useState, useTransition, useEffect, useMemo}from 'react';
 import NextImage from 'next/image';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, LayoutTemplate, History } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, LayoutTemplate, History, ListPlus } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,6 +27,7 @@ interface ReportFormProps {
   onFormUpdate: (data: ReportData) => void;
   initialData?: Partial<ReportData>;
   reportPrintListForHistory?: ReportData[];
+  onSaveReport: (data: ReportData) => Promise<void>; // New prop for saving
 }
 
 const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
@@ -77,14 +78,22 @@ const reportTemplateOptions = [
     { id: 'creativeTeal', name: 'Creative Teal' },
 ];
 
+// Helper function to parse numeric input, returning number or null
+const parseNumeric = (value: any): number | null => {
+  if (value === null || value === undefined || value === '') return null;
+  const num = Number(value);
+  return Number.isNaN(num) ? null : num;
+};
+
+
 // Helper function to calculate final mark for a single subject from form data
 function calculateSubjectFinalMarkForForm(subject: SubjectEntry): number | null {
   const caMarkInput = subject.continuousAssessment;
   const examMarkInput = subject.examinationMark;
 
-  if ((caMarkInput === null || caMarkInput === undefined || Number.isNaN(Number(caMarkInput))) && 
+  if ((caMarkInput === null || caMarkInput === undefined || Number.isNaN(Number(caMarkInput))) &&
       (examMarkInput === null || examMarkInput === undefined || Number.isNaN(Number(examMarkInput)))) {
-    return null; // No valid marks, cannot calculate
+    return null;
   }
 
   const caVal = (caMarkInput !== null && caMarkInput !== undefined && !Number.isNaN(Number(caMarkInput))) ? Number(caMarkInput) : 0;
@@ -92,9 +101,9 @@ function calculateSubjectFinalMarkForForm(subject: SubjectEntry): number | null 
 
   const scaledCaMark = (caVal / 60) * 40;
   const scaledExamMark = (examVal / 100) * 60;
-  
+
   let finalPercentageMark = scaledCaMark + scaledExamMark;
-  finalPercentageMark = Math.min(Math.max(finalPercentageMark, 0), 100); // Ensure it's between 0 and 100
+  finalPercentageMark = Math.min(Math.max(finalPercentageMark, 0), 100);
   return parseFloat(finalPercentageMark.toFixed(1));
 }
 
@@ -120,7 +129,7 @@ function calculateOverallAverageForForm(subjects: SubjectEntry[]): number | null
 }
 
 
-export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory }: ReportFormProps) {
+export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory, onSaveReport }: ReportFormProps) {
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
   const [isImageEditingAiLoading, startImageEditingAiTransition] = useTransition();
@@ -129,7 +138,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [customSubjects, setCustomSubjects] = useState<string[]>([]);
   const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
   const [customSubjectInputValue, setCustomSubjectInputValue] = useState('');
-  const [currentCustomSubjectTargetIndex, setCurrentCustomSubjectTargetIndex] = useState<number | null>(null); 
+  const [currentCustomSubjectTargetIndex, setCurrentCustomSubjectTargetIndex] = useState<number | null>(null);
 
   const [customClassNames, setCustomClassNames] = useState<string[]>([]);
   const [isCustomClassNameDialogOpen, setIsCustomClassNameDialogOpen] = useState(false);
@@ -148,14 +157,14 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     defaultValues: {
       studentName: initialData?.studentName || '',
       className: initialData?.className || '',
-      gender: initialData?.gender || '',
+      gender: initialData?.gender || undefined,
       schoolName: initialData?.schoolName || 'Faacom Academy',
       schoolLogoDataUri: initialData?.schoolLogoDataUri || undefined,
       academicYear: initialData?.academicYear || '2023-2024',
       academicTerm: initialData?.academicTerm || 'First Term',
       selectedTemplateId: initialData?.selectedTemplateId || 'default',
-      daysAttended: initialData?.daysAttended || null,
-      totalSchoolDays: initialData?.totalSchoolDays || null,
+      daysAttended: initialData?.daysAttended === undefined ? null : initialData.daysAttended,
+      totalSchoolDays: initialData?.totalSchoolDays === undefined ? null : initialData.totalSchoolDays,
       parentEmail: initialData?.parentEmail || '',
       parentPhoneNumber: initialData?.parentPhoneNumber || '',
       performanceSummary: initialData?.performanceSummary || '',
@@ -165,12 +174,11 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       teacherFeedback: initialData?.teacherFeedback || '',
       instructorContact: initialData?.instructorContact || '',
       subjects: initialData?.subjects?.length ? initialData.subjects as SubjectEntry[] : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
-      studentEntryNumber: initialData?.studentEntryNumber || undefined,
+      studentEntryNumber: initialData?.studentEntryNumber || 1, // Initialized properly from prop
       promotionStatus: initialData?.promotionStatus || undefined,
       studentPhotoDataUri: initialData?.studentPhotoDataUri || undefined,
       headMasterSignatureDataUri: initialData?.headMasterSignatureDataUri || undefined,
-      id: initialData?.id || `unsaved-${Date.now()}`, // Ensure ID is part of defaultValues
-      // Other fields from ReportData if not covered above
+      id: initialData?.id || `unsaved-${Date.now()}`,
       overallAverage: initialData?.overallAverage || undefined,
       rank: initialData?.rank || undefined,
       createdAt: initialData?.createdAt || undefined,
@@ -203,16 +211,15 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const watchedStudentName = form.watch('studentName');
 
 
-  // Update studentNameHistory to include names from localStorage
   const studentNameHistory = React.useMemo(() => {
     const namesFromList = reportPrintListForHistory?.map(report => report.studentName).filter(Boolean) || [];
     let namesFromStorage: string[] = [];
-    if (typeof window !== 'undefined') { 
+    if (typeof window !== 'undefined') {
       try {
         const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
         if (storedProfilesRaw) {
           const profiles: Record<string, { studentName: string }> = JSON.parse(storedProfilesRaw);
-          namesFromStorage = Object.values(profiles).map(p => p.studentName); // Get actual names
+          namesFromStorage = Object.values(profiles).map(p => p.studentName);
         }
       } catch (e) {
         console.error("Error reading student names from localStorage for history:", e);
@@ -221,27 +228,23 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     return [...new Set([...namesFromList, ...namesFromStorage])];
   }, [reportPrintListForHistory]);
 
-  // Effect for pre-filling student photo
   useEffect(() => {
     if (
       (watchedAcademicTerm === 'Second Term' || watchedAcademicTerm === 'Third Term') &&
       watchedStudentName &&
-      !form.getValues('studentPhotoDataUri') 
+      !form.getValues('studentPhotoDataUri')
     ) {
       if (typeof window !== 'undefined') {
         try {
           const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
           if (storedProfilesRaw) {
             const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string }> = JSON.parse(storedProfilesRaw);
-            
             const studentProfile = Object.values(profiles).find(p => p.studentName === watchedStudentName);
-
             if (studentProfile && studentProfile.studentPhotoDataUri) {
               form.setValue('studentPhotoDataUri', studentProfile.studentPhotoDataUri, { shouldDirty: true });
               toast({
                 title: "Student Photo Pre-filled",
                 description: `Photo for ${watchedStudentName} has been loaded from First Term data.`,
-                variant: "default",
                 duration: 3000,
               });
             }
@@ -261,39 +264,59 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   useEffect(() => {
     if (initialData) {
-      const fullInitialData = {
-        ...initialData,
-        id: initialData.id || `unsaved-${Date.now()}`, // Ensure ID always exists for form.reset
-        studentEntryNumber: initialData.studentEntryNumber || form.getValues('studentEntryNumber') || 1, // Persist or get current
-        subjects: initialData.subjects?.length ? initialData.subjects : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
-        hobbies: initialData.hobbies || [],
+      const fullInitialData: ReportData = {
+        studentName: initialData.studentName || '',
+        className: initialData.className || '',
+        gender: initialData.gender || undefined,
+        schoolName: initialData.schoolName || 'Faacom Academy',
+        schoolLogoDataUri: initialData.schoolLogoDataUri || undefined,
+        academicYear: initialData.academicYear || '2023-2024',
+        academicTerm: initialData.academicTerm || 'First Term',
+        selectedTemplateId: initialData.selectedTemplateId || 'default',
         daysAttended: initialData.daysAttended === undefined ? null : initialData.daysAttended,
         totalSchoolDays: initialData.totalSchoolDays === undefined ? null : initialData.totalSchoolDays,
+        parentEmail: initialData.parentEmail || '',
+        parentPhoneNumber: initialData.parentPhoneNumber || '',
+        performanceSummary: initialData.performanceSummary || '',
+        strengths: initialData.strengths || '',
+        areasForImprovement: initialData.areasForImprovement || '',
+        hobbies: initialData.hobbies || [],
+        teacherFeedback: initialData.teacherFeedback || '',
+        instructorContact: initialData.instructorContact || '',
+        subjects: initialData.subjects?.length ? initialData.subjects.map(s => ({...s})) : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+        studentEntryNumber: initialData.studentEntryNumber || 1,
+        promotionStatus: initialData.promotionStatus || undefined,
+        studentPhotoDataUri: initialData.studentPhotoDataUri || undefined,
+        headMasterSignatureDataUri: initialData.headMasterSignatureDataUri || undefined,
+        id: initialData.id || `unsaved-${Date.now()}`,
+        overallAverage: initialData.overallAverage || undefined,
+        rank: initialData.rank || undefined,
+        createdAt: initialData.createdAt || undefined,
+        teacherId: initialData.teacherId || undefined,
       };
-      form.reset(fullInitialData as ReportData); // Cast because initialData is Partial
+      form.reset(fullInitialData);
       setCurrentVisibleSubjectIndex(0);
-      setComparisonTermSelection('none'); 
+      setComparisonTermSelection('none');
 
       if (initialData.className && !classLevels.includes(initialData.className) && !customClassNames.includes(initialData.className)) {
-        setCustomClassNames(prev => [...prev, initialData.className!]);
+        setCustomClassNames(prev => [...new Set([...prev, initialData.className!])]);
       }
       if (initialData.hobbies) {
-        const newCustomHobbies = initialData.hobbies.filter(hobby => !predefinedHobbiesList.includes(hobby) && !customHobbies.includes(hobby));
+        const newCustomHobbies = initialData.hobbies.filter(hobby => !predefinedHobbiesList.includes(hobby));
         if (newCustomHobbies.length > 0) {
-          setCustomHobbies(prev => [...prev, ...newCustomHobbies]);
+          setCustomHobbies(prev => [...new Set([...prev, ...newCustomHobbies])]);
         }
       }
       if (initialData.subjects) {
         const newCustomSubjects = initialData.subjects
           .map(s => s.subjectName)
-          .filter(name => name && !predefinedSubjectsList.includes(name) && !customSubjects.includes(name));
+          .filter(name => name && !predefinedSubjectsList.includes(name));
         if (newCustomSubjects.length > 0) {
-          setCustomSubjects(prev => [...prev, ...newCustomSubjects]);
+          setCustomSubjects(prev => [...new Set([...prev, ...newCustomSubjects])]);
         }
       }
-
     }
-  }, [initialData, form.reset, form, append, customClassNames, customHobbies, customSubjects]);
+  }, [initialData, form, append]); // Removed custom lists from dependencies as they are managed internally or via initialData
 
 
   useEffect(() => {
@@ -302,11 +325,9 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     }
   }, [isPromotionStatusApplicable, form]);
 
-  // Effect to automatically set promotion status for Third Term
   useEffect(() => {
     if (isPromotionStatusApplicable) {
       const currentOverallAverage = calculateOverallAverageForForm(watchedSubjects);
-
       if (currentOverallAverage !== null) {
         if (currentOverallAverage >= 40) {
           form.setValue('promotionStatus', 'Promoted', { shouldDirty: true, shouldValidate: true });
@@ -320,25 +341,16 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const handleAddCustomSubjectToListAndForm = () => {
     if (customSubjectInputValue.trim() === '') {
-      toast({
-        title: "Invalid Subject Name",
-        description: "Custom subject name cannot be empty.",
-        variant: "destructive",
-      });
+      toast({ title: "Invalid Subject Name", description: "Custom subject name cannot be empty.", variant: "destructive" });
       return;
     }
     if (currentCustomSubjectTargetIndex !== null) {
       const newSubjectName = customSubjectInputValue.trim();
       form.setValue(`subjects.${currentCustomSubjectTargetIndex}.subjectName`, newSubjectName);
-
       if (!predefinedSubjectsList.includes(newSubjectName) && !customSubjects.includes(newSubjectName)) {
-        setCustomSubjects(prev => [...prev, newSubjectName]);
+        setCustomSubjects(prev => [...new Set([...prev, newSubjectName])]);
       }
-
-      toast({
-        title: "Subject Added",
-        description: `"${newSubjectName}" has been set for the current subject entry and added to your session list.`,
-      });
+      toast({ title: "Subject Added", description: `"${newSubjectName}" has been set and added to session list.` });
       setIsCustomSubjectDialogOpen(false);
       setCustomSubjectInputValue('');
       setCurrentCustomSubjectTargetIndex(null);
@@ -348,21 +360,14 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const handleAddCustomClassNameToListAndForm = () => {
     const newClassName = customClassNameInputValue.trim();
     if (newClassName === '') {
-      toast({
-        title: "Invalid Class Name",
-        description: "Custom class name cannot be empty.",
-        variant: "destructive",
-      });
+      toast({ title: "Invalid Class Name", description: "Custom class name cannot be empty.", variant: "destructive" });
       return;
     }
     form.setValue('className', newClassName, { shouldDirty: true, shouldValidate: true });
     if (!classLevels.includes(newClassName) && !customClassNames.includes(newClassName)) {
-      setCustomClassNames(prev => [...prev, newClassName]);
+      setCustomClassNames(prev => [...new Set([...prev, newClassName])]);
     }
-    toast({
-      title: "Class Added",
-      description: `"${newClassName}" has been set and added to your session list.`,
-    });
+    toast({ title: "Class Added", description: `"${newClassName}" has been set and added to session list.` });
     setIsCustomClassNameDialogOpen(false);
     setCustomClassNameInputValue('');
   };
@@ -370,26 +375,17 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const handleAddCustomHobbyToListAndForm = () => {
     const newHobby = customHobbyInputValue.trim();
     if (newHobby === '') {
-      toast({
-        title: "Invalid Hobby Name",
-        description: "Custom hobby name cannot be empty.",
-        variant: "destructive",
-      });
+      toast({ title: "Invalid Hobby Name", description: "Custom hobby name cannot be empty.", variant: "destructive" });
       return;
     }
-    
-    const currentHobbies = form.getValues('hobbies') || [];
-    if (!currentHobbies.includes(newHobby)) {
-      form.setValue('hobbies', [...currentHobbies, newHobby], { shouldDirty: true, shouldValidate: true });
+    const currentHobbiesList = form.getValues('hobbies') || [];
+    if (!currentHobbiesList.includes(newHobby)) {
+      form.setValue('hobbies', [...currentHobbiesList, newHobby], { shouldDirty: true, shouldValidate: true });
     }
-
     if (!predefinedHobbiesList.includes(newHobby) && !customHobbies.includes(newHobby)) {
-      setCustomHobbies(prev => [...prev, newHobby]);
+      setCustomHobbies(prev => [...new Set([...prev, newHobby])]);
     }
-    toast({
-      title: "Hobby Added",
-      description: `"${newHobby}" has been selected and added to your session list.`,
-    });
+    toast({ title: "Hobby Added", description: `"${newHobby}" has been selected and added to session list.` });
     setIsCustomHobbyDialogOpen(false);
     setCustomHobbyInputValue('');
   };
@@ -410,7 +406,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     }
 
     let previousTermsDataForAI: GenerateReportInsightsInput['previousTermsData'] = [];
-
     if (comparisonTermSelection !== 'none' && reportPrintListForHistory) {
       const targetTerms: string[] = [];
       if (comparisonTermSelection === 'term1') targetTerms.push('First Term');
@@ -419,13 +414,12 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         targetTerms.push('First Term');
         targetTerms.push('Second Term');
       }
-      
       previousTermsDataForAI = reportPrintListForHistory
-        .filter(report => 
-          report.studentName === studentName && 
-          report.academicTerm && 
+        .filter(report =>
+          report.studentName === studentName &&
+          report.academicTerm &&
           targetTerms.includes(report.academicTerm) &&
-          report.academicTerm !== currentAcademicTerm // Ensure not comparing with current term itself
+          report.academicTerm !== currentAcademicTerm
         )
         .map(report => ({
           termName: report.academicTerm!,
@@ -436,17 +430,14 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
           })),
           overallAverage: report.overallAverage === undefined || report.overallAverage === null ? null : Number(report.overallAverage),
         }));
-
       if (previousTermsDataForAI.length === 0 && comparisonTermSelection !== 'none') {
         toast({
             title: "No Comparison Data",
-            description: `Could not find previous term data for ${studentName} for the selected comparison term(s) in the current session's history. AI insights will be generated without comparison.`,
-            variant: "default",
+            description: `Could not find previous term data for ${studentName} for comparison. AI insights will be generated without it.`,
             duration: 5000,
           });
       }
     }
-
 
     startReportInsightsAiTransition(async () => {
       try {
@@ -454,8 +445,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
           studentName,
           className,
           currentAcademicTerm,
-          daysAttended,
-          totalSchoolDays,
+          daysAttended: daysAttended === null ? null : Number(daysAttended),
+          totalSchoolDays: totalSchoolDays === null ? null : Number(totalSchoolDays),
           subjects: subjects.map(s => ({
             subjectName: s.subjectName,
             continuousAssessment: s.continuousAssessment === undefined || s.continuousAssessment === null ? null : Number(s.continuousAssessment),
@@ -463,31 +454,17 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
           })),
           previousTermsData: previousTermsDataForAI!.length > 0 ? previousTermsDataForAI : undefined,
         };
-        
         const result = await getAiReportInsightsAction(aiInput);
-
         if (result.success && result.insights) {
           form.setValue('performanceSummary', result.insights.performanceSummary);
           form.setValue('strengths', result.insights.strengths);
           form.setValue('areasForImprovement', result.insights.areasForImprovement);
-          toast({
-            title: "AI Insights Generated",
-            description: "Performance summary, strengths, and areas for improvement have been populated.",
-            variant: "default",
-          });
+          toast({ title: "AI Insights Generated", description: "Performance summary, strengths, and areas for improvement populated." });
         } else {
-          toast({
-            title: "Error Generating Insights",
-            description: result.error || "An unknown error occurred.",
-            variant: "destructive",
-          });
+          toast({ title: "Error Generating Insights", description: result.error || "Unknown error.", variant: "destructive" });
         }
       } catch (error) {
-         toast({
-            title: "Client Error Generating Insights",
-            description: error instanceof Error ? error.message : "An unexpected error occurred before calling the AI service.",
-            variant: "destructive",
-          });
+         toast({ title: "Client Error Generating Insights", description: error instanceof Error ? error.message : "Unexpected error.", variant: "destructive" });
       }
     });
   };
@@ -498,95 +475,53 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     if (!studentName || !className || !performanceSummary || !strengths || !areasForImprovement) {
       toast({
         title: "Missing Information",
-        description: "Please fill in student name, class name, performance summary, strengths, and areas for improvement before generating AI teacher feedback.",
+        description: "Please fill in student name, class name, performance summary, strengths, and areas for improvement first.",
         variant: "destructive",
       });
       form.trigger(['studentName', 'className', 'performanceSummary', 'strengths', 'areasForImprovement']);
       return;
     }
-
     startTeacherFeedbackAiTransition(async () => {
       try {
-        const result = await getAiFeedbackAction({
-          studentName,
-          className,
-          performanceSummary,
-          strengths,
-          areasForImprovement,
-        });
+        const result = await getAiFeedbackAction({ studentName, className, performanceSummary, strengths, areasForImprovement });
         if (result.success && result.feedback) {
           form.setValue('teacherFeedback', result.feedback);
-          toast({
-            title: "AI Teacher Feedback Generated",
-            description: "Teacher's feedback has been populated.",
-            variant: "default",
-          });
+          toast({ title: "AI Teacher Feedback Generated", description: "Teacher's feedback populated." });
         } else {
-          toast({
-            title: "Error Generating Feedback",
-            description: result.error || "An unknown error occurred.",
-            variant: "destructive",
-          });
+          toast({ title: "Error Generating Feedback", description: result.error || "Unknown error.", variant: "destructive" });
         }
       } catch (error) {
-         toast({
-            title: "Error Generating Feedback",
-            description: "An unexpected error occurred.",
-            variant: "destructive",
-          });
+         toast({ title: "Error Generating Feedback", description: "Unexpected error.", variant: "destructive" });
       }
     });
   };
 
   const handleAiEditImage = async (photoDataUri: string, editPrompt: string) => {
     if (!photoDataUri) {
-      toast({
-        title: "No Image to Edit",
-        description: "Please upload a student photo first.",
-        variant: "destructive",
-      });
+      toast({ title: "No Image to Edit", description: "Please upload a student photo first.", variant: "destructive" });
       return;
     }
-
     startImageEditingAiTransition(async () => {
       try {
         const result = await editImageWithAiAction({ photoDataUri, prompt: editPrompt });
         if (result.success && result.editedPhotoDataUri) {
           form.setValue('studentPhotoDataUri', result.editedPhotoDataUri, { shouldDirty: true, shouldValidate: true });
-          toast({
-            title: "AI Image Edit Successful",
-            description: "The student photo has been updated with the AI edit.",
-          });
+          toast({ title: "AI Image Edit Successful", description: "Student photo updated." });
         } else {
-          toast({
-            title: "AI Image Edit Failed",
-            description: result.error || "Could not apply AI edit to the image.",
-            variant: "destructive",
-          });
+          toast({ title: "AI Image Edit Failed", description: result.error || "Could not apply AI edit.", variant: "destructive" });
         }
       } catch (error) {
-        toast({
-          title: "AI Image Edit Error",
-          description: "An unexpected error occurred during AI image editing.",
-          variant: "destructive",
-        });
+        toast({ title: "AI Image Edit Error", description: "Unexpected error during AI image editing.", variant: "destructive" });
       }
     });
   };
 
-  const onSubmit: SubmitHandler<ReportData> = (data) => {
-    const promotionStatusApplicableCheck = data.academicTerm === 'Third Term' && data.className && !tertiaryLevelClasses.includes(data.className);
-    
-    const parseNumeric = (value: any): number | null => {
-      if (value === null || value === undefined || value === '') return null;
-      const num = Number(value);
-      return Number.isNaN(num) ? null : num;
-    };
-  
+  // For "Update Preview" button
+  const onSubmitForPreview: SubmitHandler<ReportData> = (data) => {
     const processedData: ReportData = {
-      ...data, 
-      id: data.id || `unsaved-${Date.now()}`, // Ensure ID is present, RHF data should have it from defaultValues
-      studentEntryNumber: data.studentEntryNumber || 1, // Ensure studentEntryNumber is present
+      ...data,
+      id: data.id || `preview-${Date.now()}`,
+      studentEntryNumber: data.studentEntryNumber || 1,
       daysAttended: parseNumeric(data.daysAttended),
       totalSchoolDays: parseNumeric(data.totalSchoolDays),
       subjects: data.subjects.map(s => ({
@@ -594,7 +529,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         continuousAssessment: parseNumeric(s.continuousAssessment),
         examinationMark: parseNumeric(s.examinationMark),
       })),
-      promotionStatus: promotionStatusApplicableCheck ? data.promotionStatus : undefined,
+      promotionStatus: isPromotionStatusApplicable ? data.promotionStatus : undefined,
       studentPhotoDataUri: data.studentPhotoDataUri || undefined,
       schoolLogoDataUri: data.schoolLogoDataUri || undefined,
       headMasterSignatureDataUri: data.headMasterSignatureDataUri || undefined,
@@ -602,16 +537,42 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       hobbies: data.hobbies || [],
       parentEmail: data.parentEmail || '',
       parentPhoneNumber: data.parentPhoneNumber || '',
-      // Ensure other fields from ReportData that might be optional or processed are here
       overallAverage: data.overallAverage || undefined,
       rank: data.rank || undefined,
-      createdAt: data.createdAt || undefined, 
+      createdAt: data.createdAt || undefined,
+      teacherId: data.teacherId || undefined,
     };
     onFormUpdate(processedData);
-    toast({
-        title: "Preview Updated",
-        description: "The report preview has been updated with the latest information.",
-    });
+    toast({ title: "Preview Updated", description: "Report preview reflects current form data." });
+  };
+
+  // For "Add to List" button
+  const onSubmitForSave: SubmitHandler<ReportData> = async (dataFromRHF) => {
+    const processedDataForSave: ReportData = {
+        ...dataFromRHF,
+        id: dataFromRHF.id || `save-attempt-${Date.now()}`, // Should be set by form state from initialData
+        studentEntryNumber: dataFromRHF.studentEntryNumber, // Should be set by form state
+        daysAttended: parseNumeric(dataFromRHF.daysAttended),
+        totalSchoolDays: parseNumeric(dataFromRHF.totalSchoolDays),
+        subjects: dataFromRHF.subjects.map(s => ({
+            subjectName: s.subjectName,
+            continuousAssessment: parseNumeric(s.continuousAssessment),
+            examinationMark: parseNumeric(s.examinationMark),
+        })),
+        promotionStatus: isPromotionStatusApplicable ? dataFromRHF.promotionStatus : undefined,
+        studentPhotoDataUri: dataFromRHF.studentPhotoDataUri || undefined,
+        schoolLogoDataUri: dataFromRHF.schoolLogoDataUri || undefined,
+        headMasterSignatureDataUri: dataFromRHF.headMasterSignatureDataUri || undefined,
+        instructorContact: dataFromRHF.instructorContact || '',
+        hobbies: dataFromRHF.hobbies || [],
+        parentEmail: dataFromRHF.parentEmail || '',
+        parentPhoneNumber: dataFromRHF.parentPhoneNumber || '',
+        overallAverage: dataFromRHF.overallAverage || undefined, // Recalculated by page.tsx before display
+        rank: dataFromRHF.rank || undefined, // Recalculated by page.tsx
+        createdAt: dataFromRHF.createdAt || undefined, // Firestore handles this
+        teacherId: dataFromRHF.teacherId || undefined,
+    };
+    await onSaveReport(processedDataForSave); // Call the prop from page.tsx
   };
 
 
@@ -627,6 +588,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       return;
     }
     remove(currentVisibleSubjectIndex);
+    // Adjust currentVisibleSubjectIndex if needed
+    if (currentVisibleSubjectIndex >= fields.length -1 && fields.length > 1) {
+        setCurrentVisibleSubjectIndex(fields.length - 2);
+    }
   };
 
   const handleImageUpload = (
@@ -638,58 +603,38 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       const reader = new FileReader();
       reader.onloadend = () => {
         const originalDataUri = reader.result as string;
-
         const allowedMimePattern = /^data:image\/(png|jpeg|gif|svg\+xml);base64,/;
         if (typeof originalDataUri !== 'string' || !allowedMimePattern.test(originalDataUri)) {
-          toast({
-            title: "Invalid File Type/Format",
-            description: "Please upload a valid image (PNG, JPEG, GIF, SVG) in Base64 data URI format. Other formats might not display correctly.",
-            variant: "destructive",
-          });
-          if (event.target) event.target.value = '';
-          return;
+          toast({ title: "Invalid File Type", description: "Please upload PNG, JPEG, GIF, or SVG.", variant: "destructive" });
+          if (event.target) event.target.value = ''; return;
         }
-        
         form.setValue(fieldName, originalDataUri, { shouldDirty: true, shouldValidate: true });
-        toast({
-          title: "Image Uploaded",
-          description: `${fieldName === 'studentPhotoDataUri' ? 'Student photo' : fieldName === 'schoolLogoDataUri' ? 'School logo' : "Head Master's signature"} has been uploaded.`,
-        });
+        toast({ title: "Image Uploaded", description: `${fieldName === 'studentPhotoDataUri' ? 'Student photo' : fieldName === 'schoolLogoDataUri' ? 'School logo' : "Signature"} uploaded.` });
       };
       reader.onerror = () => {
-        toast({
-            title: "File Read Error",
-            description: "Could not read the selected file. It might be corrupted or the browser might not support reading it.",
-            variant: "destructive",
-          });
+        toast({ title: "File Read Error", description: "Could not read the selected file.", variant: "destructive" });
         if (event.target) event.target.value = '';
       };
       reader.readAsDataURL(file);
     }
-    
-    if (event.target) { 
-        event.target.value = '';
-    }
+    if (event.target) event.target.value = '';
   };
 
   const handleSubjectInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, inputType: 'ca' | 'exam') => {
     if (event.key === 'Enter') {
       event.preventDefault();
       if (inputType === 'ca') {
-        const examInput = document.getElementById(`exam_mark_input_${currentVisibleSubjectIndex}`);
-        examInput?.focus();
+        document.getElementById(`exam_mark_input_${currentVisibleSubjectIndex}`)?.focus();
       } else if (inputType === 'exam') {
         if (currentVisibleSubjectIndex < fields.length - 1) {
-          const nextSubjectButton = document.getElementById('next_subject_button');
-          nextSubjectButton?.focus();
+          document.getElementById('next_subject_button')?.focus();
         } else {
-          const addSubjectButton = document.getElementById('add_subject_button_main');
-          addSubjectButton?.focus();
+          document.getElementById('add_subject_button_main')?.focus();
         }
       }
     }
   };
-  
+
   const comparisonOptions = useMemo(() => {
     const options = [{ label: "No Comparison", value: "none" }];
     if (watchedAcademicTerm === "Second Term") {
@@ -702,16 +647,12 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     return options;
   }, [watchedAcademicTerm]);
 
-  // Reset comparison selection if academic term changes to one where current selection is invalid
   useEffect(() => {
     if (watchedAcademicTerm === "First Term" && comparisonTermSelection !== "none") {
       setComparisonTermSelection("none");
     }
-    if (watchedAcademicTerm === "Second Term" && comparisonTermSelection === "term2") {
-       setComparisonTermSelection("none"); // Can't compare Term 2 with Term 2
-    }
-     if (watchedAcademicTerm === "Second Term" && comparisonTermSelection === "term1_and_term2") {
-       setComparisonTermSelection("term1"); 
+    if (watchedAcademicTerm === "Second Term" && (comparisonTermSelection === "term2" || comparisonTermSelection === "term1_and_term2")) {
+       setComparisonTermSelection("term1");
     }
   }, [watchedAcademicTerm, comparisonTermSelection]);
 
@@ -728,7 +669,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* The main form tag will now handle onSubmitForPreview via a button type="submit" */}
+          <form onSubmit={form.handleSubmit(onSubmitForPreview)} className="space-y-8">
 
             <section className="space-y-6">
               <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Student &amp; School Information</h3>
@@ -939,15 +881,14 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center"><Type className="mr-2 h-4 w-4" />Academic Term</FormLabel>
-                      <Select 
+                      <Select
                         onValueChange={(value) => {
                             field.onChange(value);
-                            // Reset comparison if term changes to something incompatible with current selection
                             if (value === "First Term") setComparisonTermSelection("none");
                             if (value === "Second Term" && (comparisonTermSelection === "term2" || comparisonTermSelection === "term1_and_term2")) {
                                 setComparisonTermSelection("term1");
                             }
-                        }} 
+                        }}
                         value={field.value || ''}
                        >
                         <FormControl>
@@ -1040,10 +981,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                             </Button>
                             {field.value && (
                               <>
-                                <Button 
-                                  type="button" 
-                                  variant="outline" 
-                                  size="sm" 
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
                                   onClick={() => handleAiEditImage(field.value!, "Adjust this image of a person to be a clear portrait, suitable for an ID photo or report card. The subject should be centered, well-proportioned (typically shoulders-up or headshot), and placed on a clean, plain white background. Ensure all original details of the person are retained.")}
                                   disabled={isImageEditingAiLoading}
                                 >
@@ -1097,8 +1038,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                               <NextImage
                                 src={field.value}
                                 alt="Head Master's signature preview"
-                                width={100} 
-                                height={50} 
+                                width={100}
+                                height={50}
                                 className="rounded object-contain border bg-white p-1"
                                 data-ai-hint="signature"
                               />
@@ -1122,7 +1063,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
               <div className="flex justify-between items-center border-b pb-2 mb-4">
                 <h3 className="text-lg font-medium text-primary">Subject Marks</h3>
               </div>
-              
+
               <div className="flex items-center justify-between mt-2 mb-4">
                 <Button
                   id="previous_subject_button"
@@ -1167,29 +1108,23 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                 setCustomSubjectInputValue('');
                                 setIsCustomSubjectDialogOpen(true);
                               } else {
-                                field.onChange(value); 
-
+                                field.onChange(value);
                                 const currentFieldValue = value;
                                 const nextSubjectToAutoPopulateIndex = currentVisibleSubjectIndex + 1;
-
                                 if (currentFieldValue && currentFieldValue !== ADD_CUSTOM_SUBJECT_VALUE && fields[nextSubjectToAutoPopulateIndex]) {
                                     const nextSubjectFieldName = `subjects.${nextSubjectToAutoPopulateIndex}.subjectName` as const;
                                     const isNextSubjectFieldEmpty = !form.getValues(nextSubjectFieldName);
-
                                     if (isNextSubjectFieldEmpty) {
                                         const existingSubjectNamesInOtherSlots = form.getValues('subjects')
                                             .map((subjectField, i) => i === nextSubjectToAutoPopulateIndex ? null : subjectField.subjectName)
                                             .filter(Boolean) as string[];
-
                                         let subjectToSet: string | undefined = undefined;
-
                                         for (const predefinedSub of predefinedSubjectsList) {
                                             if (!existingSubjectNamesInOtherSlots.includes(predefinedSub)) {
                                                 subjectToSet = predefinedSub;
                                                 break;
                                             }
                                         }
-                                        
                                         if (subjectToSet) {
                                             form.setValue(nextSubjectFieldName, subjectToSet, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
                                         }
@@ -1232,12 +1167,12 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                         <FormItem>
                           <FormLabel className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary" />CA Mark</FormLabel>
                            <FormControl>
-                             <Input 
+                             <Input
                                id={`ca_mark_input_${currentVisibleSubjectIndex}`}
-                               type="number" 
-                               placeholder="1-60" 
-                               {...field} 
-                               onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} 
+                               type="number"
+                               placeholder="1-60"
+                               {...field}
+                               onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
                                value={field.value === null || field.value === undefined ? '' : String(field.value)}
                                onKeyDown={(e) => handleSubjectInputKeyDown(e, 'ca')}
                              />
@@ -1253,12 +1188,12 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                         <FormItem>
                           <FormLabel className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary" />Exam Mark</FormLabel>
                           <FormControl>
-                             <Input 
+                             <Input
                                id={`exam_mark_input_${currentVisibleSubjectIndex}`}
-                               type="number" 
-                               placeholder="1-100" 
-                               {...field} 
-                               onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} 
+                               type="number"
+                               placeholder="1-100"
+                               {...field}
+                               onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
                                value={field.value === null || field.value === undefined ? '' : String(field.value)}
                                onKeyDown={(e) => handleSubjectInputKeyDown(e, 'exam')}
                              />
@@ -1280,7 +1215,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     </Button>
                 </div>
               )}
-             
+
               <Button
                 id="add_subject_button_main"
                 type="button"
@@ -1485,9 +1420,21 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
               />
             </section>
 
-            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading }>
-              <CheckSquare className="mr-2 h-4 w-4" /> Update Preview
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+                <Button type="submit" className="w-full sm:w-auto" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading }>
+                    <CheckSquare className="mr-2 h-4 w-4" /> Update Preview
+                </Button>
+                <Button
+                    type="button"
+                    onClick={() => form.handleSubmit(onSubmitForSave)()}
+                    className="w-full sm:w-auto"
+                    variant="default"
+                    disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading }
+                    >
+                    <ListPlus className="mr-2 h-4 w-4" />
+                    Add Current Report to Print & Rank List
+                </Button>
+            </div>
           </form>
         </Form>
       </CardContent>
@@ -1582,3 +1529,4 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     </>
   );
 }
+

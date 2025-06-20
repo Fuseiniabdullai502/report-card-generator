@@ -12,7 +12,7 @@ import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, ListPlus, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
@@ -158,7 +158,7 @@ function AppContent() {
         const baseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
         setCurrentEditingReport(prev => ({
           ...baseReset,
-          ...sessionDefaults, // Apply any existing session defaults
+          ...sessionDefaults,
           studentEntryNumber: maxEntryNum + 1,
           id: `unsaved-${Date.now()}`,
           createdAt: undefined,
@@ -182,17 +182,12 @@ function AppContent() {
   };
 
 
-  const handleAddToList = async () => {
-    if (!currentEditingReport) {
-      toast({ title: "No Report Data", description: "Form is empty.", variant: "destructive" });
-      return;
-    }
-
-    if (!currentEditingReport.studentName ||
-        !currentEditingReport.className ||
-        !currentEditingReport.performanceSummary ||
-        !currentEditingReport.strengths ||
-        !currentEditingReport.areasForImprovement) {
+  const handleSaveReportAndResetForm = async (formDataFromRHF: ReportData) => {
+    if (!formDataFromRHF.studentName ||
+        !formDataFromRHF.className ||
+        !formDataFromRHF.performanceSummary ||
+        !formDataFromRHF.strengths ||
+        !formDataFromRHF.areasForImprovement) {
         toast({
           title: "Incomplete Report Data",
           description: "Student Name, Class Name, Performance Summary, Strengths, and Areas for Improvement are required. Please fill them and try again.",
@@ -202,34 +197,34 @@ function AppContent() {
     }
 
     const reportToSaveForFirestore = {
-      studentEntryNumber: nextStudentEntryNumber,
-      studentName: currentEditingReport.studentName || '',
-      className: currentEditingReport.className || '',
-      gender: currentEditingReport.gender || null,
-      schoolName: currentEditingReport.schoolName || 'Faacom Academy',
-      schoolLogoDataUri: currentEditingReport.schoolLogoDataUri || null,
-      academicYear: currentEditingReport.academicYear || '2023-2024',
-      academicTerm: currentEditingReport.academicTerm || 'First Term',
-      selectedTemplateId: currentEditingReport.selectedTemplateId || 'default',
-      daysAttended: currentEditingReport.daysAttended === undefined ? null : currentEditingReport.daysAttended,
-      totalSchoolDays: currentEditingReport.totalSchoolDays === undefined ? null : currentEditingReport.totalSchoolDays,
-      parentEmail: currentEditingReport.parentEmail || "",
-      parentPhoneNumber: currentEditingReport.parentPhoneNumber || "",
-      performanceSummary: currentEditingReport.performanceSummary || '',
-      strengths: currentEditingReport.strengths || '',
-      areasForImprovement: currentEditingReport.areasForImprovement || '',
-      hobbies: currentEditingReport.hobbies || [],
-      teacherFeedback: currentEditingReport.teacherFeedback || "",
-      instructorContact: currentEditingReport.instructorContact || "",
-      subjects: currentEditingReport.subjects.map(s => ({
+      studentEntryNumber: formDataFromRHF.studentEntryNumber, // This comes from the form, which was set during form reset
+      studentName: formDataFromRHF.studentName || '',
+      className: formDataFromRHF.className || '',
+      gender: formDataFromRHF.gender || null,
+      schoolName: formDataFromRHF.schoolName || 'Faacom Academy',
+      schoolLogoDataUri: formDataFromRHF.schoolLogoDataUri || null,
+      academicYear: formDataFromRHF.academicYear || '2023-2024',
+      academicTerm: formDataFromRHF.academicTerm || 'First Term',
+      selectedTemplateId: formDataFromRHF.selectedTemplateId || 'default',
+      daysAttended: formDataFromRHF.daysAttended === undefined || formDataFromRHF.daysAttended === null ? null : Number(formDataFromRHF.daysAttended),
+      totalSchoolDays: formDataFromRHF.totalSchoolDays === undefined || formDataFromRHF.totalSchoolDays === null ? null : Number(formDataFromRHF.totalSchoolDays),
+      parentEmail: formDataFromRHF.parentEmail || "",
+      parentPhoneNumber: formDataFromRHF.parentPhoneNumber || "",
+      performanceSummary: formDataFromRHF.performanceSummary || '',
+      strengths: formDataFromRHF.strengths || '',
+      areasForImprovement: formDataFromRHF.areasForImprovement || '',
+      hobbies: formDataFromRHF.hobbies || [],
+      teacherFeedback: formDataFromRHF.teacherFeedback || "",
+      instructorContact: formDataFromRHF.instructorContact || "",
+      subjects: formDataFromRHF.subjects.map(s => ({
         subjectName: s.subjectName || '',
-        continuousAssessment: s.continuousAssessment === undefined ? null : s.continuousAssessment,
-        examinationMark: s.examinationMark === undefined ? null : s.examinationMark,
+        continuousAssessment: s.continuousAssessment === undefined || s.continuousAssessment === null ? null : Number(s.continuousAssessment),
+        examinationMark: s.examinationMark === undefined || s.examinationMark === null ? null : Number(s.examinationMark),
       })),
-      promotionStatus: currentEditingReport.promotionStatus || null,
-      studentPhotoDataUri: currentEditingReport.studentPhotoDataUri || null,
-      headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri || null,
-      clientSideId: currentEditingReport.id,
+      promotionStatus: formDataFromRHF.promotionStatus || null,
+      studentPhotoDataUri: formDataFromRHF.studentPhotoDataUri || null,
+      headMasterSignatureDataUri: formDataFromRHF.headMasterSignatureDataUri || null,
+      clientSideId: formDataFromRHF.id, // from RHF state, originally set by currentEditingReport
       createdAt: serverTimestamp(),
     };
 
@@ -238,7 +233,7 @@ function AppContent() {
       await addDoc(collection(db, 'reports'), reportToSaveForFirestore);
       toast({
         title: "Report Submitted",
-        description: `${currentEditingReport.studentName}'s report submitted to Firestore. List will update.`,
+        description: `${reportToSaveForFirestore.studentName}'s report submitted to Firestore. List will update.`,
       });
     } catch (error) {
       console.error("Detailed Firestore Save Error: ", error);
@@ -247,9 +242,10 @@ function AppContent() {
         description: `Could not save report. ${error instanceof Error ? error.message : String(error)}`,
         variant: "destructive",
       });
-      return;
+      return; // Stop if save fails
     }
 
+    // Update localStorage profile if it's the First Term
     if (reportToSaveForFirestore.academicTerm === 'First Term' && reportToSaveForFirestore.studentName) {
       try {
         const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
@@ -279,7 +275,7 @@ function AppContent() {
       headMasterSignatureDataUri: reportToSaveForFirestore.headMasterSignatureDataUri,
       instructorContact: reportToSaveForFirestore.instructorContact,
     };
-    setSessionDefaults(newSessionDefaults); // Update the sessionDefaults state
+    setSessionDefaults(newSessionDefaults);
 
     const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
     // Use a fresh copy of defaultReportData for student-specific fields
@@ -322,7 +318,9 @@ function AppContent() {
       rank: undefined,
       teacherId: undefined,
     });
+    setNextStudentEntryNumber(newNextStudentEntryNumber); // Update the counter for the actual next number
   };
+
 
   const handleClearList = () => {
     setReportPrintList([]);
@@ -473,11 +471,13 @@ function AppContent() {
               description: `${reportsToImportPromises.length} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
             });
             const newNextEntryNumForForm = currentImportEntryNumberBase + reportsToImportPromises.length;
+            setNextStudentEntryNumber(newNextEntryNumForForm); // Update nextStudentEntryNumber state
+            
             const newFormBaseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
             setCurrentEditingReport({
                 schoolName: sessionDefaults.schoolName ?? newFormBaseReset.schoolName,
                 schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBaseReset.schoolLogoDataUri,
-                className: sessionDefaults.className ?? newFormBaseReset.className, // Should be destinationClass or sessionDefault's class
+                className: destinationClass, // Use the destination class for the next form
                 academicYear: sessionDefaults.academicYear ?? newFormBaseReset.academicYear,
                 academicTerm: sessionDefaults.academicTerm ?? newFormBaseReset.academicTerm,
                 selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBaseReset.selectedTemplateId,
@@ -488,14 +488,14 @@ function AppContent() {
                 studentName: newFormBaseReset.studentName,
                 gender: newFormBaseReset.gender,
                 studentPhotoDataUri: newFormBaseReset.studentPhotoDataUri,
-                subjects: newFormBaseReset.subjects,
+                subjects: newFormBaseReset.subjects.map(s => ({...s})), // Deep copy subjects
                 daysAttended: newFormBaseReset.daysAttended,
                 parentEmail: newFormBaseReset.parentEmail,
                 parentPhoneNumber: newFormBaseReset.parentPhoneNumber,
                 performanceSummary: newFormBaseReset.performanceSummary,
                 strengths: newFormBaseReset.strengths,
                 areasForImprovement: newFormBaseReset.areasForImprovement,
-                hobbies: newFormBaseReset.hobbies,
+                hobbies: [...newFormBaseReset.hobbies], // Deep copy hobbies
                 teacherFeedback: newFormBaseReset.teacherFeedback,
                 promotionStatus: newFormBaseReset.promotionStatus,
 
@@ -506,6 +506,8 @@ function AppContent() {
                 rank: undefined,
                 teacherId: undefined,
             });
+            // Update sessionDefaults with the new class if it changed
+            setSessionDefaults(prev => ({...prev, className: destinationClass}));
           })
           .catch(error => {
             console.error("Error importing students to Firestore:", error);
@@ -542,11 +544,9 @@ function AppContent() {
             onFormUpdate={handleFormUpdate}
             initialData={currentEditingReport}
             reportPrintListForHistory={reportPrintList}
+            onSaveReport={handleSaveReportAndResetForm} // Pass the save and reset handler
           />
-          <Button onClick={handleAddToList} className="w-full" variant="default">
-            <ListPlus className="mr-2 h-4 w-4" />
-            Add Current Report to Print & Rank List
-          </Button>
+          {/* The "Add to List" button is now inside ReportForm */}
         </section>
 
         <section className="lg:col-span-3 flex flex-col">
@@ -709,3 +709,4 @@ export default function Home() {
     <AppContent />
   );
 }
+
