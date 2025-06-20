@@ -223,7 +223,7 @@ function AppContent() {
       promotionStatus: formDataFromRHF.promotionStatus || null,
       studentPhotoDataUri: formDataFromRHF.studentPhotoDataUri || null,
       headMasterSignatureDataUri: formDataFromRHF.headMasterSignatureDataUri || null,
-      clientSideId: formDataFromRHF.id, 
+      clientSideId: formDataFromRHF.id,
       createdAt: serverTimestamp(),
     };
 
@@ -241,7 +241,7 @@ function AppContent() {
         description: `Could not save report. ${error instanceof Error ? error.message : String(error)}`,
         variant: "destructive",
       });
-      return; 
+      return;
     }
 
     if (reportToSaveForFirestore.academicTerm === 'First Term' && reportToSaveForFirestore.studentName) {
@@ -299,21 +299,21 @@ function AppContent() {
       performanceSummary: studentSpecificDefaults.performanceSummary,
       strengths: studentSpecificDefaults.strengths,
       areasForImprovement: studentSpecificDefaults.areasForImprovement,
-      hobbies: [...studentSpecificDefaults.hobbies], 
+      hobbies: [...studentSpecificDefaults.hobbies],
       teacherFeedback: studentSpecificDefaults.teacherFeedback,
-      subjects: studentSpecificDefaults.subjects.map(s => ({...s})), 
+      subjects: studentSpecificDefaults.subjects.map(s => ({...s})),
       promotionStatus: studentSpecificDefaults.promotionStatus,
       studentPhotoDataUri: studentSpecificDefaults.studentPhotoDataUri,
 
       // System-managed fields for the new entry
-      id: `unsaved-${Date.now()}`, 
+      id: `unsaved-${Date.now()}`,
       studentEntryNumber: newNextStudentEntryNumber,
 
       // Fields that are not part of the form's direct input for a new entry
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
-      teacherId: undefined, 
+      teacherId: undefined,
     });
     setNextStudentEntryNumber(newNextStudentEntryNumber);
   };
@@ -324,8 +324,8 @@ function AppContent() {
         toast({ title: "Local View Already Clear", description: "No reports in the local view to clear. Firestore data is unaffected." });
         return;
     }
-    setReportPrintList([]); 
-    setCurrentPreviewIndex(0); 
+    setReportPrintList([]);
+    setCurrentPreviewIndex(0);
 
     toast({
       title: "Local View Cleared & Form Reset",
@@ -334,10 +334,10 @@ function AppContent() {
 
     const newBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
     setCurrentEditingReport({
-        ...newBase, 
-        ...sessionDefaults, 
-        id: `unsaved-${Date.now()}`, 
-        studentEntryNumber: nextStudentEntryNumber, 
+        ...newBase,
+        ...sessionDefaults,
+        id: `unsaved-${Date.now()}`,
+        studentEntryNumber: nextStudentEntryNumber,
         createdAt: undefined,
         overallAverage: undefined,
         rank: undefined,
@@ -435,13 +435,13 @@ function AppContent() {
       const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
 
       const reportsToImportPromises: Promise<void>[] = [];
-      let currentImportEntryNumberBase = nextStudentEntryNumber; 
+      let currentImportEntryNumberBase = nextStudentEntryNumber;
 
       selectedStudentNames.forEach((studentName, index) => {
         const profile = Object.values(profiles).find(p => p.studentName === studentName);
         if (profile) {
           const importedReportForFirestore = {
-            studentEntryNumber: currentImportEntryNumberBase + index, 
+            studentEntryNumber: currentImportEntryNumberBase + index,
             createdAt: serverTimestamp(),
             studentName: profile.studentName,
             gender: profile.gender ?? null,
@@ -460,7 +460,7 @@ function AppContent() {
             hobbies: [], teacherFeedback: '',
             subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
             promotionStatus: null,
-            clientSideId: `imported-${Date.now()}-${index}`, 
+            clientSideId: `imported-${Date.now()}-${index}`,
           };
           reportsToImportPromises.push(addDoc(collection(db, 'reports'), importedReportForFirestore));
         }
@@ -481,7 +481,7 @@ function AppContent() {
                 // Session defaults, now explicitly including the new destinationClass
                 schoolName: sessionDefaults.schoolName ?? studentSpecificDefaultsForImport.schoolName,
                 schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? studentSpecificDefaultsForImport.schoolLogoDataUri,
-                className: destinationClass, 
+                className: destinationClass,
                 academicYear: sessionDefaults.academicYear ?? studentSpecificDefaultsForImport.academicYear,
                 academicTerm: sessionDefaults.academicTerm ?? studentSpecificDefaultsForImport.academicTerm,
                 selectedTemplateId: sessionDefaults.selectedTemplateId ?? studentSpecificDefaultsForImport.selectedTemplateId,
@@ -505,14 +505,14 @@ function AppContent() {
                 promotionStatus: studentSpecificDefaultsForImport.promotionStatus,
 
                 id: `unsaved-${Date.now()}`,
-                studentEntryNumber: newNextEntryNumForForm, 
+                studentEntryNumber: newNextEntryNumForForm,
                 createdAt: undefined,
                 overallAverage: undefined,
                 rank: undefined,
                 teacherId: undefined,
             });
-            setNextStudentEntryNumber(newNextEntryNumForForm); 
-            setSessionDefaults(prev => ({...prev, className: destinationClass})); 
+            setNextStudentEntryNumber(newNextEntryNumForForm);
+            setSessionDefaults(prev => ({...prev, className: destinationClass}));
           })
           .catch(error => {
             console.error("Error importing students to Firestore:", error);
@@ -546,6 +546,7 @@ function AppContent() {
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-5 gap-8">
         <section className="lg:col-span-2 no-print space-y-4">
           <ReportForm
+            key={currentEditingReport.id} // Force re-initialization when ID changes
             onFormUpdate={handleFormUpdate}
             initialData={currentEditingReport}
             reportPrintListForHistory={reportPrintList}
@@ -655,7 +656,7 @@ function AppContent() {
                     </div>
                   </React.Fragment>
                 ))
-              ) : currentEditingReport ? ( 
+              ) : currentEditingReport ? (
                 <>
                   <div className="report-preview-item active-preview-screen" key={currentEditingReport.id}>
                     <ReportPreview data={currentEditingReport} />
@@ -713,5 +714,3 @@ export default function Home() {
     <AppContent />
   );
 }
-
-    
