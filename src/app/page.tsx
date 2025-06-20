@@ -181,7 +181,6 @@ function AppContent() {
     setCurrentEditingReport({ ...data });
   };
 
-
   const handleSaveReportAndResetForm = async (formDataFromRHF: ReportData) => {
     if (!formDataFromRHF.studentName ||
         !formDataFromRHF.className ||
@@ -224,9 +223,8 @@ function AppContent() {
       promotionStatus: formDataFromRHF.promotionStatus || null,
       studentPhotoDataUri: formDataFromRHF.studentPhotoDataUri || null,
       headMasterSignatureDataUri: formDataFromRHF.headMasterSignatureDataUri || null,
-      clientSideId: formDataFromRHF.id, // Keep the RHF-generated ID for potential reconciliation if needed, though Firestore doc ID is primary
+      clientSideId: formDataFromRHF.id, 
       createdAt: serverTimestamp(),
-      // teacherId: auth.currentUser?.uid || undefined, // If auth was integrated
     };
 
 
@@ -243,15 +241,13 @@ function AppContent() {
         description: `Could not save report. ${error instanceof Error ? error.message : String(error)}`,
         variant: "destructive",
       });
-      return; // Stop if save fails
+      return; 
     }
 
-    // If this is the first term and student name is present, save/update their profile in localStorage
     if (reportToSaveForFirestore.academicTerm === 'First Term' && reportToSaveForFirestore.studentName) {
       try {
         const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
         const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
-        // Use student name as key for simplicity, assuming names are unique enough for this purpose
         const profileKey = reportToSaveForFirestore.studentName;
         profiles[profileKey] = {
           studentName: reportToSaveForFirestore.studentName,
@@ -262,11 +258,9 @@ function AppContent() {
         localStorage.setItem(STUDENT_PROFILES_STORAGE_KEY, JSON.stringify(profiles));
       } catch (e) {
         console.error("Error saving student profile to localStorage:", e);
-        // Non-critical error, so don't block further execution
       }
     }
 
-    // Establish session defaults based on the entry just made
     const newSessionDefaults = {
       schoolName: reportToSaveForFirestore.schoolName,
       schoolLogoDataUri: reportToSaveForFirestore.schoolLogoDataUri,
@@ -280,13 +274,10 @@ function AppContent() {
     };
     setSessionDefaults(newSessionDefaults);
 
-    // Prepare the form for the next student entry
     const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
-    // Create a completely fresh object for student-specific defaults
     const studentSpecificDefaults = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
 
     setCurrentEditingReport({
-      // Persist session defaults
       schoolName: newSessionDefaults.schoolName,
       schoolLogoDataUri: newSessionDefaults.schoolLogoDataUri,
       className: newSessionDefaults.className,
@@ -297,7 +288,6 @@ function AppContent() {
       headMasterSignatureDataUri: newSessionDefaults.headMasterSignatureDataUri,
       instructorContact: newSessionDefaults.instructorContact,
 
-      // Reset student-specific fields using the fresh defaultReportData
       studentName: studentSpecificDefaults.studentName,
       gender: studentSpecificDefaults.gender,
       daysAttended: studentSpecificDefaults.daysAttended,
@@ -306,23 +296,21 @@ function AppContent() {
       performanceSummary: studentSpecificDefaults.performanceSummary,
       strengths: studentSpecificDefaults.strengths,
       areasForImprovement: studentSpecificDefaults.areasForImprovement,
-      hobbies: [...studentSpecificDefaults.hobbies], // Ensure array is new
+      hobbies: [...studentSpecificDefaults.hobbies], 
       teacherFeedback: studentSpecificDefaults.teacherFeedback,
-      subjects: studentSpecificDefaults.subjects.map(s => ({...s})), // Ensure array of objects is new
+      subjects: studentSpecificDefaults.subjects.map(s => ({...s})), 
       promotionStatus: studentSpecificDefaults.promotionStatus,
       studentPhotoDataUri: studentSpecificDefaults.studentPhotoDataUri,
 
-      // New identifiers for the new entry
-      id: `unsaved-${Date.now()}`, // Ensure new ID for the form state
+      id: `unsaved-${Date.now()}`, 
       studentEntryNumber: newNextStudentEntryNumber,
 
-      // These should be undefined for a new, unsaved report
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
       teacherId: undefined,
     });
-    setNextStudentEntryNumber(newNextStudentEntryNumber); // This is listened to by Firestore listener and will indirectly update the form
+    setNextStudentEntryNumber(newNextStudentEntryNumber);
   };
 
 
@@ -331,32 +319,25 @@ function AppContent() {
         toast({ title: "Local View Already Clear", description: "No reports in the local view to clear. Firestore data is unaffected." });
         return;
     }
-
-    // Optional: Ask for confirmation before deleting from Firestore
-    // For now, this function clears the local list and resets the form.
-    // If you want to also delete from Firestore, that needs a separate, careful implementation.
-
-    setReportPrintList([]); // Clears the local list for display/print
-    setCurrentPreviewIndex(0); // Resets preview index
+    setReportPrintList([]); 
+    setCurrentPreviewIndex(0); 
 
     toast({
       title: "Local View Cleared & Form Reset",
       description: "Your local view of reports has been cleared. Data in Firestore is not affected. The list will repopulate from Firestore if data exists there. Form is reset for new entry.",
     });
 
-    // Reset currentEditingReport to defaults but keep session settings
     const newBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
     setCurrentEditingReport({
-        ...newBase, // Start with all student-specific fields reset
-        ...sessionDefaults, // Apply any existing session defaults (school, class, term)
-        id: `unsaved-${Date.now()}`, // New ID for the fresh form
-        studentEntryNumber: nextStudentEntryNumber, // Use the current nextStudentEntryNumber
+        ...newBase, 
+        ...sessionDefaults, 
+        id: `unsaved-${Date.now()}`, 
+        studentEntryNumber: nextStudentEntryNumber, 
         createdAt: undefined,
         overallAverage: undefined,
         rank: undefined,
         teacherId: undefined,
      });
-     // No need to change nextStudentEntryNumber here as it's based on Firestore data
   }
 
   const handlePrint = () => {
@@ -449,13 +430,13 @@ function AppContent() {
       const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
 
       const reportsToImportPromises: Promise<void>[] = [];
-      let currentImportEntryNumberBase = nextStudentEntryNumber; // Use the up-to-date nextStudentEntryNumber from Firestore snapshot
+      let currentImportEntryNumberBase = nextStudentEntryNumber; 
 
       selectedStudentNames.forEach((studentName, index) => {
         const profile = Object.values(profiles).find(p => p.studentName === studentName);
         if (profile) {
           const importedReportForFirestore = {
-            studentEntryNumber: currentImportEntryNumberBase + index, // Assign sequential entry numbers
+            studentEntryNumber: currentImportEntryNumberBase + index, 
             createdAt: serverTimestamp(),
             studentName: profile.studentName,
             gender: profile.gender ?? null,
@@ -474,7 +455,7 @@ function AppContent() {
             hobbies: [], teacherFeedback: '',
             subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
             promotionStatus: null,
-            clientSideId: `imported-${Date.now()}-${index}`, // Unique client-side ID
+            clientSideId: `imported-${Date.now()}-${index}`, 
           };
           reportsToImportPromises.push(addDoc(collection(db, 'reports'), importedReportForFirestore));
         }
@@ -487,14 +468,12 @@ function AppContent() {
               title: "Students Imported",
               description: `${reportsToImportPromises.length} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
             });
-            // Firestore listener will update nextStudentEntryNumber.
-            // Reset the form for a potential new manual entry.
             const newNextEntryNumForForm = currentImportEntryNumberBase + reportsToImportPromises.length;
             const newFormBaseReset = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
             setCurrentEditingReport({
                 schoolName: sessionDefaults.schoolName ?? newFormBaseReset.schoolName,
                 schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? newFormBaseReset.schoolLogoDataUri,
-                className: destinationClass, // Use the destination class for the new entry form
+                className: destinationClass, 
                 academicYear: sessionDefaults.academicYear ?? newFormBaseReset.academicYear,
                 academicTerm: sessionDefaults.academicTerm ?? newFormBaseReset.academicTerm,
                 selectedTemplateId: sessionDefaults.selectedTemplateId ?? newFormBaseReset.selectedTemplateId,
@@ -517,14 +496,14 @@ function AppContent() {
                 promotionStatus: newFormBaseReset.promotionStatus,
 
                 id: `unsaved-${Date.now()}`,
-                studentEntryNumber: newNextEntryNumForForm, // Use the calculated next number for the form
+                studentEntryNumber: newNextEntryNumForForm, 
                 createdAt: undefined,
                 overallAverage: undefined,
                 rank: undefined,
                 teacherId: undefined,
             });
-            setNextStudentEntryNumber(newNextEntryNumForForm); // Optimistically update, Firestore listener will confirm
-            setSessionDefaults(prev => ({...prev, className: destinationClass})); // Update session default class
+            setNextStudentEntryNumber(newNextEntryNumForForm); 
+            setSessionDefaults(prev => ({...prev, className: destinationClass})); 
           })
           .catch(error => {
             console.error("Error importing students to Firestore:", error);
@@ -667,7 +646,7 @@ function AppContent() {
                     </div>
                   </React.Fragment>
                 ))
-              ) : currentEditingReport ? ( // Show currentEditingReport for preview if list is empty
+              ) : currentEditingReport ? ( 
                 <>
                   <div className="report-preview-item active-preview-screen">
                     <ReportPreview key={currentEditingReport.id} data={currentEditingReport} />
