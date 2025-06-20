@@ -39,7 +39,7 @@ const GenerateClassInsightsOutputSchema = z.object({
   overallAssessment: z.string().describe('A general assessment of the class\'s performance. This could be an empty string if no specific assessment is made.').default(''),
   strengths: z.array(z.string()).describe('Key strengths observed in the class. This could be an empty array.').default([]),
   areasForConcern: z.array(z.string()).describe('Areas that might need attention or improvement. This could be an empty array.').default([]),
-  actionableAdvice: z.array(z.string()).describe('Specific, actionable advice for the teacher. This could be an empty array.').default([]),
+  actionableAdvice: z.array(z.string()).describe('Specific, actionable advice for the teacher, presented in paragraph form. This could be an empty array.').default([]),
 });
 export type GenerateClassInsightsOutput = z.infer<typeof GenerateClassInsightsOutputSchema>;
 
@@ -74,15 +74,16 @@ Based on this data, provide:
 1.  **Overall Assessment**: A brief summary of the class's general performance level. If no strong assessment can be made, this can be a neutral statement or empty.
 2.  **Strengths**: Identify 2-3 key strengths of the class. These could be subjects where many students excel, strong performance by a particular group if significant, or overall high achievement if applicable. If no clear strengths, return an empty array.
 3.  **Areas for Concern**: Identify 2-3 areas that might need attention. This could be subjects with many struggling students, significant disparities, or overall low performance if applicable. If no clear concerns, return an empty array.
-4.  **Actionable Advice**: Provide 2-3 concise, practical, and actionable pieces of advice for the teacher to help improve learning outcomes, address weaknesses, or build on strengths. If no specific advice, return an empty array.
+4.  **Actionable Advice**: Provide 2-3 DETAILED, practical, and actionable pieces of advice for the teacher, written in PARAGRAPH FORM. Each piece of advice should aim to help improve learning outcomes, address weaknesses, or build on strengths.
+    These suggestions should include relevant MODERN TEACHING METHODOLOGIES tailored to the observed class performance (e.g., suggest differentiated instruction if there's a wide skill gap, or project-based learning if students excel in practical subjects but struggle with theory).
+    Where appropriate, also recommend specific, publicly available AUDIO-VISUAL WEBSITES or ONLINE EDUCATIONAL RESOURCES that could enhance teaching and learning for this class. For example, if students struggle in Mathematics, you might suggest Khan Academy (www.khanacademy.org) or a specific type of interactive simulation website. If there are concerns about engagement in History, suggest relevant YouTube channels like 'CrashCourse' or 'Extra Credits', or virtual museum tours. Be specific with website names if well-known and generally applicable, or describe the type of resource.
+    If no specific advice, return an empty array.
 
 Focus on constructive feedback. Be specific where possible, referencing subject names or patterns.
 Format the output as JSON matching the GenerateClassInsightsOutputSchema.
-Ensure overallAssessment is a string (can be empty), and strengths, areasForConcern, and actionableAdvice are arrays of strings (can be empty arrays).
+Ensure overallAssessment is a string (can be empty), and strengths, areasForConcern, and actionableAdvice are arrays of strings (can be empty arrays, where each string in actionableAdvice is a detailed paragraph).
 If the input data is insufficient to make a meaningful judgment on any part, provide an empty string or empty array for that part rather than making assumptions.
 `,
-  // It's good practice to set some safety settings, though for this content they might not be strictly necessary.
-  // Using less restrictive settings as an example.
   config: {
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
@@ -102,13 +103,8 @@ const generateClassInsightsFlow = sirAi.defineFlow(
   async (input) => {
     const {output} = await prompt(input);
     if (!output) {
-        // This case means the AI model call failed or did not return parsable JSON according to the schema.
-        // The schema now has defaults, so an empty object {} might be returned if the model sends nothing.
-        // However, if the model truly fails or sends malformed JSON, output will be null.
         throw new Error('AI failed to generate class insights. The model may not have returned the expected output format, or the input was insufficient. Please check the data or try again.');
     }
-    // Ensure all parts of the output conform to the schema, especially if the model returns partial data.
-    // The Zod schema's .default() should handle missing fields if the AI returns a valid object.
     return {
         overallAssessment: output.overallAssessment || '',
         strengths: output.strengths || [],

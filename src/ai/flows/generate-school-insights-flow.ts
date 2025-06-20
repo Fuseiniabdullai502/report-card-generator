@@ -29,7 +29,6 @@ const ClassSummarySchema = z.object({
   className: z.string(),
   classAverage: z.number().nullable(),
   numberOfStudents: z.number(),
-  // Optionally, could include top/bottom subjects for this class if needed for deeper AI analysis
 });
 
 const GenerateSchoolInsightsInputSchema = z.object({
@@ -48,7 +47,7 @@ const GenerateSchoolInsightsOutputSchema = z.object({
   overallSchoolAssessment: z.string().describe('A general assessment of the school\'s performance. Can be empty.').default(''),
   keyStrengthsSchoolWide: z.array(z.string()).describe('Key strengths observed across the school. Can be an empty array.').default([]),
   areasForConcernSchoolWide: z.array(z.string()).describe('School-wide areas that might need attention or improvement. Can be an empty array.').default([]),
-  actionableAdviceForSchool: z.array(z.string()).describe('Specific, actionable advice for the school administration. Can be an empty array.').default([]),
+  actionableAdviceForSchool: z.array(z.string()).describe('Specific, actionable advice for the school administration, presented in paragraph form. Can be an empty array.').default([]),
   interClassObservations: z.array(z.string()).describe('Observations on performance variations or trends between different classes. Can be an empty array.').default([]),
 });
 export type GenerateSchoolInsightsOutput = z.infer<typeof GenerateSchoolInsightsOutputSchema>;
@@ -90,7 +89,10 @@ Based on this comprehensive data, provide:
 1.  **Overall School Assessment**: A brief summary of the school's general performance level.
 2.  **Key Strengths (School-Wide)**: Identify 2-3 key strengths of the school. These could be subjects where many students excel school-wide, consistently high-performing classes, or strong overall achievement.
 3.  **Areas for Concern (School-Wide)**: Identify 2-3 school-wide areas that might need attention. This could be subjects with widespread challenges, significant disparities between classes not explained by curriculum differences, or overall low performance.
-4.  **Actionable Advice for School Administration**: Provide 2-3 concise, practical, and actionable pieces of advice for school leadership to improve learning outcomes, address weaknesses, or build on strengths at a strategic level.
+4.  **Actionable Advice for School Administration**: Provide 2-3 DETAILED, practical, and actionable pieces of advice for school leadership, written in PARAGRAPH FORM. Each piece of advice should aim to improve learning outcomes, address weaknesses, or build on strengths at a strategic level.
+    These suggestions should include relevant MODERN TEACHING STRATEGIES or PROFESSIONAL DEVELOPMENT themes that could benefit the school (e.g., implementing school-wide data analysis workshops for teachers, fostering inter-departmental collaboration for cross-curricular projects, or investing in teacher training for new pedagogical approaches).
+    Where appropriate, also recommend specific, publicly available AUDIO-VISUAL WEBSITES, EDUCATIONAL PLATFORMS, or types of ONLINE RESOURCES that could enhance teaching and learning across the school. For instance, suggest platforms for managing digital assignments like Google Classroom (classroom.google.com), resources for STEM education like PhET Interactive Simulations (phet.colorado.edu), or online libraries/databases accessible to students and staff. Be specific with well-known platform names or describe the type of resource.
+    If no specific advice, return an empty array.
 5.  **Inter-Class Observations**: Briefly comment on any notable performance variations or trends observed between different classes. Highlight if some classes are significantly outperforming or underperforming compared to the school average or their peers, suggesting areas for further investigation by the school.
 
 Focus on constructive, strategic feedback suitable for school leadership. Be specific where possible, referencing subject names, class patterns, or school-wide data.

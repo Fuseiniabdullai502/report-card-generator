@@ -48,13 +48,13 @@ export type GenerateReportInsightsInput = z.infer<
 const GenerateReportInsightsOutputSchema = z.object({
   performanceSummary: z
     .string()
-    .describe('The AI-generated overall performance summary for the student, including comparison if previous data was provided.'),
+    .describe('The AI-generated concise (1-3 sentences) overall performance summary for the student, including comparison if previous data was provided.'),
   strengths: z
     .string()
-    .describe("The AI-generated list of the student's key strengths, considering progress or sustained performance."),
+    .describe("The AI-generated brief list of the student's key strengths (e.g., 2-3 points), considering progress or sustained performance."),
   areasForImprovement: z
     .string()
-    .describe('The AI-generated list of areas where the student can improve, considering any decline or persistent challenges.'),
+    .describe('The AI-generated brief list of areas where the student can improve (e.g., 2-3 points), considering any decline or persistent challenges.'),
 });
 
 export type GenerateReportInsightsOutput = z.infer<
@@ -71,7 +71,7 @@ const generateReportInsightsPrompt = sirAi.definePrompt({
   name: 'generateReportInsightsPrompt',
   input: {schema: GenerateReportInsightsInputSchema},
   output: {schema: GenerateReportInsightsOutputSchema},
-  prompt: `You are an academic advisor tasked with writing comprehensive insights for a student's report card for the {{{currentAcademicTerm}}}.
+  prompt: `You are an academic advisor tasked with writing concise insights for a student's report card for the {{{currentAcademicTerm}}}.
 Analyze the student's performance based on their subject marks and attendance data provided below for the current term.
 
 Student Name: {{{studentName}}}
@@ -117,18 +117,18 @@ Previous Term Performance for Comparison:
 {{/each}}
 
 Based on ALL available information (current term performance, attendance, AND comparative analysis if previous term data is provided):
-1.  Write a concise and constructive **overall performance summary**. If previous term data is available, explicitly compare the student's current performance with their performance in the previous term(s). Highlight trends such as improvement, decline, or consistency in specific subjects or overall.
-2.  Identify and list the student's key **strengths**. If previous term data is available, consider progress or sustained high performance.
-3.  Identify and list **areas for improvement**. If previous term data is available, consider any decline in performance or persistent challenges.
+1.  Write a **CONCISE overall performance summary (1-3 sentences)**. If previous term data is available, explicitly compare the student's current performance with their performance in the previous term(s). Highlight trends such as improvement, decline, or consistency in specific subjects or overall.
+2.  Identify and list **BRIEFLY the student's key strengths (e.g., 2-3 points)**. If previous term data is available, consider progress or sustained high performance.
+3.  Identify and list **CONCISELY areas for improvement (e.g., 2-3 points)**. If previous term data is available, consider any decline in performance or persistent challenges.
 
 Generate only the text for these three sections. Ensure the tone is balanced and suitable for a student report card.
 {{else}}
 (No previous term data was provided for comparison.)
 
 Based on the current term's information (subject performance and attendance):
-1.  Write a concise and constructive **overall performance summary**.
-2.  Identify and list the student's key **strengths**.
-3.  Identify and list **areas for improvement**.
+1.  Write a **CONCISE overall performance summary (1-3 sentences)**.
+2.  Identify and list **BRIEFLY the student's key strengths (e.g., 2-3 points)**.
+3.  Identify and list **CONCISELY areas for improvement (e.g., 2-3 points)**.
 
 Generate only the text for these three sections. Ensure the tone is balanced and suitable for a student report card.
 {{/if}}
