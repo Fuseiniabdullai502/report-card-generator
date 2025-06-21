@@ -26,10 +26,10 @@ export const ReportDataSchema = z.object({
   studentName: z.string().min(1, 'Student name is required'),
   className: z.string().min(1, 'Class name is required'),
   gender: z.string().optional(),
-  schoolName: z.string().optional().default('Faacom Academy'),
+  schoolName: z.string().optional(),
   schoolLogoDataUri: z.string().optional().describe("A data URI of the school's logo."),
-  academicYear: z.string().optional().default('2023-2024'),
-  academicTerm: z.string().optional().default('First Term'),
+  academicYear: z.string().optional(),
+  academicTerm: z.string().optional(),
   selectedTemplateId: z.string().optional().default('default'),
   daysAttended: z.coerce
     .number({ invalid_type_error: 'Days attended must be a number' })
@@ -77,10 +77,10 @@ export const defaultReportData: Omit<ReportData, 'id' | 'studentEntryNumber' | '
   studentName: '',
   className: '',
   gender: undefined,
-  schoolName: 'Faacom Academy',
+  schoolName: '',
   schoolLogoDataUri: undefined,
-  academicYear: '2023-2024',
-  academicTerm: 'First Term',
+  academicYear: '',
+  academicTerm: undefined,
   selectedTemplateId: 'default',
   daysAttended: null,
   totalSchoolDays: null,
@@ -97,4 +97,3 @@ export const defaultReportData: Omit<ReportData, 'id' | 'studentEntryNumber' | '
   studentPhotoDataUri: undefined,
   headMasterSignatureDataUri: undefined,
 };
-
