@@ -182,19 +182,15 @@ function AppContent() {
   };
 
   const handleSaveReportAndResetForm = async (formDataFromRHF: ReportData) => {
-    // Validation is primarily handled by Zod schema in the form.
-    // A redundant check here is removed for simplicity.
-    // The form won't submit with invalid data based on the schema.
-
     const reportToSaveForFirestore = {
       studentEntryNumber: formDataFromRHF.studentEntryNumber,
       studentName: formDataFromRHF.studentName || '',
       className: formDataFromRHF.className || '',
       gender: formDataFromRHF.gender || null,
-      schoolName: formDataFromRHF.schoolName || 'Faacom Academy',
+      schoolName: formDataFromRHF.schoolName || '',
       schoolLogoDataUri: formDataFromRHF.schoolLogoDataUri || null,
-      academicYear: formDataFromRHF.academicYear || '2023-2024',
-      academicTerm: formDataFromRHF.academicTerm || 'First Term',
+      academicYear: formDataFromRHF.academicYear || '',
+      academicTerm: formDataFromRHF.academicTerm || '',
       selectedTemplateId: formDataFromRHF.selectedTemplateId || 'default',
       daysAttended: formDataFromRHF.daysAttended === undefined || formDataFromRHF.daysAttended === null ? null : Number(formDataFromRHF.daysAttended),
       totalSchoolDays: formDataFromRHF.totalSchoolDays === undefined || formDataFromRHF.totalSchoolDays === null ? null : Number(formDataFromRHF.totalSchoolDays),
@@ -217,7 +213,6 @@ function AppContent() {
       clientSideId: formDataFromRHF.id,
       createdAt: serverTimestamp(),
     };
-
 
     try {
       await addDoc(collection(db, 'reports'), reportToSaveForFirestore);
@@ -266,11 +261,9 @@ function AppContent() {
     setSessionDefaults(newSessionDefaults);
 
     const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
-    // Deep clone defaultReportData to avoid mutating the original object
     const studentSpecificDefaults = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
 
     setCurrentEditingReport({
-      // Preserve session defaults
       schoolName: newSessionDefaults.schoolName,
       schoolLogoDataUri: newSessionDefaults.schoolLogoDataUri,
       className: newSessionDefaults.className,
@@ -281,7 +274,6 @@ function AppContent() {
       headMasterSignatureDataUri: newSessionDefaults.headMasterSignatureDataUri,
       instructorContact: newSessionDefaults.instructorContact,
 
-      // Reset student-specific fields using the cloned defaults
       studentName: studentSpecificDefaults.studentName,
       gender: studentSpecificDefaults.gender,
       daysAttended: studentSpecificDefaults.daysAttended,
@@ -296,11 +288,9 @@ function AppContent() {
       promotionStatus: studentSpecificDefaults.promotionStatus,
       studentPhotoDataUri: studentSpecificDefaults.studentPhotoDataUri,
 
-      // System-managed fields for the new entry
       id: `unsaved-${Date.now()}`,
       studentEntryNumber: newNextStudentEntryNumber,
 
-      // Fields that are not part of the form's direct input for a new entry
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
@@ -465,11 +455,9 @@ function AppContent() {
               description: `${reportsToImportPromises.length} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
             });
             const newNextEntryNumForForm = currentImportEntryNumberBase + reportsToImportPromises.length;
-            // Deep clone defaultReportData for resetting student-specific fields
             const studentSpecificDefaultsForImport = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
 
             setCurrentEditingReport({
-                // Session defaults, now explicitly including the new destinationClass
                 schoolName: sessionDefaults.schoolName ?? studentSpecificDefaultsForImport.schoolName,
                 schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? studentSpecificDefaultsForImport.schoolLogoDataUri,
                 className: destinationClass,
@@ -480,7 +468,6 @@ function AppContent() {
                 headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? studentSpecificDefaultsForImport.headMasterSignatureDataUri,
                 instructorContact: sessionDefaults.instructorContact ?? studentSpecificDefaultsForImport.instructorContact,
 
-                // Reset student-specific fields
                 studentName: studentSpecificDefaultsForImport.studentName,
                 gender: studentSpecificDefaultsForImport.gender,
                 studentPhotoDataUri: studentSpecificDefaultsForImport.studentPhotoDataUri,
