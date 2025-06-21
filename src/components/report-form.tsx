@@ -240,17 +240,18 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   }, [watchedAcademicTerm, watchedClassName]);
 
  useEffect(() => {
+    // This effect now ONLY handles syncing the local state for custom dropdowns
+    // and other UI elements when the component re-initializes with new `initialData`.
+    // The form reset itself is primarily handled by the `key` change in the parent
+    // component and `useForm`'s `defaultValues` on re-mount.
     if (initialData) {
-        form.reset(initialData);
-
-        // Update local custom lists if initialData contains new items not already tracked
         if (initialData.className && !classLevels.includes(initialData.className) && !customClassNames.includes(initialData.className)) {
             setCustomClassNames(prev => [...new Set([...prev, initialData.className!])]);
         }
         if (initialData.hobbies) {
             const newCustomHobbies = initialData.hobbies.filter(hobby => !predefinedHobbiesList.includes(hobby) && !customHobbies.includes(hobby));
             if (newCustomHobbies.length > 0) {
-            setCustomHobbies(prev => [...new Set([...prev, ...newCustomHobbies])]);
+              setCustomHobbies(prev => [...new Set([...prev, ...newCustomHobbies])]);
             }
         }
         if (initialData.subjects) {
@@ -258,13 +259,13 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             .map(s => s.subjectName)
             .filter(name => name && !predefinedSubjectsList.includes(name) && !customSubjects.includes(name));
             if (newCustomSubjectsFromInitial.length > 0) {
-            setCustomSubjects(prev => [...new Set([...prev, ...newCustomSubjectsFromInitial])]);
+              setCustomSubjects(prev => [...new Set([...prev, ...newCustomSubjectsFromInitial])]);
             }
         }
         setCurrentVisibleSubjectIndex(0);
         setComparisonTermSelection('none');
     }
-}, [initialData, form]); // Only depend on initialData and form instance for this effect
+}, [initialData]);
 
 
   useEffect(() => {
