@@ -242,7 +242,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
  useEffect(() => {
     // This effect now ONLY handles syncing the local state for custom dropdowns
     // and other UI elements when the component re-initializes with new `initialData`.
-    // The form reset itself is primarily handled by the `key` change in the parent
+    // The form reset itself is handled by the `key` change in the parent
     // component and `useForm`'s `defaultValues` on re-mount.
     if (initialData) {
         if (initialData.className && !classLevels.includes(initialData.className) && !customClassNames.includes(initialData.className)) {
@@ -620,7 +620,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmitForPreview)} className="space-y-8">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
 
             <section className="space-y-6">
               <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Student &amp; School Information</h3>
@@ -1370,7 +1370,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             </section>
 
             <div className="flex flex-col sm:flex-row gap-2">
-                <Button type="submit" className="w-full sm:w-auto" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading }>
+                <Button type="button" onClick={form.handleSubmit(onSubmitForPreview)} className="w-full sm:w-auto" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading }>
                     <CheckSquare className="mr-2 h-4 w-4" /> Update Preview
                 </Button>
                 <Button

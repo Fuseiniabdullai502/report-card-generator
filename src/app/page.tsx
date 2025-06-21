@@ -182,18 +182,9 @@ function AppContent() {
   };
 
   const handleSaveReportAndResetForm = async (formDataFromRHF: ReportData) => {
-    if (!formDataFromRHF.studentName ||
-        !formDataFromRHF.className ||
-        !formDataFromRHF.performanceSummary ||
-        !formDataFromRHF.strengths ||
-        !formDataFromRHF.areasForImprovement) {
-        toast({
-          title: "Incomplete Report Data",
-          description: "Student Name, Class Name, Performance Summary, Strengths, and Areas for Improvement are required. Please fill them and try again.",
-          variant: "destructive",
-        });
-        return;
-    }
+    // Validation is primarily handled by Zod schema in the form.
+    // A redundant check here is removed for simplicity.
+    // The form won't submit with invalid data based on the schema.
 
     const reportToSaveForFirestore = {
       studentEntryNumber: formDataFromRHF.studentEntryNumber,
