@@ -233,6 +233,33 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     }
   }, [watchedStudentName, watchedAcademicTerm, form, toast]);
 
+  useEffect(() => {
+    // This effect runs once on mount (or re-mount due to key change)
+    // to populate the dropdowns with any custom values from the initialData.
+    if (initialData) {
+        const newCustomClasses = [];
+        if (initialData.className && !classLevels.includes(initialData.className)) {
+            newCustomClasses.push(initialData.className);
+        }
+        if (newCustomClasses.length > 0) {
+            setCustomClassNames(prev => [...new Set([...prev, ...newCustomClasses])]);
+        }
+        
+        const newCustomHobbies = (initialData.hobbies || []).filter(hobby => !predefinedHobbiesList.includes(hobby));
+        if (newCustomHobbies.length > 0) {
+            setCustomHobbies(prev => [...new Set([...prev, ...newCustomHobbies])]);
+        }
+
+        const newCustomSubjects = (initialData.subjects || [])
+            .map(s => s.subjectName)
+            .filter(name => name && !predefinedSubjectsList.includes(name));
+        if (newCustomSubjects.length > 0) {
+            setCustomSubjects(prev => [...new Set([...prev, ...newCustomSubjects])]);
+        }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run ONLY on mount. Re-keying will trigger a re-mount.
+
 
   const isPromotionStatusApplicable = React.useMemo(() => {
     if (!watchedAcademicTerm || !watchedClassName) return false;
@@ -240,35 +267,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   }, [watchedAcademicTerm, watchedClassName]);
 
  useEffect(() => {
-    // This effect now ONLY handles syncing the local state for custom dropdowns
-    // and other UI elements when the component re-initializes with new `initialData`.
-    // The form reset itself is handled by the `key` change in the parent
-    // component and `useForm`'s `defaultValues` on re-mount.
-    if (initialData) {
-        if (initialData.className && !classLevels.includes(initialData.className) && !customClassNames.includes(initialData.className)) {
-            setCustomClassNames(prev => [...new Set([...prev, initialData.className!])]);
-        }
-        if (initialData.hobbies) {
-            const newCustomHobbies = initialData.hobbies.filter(hobby => !predefinedHobbiesList.includes(hobby) && !customHobbies.includes(hobby));
-            if (newCustomHobbies.length > 0) {
-              setCustomHobbies(prev => [...new Set([...prev, ...newCustomHobbies])]);
-            }
-        }
-        if (initialData.subjects) {
-            const newCustomSubjectsFromInitial = initialData.subjects
-            .map(s => s.subjectName)
-            .filter(name => name && !predefinedSubjectsList.includes(name) && !customSubjects.includes(name));
-            if (newCustomSubjectsFromInitial.length > 0) {
-              setCustomSubjects(prev => [...new Set([...prev, ...newCustomSubjectsFromInitial])]);
-            }
-        }
-        setCurrentVisibleSubjectIndex(0);
-        setComparisonTermSelection('none');
-    }
-}, [initialData]);
-
-
-  useEffect(() => {
     if (!isPromotionStatusApplicable) {
       form.setValue('promotionStatus', undefined, { shouldDirty: true, shouldValidate: true });
     }
@@ -607,6 +605,9 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     }
   }, [watchedAcademicTerm, comparisonTermSelection]);
 
+  const entryNumber = form.getValues('studentEntryNumber') || initialData?.studentEntryNumber;
+  const isNewEntryForm = !!initialData?.id?.startsWith('unsaved-');
+
 
   return (
     <>
@@ -614,7 +615,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       <CardHeader>
         <div className="flex items-center gap-2">
           <Edit3 className="h-6 w-6 text-primary" />
-          <CardTitle className="font-headline text-2xl">Report Details (Entry #{form.getValues('studentEntryNumber') || initialData?.studentEntryNumber || 'N/A'})</CardTitle>
+          <CardTitle className="font-headline text-2xl">
+            Report Details
+            {entryNumber && (!isNewEntryForm || entryNumber > 1) ? ` (Entry #${entryNumber})` : ''}
+          </CardTitle>
         </div>
         <CardDescription>Enter student information, performance, and subject marks.</CardDescription>
       </CardHeader>
