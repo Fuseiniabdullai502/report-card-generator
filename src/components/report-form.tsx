@@ -16,7 +16,7 @@ import {getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction }f
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
 import React, {useState, useTransition, useEffect, useMemo}from 'react';
 import NextImage from 'next/image';
-import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, LayoutTemplate, History, ListPlus } from 'lucide-react';
+import {Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, LayoutTemplate, History, ListPlus, RefreshCw } from 'lucide-react';
 import {useToast}from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -167,8 +167,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     name: "subjects"
   });
 
-  const { watch } = form;
-
   const watchedAcademicTerm = form.watch('academicTerm');
   const watchedClassName = form.watch('className');
   const watchedHobbies = form.watch('hobbies') || [];
@@ -197,26 +195,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     if (!watchedAcademicTerm || !watchedClassName) return false;
     return watchedAcademicTerm === 'Third Term' && !tertiaryLevelClasses.includes(watchedClassName);
   }, [watchedAcademicTerm, watchedClassName]);
-
-  useEffect(() => {
-    const subscription = watch((data) => {
-      const processedData: ReportData = {
-        ...(data as ReportData),
-        id: data.id || `preview-${Date.now()}`,
-        studentEntryNumber: data.studentEntryNumber,
-        daysAttended: parseNumeric(data.daysAttended),
-        totalSchoolDays: parseNumeric(data.totalSchoolDays),
-        subjects: data.subjects.map(s => ({
-          subjectName: s.subjectName,
-          continuousAssessment: parseNumeric(s.continuousAssessment),
-          examinationMark: parseNumeric(s.examinationMark),
-        })),
-        promotionStatus: isPromotionStatusApplicable ? data.promotionStatus : undefined,
-      };
-      onFormUpdate(processedData);
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, onFormUpdate, isPromotionStatusApplicable]);
 
 
   useEffect(() => {
@@ -485,6 +463,24 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     await onSaveReport(processedDataForSave);
   };
 
+  const handleUpdatePreview = () => {
+    const processedData: ReportData = {
+        ...(form.getValues() as ReportData),
+        id: form.getValues().id || `preview-${Date.now()}`,
+        studentEntryNumber: form.getValues().studentEntryNumber,
+        daysAttended: parseNumeric(form.getValues().daysAttended),
+        totalSchoolDays: parseNumeric(form.getValues().totalSchoolDays),
+        subjects: form.getValues().subjects.map(s => ({
+          subjectName: s.subjectName,
+          continuousAssessment: parseNumeric(s.continuousAssessment),
+          examinationMark: parseNumeric(s.examinationMark),
+        })),
+        promotionStatus: isPromotionStatusApplicable ? form.getValues().promotionStatus : undefined,
+    };
+    onFormUpdate(processedData);
+    toast({ title: "Preview Updated", description: "The report preview has been updated with the latest form data." });
+  };
+
 
   const handleAddSubjectAndNavigate = () => {
     const newIndex = fields.length;
@@ -517,7 +513,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
           toast({ title: "Invalid File Type", description: "Please upload PNG, JPEG, GIF, or SVG.", variant: "destructive" });
           if (event.target) event.target.value = ''; return;
         }
-        form.setValue(fieldName, originalDataUri, { shouldDirty: true, shouldValidate: true });
+        form.setValue(fieldName, originalDataUri, { shouldDirty: true });
         toast({ title: "Image Uploaded", description: `${fieldName === 'studentPhotoDataUri' ? 'Student photo' : fieldName === 'schoolLogoDataUri' ? 'School logo' : "Signature"} uploaded.` });
       };
       reader.onerror = () => {
@@ -765,7 +761,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                 className="rounded object-contain border bg-white p-1"
                                 data-ai-hint="school logo"
                               />
-                              <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('schoolLogoDataUri', undefined, { shouldDirty: true, shouldValidate: true })}>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('schoolLogoDataUri', undefined, { shouldDirty: true })}>
                                 <X className="mr-2 h-4 w-4 text-destructive" /> Remove
                               </Button>
                             </div>
@@ -905,7 +901,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                   {isImageEditingAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4 animate-pulse" />}
                                   Enhance Portrait (AI)
                                 </Button>
-                                <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('studentPhotoDataUri', undefined, { shouldDirty: true, shouldValidate: true })}>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('studentPhotoDataUri', undefined, { shouldDirty: true })}>
                                   <X className="mr-2 h-4 w-4 text-destructive" /> Remove
                                 </Button>
                               </>
@@ -957,7 +953,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                 className="rounded object-contain border bg-white p-1"
                                 data-ai-hint="signature"
                               />
-                              <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('headMasterSignatureDataUri', undefined, { shouldDirty: true, shouldValidate: true })}>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('headMasterSignatureDataUri', undefined, { shouldDirty: true })}>
                                 <X className="mr-2 h-4 w-4 text-destructive" /> Remove
                               </Button>
                             </div>
@@ -1332,8 +1328,19 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                 )}
               />
             </section>
+            
+            <Separator />
 
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                 <Button
+                    type="button"
+                    onClick={handleUpdatePreview}
+                    variant="secondary"
+                    className="w-full"
+                >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Update Preview
+                </Button>
                 <Button
                     type="button"
                     onClick={form.handleSubmit(onSubmitForSave)} 

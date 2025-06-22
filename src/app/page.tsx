@@ -264,6 +264,7 @@ function AppContent() {
     const studentSpecificDefaults = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
 
     setCurrentEditingReport({
+      // Session defaults
       schoolName: newSessionDefaults.schoolName,
       schoolLogoDataUri: newSessionDefaults.schoolLogoDataUri,
       className: newSessionDefaults.className,
@@ -274,6 +275,7 @@ function AppContent() {
       headMasterSignatureDataUri: newSessionDefaults.headMasterSignatureDataUri,
       instructorContact: newSessionDefaults.instructorContact,
 
+      // Student specific resets from defaultReportData
       studentName: studentSpecificDefaults.studentName,
       gender: studentSpecificDefaults.gender,
       daysAttended: studentSpecificDefaults.daysAttended,
@@ -288,9 +290,11 @@ function AppContent() {
       promotionStatus: studentSpecificDefaults.promotionStatus,
       studentPhotoDataUri: studentSpecificDefaults.studentPhotoDataUri,
 
+      // New identifiers
       id: `unsaved-${Date.now()}`,
       studentEntryNumber: newNextStudentEntryNumber,
 
+      // Calculated fields reset
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
