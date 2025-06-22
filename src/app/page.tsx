@@ -261,44 +261,17 @@ function AppContent() {
     setSessionDefaults(newSessionDefaults);
 
     const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
-    const studentSpecificDefaults = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
-
+    const newStudentBase = JSON.parse(JSON.stringify(defaultReportData));
+    
     setCurrentEditingReport({
-      // Session defaults
-      schoolName: newSessionDefaults.schoolName,
-      schoolLogoDataUri: newSessionDefaults.schoolLogoDataUri,
-      className: newSessionDefaults.className,
-      academicYear: newSessionDefaults.academicYear,
-      academicTerm: newSessionDefaults.academicTerm,
-      selectedTemplateId: newSessionDefaults.selectedTemplateId,
-      totalSchoolDays: newSessionDefaults.totalSchoolDays,
-      headMasterSignatureDataUri: newSessionDefaults.headMasterSignatureDataUri,
-      instructorContact: newSessionDefaults.instructorContact,
-
-      // Student specific resets from defaultReportData
-      studentName: studentSpecificDefaults.studentName,
-      gender: studentSpecificDefaults.gender,
-      daysAttended: studentSpecificDefaults.daysAttended,
-      parentEmail: studentSpecificDefaults.parentEmail,
-      parentPhoneNumber: studentSpecificDefaults.parentPhoneNumber,
-      performanceSummary: studentSpecificDefaults.performanceSummary,
-      strengths: studentSpecificDefaults.strengths,
-      areasForImprovement: studentSpecificDefaults.areasForImprovement,
-      hobbies: [...studentSpecificDefaults.hobbies],
-      teacherFeedback: studentSpecificDefaults.teacherFeedback,
-      subjects: studentSpecificDefaults.subjects.map(s => ({...s})),
-      promotionStatus: studentSpecificDefaults.promotionStatus,
-      studentPhotoDataUri: studentSpecificDefaults.studentPhotoDataUri,
-
-      // New identifiers
-      id: `unsaved-${Date.now()}`,
-      studentEntryNumber: newNextStudentEntryNumber,
-
-      // Calculated fields reset
-      createdAt: undefined,
-      overallAverage: undefined,
-      rank: undefined,
-      teacherId: undefined,
+        ...newStudentBase,
+        ...newSessionDefaults,
+        id: `unsaved-${Date.now()}`,
+        studentEntryNumber: newNextStudentEntryNumber,
+        createdAt: undefined,
+        overallAverage: undefined,
+        rank: undefined,
+        teacherId: undefined,
     });
     setNextStudentEntryNumber(newNextStudentEntryNumber);
   };
@@ -610,7 +583,7 @@ function AppContent() {
                 <span>
                   {reportsCount > 0
                     ? 'This area shows one report at a time from the list. Use navigation buttons if multiple reports are in the list.'
-                    : 'This area shows a live preview of the data from the form. Click "Add Current Report..." to save it to the database.'}
+                    : 'This area shows a live preview of the data from the form. Click "Add Report to List" to save it to the database.'}
                 </span>
                 <span className="block text-xs italic">
                   <Share2 className="inline-block mr-1 h-3 w-3 text-muted-foreground" /> Share options (Email/WhatsApp) below each report will open your default app.
@@ -649,7 +622,7 @@ function AppContent() {
                   <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
                   <h3 className="text-xl font-semibold mb-2">Report Preview Area</h3>
                   <p>The report card preview will appear here as you fill out the form.</p>
-                  <p className="text-xs mt-1">When you finish, click "Add Current Report..." to save it.</p>
+                  <p className="text-xs mt-1">When you finish, click "Add Report to List" to save it.</p>
                 </div>
               )}
             </CardContent>

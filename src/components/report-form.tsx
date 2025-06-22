@@ -144,22 +144,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const form = useForm<ReportData>({
     resolver: zodResolver(ReportDataSchema),
-    defaultValues: initialData ? 
-      {
-        ...schemaDefaultReportData, 
-        ...initialData, 
-        id: initialData.id || `unsaved-${Date.now()}`,
-        studentEntryNumber: initialData.studentEntryNumber || 1,
-        subjects: initialData.subjects?.length ? initialData.subjects.map(s => ({...s})) : [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
-        hobbies: initialData.hobbies || [],
-      } : 
-      {
-        ...schemaDefaultReportData,
-        id: `unsaved-${Date.now()}`,
-        studentEntryNumber: 1,
-        subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
-        hobbies: [],
-      }
+    defaultValues: initialData,
   });
 
   const { fields, append, remove } = useFieldArray({
