@@ -147,6 +147,14 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     defaultValues: initialData,
   });
 
+  const { reset } = form;
+
+  useEffect(() => {
+    if (initialData) {
+      reset(initialData);
+    }
+  }, [initialData, reset]);
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "subjects"
