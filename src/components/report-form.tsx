@@ -167,19 +167,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     name: "subjects"
   });
 
-  useEffect(() => {
-    if (fields.length > 0) {
-      if (currentVisibleSubjectIndex >= fields.length) {
-        setCurrentVisibleSubjectIndex(fields.length - 1);
-      }
-    } else {
-      if (fields.length === 0) { 
-        append({ subjectName: '', continuousAssessment: null, examinationMark: null });
-        setCurrentVisibleSubjectIndex(0);
-      }
-    }
-  }, [fields.length, currentVisibleSubjectIndex, append]);
-
+  const { watch } = form;
 
   const watchedAcademicTerm = form.watch('academicTerm');
   const watchedClassName = form.watch('className');
@@ -204,6 +192,45 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     }
     return [...new Set([...namesFromList, ...namesFromStorage])];
   }, [reportPrintListForHistory]);
+
+  const isPromotionStatusApplicable = React.useMemo(() => {
+    if (!watchedAcademicTerm || !watchedClassName) return false;
+    return watchedAcademicTerm === 'Third Term' && !tertiaryLevelClasses.includes(watchedClassName);
+  }, [watchedAcademicTerm, watchedClassName]);
+
+  useEffect(() => {
+    const subscription = watch((data) => {
+      const processedData: ReportData = {
+        ...(data as ReportData),
+        id: data.id || `preview-${Date.now()}`,
+        studentEntryNumber: data.studentEntryNumber,
+        daysAttended: parseNumeric(data.daysAttended),
+        totalSchoolDays: parseNumeric(data.totalSchoolDays),
+        subjects: data.subjects.map(s => ({
+          subjectName: s.subjectName,
+          continuousAssessment: parseNumeric(s.continuousAssessment),
+          examinationMark: parseNumeric(s.examinationMark),
+        })),
+        promotionStatus: isPromotionStatusApplicable ? data.promotionStatus : undefined,
+      };
+      onFormUpdate(processedData);
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, onFormUpdate, isPromotionStatusApplicable]);
+
+
+  useEffect(() => {
+    if (fields.length > 0) {
+      if (currentVisibleSubjectIndex >= fields.length) {
+        setCurrentVisibleSubjectIndex(fields.length - 1);
+      }
+    } else {
+      if (fields.length === 0) { 
+        append({ subjectName: '', continuousAssessment: null, examinationMark: null });
+        setCurrentVisibleSubjectIndex(0);
+      }
+    }
+  }, [fields.length, currentVisibleSubjectIndex, append]);
 
   useEffect(() => {
     if (
@@ -233,46 +260,13 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     }
   }, [watchedStudentName, watchedAcademicTerm, form, toast]);
 
-  useEffect(() => {
-    // This effect runs once on mount (or re-mount due to key change)
-    // to populate the dropdowns with any custom values from the initialData.
-    if (initialData) {
-        const newCustomClasses = [];
-        if (initialData.className && !classLevels.includes(initialData.className)) {
-            newCustomClasses.push(initialData.className);
-        }
-        if (newCustomClasses.length > 0) {
-            setCustomClassNames(prev => [...new Set([...prev, ...newCustomClasses])]);
-        }
-        
-        const newCustomHobbies = (initialData.hobbies || []).filter(hobby => !predefinedHobbiesList.includes(hobby));
-        if (newCustomHobbies.length > 0) {
-            setCustomHobbies(prev => [...new Set([...prev, ...newCustomHobbies])]);
-        }
-
-        const newCustomSubjects = (initialData.subjects || [])
-            .map(s => s.subjectName)
-            .filter(name => name && !predefinedSubjectsList.includes(name));
-        if (newCustomSubjects.length > 0) {
-            setCustomSubjects(prev => [...new Set([...prev, ...newCustomSubjects])]);
-        }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run ONLY on mount. Re-keying will trigger a re-mount.
-
-
-  const isPromotionStatusApplicable = React.useMemo(() => {
-    if (!watchedAcademicTerm || !watchedClassName) return false;
-    return watchedAcademicTerm === 'Third Term' && !tertiaryLevelClasses.includes(watchedClassName);
-  }, [watchedAcademicTerm, watchedClassName]);
-
  useEffect(() => {
     if (!isPromotionStatusApplicable) {
       form.setValue('promotionStatus', undefined, { shouldDirty: true, shouldValidate: true });
     }
   }, [isPromotionStatusApplicable, form]);
 
-  useEffect(() => {
+ useEffect(() => {
     if (isPromotionStatusApplicable) {
       const currentOverallAverage = calculateOverallAverageForForm(watchedSubjects);
       if (currentOverallAverage !== null) {
@@ -461,40 +455,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         toast({ title: "AI Image Edit Error", description: "Unexpected error during AI image editing.", variant: "destructive" });
       }
     });
-  };
-
-  const onSubmitForPreview: SubmitHandler<ReportData> = (data) => {
-    // This function now directly uses `data` from RHF, which is already validated
-    const processedData: ReportData = {
-      ...data, // Start with validated form data
-      id: data.id || `preview-${Date.now()}`, // Ensure ID for preview
-      studentEntryNumber: data.studentEntryNumber,
-      daysAttended: parseNumeric(data.daysAttended),
-      totalSchoolDays: parseNumeric(data.totalSchoolDays),
-      subjects: data.subjects.map(s => ({
-        subjectName: s.subjectName,
-        continuousAssessment: parseNumeric(s.continuousAssessment),
-        examinationMark: parseNumeric(s.examinationMark),
-      })),
-      promotionStatus: isPromotionStatusApplicable ? data.promotionStatus : undefined,
-      // Keep optional URI fields as they are from form (string or undefined)
-      studentPhotoDataUri: data.studentPhotoDataUri || undefined,
-      schoolLogoDataUri: data.schoolLogoDataUri || undefined,
-      headMasterSignatureDataUri: data.headMasterSignatureDataUri || undefined,
-      instructorContact: data.instructorContact || '',
-      hobbies: data.hobbies || [],
-      parentEmail: data.parentEmail || '',
-      parentPhoneNumber: data.parentPhoneNumber || '',
-      // OverallAverage, rank, etc. might be part of `data` if `initialData` had them,
-      // but they are primarily for display and calculated/set elsewhere.
-      // For preview, we pass them as is if they exist on `data`.
-      overallAverage: data.overallAverage || undefined,
-      rank: data.rank || undefined,
-      createdAt: data.createdAt || undefined,
-      teacherId: data.teacherId || undefined,
-    };
-    onFormUpdate(processedData);
-    toast({ title: "Preview Updated", description: "Report preview reflects current form data." });
   };
   
   const onSubmitForSave: SubmitHandler<ReportData> = async (dataFromRHF) => {
@@ -1374,13 +1334,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             </section>
 
             <div className="flex flex-col sm:flex-row gap-2">
-                <Button type="button" onClick={form.handleSubmit(onSubmitForPreview)} className="w-full sm:w-auto" disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading }>
-                    <CheckSquare className="mr-2 h-4 w-4" /> Update Preview
-                </Button>
                 <Button
                     type="button"
                     onClick={form.handleSubmit(onSubmitForSave)} 
-                    className="w-full sm:w-auto"
+                    className="w-full"
                     variant="default"
                     disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading }
                     >

@@ -177,9 +177,9 @@ function AppContent() {
   }, [calculateAndSetRanks, toast, sessionDefaults]);
 
 
-  const handleFormUpdate = (data: ReportData) => {
+  const handleFormUpdate = useCallback((data: ReportData) => {
     setCurrentEditingReport({ ...data });
-  };
+  }, []);
 
   const handleSaveReportAndResetForm = async (formDataFromRHF: ReportData) => {
     const reportToSaveForFirestore = {
@@ -606,7 +606,7 @@ function AppContent() {
                 <span>
                   {reportsCount > 0
                     ? 'This area shows one report at a time from the list. Use navigation buttons if multiple reports are in the list.'
-                    : 'This area shows a live preview of the form data. Click "Add Current Report..." to save it to the database.'}
+                    : 'This area shows a live preview of the data from the form. Click "Add Current Report..." to save it to the database.'}
                 </span>
                 <span className="block text-xs italic">
                   <Share2 className="inline-block mr-1 h-3 w-3 text-muted-foreground" /> Share options (Email/WhatsApp) below each report will open your default app.
@@ -634,7 +634,7 @@ function AppContent() {
                     </div>
                   </React.Fragment>
                 ))
-              ) : currentEditingReport ? (
+              ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
                 <>
                   <div className="report-preview-item active-preview-screen" key={currentEditingReport.id}>
                     <ReportPreview data={currentEditingReport} />
@@ -643,9 +643,9 @@ function AppContent() {
               ) : (
                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
                   <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
-                  <h3 className="text-xl font-semibold mb-2">Form is Empty or No Reports Loaded</h3>
-                  <p>Fill out the form and click "Update Preview" or "Add Current Report..." to save it.</p>
-                  <p className="text-xs mt-1">If reports should be loading, please check your connection or refresh.</p>
+                  <h3 className="text-xl font-semibold mb-2">Report Preview Area</h3>
+                  <p>The report card preview will appear here as you fill out the form.</p>
+                  <p className="text-xs mt-1">When you finish, click "Add Current Report..." to save it.</p>
                 </div>
               )}
             </CardContent>
