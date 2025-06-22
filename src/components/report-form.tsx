@@ -1331,26 +1331,26 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             
             <Separator />
 
-            <div className="flex flex-col sm:flex-row gap-2 pt-4">
-                 <Button
-                    type="button"
-                    onClick={handleUpdatePreview}
-                    variant="secondary"
-                    className="w-full"
-                >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Update Preview
-                </Button>
-                <Button
-                    type="button"
-                    onClick={form.handleSubmit(onSubmitForSave)} 
-                    className="w-full"
-                    variant="default"
-                    disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading }
-                    >
-                    <ListPlus className="mr-2 h-4 w-4" />
-                    Add Current Report to Print & Rank List
-                </Button>
+            <div className="flex flex-row gap-2 pt-4">
+              <Button
+                type="button"
+                onClick={handleUpdatePreview}
+                variant="secondary"
+                className="flex-1"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Update Preview
+              </Button>
+              <Button
+                type="button"
+                onClick={form.handleSubmit(onSubmitForSave)}
+                className="flex-1"
+                variant="default"
+                disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading}
+              >
+                <ListPlus className="mr-2 h-4 w-4" />
+                Add Report to List
+              </Button>
             </div>
           </form>
         </Form>
