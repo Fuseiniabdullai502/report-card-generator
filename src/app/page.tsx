@@ -501,7 +501,6 @@ function AppContent() {
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-5 gap-8">
         <section className="lg:col-span-2 no-print space-y-4">
           <ReportForm
-            key={currentEditingReport.id}
             onFormUpdate={handleFormUpdate}
             initialData={currentEditingReport}
             reportPrintListForHistory={reportPrintList}
