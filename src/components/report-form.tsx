@@ -147,13 +147,13 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     defaultValues: initialData,
   });
 
-  const { reset } = form;
 
   useEffect(() => {
-    if (initialData) {
-      reset(initialData);
-    }
-  }, [initialData, reset]);
+    const subscription = form.watch((value) => {
+      onFormUpdate(value as ReportData);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onFormUpdate]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -456,24 +456,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     await onSaveReport(processedDataForSave);
   };
 
-  const handleUpdatePreview = () => {
-    const processedData: ReportData = {
-        ...(form.getValues() as ReportData),
-        id: form.getValues().id || `preview-${Date.now()}`,
-        studentEntryNumber: form.getValues().studentEntryNumber,
-        daysAttended: parseNumeric(form.getValues().daysAttended),
-        totalSchoolDays: parseNumeric(form.getValues().totalSchoolDays),
-        subjects: form.getValues().subjects.map(s => ({
-          subjectName: s.subjectName,
-          continuousAssessment: parseNumeric(s.continuousAssessment),
-          examinationMark: parseNumeric(s.examinationMark),
-        })),
-        promotionStatus: isPromotionStatusApplicable ? form.getValues().promotionStatus : undefined,
-    };
-    onFormUpdate(processedData);
-    toast({ title: "Preview Updated", description: "The report preview has been updated with the latest form data." });
-  };
-
 
   const handleAddSubjectAndNavigate = () => {
     const newIndex = fields.length;
@@ -573,7 +555,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmitForSave)} className="space-y-8">
 
             <section className="space-y-6">
               <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Student &amp; School Information</h3>
@@ -1324,21 +1306,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             
             <Separator />
 
-            <div className="flex flex-row gap-2 pt-4">
+            <div className="flex gap-4 pt-4">
               <Button
-                type="button"
-                onClick={handleUpdatePreview}
-                variant="secondary"
+                type="submit"
                 className="flex-1"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Update Preview
-              </Button>
-              <Button
-                type="button"
-                onClick={form.handleSubmit(onSubmitForSave)}
-                className="flex-1"
-                variant="default"
                 disabled={form.formState.isSubmitting || isReportInsightsAiLoading || isTeacherFeedbackAiLoading || isImageEditingAiLoading}
               >
                 <ListPlus className="mr-2 h-4 w-4" />
