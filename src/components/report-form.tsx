@@ -1306,7 +1306,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             
             <Separator />
 
-            <div className="flex gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button
                 type="submit"
                 className="flex-1"
