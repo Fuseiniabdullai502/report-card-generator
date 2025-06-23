@@ -38,7 +38,7 @@ const editImageFlow = sirAi.defineFlow(
   },
   async ({ photoDataUri, prompt }) => {
     const { media } = await sirAi.generate({
-      model: 'googleai/gemini-2.0-flash-exp', // IMPORTANT: Use this model for image generation/editing
+      model: 'googleai/gemini-2.0-flash-preview-image-generation', // Correct model for image generation/editing
       prompt: [
         { media: { url: photoDataUri } },
         { text: prompt },
@@ -55,4 +55,3 @@ const editImageFlow = sirAi.defineFlow(
     return { editedPhotoDataUri: media.url };
   }
 );
-

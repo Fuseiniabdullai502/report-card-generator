@@ -9,7 +9,6 @@ try {
   const mainPlugins: GenkitPlugin[] = [googleAI()];
   genkitInstance = genkit({
     plugins: mainPlugins,
-    model: 'googleai/gemini-2.0-flash', // This model is from the googleAI plugin
   });
   console.log("Genkit initialized successfully with GoogleAI plugin as sirAi.");
 } catch (error) {
@@ -35,4 +34,3 @@ try {
 }
 
 export const sirAi = genkitInstance;
-

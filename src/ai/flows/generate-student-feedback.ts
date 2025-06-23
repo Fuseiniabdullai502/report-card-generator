@@ -67,7 +67,9 @@ const generateStudentFeedbackFlow = sirAi.defineFlow(
   },
   async input => {
     const {output} = await generateStudentFeedbackPrompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('AI failed to generate feedback. The model may not have returned the expected output format.');
+    }
+    return output;
   }
 );
-
