@@ -11,7 +11,7 @@
  * - GenerateReportInsightsOutput - The return type for the generateReportInsights function.
  */
 
-import {sirAi} from '@/ai/genkit';
+import {ai} from '@/ai/genkit';
 import {z}from 'genkit';
 
 // Define the schema for individual subject entries for the flow input - NOT EXPORTED
@@ -67,7 +67,7 @@ export async function generateReportInsights(
   return generateReportInsightsFlow(input);
 }
 
-const generateReportInsightsPrompt = sirAi.definePrompt({
+const generateReportInsightsPrompt = ai.definePrompt({
   name: 'generateReportInsightsPrompt',
   input: {schema: GenerateReportInsightsInputSchema},
   output: {schema: GenerateReportInsightsOutputSchema},
@@ -135,7 +135,7 @@ Generate only the text for these three sections. Ensure the tone is balanced and
 `,
 });
 
-const generateReportInsightsFlow = sirAi.defineFlow(
+const generateReportInsightsFlow = ai.defineFlow(
   {
     name: 'generateReportInsightsFlow',
     inputSchema: GenerateReportInsightsInputSchema,
@@ -149,4 +149,3 @@ const generateReportInsightsFlow = sirAi.defineFlow(
     return output;
   }
 );
-

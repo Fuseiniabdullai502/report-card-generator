@@ -9,7 +9,7 @@
  * - GenerateStudentFeedbackOutput - The return type for the generateStudentFeedback function.
  */
 
-import {sirAi} from '@/ai/genkit';
+import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateStudentFeedbackInputSchema = z.object({
@@ -42,7 +42,7 @@ export async function generateStudentFeedback(
   return generateStudentFeedbackFlow(input);
 }
 
-const generateStudentFeedbackPrompt = sirAi.definePrompt({
+const generateStudentFeedbackPrompt = ai.definePrompt({
   name: 'generateStudentFeedbackPrompt',
   input: {schema: GenerateStudentFeedbackInputSchema},
   output: {schema: GenerateStudentFeedbackOutputSchema},
@@ -59,7 +59,7 @@ const generateStudentFeedbackPrompt = sirAi.definePrompt({
   Feedback:`,
 });
 
-const generateStudentFeedbackFlow = sirAi.defineFlow(
+const generateStudentFeedbackFlow = ai.defineFlow(
   {
     name: 'generateStudentFeedbackFlow',
     inputSchema: GenerateStudentFeedbackInputSchema,

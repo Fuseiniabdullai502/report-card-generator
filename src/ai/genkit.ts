@@ -1,36 +1,34 @@
 
-import { genkit, type GenkitPlugin, type Genkit as GenkitInstance } from 'genkit'; // Updated Genkit import for type
+import { genkit, type GenkitPlugin, type Genkit as GenkitInstance } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 
-let genkitInstance: GenkitInstance;
+let aiInstance: GenkitInstance;
 
 try {
   // Attempt to initialize with Google AI
   const mainPlugins: GenkitPlugin[] = [googleAI()];
-  genkitInstance = genkit({
+  aiInstance = genkit({
     plugins: mainPlugins,
   });
-  console.log("Genkit initialized successfully with GoogleAI plugin as sirAi.");
+  console.log("Genkit initialized successfully with GoogleAI plugin as 'ai'.");
 } catch (error) {
   console.error(
-    'CRITICAL: Failed to initialize Genkit with GoogleAI plugin. AI features will NOT work. This is often due to missing or invalid GOOGLE_API_KEY or other Google AI credentials in the environment.',
+    'CRITICAL: Failed to initialize Genkit with GoogleAI plugin. AI features will NOT work. This is often due to a missing or invalid GOOGLE_API_KEY in the environment.',
     error
   );
-  // Fallback: Initialize Genkit with no plugins.
-  // This allows the server to start for non-AI parts of the app.
-  // Operations requiring a model will likely fail later with clearer errors.
-  try {
-    genkitInstance = genkit({
-      plugins: [], // No plugins
-      // No default model is specified here; operations will need to specify one or will fail.
-    });
-    console.warn("Genkit initialized with NO plugins due to a critical error with the GoogleAI plugin. All AI operations that rely on the GoogleAI plugin or a default model will likely fail.");
-  } catch (fallbackError) {
-    const errorMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
-    console.error("CRITICAL: Failed to initialize Genkit even with a fallback (no plugins). The application's AI system is non-functional.", fallbackError);
-    // If even a minimal Genkit initialization fails, rethrow to prevent server startup with a broken AI core.
-    throw new Error(`Genkit core initialization failed: ${errorMessage}. AI system is down.`);
-  }
+  // Create a proxy object that throws a clear error when any method is called.
+  const errorMessage =
+    'AI features are disabled. The Genkit GoogleAI plugin failed to initialize, which is commonly caused by a missing or invalid GOOGLE_API_KEY environment variable. Please check your setup and server logs.';
+
+  aiInstance = new Proxy({}, {
+    get(target, prop, receiver) {
+      // For any property access on the 'ai' object, throw a clear error.
+      // This ensures that server actions will fail with a meaningful message.
+      throw new Error(errorMessage);
+    }
+  }) as GenkitInstance;
+
+  console.warn("Genkit has been set to a 'faulty' state. Any calls to AI functions will throw an explicit error.");
 }
 
-export const sirAi = genkitInstance;
+export const ai = aiInstance;
