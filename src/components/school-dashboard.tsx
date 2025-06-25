@@ -251,6 +251,9 @@ export default function SchoolPerformanceDashboard({
               overallSubjectStatsForSchool: newStats.overallSubjectStatsForSchoolUI.map(s => ({...s})),
               overallGenderStatsForSchool: newStats.overallGenderStatsForSchoolUI.map(g => ({...g})),
             };
+
+            console.log('Sending the following data to AI for school insights:', JSON.stringify(aiInput, null, 2));
+
             const result = await getAiSchoolInsightsAction(aiInput);
             if (result.success && result.insights) {
               setAiSchoolAdvice(result.insights);

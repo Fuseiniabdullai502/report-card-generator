@@ -173,6 +173,9 @@ export default function ClassPerformanceDashboard({
             subjectStats: newStats.subjectStats.map(s => ({ ...s })), 
             genderStats: newStats.genderStats.map(g => ({ ...g })),   
           };
+          
+          console.log('Sending the following data to AI for class insights:', JSON.stringify(aiInput, null, 2));
+
           const result = await getAiClassInsightsAction(aiInput);
           if (result.success && result.insights) {
             setAiAdvice(result.insights);
