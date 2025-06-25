@@ -44,11 +44,11 @@ const GenerateSchoolInsightsInputSchema = z.object({
 export type GenerateSchoolInsightsInput = z.infer<typeof GenerateSchoolInsightsInputSchema>;
 
 const GenerateSchoolInsightsOutputSchema = z.object({
-  overallSchoolAssessment: z.string().describe('A general assessment of the school\'s performance. Can be empty.').default(''),
-  keyStrengthsSchoolWide: z.array(z.string()).describe('Key strengths observed across the school. Can be an empty array.').default([]),
-  areasForConcernSchoolWide: z.array(z.string()).describe('School-wide areas that might need attention or improvement. Can be an empty array.').default([]),
-  actionableAdviceForSchool: z.array(z.string()).describe('Specific, actionable advice for the school administration, presented in paragraph form. Can be an empty array.').default([]),
-  interClassObservations: z.array(z.string()).describe('Observations on performance variations or trends between different classes. Can be an empty array.').default([]),
+  overallSchoolAssessment: z.string().describe('A general assessment of the school\'s performance. Can be empty.').optional(),
+  keyStrengthsSchoolWide: z.array(z.string()).describe('Key strengths observed across the school. Can be an empty array.').optional(),
+  areasForConcernSchoolWide: z.array(z.string()).describe('School-wide areas that might need attention or improvement. Can be an empty array.').optional(),
+  actionableAdviceForSchool: z.array(z.string()).describe('Specific, actionable advice for the school administration, presented in paragraph form. Can be an empty array.').optional(),
+  interClassObservations: z.array(z.string()).describe('Observations on performance variations or trends between different classes. Can be an empty array.').optional(),
 });
 export type GenerateSchoolInsightsOutput = z.infer<typeof GenerateSchoolInsightsOutputSchema>;
 

@@ -197,6 +197,7 @@ export default function SchoolPerformanceDashboard({
   const [aiSchoolAdvice, setAiSchoolAdvice] = useState<GenerateSchoolInsightsOutput | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isLoadingAi, startAiTransition] = useTransition();
+  const [aiError, setAiError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -207,7 +208,8 @@ export default function SchoolPerformanceDashboard({
       setIsLoadingStats(false);
 
       if (newStats) {
-        setAiSchoolAdvice(null); 
+        setAiSchoolAdvice(null);
+        setAiError(null);
         startAiTransition(async () => {
           try {
             const aiInput: GenerateSchoolInsightsInput = {
@@ -228,19 +230,21 @@ export default function SchoolPerformanceDashboard({
             if (result.success && result.insights) {
               setAiSchoolAdvice(result.insights);
             } else {
-              setAiSchoolAdvice(null); 
-              toast({ title: "AI School Insights Error", description: result.error || "Failed to load AI school insights.", variant: "destructive" });
+              const errorMessage = result.error || "An unknown error occurred while generating school insights.";
+              setAiError(errorMessage);
+              toast({ title: "AI School Insights Error", description: errorMessage, variant: "destructive" });
             }
           } catch (error) {
-            setAiSchoolAdvice(null);
-            console.error("Client-side error during AI school insights fetch:", error);
-            toast({ title: "AI School Insights Request Failed", description: `Client error: ${error instanceof Error ? error.message : String(error)}`, variant: "destructive" });
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            setAiError(errorMessage);
+            toast({ title: "AI School Insights Request Failed", description: `Client error: ${errorMessage}`, variant: "destructive" });
           }
         });
       }
     } else if (isOpen && allReports.length === 0) {
       setSchoolStats(null);
       setAiSchoolAdvice(null);
+      setAiError(null);
       setIsLoadingStats(false);
     }
   }, [isOpen, allReports, schoolNameProp, academicTermProp, toast]); 
@@ -287,21 +291,27 @@ export default function SchoolPerformanceDashboard({
   };
 
  const renderAiSchoolInsights = () => {
-    if (isLoadingAi && !aiSchoolAdvice) {
+    if (isLoadingAi && !aiSchoolAdvice && !aiError) {
       return (
         <CardContent className="pt-4 flex items-center justify-center text-accent-foreground/80">
           <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> Generating AI school-level insights...
         </CardContent>
       );
     }
-    if (!aiSchoolAdvice && !isLoadingAi && schoolStats && allReports.length > 0) {
+    if (aiError) {
       return (
         <CardContent className="pt-4 text-accent-foreground/90">
           <div className="flex items-start p-4 bg-destructive/10 border border-destructive/30 rounded-md">
             <AlertTriangle className="mr-3 h-6 w-6 text-destructive shrink-0 mt-1" />
             <div>
               <p className="font-semibold text-destructive">AI School Insights Unavailable</p>
-              <p className="text-sm mt-1">The AI insights for the school could not be generated. Please ensure your <code className="bg-destructive/20 px-1 rounded text-xs font-mono">GOOGLE_API_KEY</code> is correctly set up and check server console logs for specific errors.</p>
+              <p className="text-sm mt-1">The AI failed to generate insights. Here is the specific error:</p>
+              <pre className="mt-2 p-2 bg-destructive/20 rounded text-xs font-mono whitespace-pre-wrap">
+                  {aiError}
+              </pre>
+              <p className="text-sm mt-2">
+                  <strong>This is often caused by an invalid or restricted GOOGLE_API_KEY. Please verify your key and check your Google AI Studio project for any issues.</strong>
+              </p>
             </div>
           </div>
         </CardContent>
@@ -614,5 +624,3 @@ export default function SchoolPerformanceDashboard({
     </Dialog>
   );
 }
-
-    

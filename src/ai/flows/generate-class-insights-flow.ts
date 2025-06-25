@@ -36,10 +36,10 @@ const GenerateClassInsightsInputSchema = z.object({
 export type GenerateClassInsightsInput = z.infer<typeof GenerateClassInsightsInputSchema>;
 
 const GenerateClassInsightsOutputSchema = z.object({
-  overallAssessment: z.string().describe('A general assessment of the class\'s performance. This could be an empty string if no specific assessment is made.').default(''),
-  strengths: z.array(z.string()).describe('Key strengths observed in the class. This could be an empty array.').default([]),
-  areasForConcern: z.array(z.string()).describe('Areas that might need attention or improvement. This could be an empty array.').default([]),
-  actionableAdvice: z.array(z.string()).describe('Specific, actionable advice for the teacher, presented in paragraph form. This could be an empty array.').default([]),
+  overallAssessment: z.string().describe('A general assessment of the class\'s performance. This could be an empty string if no specific assessment is made.').optional(),
+  strengths: z.array(z.string()).describe('Key strengths observed in the class. This could be an empty array.').optional(),
+  areasForConcern: z.array(z.string()).describe('Areas that might need attention or improvement. This could be an empty array.').optional(),
+  actionableAdvice: z.array(z.string()).describe('Specific, actionable advice for the teacher, presented in paragraph form. This could be an empty array.').optional(),
 });
 export type GenerateClassInsightsOutput = z.infer<typeof GenerateClassInsightsOutputSchema>;
 
