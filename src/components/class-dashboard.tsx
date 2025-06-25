@@ -100,40 +100,38 @@ export default function ClassPerformanceDashboard({
     if (isOpen && reports.length > 0) {
       setIsLoadingStats(true);
       const totalStudents = reports.length;
-      let sumOfOverallAverages = 0;
-      let studentsWithOverallAverage = 0;
 
-      reports.forEach(report => {
-        if (report.overallAverage !== undefined && report.overallAverage !== null) {
-          sumOfOverallAverages += report.overallAverage;
-          studentsWithOverallAverage++;
-        }
-      });
-      const overallClassAverage = studentsWithOverallAverage > 0 ? parseFloat((sumOfOverallAverages / studentsWithOverallAverage).toFixed(2)) : null;
+      const validOverallAverages = reports
+        .map(r => r.overallAverage)
+        .filter(avg => avg !== undefined && avg !== null && !Number.isNaN(avg)) as number[];
+        
+      const overallClassAverage = validOverallAverages.length > 0 
+        ? parseFloat((validOverallAverages.reduce((a, b) => a + b, 0) / validOverallAverages.length).toFixed(2)) 
+        : null;
 
-      const subjectMap: Map<string, { scores: number[]; count: number }> = new Map();
+      const subjectMap: Map<string, { scores: number[] }> = new Map();
       reports.forEach(report => {
         report.subjects.forEach(subject => {
           if (subject.subjectName && subject.subjectName.trim() !== '') {
             const finalMark = calculateInternalSubjectFinalMark(subject);
-            if (finalMark !== null) {
+            if (finalMark !== null && !Number.isNaN(finalMark)) {
               if (!subjectMap.has(subject.subjectName)) {
-                subjectMap.set(subject.subjectName, { scores: [], count: 0 });
+                subjectMap.set(subject.subjectName, { scores: [] });
               }
               subjectMap.get(subject.subjectName)!.scores.push(finalMark);
-              subjectMap.get(subject.subjectName)!.count++;
             }
           }
         });
       });
 
       const subjectStats: SubjectPerformanceStatForUI[] = Array.from(subjectMap.entries()).map(([subjectName, data]) => {
-        const subjectAvg = data.scores.length > 0 ? parseFloat((data.scores.reduce((a, b) => a + b, 0) / data.scores.length).toFixed(2)) : null;
+        const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
+        const subjectAvg = validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null;
         return {
           subjectName,
-          numBelowAverage: data.scores.filter(score => score < 40).length,
-          numAverage: data.scores.filter(score => score >= 40 && score < 60).length,
-          numAboveAverage: data.scores.filter(score => score >= 60).length,
+          numBelowAverage: validScores.filter(score => score < 40).length,
+          numAverage: validScores.filter(score => score >= 40 && score < 60).length,
+          numAboveAverage: validScores.filter(score => score >= 60).length,
           classAverageForSubject: subjectAvg,
         };
       });
@@ -141,23 +139,23 @@ export default function ClassPerformanceDashboard({
       const genderMap: Map<string, { scores: number[]; count: number }> = new Map();
       reports.forEach(report => {
         const gender = report.gender || 'Unknown';
-         if (report.overallAverage !== undefined && report.overallAverage !== null) {
-            if (!genderMap.has(gender)) {
-                genderMap.set(gender, { scores: [], count: 0 });
-            }
-            genderMap.get(gender)!.scores.push(report.overallAverage);
-         }
         if (!genderMap.has(gender)) {
-             genderMap.set(gender, { scores: genderMap.get(gender)?.scores || [], count: 0 });
+            genderMap.set(gender, { scores: [], count: 0 });
+        }
+        if (report.overallAverage !== undefined && report.overallAverage !== null && !Number.isNaN(report.overallAverage)) {
+            genderMap.get(gender)!.scores.push(report.overallAverage);
         }
         genderMap.get(gender)!.count++;
       });
       
-      const genderStats: GenderPerformanceStatForUI[] = Array.from(genderMap.entries()).map(([gender, data]) => ({
-        gender,
-        count: data.count,
-        averageScore: data.scores.length > 0 ? parseFloat((data.scores.reduce((a, b) => a + b, 0) / data.scores.length).toFixed(2)) : null,
-      }));
+      const genderStats: GenderPerformanceStatForUI[] = Array.from(genderMap.entries()).map(([gender, data]) => {
+        const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
+        return {
+            gender,
+            count: data.count,
+            averageScore: validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null,
+        };
+      });
 
       const newStats = { overallClassAverage, totalStudents, subjectStats, genderStats };
       setClassStats(newStats);

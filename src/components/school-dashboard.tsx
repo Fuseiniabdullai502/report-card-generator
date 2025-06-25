@@ -101,33 +101,33 @@ function aggregateSchoolData(reports: ReportData[]): SchoolStatistics | null {
   if (!reports || reports.length === 0) return null;
 
   const totalStudentsInSchool = reports.length;
-  let sumOfAllStudentAverages = 0;
-  let studentsWithOverallAverageCount = 0;
+
+  const validStudentAverages = reports
+    .map(r => r.overallAverage)
+    .filter(avg => avg !== undefined && avg !== null && !Number.isNaN(avg)) as number[];
+
+  const overallSchoolAverage = validStudentAverages.length > 0 
+    ? parseFloat((validStudentAverages.reduce((a, b) => a + b, 0) / validStudentAverages.length).toFixed(2)) 
+    : null;
 
   const classDataMap: Map<string, { reports: ReportData[], subjectScores: Map<string, number[]>, studentAverages: number[] }> = new Map();
   const schoolSubjectScoresMap: Map<string, number[]> = new Map();
   const schoolGenderMap: Map<string, { scores: number[], count: number }> = new Map();
 
   reports.forEach(report => {
-    // Overall School Average
-    if (report.overallAverage !== undefined && report.overallAverage !== null) {
-      sumOfAllStudentAverages += report.overallAverage;
-      studentsWithOverallAverageCount++;
-    }
-
     // Per-Class Aggregation
     if (!classDataMap.has(report.className)) {
       classDataMap.set(report.className, { reports: [], subjectScores: new Map(), studentAverages: [] });
     }
     classDataMap.get(report.className)!.reports.push(report);
-    if (report.overallAverage !== undefined && report.overallAverage !== null) {
+    if (report.overallAverage !== undefined && report.overallAverage !== null && !Number.isNaN(report.overallAverage)) {
       classDataMap.get(report.className)!.studentAverages.push(report.overallAverage);
     }
     
     report.subjects.forEach(subject => {
       if (subject.subjectName && subject.subjectName.trim() !== '') {
         const finalMark = calculateInternalSubjectFinalMark(subject);
-        if (finalMark !== null) {
+        if (finalMark !== null && !Number.isNaN(finalMark)) {
           // For class-level subject scores
           const classSubjectScores = classDataMap.get(report.className)!.subjectScores;
           if (!classSubjectScores.has(subject.subjectName)) {
@@ -149,24 +149,29 @@ function aggregateSchoolData(reports: ReportData[]): SchoolStatistics | null {
     if (!schoolGenderMap.has(gender)) {
       schoolGenderMap.set(gender, { scores: [], count: 0 });
     }
-    if (report.overallAverage !== undefined && report.overallAverage !== null) {
+    if (report.overallAverage !== undefined && report.overallAverage !== null && !Number.isNaN(report.overallAverage)) {
         schoolGenderMap.get(gender)!.scores.push(report.overallAverage);
     }
     schoolGenderMap.get(gender)!.count++;
   });
-
-  const overallSchoolAverage = studentsWithOverallAverageCount > 0 ? parseFloat((sumOfAllStudentAverages / studentsWithOverallAverageCount).toFixed(2)) : null;
+  
   const numberOfClassesRepresented = classDataMap.size;
 
   const classSummariesForUI: AggregatedClassSummaryForUI[] = Array.from(classDataMap.entries()).map(([className, data]) => {
-    const classAvg = data.studentAverages.length > 0 ? parseFloat((data.studentAverages.reduce((a, b) => a + b, 0) / data.studentAverages.length).toFixed(2)) : null;
-    const subjectStats = Array.from(data.subjectScores.entries()).map(([subjectName, scores]) => ({
-      subjectName,
-      numBelowAverage: scores.filter(score => score < 40).length,
-      numAverage: scores.filter(score => score >= 40 && score < 60).length,
-      numAboveAverage: scores.filter(score => score >= 60).length,
-      classAverageForSubject: scores.length > 0 ? parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)) : null,
-    }));
+    const validStudentAverages = data.studentAverages.filter(avg => avg !== null && !Number.isNaN(avg));
+    const classAvg = validStudentAverages.length > 0 ? parseFloat((validStudentAverages.reduce((a, b) => a + b, 0) / validStudentAverages.length).toFixed(2)) : null;
+    
+    const subjectStats = Array.from(data.subjectScores.entries()).map(([subjectName, scores]) => {
+        const validScores = scores.filter(s => s !== null && !Number.isNaN(s));
+        return {
+          subjectName,
+          numBelowAverage: validScores.filter(score => score < 40).length,
+          numAverage: validScores.filter(score => score >= 40 && score < 60).length,
+          numAboveAverage: validScores.filter(score => score >= 60).length,
+          classAverageForSubject: validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null,
+        };
+    });
+
     return {
       className,
       numberOfStudents: data.reports.length,
@@ -175,19 +180,25 @@ function aggregateSchoolData(reports: ReportData[]): SchoolStatistics | null {
     };
   });
 
-  const overallSubjectStatsForSchoolUI: AggregatedSchoolSubjectStatForUI[] = Array.from(schoolSubjectScoresMap.entries()).map(([subjectName, scores]) => ({
-    subjectName,
-    numBelowAverage: scores.filter(score => score < 40).length,
-    numAverage: scores.filter(score => score >= 40 && score < 60).length,
-    numAboveAverage: scores.filter(score => score >= 60).length,
-    schoolAverageForSubject: scores.length > 0 ? parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)) : null,
-  }));
+  const overallSubjectStatsForSchoolUI: AggregatedSchoolSubjectStatForUI[] = Array.from(schoolSubjectScoresMap.entries()).map(([subjectName, scores]) => {
+    const validScores = scores.filter(s => s !== null && !Number.isNaN(s));
+    return {
+      subjectName,
+      numBelowAverage: validScores.filter(score => score < 40).length,
+      numAverage: validScores.filter(score => score >= 40 && score < 60).length,
+      numAboveAverage: validScores.filter(score => score >= 60).length,
+      schoolAverageForSubject: validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null,
+    };
+  });
 
-  const overallGenderStatsForSchoolUI: AggregatedSchoolGenderStatForUI[] = Array.from(schoolGenderMap.entries()).map(([gender, data]) => ({
-    gender,
-    count: data.count,
-    averageScore: data.scores.length > 0 ? parseFloat((data.scores.reduce((a, b) => a + b, 0) / data.scores.length).toFixed(2)) : null,
-  }));
+  const overallGenderStatsForSchoolUI: AggregatedSchoolGenderStatForUI[] = Array.from(schoolGenderMap.entries()).map(([gender, data]) => {
+      const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
+      return {
+        gender,
+        count: data.count,
+        averageScore: validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null,
+      };
+  });
   
   return {
     overallSchoolAverage,
