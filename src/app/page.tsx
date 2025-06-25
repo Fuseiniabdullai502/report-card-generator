@@ -25,18 +25,25 @@ function calculateSubjectFinalMark(subject: SubjectEntry): number {
   const caMarkInput = subject.continuousAssessment;
   const examMarkInput = subject.examinationMark;
 
+  // Check if both are explicitly not entered
   if ((caMarkInput === null || caMarkInput === undefined) && (examMarkInput === null || examMarkInput === undefined)) {
     return 0;
   }
 
-  const scaledCaMark = (caMarkInput !== null && caMarkInput !== undefined) ? (Number(caMarkInput) / 60) * 40 : 0;
-  const scaledExamMark = (examMarkInput !== null && examMarkInput !== undefined) ? (Number(examMarkInput) / 100) * 60 : 0;
+  // Safely coerce to number, default to 0 if invalid/missing. This prevents NaN propagation.
+  const caVal = (caMarkInput !== null && caMarkInput !== undefined && !Number.isNaN(Number(caMarkInput))) ? Number(caMarkInput) : 0;
+  const examVal = (examMarkInput !== null && examMarkInput !== undefined && !Number.isNaN(Number(examMarkInput))) ? Number(examMarkInput) : 0;
+  
+  const scaledCaMark = (caVal / 60) * 40;
+  const scaledExamMark = (examVal / 100) * 60;
 
-  let finalPercentageMark: number;
-  finalPercentageMark = scaledCaMark + scaledExamMark;
+  let finalPercentageMark = scaledCaMark + scaledExamMark;
   finalPercentageMark = Math.min(finalPercentageMark, 100);
+
+  // It's mathematically impossible for this to be NaN now, but parseFloat is good practice.
   return parseFloat(finalPercentageMark.toFixed(1));
 }
+
 
 function getOrdinalSuffix(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];

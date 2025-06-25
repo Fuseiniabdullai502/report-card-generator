@@ -66,19 +66,33 @@ export interface SchoolStatistics {
   overallGenderStatsForSchoolUI: AggregatedSchoolGenderStatForUI[];
 }
 
-// Helper from class-dashboard, ensure it's consistent or imported if modularized
 function calculateInternalSubjectFinalMark(subject: SubjectEntry): number | null {
   const caMarkInput = subject.continuousAssessment;
   const examMarkInput = subject.examinationMark;
 
-  if ((caMarkInput === null || caMarkInput === undefined) && (examMarkInput === null || examMarkInput === undefined)) {
-    return null;
+  const caVal = Number(caMarkInput);
+  const examVal = Number(examMarkInput);
+  
+  const caIsValid = caMarkInput !== null && caMarkInput !== undefined && !Number.isNaN(caVal);
+  const examIsValid = examMarkInput !== null && examMarkInput !== undefined && !Number.isNaN(examVal);
+
+  if (!caIsValid && !examIsValid) {
+    return null; // Don't include in stats if no valid marks
   }
-  const scaledCaMark = (caMarkInput !== null && caMarkInput !== undefined) ? (Number(caMarkInput) / 60) * 40 : 0;
-  const scaledExamMark = (examMarkInput !== null && examMarkInput !== undefined) ? (Number(examMarkInput) / 100) * 60 : 0;
+
+  const safeCaVal = caIsValid ? caVal : 0;
+  const safeExamVal = examIsValid ? examVal : 0;
+
+  const scaledCaMark = (safeCaVal / 60) * 40;
+  const scaledExamMark = (safeExamVal / 100) * 60;
   
   let finalPercentageMark = scaledCaMark + scaledExamMark;
   finalPercentageMark = Math.min(finalPercentageMark, 100);
+  
+  if (Number.isNaN(finalPercentageMark)) {
+      return null;
+  }
+
   return parseFloat(finalPercentageMark.toFixed(1));
 }
 
