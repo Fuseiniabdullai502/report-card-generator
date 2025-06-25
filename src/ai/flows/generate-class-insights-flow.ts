@@ -49,6 +49,7 @@ export async function generateClassInsights(input: GenerateClassInsightsInput): 
 
 const prompt = ai.definePrompt({
   name: 'generateClassInsightsPrompt',
+  model: 'googleai/gemini-1.5-flash-latest',
   input: {schema: GenerateClassInsightsInputSchema},
   output: {schema: GenerateClassInsightsOutputSchema},
   prompt: `You are an experienced educational analyst and pedagogical advisor.

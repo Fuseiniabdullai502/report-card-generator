@@ -69,6 +69,7 @@ export async function generateReportInsights(
 
 const generateReportInsightsPrompt = ai.definePrompt({
   name: 'generateReportInsightsPrompt',
+  model: 'googleai/gemini-1.5-flash-latest',
   input: {schema: GenerateReportInsightsInputSchema},
   output: {schema: GenerateReportInsightsOutputSchema},
   prompt: `You are an academic advisor tasked with writing concise insights for a student's report card for the {{{currentAcademicTerm}}}.

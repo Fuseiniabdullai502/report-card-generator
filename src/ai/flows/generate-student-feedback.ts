@@ -44,6 +44,7 @@ export async function generateStudentFeedback(
 
 const generateStudentFeedbackPrompt = ai.definePrompt({
   name: 'generateStudentFeedbackPrompt',
+  model: 'googleai/gemini-1.5-flash-latest',
   input: {schema: GenerateStudentFeedbackInputSchema},
   output: {schema: GenerateStudentFeedbackOutputSchema},
   prompt: `You are a helpful teacher providing feedback to students.
