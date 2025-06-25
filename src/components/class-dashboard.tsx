@@ -174,8 +174,6 @@ export default function ClassPerformanceDashboard({
             genderStats: newStats.genderStats.map(g => ({ ...g })),   
           };
           
-          console.log('Sending the following data to AI for class insights:', JSON.stringify(aiInput, null, 2));
-
           const result = await getAiClassInsightsAction(aiInput);
           if (result.success && result.insights) {
             setAiAdvice(result.insights);
@@ -259,13 +257,19 @@ export default function ClassPerformanceDashboard({
             <AlertTriangle className="mr-3 h-6 w-6 text-destructive shrink-0 mt-1" />
             <div>
               <p className="font-semibold text-destructive">AI Insights Unavailable</p>
-              <p className="text-sm mt-1">The AI failed to generate insights. Here is the specific error:</p>
+              <p className="text-sm mt-1">The AI failed to generate insights. The error was:</p>
               <pre className="mt-2 p-2 bg-destructive/20 rounded text-xs font-mono whitespace-pre-wrap">
                   {aiError}
               </pre>
-              <p className="text-sm mt-2">
-                  <strong>This is often caused by an invalid or restricted GOOGLE_API_KEY. Please verify your key and check your Google AI Studio project for any issues.</strong>
+               <p className="text-sm mt-2">
+                  <strong>Troubleshooting Steps:</strong>
               </p>
+              <ol className="text-sm list-decimal list-inside mt-1 space-y-1">
+                  <li>Ensure your <strong>GOOGLE_API_KEY</strong> in the <code>.env.local</code> file is correct.</li>
+                  <li>This error often means the API key must be linked to a Google Cloud project with billing enabled.</li>
+                  <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="underline text-primary">Google AI Studio</a>, create a new key, and associate it with a Cloud project. You may need to enable the <strong>Generative Language API</strong> or <strong>Vertex AI API</strong> in that project.</li>
+                  <li>Google provides a free tier, so you are unlikely to be charged for development usage.</li>
+              </ol>
             </div>
           </div>
         </CardContent>
