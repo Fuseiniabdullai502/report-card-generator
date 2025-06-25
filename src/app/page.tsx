@@ -281,31 +281,14 @@ function AppContent() {
 
     const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
     
-    // Explicitly create a fresh, clean report object for the next student
+    // Create a fresh, clean report object for the next student using a deep copy
+    const newStudentBase = JSON.parse(JSON.stringify(defaultReportData));
+    
     const newStudentDataForForm: ReportData = {
-      // Reset student-specific fields to their default blank state
-      studentName: '',
-      gender: undefined,
-      daysAttended: null,
-      parentEmail: '',
-      parentPhoneNumber: '',
-      performanceSummary: '',
-      strengths: '',
-      areasForImprovement: '',
-      hobbies: [],
-      teacherFeedback: '',
-      subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
-      promotionStatus: undefined,
-      studentPhotoDataUri: undefined,
-      
-      // Carry over session-specific fields from the last entry
+      ...newStudentBase,
       ...newSessionDefaults,
-      
-      // Assign new unique identifiers for the next entry
       id: `unsaved-${Date.now()}`,
       studentEntryNumber: newNextStudentEntryNumber,
-      
-      // Reset calculated/server-side fields
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
@@ -712,4 +695,5 @@ export default function Home() {
     <AppContent />
   );
 }
- 
+
+    
