@@ -21,26 +21,33 @@ import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timest
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 
-function calculateSubjectFinalMark(subject: SubjectEntry): number {
+function calculateSubjectFinalMark(subject: SubjectEntry): number | null {
   const caMarkInput = subject.continuousAssessment;
   const examMarkInput = subject.examinationMark;
 
-  // Check if both are explicitly not entered
-  if ((caMarkInput === null || caMarkInput === undefined) && (examMarkInput === null || examMarkInput === undefined)) {
-    return 0;
+  const caVal = Number(caMarkInput);
+  const examVal = Number(examMarkInput);
+  
+  const caIsValid = caMarkInput !== null && caMarkInput !== undefined && !Number.isNaN(caVal);
+  const examIsValid = examMarkInput !== null && examMarkInput !== undefined && !Number.isNaN(examVal);
+
+  if (!caIsValid && !examIsValid) {
+    return null;
   }
 
-  // Safely coerce to number, default to 0 if invalid/missing. This prevents NaN propagation.
-  const caVal = (caMarkInput !== null && caMarkInput !== undefined && !Number.isNaN(Number(caMarkInput))) ? Number(caMarkInput) : 0;
-  const examVal = (examMarkInput !== null && examMarkInput !== undefined && !Number.isNaN(Number(examMarkInput))) ? Number(examMarkInput) : 0;
-  
-  const scaledCaMark = (caVal / 60) * 40;
-  const scaledExamMark = (examVal / 100) * 60;
+  const safeCaVal = caIsValid ? caVal : 0;
+  const safeExamVal = examIsValid ? examVal : 0;
 
+  const scaledCaMark = (safeCaVal / 60) * 40;
+  const scaledExamMark = (safeExamVal / 100) * 60;
+  
   let finalPercentageMark = scaledCaMark + scaledExamMark;
   finalPercentageMark = Math.min(finalPercentageMark, 100);
+  
+  if (Number.isNaN(finalPercentageMark)) {
+      return null;
+  }
 
-  // It's mathematically impossible for this to be NaN now, but parseFloat is good practice.
   return parseFloat(finalPercentageMark.toFixed(1));
 }
 
@@ -91,14 +98,18 @@ function AppContent() {
     const reportsWithAverages = listToProcess.map(report => {
       let totalScore = 0;
       let validSubjectCount = 0;
+      let hasValidSubjects = false;
       report.subjects.forEach(subject => {
         if (subject.subjectName && subject.subjectName.trim() !== '') {
+            hasValidSubjects = true;
             const finalMark = calculateSubjectFinalMark(subject);
-            totalScore += finalMark;
-            validSubjectCount++;
+            if (finalMark !== null) {
+                totalScore += finalMark;
+                validSubjectCount++;
+            }
         }
       });
-      const overallAverage = validSubjectCount > 0 ? parseFloat((totalScore / validSubjectCount).toFixed(2)) : 0;
+      const overallAverage = hasValidSubjects && validSubjectCount > 0 ? parseFloat((totalScore / validSubjectCount).toFixed(2)) : null;
       return { ...report, overallAverage };
     });
 
@@ -112,7 +123,7 @@ function AppContent() {
       actualRank++;
       if (report.overallAverage !== lastScore) {
         displayRankCounter = actualRank;
-        lastScore = report.overallAverage ?? 0;
+        lastScore = report.overallAverage ?? -1;
         return { ...report, rank: formatRankString(displayRankCounter, false) };
       } else {
         return { ...report, rank: formatRankString(displayRankCounter, true) };
@@ -120,7 +131,7 @@ function AppContent() {
     });
 
     for (let i = 0; i < rankedReports.length; i++) {
-        if (i > 0 && rankedReports[i].overallAverage === rankedReports[i-1].overallAverage) {
+        if (i > 0 && rankedReports[i].overallAverage !== null && rankedReports[i].overallAverage === rankedReports[i-1].overallAverage) {
             const baseRank = parseInt(rankedReports[i-1].rank!.replace('T-', '').replace(/(st|nd|rd|th)$/, ''));
             rankedReports[i].rank = formatRankString(baseRank, true);
              if (!rankedReports[i-1].rank?.startsWith('T-')) {
@@ -269,18 +280,39 @@ function AppContent() {
     setSessionDefaults(newSessionDefaults);
 
     const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
-    const newStudentBase = JSON.parse(JSON.stringify(defaultReportData));
     
-    setCurrentEditingReport({
-        ...newStudentBase,
-        ...newSessionDefaults,
-        id: `unsaved-${Date.now()}`,
-        studentEntryNumber: newNextStudentEntryNumber,
-        createdAt: undefined,
-        overallAverage: undefined,
-        rank: undefined,
-        teacherId: undefined,
-    });
+    // Explicitly create the blank report for the next student
+    const newStudentDataForForm: ReportData = {
+      // Student-specific fields are reset to their default blank state
+      studentName: '',
+      gender: undefined,
+      daysAttended: null,
+      parentEmail: '',
+      parentPhoneNumber: '',
+      performanceSummary: '',
+      strengths: '',
+      areasForImprovement: '',
+      hobbies: [],
+      teacherFeedback: '',
+      subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+      promotionStatus: undefined,
+      studentPhotoDataUri: undefined,
+      
+      // Session-specific fields are carried over from the last entry
+      ...newSessionDefaults,
+      
+      // New unique identifiers for the next entry
+      id: `unsaved-${Date.now()}`,
+      studentEntryNumber: newNextStudentEntryNumber,
+      
+      // Calculated fields are reset
+      createdAt: undefined,
+      overallAverage: undefined,
+      rank: undefined,
+      teacherId: undefined,
+    };
+    
+    setCurrentEditingReport(newStudentDataForForm);
     setNextStudentEntryNumber(newNextStudentEntryNumber);
     setFormKey(k => k + 1); // Force remount of the form for a clean reset
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -680,3 +712,4 @@ export default function Home() {
     <AppContent />
   );
 }
+ 
