@@ -281,9 +281,9 @@ function AppContent() {
 
     const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
     
-    // Explicitly create the blank report for the next student
+    // Explicitly create a fresh, clean report object for the next student
     const newStudentDataForForm: ReportData = {
-      // Student-specific fields are reset to their default blank state
+      // Reset student-specific fields to their default blank state
       studentName: '',
       gender: undefined,
       daysAttended: null,
@@ -298,14 +298,14 @@ function AppContent() {
       promotionStatus: undefined,
       studentPhotoDataUri: undefined,
       
-      // Session-specific fields are carried over from the last entry
+      // Carry over session-specific fields from the last entry
       ...newSessionDefaults,
       
-      // New unique identifiers for the next entry
+      // Assign new unique identifiers for the next entry
       id: `unsaved-${Date.now()}`,
       studentEntryNumber: newNextStudentEntryNumber,
       
-      // Calculated fields are reset
+      // Reset calculated/server-side fields
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
@@ -314,7 +314,7 @@ function AppContent() {
     
     setCurrentEditingReport(newStudentDataForForm);
     setNextStudentEntryNumber(newNextStudentEntryNumber);
-    setFormKey(k => k + 1); // Force remount of the form for a clean reset
+    setFormKey(k => k + 1); // This is crucial: forces the form to remount with new initial data
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
