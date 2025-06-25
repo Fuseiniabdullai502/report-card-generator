@@ -237,22 +237,28 @@ export default function SchoolPerformanceDashboard({
         setAiError(null);
         startAiTransition(async () => {
           try {
-            const aiInput: GenerateSchoolInsightsInput = {
+            const sanitizedAiInput: GenerateSchoolInsightsInput = {
               schoolName: schoolNameProp,
               academicTerm: academicTermProp,
-              overallSchoolAverage: newStats.overallSchoolAverage,
+              overallSchoolAverage: newStats.overallSchoolAverage ?? 0,
               totalStudentsInSchool: newStats.totalStudentsInSchool,
               numberOfClassesRepresented: newStats.numberOfClassesRepresented,
               classSummaries: newStats.classSummariesForUI.map(cs => ({
-                  className: cs.className,
-                  classAverage: cs.classAverage,
-                  numberOfStudents: cs.numberOfStudents
+                className: cs.className,
+                classAverage: cs.classAverage ?? 0,
+                numberOfStudents: cs.numberOfStudents,
               })),
-              overallSubjectStatsForSchool: newStats.overallSubjectStatsForSchoolUI.map(s => ({...s})),
-              overallGenderStatsForSchool: newStats.overallGenderStatsForSchoolUI.map(g => ({...g})),
+              overallSubjectStatsForSchool: newStats.overallSubjectStatsForSchoolUI.map(s => ({
+                ...s,
+                schoolAverageForSubject: s.schoolAverageForSubject ?? 0,
+              })),
+              overallGenderStatsForSchool: newStats.overallGenderStatsForSchoolUI.map(g => ({
+                ...g,
+                averageScore: g.averageScore ?? 0,
+              })),
             };
 
-            const result = await getAiSchoolInsightsAction(aiInput);
+            const result = await getAiSchoolInsightsAction(sanitizedAiInput);
             if (result.success && result.insights) {
               setAiSchoolAdvice(result.insights);
             } else {
@@ -339,7 +345,7 @@ export default function SchoolPerformanceDashboard({
                   <strong>Troubleshooting Steps:</strong>
               </p>
               <ol className="text-sm list-decimal list-inside mt-1 space-y-1">
-                  <li>Ensure your <strong>GOOGLE_API_KEY</strong> in the <code>.env.local</code> file is correct.</li>
+                  <li>Ensure your <strong>GOOGLE_API_KEY</strong> in the <code>.env.local</code> file is correct and saved.</li>
                   <li>This error often means the API key must be linked to a Google Cloud project with billing enabled.</li>
                   <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="underline text-primary">Google AI Studio</a>, create a new key, and associate it with a Cloud project. You may need to enable the <strong>Generative Language API</strong> or <strong>Vertex AI API</strong> in that project.</li>
                   <li>Google provides a free tier, so you are unlikely to be charged for development usage.</li>

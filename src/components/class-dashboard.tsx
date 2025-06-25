@@ -165,16 +165,22 @@ export default function ClassPerformanceDashboard({
       setAiError(null);
       startAiTransition(async () => {
         try {
-          const aiInput: GenerateClassInsightsInput = {
+          const sanitizedAiInput: GenerateClassInsightsInput = {
             className: classNameProp,
             academicTerm,
-            overallClassAverage: newStats.overallClassAverage,
+            overallClassAverage: newStats.overallClassAverage ?? 0,
             totalStudents: newStats.totalStudents,
-            subjectStats: newStats.subjectStats.map(s => ({ ...s })), 
-            genderStats: newStats.genderStats.map(g => ({ ...g })),   
+            subjectStats: newStats.subjectStats.map(s => ({
+              ...s,
+              classAverageForSubject: s.classAverageForSubject ?? 0,
+            })),
+            genderStats: newStats.genderStats.map(g => ({
+              ...g,
+              averageScore: g.averageScore ?? 0,
+            })),
           };
           
-          const result = await getAiClassInsightsAction(aiInput);
+          const result = await getAiClassInsightsAction(sanitizedAiInput);
           if (result.success && result.insights) {
             setAiAdvice(result.insights);
           } else {
@@ -265,7 +271,7 @@ export default function ClassPerformanceDashboard({
                   <strong>Troubleshooting Steps:</strong>
               </p>
               <ol className="text-sm list-decimal list-inside mt-1 space-y-1">
-                  <li>Ensure your <strong>GOOGLE_API_KEY</strong> in the <code>.env.local</code> file is correct.</li>
+                  <li>Ensure your <strong>GOOGLE_API_KEY</strong> in the <code>.env.local</code> file is correct and saved.</li>
                   <li>This error often means the API key must be linked to a Google Cloud project with billing enabled.</li>
                   <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="underline text-primary">Google AI Studio</a>, create a new key, and associate it with a Cloud project. You may need to enable the <strong>Generative Language API</strong> or <strong>Vertex AI API</strong> in that project.</li>
                   <li>Google provides a free tier, so you are unlikely to be charged for development usage.</li>
