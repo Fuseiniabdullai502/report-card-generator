@@ -29,7 +29,7 @@ export type GenerateStudentFeedbackInput = z.infer<
 >;
 
 const GenerateStudentFeedbackOutputSchema = z.object({
-  feedback: z.string().describe('The AI-generated personalized feedback for the student.'),
+  feedback: z.string().describe('The AI-generated personalized feedback for the student.').optional(),
 });
 
 export type GenerateStudentFeedbackOutput = z.infer<
@@ -71,6 +71,9 @@ const generateStudentFeedbackFlow = ai.defineFlow(
     if (!output) {
       throw new Error('AI failed to generate feedback. The model may not have returned the expected output format.');
     }
-    return output;
+    // Return the output, providing a default empty string if feedback is missing.
+    return {
+        feedback: output.feedback || ''
+    };
   }
 );

@@ -44,17 +44,20 @@ export type GenerateReportInsightsInput = z.infer<
   typeof GenerateReportInsightsInputSchema
 >;
 
-// Output schema is NOT exported as an object
+// Output schema is now optional to handle cases where the AI might not return all fields
 const GenerateReportInsightsOutputSchema = z.object({
   performanceSummary: z
     .string()
-    .describe('The AI-generated concise (1-3 sentences) overall performance summary for the student, including comparison if previous data was provided.'),
+    .describe('The AI-generated concise (1-3 sentences) overall performance summary for the student, including comparison if previous data was provided.')
+    .optional(),
   strengths: z
     .string()
-    .describe("The AI-generated brief list of the student's key strengths (e.g., 2-3 points), considering progress or sustained performance."),
+    .describe("The AI-generated brief list of the student's key strengths (e.g., 2-3 points), considering progress or sustained performance.")
+    .optional(),
   areasForImprovement: z
     .string()
-    .describe('The AI-generated brief list of areas where the student can improve (e.g., 2-3 points), considering any decline or persistent challenges.'),
+    .describe('The AI-generated brief list of areas where the student can improve (e.g., 2-3 points), considering any decline or persistent challenges.')
+    .optional(),
 });
 
 export type GenerateReportInsightsOutput = z.infer<
@@ -147,6 +150,11 @@ const generateReportInsightsFlow = ai.defineFlow(
     if (!output) {
       throw new Error('AI failed to generate insights based on the provided data. The model may not have returned the expected output format or the input was insufficient.');
     }
-    return output;
+    // Return the output, but provide default empty strings for any missing optional fields
+    return {
+        performanceSummary: output.performanceSummary || '',
+        strengths: output.strengths || '',
+        areasForImprovement: output.areasForImprovement || '',
+    };
   }
 );
