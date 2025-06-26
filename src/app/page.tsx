@@ -297,6 +297,11 @@ function AppContent() {
     setCurrentEditingReport(newStudentDataForForm);
     setNextStudentEntryNumber(newNextStudentEntryNumber);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    toast({
+      title: "Form Cleared",
+      description: "Ready for the next student's report entry.",
+    });
   };
 
 

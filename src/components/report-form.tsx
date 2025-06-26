@@ -150,11 +150,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const { reset } = form;
 
   useEffect(() => {
-    // This check is crucial. It ensures we only reset the form's state
-    // when the data for a genuinely new student is passed in, identified
-    // by a change in studentEntryNumber. This prevents an infinite loop
-    // during live updates of the same student's report.
-    if (initialData && initialData.studentEntryNumber !== form.getValues('studentEntryNumber')) {
+    // This effect now resets the form only when the ID of the initialData prop
+    // changes, which indicates a new report is being edited (e.g., after saving).
+    // This prevents the infinite loop while ensuring the form resets correctly.
+    if (initialData && initialData.id !== form.getValues('id')) {
       reset(initialData);
     }
   }, [initialData, reset, form]);
