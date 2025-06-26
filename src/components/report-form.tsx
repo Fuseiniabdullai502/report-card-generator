@@ -150,10 +150,14 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const { reset } = form;
 
   useEffect(() => {
-    // Only reset the form if the ID of the report data changes.
-    // This happens when a new report is created after saving, preventing a loop on every keystroke.
-    reset(initialData);
-  }, [initialData?.id, reset]);
+    // This check is crucial. It ensures we only reset the form's state
+    // when the data for a genuinely new student is passed in, identified
+    // by a change in studentEntryNumber. This prevents an infinite loop
+    // during live updates of the same student's report.
+    if (initialData && initialData.studentEntryNumber !== form.getValues('studentEntryNumber')) {
+      reset(initialData);
+    }
+  }, [initialData, reset, form]);
 
   useEffect(() => {
     const subscription = form.watch((value) => {
