@@ -71,10 +71,12 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
   const [comparisonTermSelection, setComparisonTermSelection] = useState<string>('none');
 
+  // This effect syncs the form when the parent wants to load a completely new student
   useEffect(() => {
     setFormData(initialData);
-  }, [initialData]);
+  }, [initialData.id]); // Use a stable identifier like the ID to prevent infinite loops
 
+  // This effect updates the parent for the live preview
   useEffect(() => {
     onFormUpdate(formData);
   }, [formData, onFormUpdate]);
