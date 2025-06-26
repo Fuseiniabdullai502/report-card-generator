@@ -147,6 +147,13 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     defaultValues: initialData,
   });
 
+  const { reset } = form;
+
+  useEffect(() => {
+    if (initialData) {
+      reset(initialData);
+    }
+  }, [initialData, reset]);
 
   useEffect(() => {
     const subscription = form.watch((value) => {

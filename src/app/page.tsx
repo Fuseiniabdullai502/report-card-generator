@@ -80,7 +80,6 @@ function AppContent() {
   const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
   const [sessionDefaults, setSessionDefaults] = useState<Partial<ReportData>>({});
   const { toast } = useToast();
-  const [formKey, setFormKey] = useState(0);
 
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState<number>(0);
   const [isClassDashboardOpen, setIsClassDashboardOpen] = useState(false);
@@ -297,7 +296,6 @@ function AppContent() {
     
     setCurrentEditingReport(newStudentDataForForm);
     setNextStudentEntryNumber(newNextStudentEntryNumber);
-    setFormKey(k => k + 1); // This is crucial: forces the form to remount with new initial data
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -326,7 +324,6 @@ function AppContent() {
         rank: undefined,
         teacherId: undefined,
      });
-     setFormKey(k => k + 1);
   }
 
   const handlePrint = () => {
@@ -527,7 +524,6 @@ function AppContent() {
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-5 gap-8">
         <section className="lg:col-span-2 no-print space-y-4">
           <ReportForm
-            key={formKey}
             onFormUpdate={handleFormUpdate}
             initialData={currentEditingReport}
             reportPrintListForHistory={reportPrintList}
@@ -695,5 +691,3 @@ export default function Home() {
     <AppContent />
   );
 }
-
-    
