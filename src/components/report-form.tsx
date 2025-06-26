@@ -147,6 +147,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     defaultValues: initialData,
   });
 
+  // Removed the useEffect that called form.reset, as the key prop on the component handles this now.
+
   useEffect(() => {
     const subscription = form.watch((value) => {
       onFormUpdate(value as ReportData);

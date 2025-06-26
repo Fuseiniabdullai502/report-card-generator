@@ -196,7 +196,7 @@ function AppContent() {
 
 
   const handleFormUpdate = useCallback((data: ReportData) => {
-    setCurrentEditingReport({ ...data });
+    setCurrentEditingReport(prev => ({...prev, ...data}));
   }, []);
 
   const handleSaveReportAndResetForm = async (formDataFromRHF: ReportData) => {
