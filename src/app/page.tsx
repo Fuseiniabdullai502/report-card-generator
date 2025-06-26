@@ -199,36 +199,36 @@ function AppContent() {
     setCurrentEditingReport(prev => ({...prev, ...data}));
   }, []);
 
-  const handleSaveReportAndResetForm = async (formDataFromRHF: ReportData) => {
+  const handleSaveReportAndResetForm = async (formDataFromForm: ReportData) => {
     const reportToSaveForFirestore = {
-      studentEntryNumber: formDataFromRHF.studentEntryNumber,
-      studentName: formDataFromRHF.studentName || '',
-      className: formDataFromRHF.className || '',
-      gender: formDataFromRHF.gender || null,
-      schoolName: formDataFromRHF.schoolName || '',
-      schoolLogoDataUri: formDataFromRHF.schoolLogoDataUri || null,
-      academicYear: formDataFromRHF.academicYear || '',
-      academicTerm: formDataFromRHF.academicTerm || '',
-      selectedTemplateId: formDataFromRHF.selectedTemplateId || 'default',
-      daysAttended: formDataFromRHF.daysAttended === undefined || formDataFromRHF.daysAttended === null ? null : Number(formDataFromRHF.daysAttended),
-      totalSchoolDays: formDataFromRHF.totalSchoolDays === undefined || formDataFromRHF.totalSchoolDays === null ? null : Number(formDataFromRHF.totalSchoolDays),
-      parentEmail: formDataFromRHF.parentEmail || "",
-      parentPhoneNumber: formDataFromRHF.parentPhoneNumber || "",
-      performanceSummary: formDataFromRHF.performanceSummary || '',
-      strengths: formDataFromRHF.strengths || '',
-      areasForImprovement: formDataFromRHF.areasForImprovement || '',
-      hobbies: formDataFromRHF.hobbies || [],
-      teacherFeedback: formDataFromRHF.teacherFeedback || "",
-      instructorContact: formDataFromRHF.instructorContact || "",
-      subjects: formDataFromRHF.subjects.map(s => ({
+      studentEntryNumber: formDataFromForm.studentEntryNumber,
+      studentName: formDataFromForm.studentName || '',
+      className: formDataFromForm.className || '',
+      gender: formDataFromForm.gender || null,
+      schoolName: formDataFromForm.schoolName || '',
+      schoolLogoDataUri: formDataFromForm.schoolLogoDataUri || null,
+      academicYear: formDataFromForm.academicYear || '',
+      academicTerm: formDataFromForm.academicTerm || '',
+      selectedTemplateId: formDataFromForm.selectedTemplateId || 'default',
+      daysAttended: formDataFromForm.daysAttended === undefined || formDataFromForm.daysAttended === null ? null : Number(formDataFromForm.daysAttended),
+      totalSchoolDays: formDataFromForm.totalSchoolDays === undefined || formDataFromForm.totalSchoolDays === null ? null : Number(formDataFromForm.totalSchoolDays),
+      parentEmail: formDataFromForm.parentEmail || "",
+      parentPhoneNumber: formDataFromForm.parentPhoneNumber || "",
+      performanceSummary: formDataFromForm.performanceSummary || '',
+      strengths: formDataFromForm.strengths || '',
+      areasForImprovement: formDataFromForm.areasForImprovement || '',
+      hobbies: formDataFromForm.hobbies || [],
+      teacherFeedback: formDataFromForm.teacherFeedback || "",
+      instructorContact: formDataFromForm.instructorContact || "",
+      subjects: formDataFromForm.subjects.map(s => ({
         subjectName: s.subjectName || '',
         continuousAssessment: s.continuousAssessment === undefined || s.continuousAssessment === null ? null : Number(s.continuousAssessment),
         examinationMark: s.examinationMark === undefined || s.examinationMark === null ? null : Number(s.examinationMark),
       })),
-      promotionStatus: formDataFromRHF.promotionStatus || null,
-      studentPhotoDataUri: formDataFromRHF.studentPhotoDataUri || null,
-      headMasterSignatureDataUri: formDataFromRHF.headMasterSignatureDataUri || null,
-      clientSideId: formDataFromRHF.id,
+      promotionStatus: formDataFromForm.promotionStatus || null,
+      studentPhotoDataUri: formDataFromForm.studentPhotoDataUri || null,
+      headMasterSignatureDataUri: formDataFromForm.headMasterSignatureDataUri || null,
+      clientSideId: formDataFromForm.id,
       createdAt: serverTimestamp(),
     };
 
@@ -529,7 +529,6 @@ function AppContent() {
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-5 gap-8">
         <section className="lg:col-span-2 no-print space-y-4">
           <ReportForm
-            key={currentEditingReport.studentEntryNumber}
             onFormUpdate={handleFormUpdate}
             initialData={currentEditingReport}
             reportPrintListForHistory={reportPrintList}
