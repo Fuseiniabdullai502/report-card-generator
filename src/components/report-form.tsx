@@ -150,10 +150,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const { reset } = form;
 
   useEffect(() => {
-    if (initialData) {
-      reset(initialData);
-    }
-  }, [initialData, reset]);
+    // Only reset the form if the ID of the report data changes.
+    // This happens when a new report is created after saving, preventing a loop on every keystroke.
+    reset(initialData);
+  }, [initialData?.id, reset]);
 
   useEffect(() => {
     const subscription = form.watch((value) => {
