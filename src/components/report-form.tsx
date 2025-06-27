@@ -71,7 +71,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     // This effect now ONLY runs when a genuinely new student report is passed in.
     // It compares the `id` to ensure it doesn't re-run on simple edits.
     setFormData(initialData);
-  }, [initialData]);
+  }, [initialData.id]); // FIX: Depend on a stable primitive value (id) instead of the object reference.
 
   useEffect(() => {
     onFormUpdate(formData);
