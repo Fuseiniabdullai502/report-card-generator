@@ -30,7 +30,6 @@ interface ReportFormProps {
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 
 const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
-const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
 const ADD_CUSTOM_HOBBY_VALUE = "--add-custom-hobby--";
 
 const classLevels = ["KG1", "KG2", "BASIC 1", "BASIC 2", "BASIC 3", "BASIC 4", "BASIC 5", "BASIC 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"];
@@ -61,10 +60,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [customSubjectInputValue, setCustomSubjectInputValue] = useState('');
   const [currentCustomSubjectTargetIndex, setCurrentCustomSubjectTargetIndex] = useState<number | null>(null);
 
-  const [customClassNames, setCustomClassNames] = useState<string[]>([]);
-  const [isCustomClassNameDialogOpen, setIsCustomClassNameDialogOpen] = useState(false);
-  const [customClassNameInputValue, setCustomClassNameInputValue] = useState('');
-
   const [customHobbies, setCustomHobbies] = useState<string[]>([]);
   const [isCustomHobbyDialogOpen, setIsCustomHobbyDialogOpen] = useState(false);
   const [customHobbyInputValue, setCustomHobbyInputValue] = useState('');
@@ -73,8 +68,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [comparisonTermSelection, setComparisonTermSelection] = useState<string>('none');
 
   useEffect(() => {
+    // This effect now ONLY runs when a genuinely new student report is passed in.
+    // It compares the `id` to ensure it doesn't re-run on simple edits.
     setFormData(initialData);
-  }, [initialData.id]);
+  }, [initialData]);
 
   useEffect(() => {
     onFormUpdate(formData);
@@ -244,15 +241,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
           setIsCustomSubjectDialogOpen(false);
       }
   };
-  const handleAddCustomClassNameToListAndForm = () => {
-      const newClassName = customClassNameInputValue.trim();
-      if (newClassName === '') return;
-      handleSelectChange('className', newClassName);
-      if (!classLevels.includes(newClassName) && !customClassNames.includes(newClassName)) {
-          setCustomClassNames(prev => [...new Set([...prev, newClassName])]);
-      }
-      setIsCustomClassNameDialogOpen(false);
-  };
+
   const handleAddCustomHobbyToListAndForm = () => {
       const newHobby = customHobbyInputValue.trim();
       if (newHobby === '') return;
@@ -274,7 +263,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             Report Details (Entry #{formData.studentEntryNumber})
           </CardTitle>
         </div>
-        <CardDescription>Enter student information, performance, and subject marks.</CardDescription>
+        <CardDescription>Enter student information, performance, and subject marks for class: <span className="font-semibold text-primary">{formData.className || "N/A"}</span></CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -288,22 +277,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                    <datalist id="studentNameHistoryDatalist">
                     {studentNameHistory.map((name, index) => <option key={`history-${index}`} value={name} />)}
                   </datalist>
-                </div>
-                 {/* Class Name */}
-                <div className="space-y-2">
-                    <Label htmlFor="className" className="flex items-center"><Users className="mr-2 h-4 w-4" />Class Name</Label>
-                    <Select value={formData.className || ''} onValueChange={value => {
-                        if (value === ADD_CUSTOM_CLASS_VALUE) setIsCustomClassNameDialogOpen(true);
-                        else handleSelectChange('className', value);
-                    }}>
-                        <SelectTrigger id="className"><SelectValue placeholder="Select or add class" /></SelectTrigger>
-                        <SelectContent>
-                            {classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
-                            {customClassNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-                            <SelectSeparator />
-                            <SelectItem value={ADD_CUSTOM_CLASS_VALUE}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
-                        </SelectContent>
-                    </Select>
                 </div>
                 {/* Template */}
                 <div className="space-y-2">
@@ -522,13 +495,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
         <DialogFooter><Button onClick={handleAddCustomSubjectToListAndForm}>Add Subject</Button></DialogFooter>
       </DialogContent>
     </Dialog>
-    <Dialog open={isCustomClassNameDialogOpen} onOpenChange={setIsCustomClassNameDialogOpen}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Add Class Name</DialogTitle></DialogHeader>
-        <Input value={customClassNameInputValue} onChange={e => setCustomClassNameInputValue(e.target.value)} placeholder="e.g., Form 1 Gold"/>
-        <DialogFooter><Button onClick={handleAddCustomClassNameToListAndForm}>Add Class</Button></DialogFooter>
-      </DialogContent>
-    </Dialog>
+
     <Dialog open={isCustomHobbyDialogOpen} onOpenChange={setIsCustomHobbyDialogOpen}>
       <DialogContent>
         <DialogHeader><DialogTitle>Add Hobby</DialogTitle></DialogHeader>

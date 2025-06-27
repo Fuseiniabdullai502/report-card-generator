@@ -11,8 +11,12 @@ import ImportStudentsDialog from '@/components/import-students-dialog';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
@@ -20,6 +24,9 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
+const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
+const classLevels = ["KG1", "KG2", "BASIC 1", "BASIC 2", "BASIC 3", "BASIC 4", "BASIC 5", "BASIC 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"];
+
 
 function calculateSubjectFinalMark(subject: SubjectEntry): number | null {
   const caMarkInput = subject.continuousAssessment;
@@ -86,6 +93,10 @@ function AppContent() {
   const [isSchoolDashboardOpen, setIsSchoolDashboardOpen] = useState(false);
   const [isImportStudentsDialogOpen, setIsImportStudentsDialogOpen] = useState(false);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
+  
+  const [customClassNames, setCustomClassNames] = useState<string[]>([]);
+  const [isCustomClassNameDialogOpen, setIsCustomClassNameDialogOpen] = useState(false);
+  const [customClassNameInputValue, setCustomClassNameInputValue] = useState('');
 
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
@@ -155,8 +166,13 @@ function AppContent() {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedReports: ReportData[] = [];
       let maxEntryNum = 0;
+      const classNamesFromDB = new Set<string>();
+
       querySnapshot.forEach((doc) => {
         const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp | null; clientSideId?: string };
+        if (data.className) {
+            classNamesFromDB.add(data.className);
+        }
         fetchedReports.push({
             ...data,
             id: doc.id,
@@ -168,6 +184,8 @@ function AppContent() {
             maxEntryNum = data.studentEntryNumber;
         }
       });
+      
+      setCustomClassNames(prev => [...new Set([...prev, ...Array.from(classNamesFromDB)])]);
       calculateAndSetRanks(fetchedReports);
       setNextStudentEntryNumber(maxEntryNum + 1);
       setIsLoadingReports(false);
@@ -399,6 +417,29 @@ function AppContent() {
     setCurrentPreviewIndex(prev => Math.max(0, prev - 1));
   };
 
+  const handleSessionClassChange = (value: string) => {
+    if (value === ADD_CUSTOM_CLASS_VALUE) {
+        setIsCustomClassNameDialogOpen(true);
+    } else {
+        const newSessionDefaults = { ...sessionDefaults, className: value };
+        setSessionDefaults(newSessionDefaults);
+        // Also update the current form in case the user is editing
+        setCurrentEditingReport(prev => ({...prev, className: value}));
+    }
+  };
+
+  const handleAddCustomClassNameToListAndForm = () => {
+      const newClassName = customClassNameInputValue.trim();
+      if (newClassName === '') return;
+      handleSessionClassChange(newClassName);
+      if (!classLevels.includes(newClassName) && !customClassNames.includes(newClassName)) {
+          setCustomClassNames(prev => [...new Set([...prev, newClassName])]);
+      }
+      setIsCustomClassNameDialogOpen(false);
+      setCustomClassNameInputValue('');
+  };
+
+
   const currentClassNameForDashboard = useMemo(() => {
     if (reportsCount > 0 && reportPrintList[currentPreviewIndex]) {
       return reportPrintList[currentPreviewIndex].className || "N/A";
@@ -547,12 +588,35 @@ function AppContent() {
           <ThemeToggleButton />
         </div>
       </header>
+      
+      <Card className="mb-8 p-4 no-print">
+        <CardHeader className="p-2">
+            <CardTitle className="text-lg flex items-center"><Users className="mr-2 h-5 w-5 text-primary"/>Session Controls</CardTitle>
+            <CardDescription className="text-xs">Set the class for the current data entry session. This will apply to all new reports.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-2">
+            <div className="max-w-sm">
+                <Label htmlFor="sessionClassName" className="text-sm font-medium">Current Class</Label>
+                <Select value={sessionDefaults.className || ''} onValueChange={handleSessionClassChange}>
+                    <SelectTrigger id="sessionClassName"><SelectValue placeholder="Select or add class" /></SelectTrigger>
+                    <SelectContent>
+                        {classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
+                        {customClassNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                        <SelectSeparator />
+                        <SelectItem value={ADD_CUSTOM_CLASS_VALUE}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardContent>
+      </Card>
+
 
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-5 gap-8">
         <section className="lg:col-span-2 no-print space-y-4">
           <ReportForm
             onFormUpdate={handleFormUpdate}
             initialData={currentEditingReport}
+            key={currentEditingReport.id}
             reportPrintListForHistory={reportPrintList}
             onSaveReport={handleSaveReportAndResetForm}
             onResetForm={handleResetToBlankForm}
@@ -684,6 +748,15 @@ function AppContent() {
         <p>&copy; {new Date().getFullYear()} Report Card Generator. Professionally designed for educators.</p>
       </footer>
     </div>
+
+    <Dialog open={isCustomClassNameDialogOpen} onOpenChange={setIsCustomClassNameDialogOpen}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Add Class Name</DialogTitle></DialogHeader>
+        <Input value={customClassNameInputValue} onChange={e => setCustomClassNameInputValue(e.target.value)} placeholder="e.g., Form 1 Gold"/>
+        <DialogFooter><Button onClick={handleAddCustomClassNameToListAndForm}>Add Class</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     {isClassDashboardOpen && (
         <ClassPerformanceDashboard
             isOpen={isClassDashboardOpen}
