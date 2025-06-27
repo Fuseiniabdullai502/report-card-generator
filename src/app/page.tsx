@@ -368,28 +368,25 @@ function AppContent() {
     }
   };
 
-  const handleDownloadData = () => {
+  const handleDownloadAsPdf = () => {
     if (reportPrintList.length === 0) {
       toast({
-        title: "No Reports in List",
-        description: "Please add reports to the list before downloading data.",
+        title: "No Reports to Download",
+        description: "Please add reports to the list before downloading as a PDF.",
         variant: "destructive",
       });
       return;
     }
 
-    const dataStr = JSON.stringify(reportPrintList, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const dataUrl = URL.createObjectURL(dataBlob);
-    const exportFileDefaultName = `report_cards_data_${new Date().toISOString().slice(0,10)}.json`;
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUrl);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    document.body.appendChild(linkElement);
-    linkElement.click();
-    linkElement.remove();
-    URL.revokeObjectURL(dataUrl);
-    toast({ title: "Data Downloaded", description: "Current report list data has been downloaded." });
+    toast({
+      title: "Preparing PDF Download...",
+      description: "Your browser's print dialog will open. Please select 'Save as PDF' as the destination.",
+    });
+
+    // A small delay can help ensure the toast is visible before the print dialog blocks the UI
+    setTimeout(() => {
+      window.print();
+    }, 500);
   };
 
   const reportsCount = reportPrintList.length;
@@ -617,9 +614,9 @@ function AppContent() {
                        <Building className="mr-2 h-4 w-4" />
                        School Overview
                      </Button>
-                    <Button onClick={handleDownloadData} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm">
+                    <Button onClick={handleDownloadAsPdf} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm">
                       <Download className="mr-2 h-4 w-4" />
-                      Download Data
+                      Download as PDF
                     </Button>
                     <Button onClick={handlePrint} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm">
                       <Printer className="mr-2 h-4 w-4" />
