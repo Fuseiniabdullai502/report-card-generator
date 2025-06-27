@@ -495,26 +495,6 @@ function AppContent() {
   };
 
 
-  const currentClassNameForDashboard = useMemo(() => {
-    if (reportsCount > 0 && filteredReports[currentPreviewIndex]) {
-      return filteredReports[currentPreviewIndex].className || "N/A";
-    }
-    const classNamesInList = new Set(filteredReports.map(r => r.className).filter(Boolean));
-    if (classNamesInList.size === 1) return classNamesInList.values().next().value;
-    if (classNamesInList.size > 1) return "Multiple Classes";
-    return currentEditingReport.className || "N/A";
-  }, [filteredReports, currentPreviewIndex, currentEditingReport.className, reportsCount]);
-
-  const currentAcademicTermForDashboard = useMemo(() => {
-     if (reportsCount > 0 && filteredReports[currentPreviewIndex]) {
-      return filteredReports[currentPreviewIndex].academicTerm || "N/A";
-    }
-    const termsInList = new Set(filteredReports.map(r => r.academicTerm).filter(Boolean));
-    if (termsInList.size === 1) return termsInList.values().next().value;
-    if (termsInList.size > 1) return "Multiple Terms";
-    return currentEditingReport.academicTerm || "N/A";
-  }, [filteredReports, currentPreviewIndex, currentEditingReport.academicTerm, reportsCount]);
-
   const schoolNameForDashboard = useMemo(() => {
     return sessionDefaults.schoolName || currentEditingReport.schoolName || "School";
   }, [sessionDefaults.schoolName, currentEditingReport.schoolName]);
@@ -875,9 +855,9 @@ function AppContent() {
         <ClassPerformanceDashboard
             isOpen={isClassDashboardOpen}
             onOpenChange={setIsClassDashboardOpen}
-            reports={filteredReports}
-            classNameProp={currentClassNameForDashboard}
-            academicTerm={currentAcademicTermForDashboard}
+            allReports={allRankedReports}
+            availableClasses={availableClassesForFilter.filter(c => c !== 'all')}
+            initialClassName={printFilterClass === 'all' ? (availableClassesForFilter[1] || '') : printFilterClass}
         />
     )}
     {isSchoolDashboardOpen && (

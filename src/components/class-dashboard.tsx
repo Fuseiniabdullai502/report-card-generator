@@ -15,19 +15,21 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader as ShadcnUITableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info } from 'lucide-react';
+import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, FolderDown } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
 import type { GenerateClassInsightsOutput, GenerateClassInsightsInput } from '@/ai/flows/generate-class-insights-flow';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 interface ClassPerformanceDashboardProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  reports: ReportData[];
-  classNameProp: string;
-  academicTerm: string;
+  allReports: ReportData[];
+  availableClasses: string[];
+  initialClassName: string;
 }
 
 interface SubjectPerformanceStatForUI {
@@ -85,16 +87,39 @@ function calculateInternalSubjectFinalMark(subject: SubjectEntry): number | null
 export default function ClassPerformanceDashboard({
   isOpen,
   onOpenChange,
-  reports,
-  classNameProp,
-  academicTerm,
+  allReports,
+  availableClasses,
+  initialClassName,
 }: ClassPerformanceDashboardProps) {
+  const [selectedClass, setSelectedClass] = useState(initialClassName);
   const [classStats, setClassStats] = useState<ClassStatistics | null>(null);
   const [aiAdvice, setAiAdvice] = useState<GenerateClassInsightsOutput | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isLoadingAi, startAiTransition] = useTransition();
   const [aiError, setAiError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen) {
+      const validInitial = availableClasses.includes(initialClassName) && initialClassName;
+      const defaultClass = availableClasses[0] || '';
+      setSelectedClass(validInitial || defaultClass);
+    }
+  }, [isOpen, initialClassName, availableClasses]);
+
+  const reports = useMemo(() => {
+    return allReports.filter(report => report.className === selectedClass);
+  }, [allReports, selectedClass]);
+  
+  const academicTerm = useMemo(() => {
+    if (reports.length > 0) {
+      const terms = new Set(reports.map(r => r.academicTerm).filter(Boolean));
+      if (terms.size === 1) return terms.values().next().value;
+      return "Multiple Terms";
+    }
+    return "";
+  }, [reports]);
+
 
   useEffect(() => {
     if (isOpen && reports.length > 0) {
@@ -166,7 +191,7 @@ export default function ClassPerformanceDashboard({
       startAiTransition(async () => {
         try {
           const sanitizedAiInput: GenerateClassInsightsInput = {
-            className: classNameProp,
+            className: selectedClass,
             academicTerm,
             overallClassAverage: newStats.overallClassAverage ?? 0,
             totalStudents: newStats.totalStudents,
@@ -204,7 +229,7 @@ export default function ClassPerformanceDashboard({
       setAiError(null);
       setIsLoadingStats(false);
     }
-  }, [isOpen, reports, classNameProp, academicTerm, toast]); 
+  }, [isOpen, reports, selectedClass, academicTerm, toast]); 
 
   const handlePrint = () => {
     if (!classStats || reports.length === 0) {
@@ -347,12 +372,28 @@ export default function ClassPerformanceDashboard({
         className="max-w-4xl w-[90vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden"
       >
         <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
-          <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
-            <BarChart3 className="mr-3 h-6 w-6" />
-            Class Performance Dashboard: {classNameProp}
-          </ShadcnDialogTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
+              <BarChart3 className="mr-3 h-6 w-6" />
+              Class Performance Dashboard
+            </ShadcnDialogTitle>
+            <Select value={selectedClass} onValueChange={setSelectedClass} disabled={availableClasses.length === 0}>
+              <SelectTrigger className="w-full sm:w-[250px]" title="Select a class to view its dashboard">
+                  <div className="flex items-center gap-2">
+                      <FolderDown className="h-4 w-4 text-primary" />
+                      <SelectValue placeholder="Select a class..." />
+                  </div>
+              </SelectTrigger>
+              <SelectContent>
+                  {availableClasses.map(cls => (
+                      <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                  ))}
+                  {availableClasses.length === 0 && <SelectItem value="" disabled>No classes available</SelectItem>}
+              </SelectContent>
+            </Select>
+          </div>
           <ShadcnDialogDescription className="text-xs text-muted-foreground pt-1">
-            {academicTerm} - Insights and statistics for the class. Click "Print Dashboard" to open browser print preview.
+            {selectedClass ? `${selectedClass} - ${academicTerm}` : "Select a class to view its dashboard"}
           </ShadcnDialogDescription>
         </ShadcnDialogHeader>
         
@@ -361,7 +402,7 @@ export default function ClassPerformanceDashboard({
           className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-6 space-y-6"
         >
             <div id="dashboard-print-header" className="dashboard-print-header hidden print:block px-6 pt-6 pb-4 mb-4 border-b">
-                <h2 className="text-xl font-bold">Class Performance Dashboard: {classNameProp} ({academicTerm})</h2>
+                <h2 className="text-xl font-bold">Class Performance Dashboard: {selectedClass} ({academicTerm})</h2>
                 <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
             </div>
 
@@ -378,7 +419,7 @@ export default function ClassPerformanceDashboard({
                         <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Info className="mr-2 h-5 w-5" />No Reports Available</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground">There are no student reports in the print list to generate a class dashboard. Please add reports first.</p>
+                        <p className="text-muted-foreground">There are no student reports for class '{selectedClass}' to generate a dashboard. Please add reports or select a different class.</p>
                     </CardContent>
                 </Card>
             )}
