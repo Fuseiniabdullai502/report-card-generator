@@ -199,6 +199,31 @@ function AppContent() {
     setCurrentEditingReport(prev => ({...prev, ...data}));
   }, []);
 
+  const handleResetToBlankForm = useCallback(() => {
+    const newNextStudentEntryNumber = nextStudentEntryNumber; // Use the current next number
+
+    const newStudentBase = JSON.parse(JSON.stringify(defaultReportData));
+    
+    const newStudentDataForForm: ReportData = {
+      ...newStudentBase,
+      ...sessionDefaults, // Apply session defaults
+      id: `unsaved-${Date.now()}`,
+      studentEntryNumber: newNextStudentEntryNumber,
+      createdAt: undefined,
+      overallAverage: undefined,
+      rank: undefined,
+      teacherId: undefined,
+    };
+    
+    setCurrentEditingReport(newStudentDataForForm);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    toast({
+      title: "Form Cleared",
+      description: "Ready for a new student's report entry.",
+    });
+  }, [nextStudentEntryNumber, sessionDefaults, toast]);
+
   const handleSaveReportAndResetForm = async (formDataFromForm: ReportData) => {
     const reportToSaveForFirestore = {
       studentEntryNumber: formDataFromForm.studentEntryNumber,
@@ -533,6 +558,7 @@ function AppContent() {
             initialData={currentEditingReport}
             reportPrintListForHistory={reportPrintList}
             onSaveReport={handleSaveReportAndResetForm}
+            onResetForm={handleResetToBlankForm}
           />
         </section>
 

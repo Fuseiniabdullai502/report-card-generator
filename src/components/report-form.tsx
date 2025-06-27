@@ -24,6 +24,7 @@ interface ReportFormProps {
   initialData: ReportData;
   reportPrintListForHistory?: ReportData[];
   onSaveReport: (data: ReportData) => Promise<void>;
+  onResetForm: () => void;
 }
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
@@ -48,7 +49,7 @@ const reportTemplateOptions = [
     { id: 'creativeTeal', name: 'Creative Teal' },
 ];
 
-export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory, onSaveReport }: ReportFormProps) {
+export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory, onSaveReport, onResetForm }: ReportFormProps) {
   const [formData, setFormData] = useState<ReportData>(initialData);
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
@@ -71,12 +72,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
   const [comparisonTermSelection, setComparisonTermSelection] = useState<string>('none');
 
-  // This effect syncs the form when the parent wants to load a completely new student
   useEffect(() => {
     setFormData(initialData);
-  }, [initialData.id]); // Use a stable identifier like the ID to prevent infinite loops
+  }, [initialData.id]);
 
-  // This effect updates the parent for the live preview
   useEffect(() => {
     onFormUpdate(formData);
   }, [formData, onFormUpdate]);
@@ -505,6 +504,10 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
               <Button type="submit" className="flex-1" disabled={isReportInsightsAiLoading || isTeacherFeedbackAiLoading}>
                 <ListPlus className="mr-2 h-4 w-4" />
                 Add Report to List
+              </Button>
+              <Button type="button" variant="outline" className="flex-1" onClick={onResetForm}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Clear for New Entry
               </Button>
             </div>
         </form>
