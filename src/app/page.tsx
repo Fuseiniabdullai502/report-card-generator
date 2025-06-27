@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown, LayoutTemplate } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
@@ -28,6 +28,14 @@ export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
 const classLevels = ["KG1", "KG2", "BASIC 1", "BASIC 2", "BASIC 3", "BASIC 4", "BASIC 5", "BASIC 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"];
 const academicTermOptions = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
+const reportTemplateOptions = [
+    { id: 'default', name: 'Default Template' },
+    { id: 'professionalBlue', name: 'Professional Blue' },
+    { id: 'elegantGreen', name: 'Elegant Green' },
+    { id: 'minimalistGray', name: 'Minimalist Gray' },
+    { id: 'academicRed', name: 'Academic Red' },
+    { id: 'creativeTeal', name: 'Creative Teal' },
+];
 
 
 function calculateSubjectFinalMark(subject: SubjectEntry): number | null {
@@ -625,7 +633,7 @@ function AppContent() {
             <CardDescription className="text-xs">Set defaults for the current data entry session. These apply to all new reports.</CardDescription>
         </CardHeader>
         <CardContent className="p-2 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 <div className="space-y-1">
                     <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
                     <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" />
@@ -652,6 +660,15 @@ function AppContent() {
                         <SelectTrigger id="sessionAcademicTerm"><SelectValue placeholder="Select term/semester" /></SelectTrigger>
                         <SelectContent>
                             {academicTermOptions.map(term => <SelectItem key={term} value={term}>{term}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-1">
+                    <Label htmlFor="sessionTemplate" className="text-sm font-medium">Report Template</Label>
+                    <Select value={sessionDefaults.selectedTemplateId || 'default'} onValueChange={value => handleSessionDefaultChange('selectedTemplateId', value)}>
+                        <SelectTrigger id="sessionTemplate"><SelectValue placeholder="Select a template" /></SelectTrigger>
+                        <SelectContent>
+                            {reportTemplateOptions.map(option => <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -872,5 +889,3 @@ export default function Home() {
     <AppContent />
   );
 }
-
-    

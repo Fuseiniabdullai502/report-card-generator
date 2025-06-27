@@ -14,7 +14,7 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction } from '@/app/actions';
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
-import { Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, LayoutTemplate, History, ListPlus } from 'lucide-react';
+import { Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, History, ListPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -37,14 +37,6 @@ const genderOptions = ["Male", "Female"];
 const promotionStatusOptions = ["Promoted", "Repeated", "Graduated", "Under Review"];
 const predefinedSubjectsList = ["Mathematics", "English Language", "Science", "Computing", "Religious and Moral Education", "Creative Arts", "Geography", "Economics", "Biology", "Elective Mathematics"];
 const predefinedHobbiesList = ["Reading", "Sports (General)", "Music", "Art & Craft", "Debating", "Coding/Programming", "Gardening", "Volunteering", "Cooking/Baking", "Drama/Theater"];
-const reportTemplateOptions = [
-    { id: 'default', name: 'Default Template' },
-    { id: 'professionalBlue', name: 'Professional Blue' },
-    { id: 'elegantGreen', name: 'Elegant Green' },
-    { id: 'minimalistGray', name: 'Minimalist Gray' },
-    { id: 'academicRed', name: 'Academic Red' },
-    { id: 'creativeTeal', name: 'Creative Teal' },
-];
 
 export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory, onSaveReport, onResetForm }: ReportFormProps) {
   const [formData, setFormData] = useState<ReportData>(initialData);
@@ -66,8 +58,13 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [comparisonTermSelection, setComparisonTermSelection] = useState<string>('none');
 
   useEffect(() => {
-    setFormData(initialData);
-  }, [initialData.id]); 
+    // Only reset the form state if the ID of the initial data changes.
+    // This prevents resets on every keystroke from the parent.
+    if (initialData.id !== formData.id) {
+        setFormData(initialData);
+    }
+  }, [initialData, formData.id]);
+
 
   useEffect(() => {
     onFormUpdate(formData);
@@ -273,16 +270,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                    <datalist id="studentNameHistoryDatalist">
                     {studentNameHistory.map((name, index) => <option key={`history-${index}`} value={name} />)}
                   </datalist>
-                </div>
-                {/* Template */}
-                <div className="space-y-2">
-                    <Label className="flex items-center"><LayoutTemplate className="mr-2 h-4 w-4" />Report Template</Label>
-                    <Select value={formData.selectedTemplateId || 'default'} onValueChange={value => handleSelectChange('selectedTemplateId', value)}>
-                        <SelectTrigger><SelectValue placeholder="Select a template" /></SelectTrigger>
-                        <SelectContent>
-                            {reportTemplateOptions.map(option => <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
                 </div>
                 {/* Gender */}
                 <div className="space-y-2">
