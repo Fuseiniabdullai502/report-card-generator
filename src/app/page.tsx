@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
@@ -26,6 +26,7 @@ import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timest
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
 const classLevels = ["KG1", "KG2", "BASIC 1", "BASIC 2", "BASIC 3", "BASIC 4", "BASIC 5", "BASIC 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"];
+const academicTermOptions = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
 
 
 function calculateSubjectFinalMark(subject: SubjectEntry): number | null {
@@ -321,30 +322,7 @@ function AppContent() {
     };
     setSessionDefaults(newSessionDefaults);
 
-    const newNextStudentEntryNumber = nextStudentEntryNumber + 1;
-    
-    // Create a fresh, clean report object for the next student using a deep copy
-    const newStudentBase = JSON.parse(JSON.stringify(defaultReportData));
-    
-    const newStudentDataForForm: ReportData = {
-      ...newStudentBase,
-      ...newSessionDefaults,
-      id: `unsaved-${Date.now()}`,
-      studentEntryNumber: newNextStudentEntryNumber,
-      createdAt: undefined,
-      overallAverage: undefined,
-      rank: undefined,
-      teacherId: undefined,
-    };
-    
-    setCurrentEditingReport(newStudentDataForForm);
-    setNextStudentEntryNumber(newNextStudentEntryNumber);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    toast({
-      title: "Form Cleared",
-      description: "Ready for the next student's report entry.",
-    });
+    handleResetToBlankForm();
   };
 
 
@@ -423,9 +401,21 @@ function AppContent() {
     } else {
         const newSessionDefaults = { ...sessionDefaults, className: value };
         setSessionDefaults(newSessionDefaults);
-        // Also update the current form in case the user is editing
         setCurrentEditingReport(prev => ({...prev, className: value}));
     }
+  };
+
+  const handleSessionYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    const newSessionDefaults = { ...sessionDefaults, academicYear: value };
+    setSessionDefaults(newSessionDefaults);
+    setCurrentEditingReport(prev => ({...prev, academicYear: value}));
+  };
+
+  const handleSessionTermChange = (value: string) => {
+      const newSessionDefaults = { ...sessionDefaults, academicTerm: value };
+      setSessionDefaults(newSessionDefaults);
+      setCurrentEditingReport(prev => ({...prev, academicTerm: value}));
   };
 
   const handleAddCustomClassNameToListAndForm = () => {
@@ -592,20 +582,41 @@ function AppContent() {
       <Card className="mb-8 p-4 no-print">
         <CardHeader className="p-2">
             <CardTitle className="text-lg flex items-center"><Users className="mr-2 h-5 w-5 text-primary"/>Session Controls</CardTitle>
-            <CardDescription className="text-xs">Set the class for the current data entry session. This will apply to all new reports.</CardDescription>
+            <CardDescription className="text-xs">Set the class, year, and term for the current data entry session. This will apply to all new reports.</CardDescription>
         </CardHeader>
         <CardContent className="p-2">
-            <div className="max-w-sm">
-                <Label htmlFor="sessionClassName" className="text-sm font-medium">Current Class</Label>
-                <Select value={sessionDefaults.className || ''} onValueChange={handleSessionClassChange}>
-                    <SelectTrigger id="sessionClassName"><SelectValue placeholder="Select or add class" /></SelectTrigger>
-                    <SelectContent>
-                        {classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
-                        {customClassNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-                        <SelectSeparator />
-                        <SelectItem value={ADD_CUSTOM_CLASS_VALUE}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
-                    </SelectContent>
-                </Select>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                    <Label htmlFor="sessionClassName" className="text-sm font-medium">Current Class</Label>
+                    <Select value={sessionDefaults.className || ''} onValueChange={handleSessionClassChange}>
+                        <SelectTrigger id="sessionClassName"><SelectValue placeholder="Select or add class" /></SelectTrigger>
+                        <SelectContent>
+                            {classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
+                            {customClassNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                            <SelectSeparator />
+                            <SelectItem value={ADD_CUSTOM_CLASS_VALUE}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-1">
+                    <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
+                    <Input
+                        id="sessionAcademicYear"
+                        name="academicYear"
+                        value={sessionDefaults.academicYear || ''}
+                        onChange={handleSessionYearChange}
+                        placeholder="e.g., 2023-2024"
+                    />
+                </div>
+                <div className="space-y-1">
+                    <Label htmlFor="sessionAcademicTerm" className="text-sm font-medium">Academic Term</Label>
+                     <Select value={sessionDefaults.academicTerm || ''} onValueChange={handleSessionTermChange}>
+                        <SelectTrigger id="sessionAcademicTerm"><SelectValue placeholder="Select term/semester" /></SelectTrigger>
+                        <SelectContent>
+                            {academicTermOptions.map(term => <SelectItem key={term} value={term}>{term}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
         </CardContent>
       </Card>

@@ -32,10 +32,8 @@ export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
 const ADD_CUSTOM_HOBBY_VALUE = "--add-custom-hobby--";
 
-const classLevels = ["KG1", "KG2", "BASIC 1", "BASIC 2", "BASIC 3", "BASIC 4", "BASIC 5", "BASIC 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"];
 const tertiaryLevelClasses = ["LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"];
 const genderOptions = ["Male", "Female"];
-const academicTermOptions = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
 const promotionStatusOptions = ["Promoted", "Repeated", "Graduated", "Under Review"];
 const predefinedSubjectsList = ["Mathematics", "English Language", "Science", "Computing", "Religious and Moral Education", "Creative Arts", "Geography", "Economics", "Biology", "Elective Mathematics"];
 const predefinedHobbiesList = ["Reading", "Sports (General)", "Music", "Art & Craft", "Debating", "Coding/Programming", "Gardening", "Volunteering", "Cooking/Baking", "Drama/Theater"];
@@ -311,19 +309,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     <Label htmlFor="parentPhoneNumber" className="flex items-center"><Phone className="mr-2 h-4 w-4" />Parent Phone Number</Label>
                     <Input id="parentPhoneNumber" name="parentPhoneNumber" type="tel" value={formData.parentPhoneNumber || ''} onChange={handleInputChange} placeholder="e.g., +1234567890 (for WhatsApp)" />
                  </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="academicYear" className="flex items-center"><CalendarDays className="mr-2 h-4 w-4" />Academic Year</Label>
-                    <Input id="academicYear" name="academicYear" value={formData.academicYear || ''} onChange={handleInputChange} placeholder="e.g., 2023-2024" />
-                 </div>
-                 <div className="space-y-2">
-                    <Label className="flex items-center"><Type className="mr-2 h-4 w-4" />Academic Term</Label>
-                    <Select value={formData.academicTerm || ''} onValueChange={value => handleSelectChange('academicTerm', value)}>
-                        <SelectTrigger><SelectValue placeholder="Select academic term" /></SelectTrigger>
-                        <SelectContent>
-                            {academicTermOptions.map(term => <SelectItem key={term} value={term}>{term}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
                  <div className="space-y-2">
                     <Label htmlFor="daysAttended" className="flex items-center"><CalendarCheck2 className="mr-2 h-4 w-4" />Days Attended</Label>
                     <Input id="daysAttended" name="daysAttended" type="number" value={formData.daysAttended ?? ''} onChange={handleInputChange} placeholder="e.g., 85" />
