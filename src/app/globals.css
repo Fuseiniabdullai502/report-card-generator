@@ -288,9 +288,9 @@ body {
   
   #class-dashboard-dialog-content [data-testid="dashboard-inner-scroll-container"],
   #school-dashboard-dialog-content [data-testid="school-dashboard-inner-scroll-container"] {
-    overflow: hidden !important; /* Clip content that doesn't fit on one page */
-    max-height: 277mm !important; 
-    height: 277mm !important; 
+    overflow: visible !important; /* Allow content to flow across pages */
+    height: auto !important;
+    max-height: none !important;
     padding: 10mm !important; 
     box-sizing: border-box !important;
   }
@@ -487,3 +487,4 @@ body {
     
 
     
+
