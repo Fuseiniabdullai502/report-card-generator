@@ -350,7 +350,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                             {academicTermOptions.map(term => <SelectItem key={term} value={term}>{term}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                 </div>
+                </div>
                  <div className="space-y-2">
                     <Label htmlFor="daysAttended" className="flex items-center"><CalendarCheck2 className="mr-2 h-4 w-4" />Days Attended</Label>
                     <Input id="daysAttended" name="daysAttended" type="number" value={formData.daysAttended ?? ''} onChange={handleInputChange} placeholder="e.g., 85" />
@@ -500,7 +500,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
             <Separator />
             
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <div className="flex flex-row gap-4 pt-4">
               <Button type="submit" className="flex-1" disabled={isReportInsightsAiLoading || isTeacherFeedbackAiLoading}>
                 <ListPlus className="mr-2 h-4 w-4" />
                 Add Report to List
