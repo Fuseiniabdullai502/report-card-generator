@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import NextImage from 'next/image';
 import ReportForm from '@/components/report-form';
 import ReportPreview from '@/components/report-preview';
 import ReportActions from '@/components/report-actions';
@@ -16,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
@@ -395,33 +396,33 @@ function AppContent() {
     setCurrentPreviewIndex(prev => Math.max(0, prev - 1));
   };
 
-  const handleSessionClassChange = (value: string) => {
-    if (value === ADD_CUSTOM_CLASS_VALUE) {
-        setIsCustomClassNameDialogOpen(true);
-    } else {
-        const newSessionDefaults = { ...sessionDefaults, className: value };
-        setSessionDefaults(newSessionDefaults);
-        setCurrentEditingReport(prev => ({...prev, className: value}));
-    }
-  };
-
-  const handleSessionYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    const newSessionDefaults = { ...sessionDefaults, academicYear: value };
+  const handleSessionDefaultChange = (field: keyof typeof sessionDefaults, value: any) => {
+    const newSessionDefaults = { ...sessionDefaults, [field]: value };
     setSessionDefaults(newSessionDefaults);
-    setCurrentEditingReport(prev => ({...prev, academicYear: value}));
+    setCurrentEditingReport(prev => ({...prev, [field]: value}));
   };
 
-  const handleSessionTermChange = (value: string) => {
-      const newSessionDefaults = { ...sessionDefaults, academicTerm: value };
-      setSessionDefaults(newSessionDefaults);
-      setCurrentEditingReport(prev => ({...prev, academicTerm: value}));
+  const handleSessionImageUpload = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    fieldName: keyof Pick<ReportData, 'schoolLogoDataUri' | 'headMasterSignatureDataUri'>
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const originalDataUri = reader.result as string;
+        handleSessionDefaultChange(fieldName, originalDataUri);
+        toast({ title: "Image Uploaded", description: `Session ${fieldName === 'schoolLogoDataUri' ? 'logo' : 'signature'} updated.` });
+      };
+      reader.readAsDataURL(file);
+    }
+    if(event.target) event.target.value = '';
   };
 
   const handleAddCustomClassNameToListAndForm = () => {
       const newClassName = customClassNameInputValue.trim();
       if (newClassName === '') return;
-      handleSessionClassChange(newClassName);
+      handleSessionDefaultChange('className', newClassName);
       if (!classLevels.includes(newClassName) && !customClassNames.includes(newClassName)) {
           setCustomClassNames(prev => [...new Set([...prev, newClassName])]);
       }
@@ -582,40 +583,56 @@ function AppContent() {
       <Card className="mb-8 p-4 no-print">
         <CardHeader className="p-2">
             <CardTitle className="text-lg flex items-center"><Users className="mr-2 h-5 w-5 text-primary"/>Session Controls</CardTitle>
-            <CardDescription className="text-xs">Set the class, year, and term for the current data entry session. This will apply to all new reports.</CardDescription>
+            <CardDescription className="text-xs">Set defaults for the current data entry session. These apply to all new reports.</CardDescription>
         </CardHeader>
-        <CardContent className="p-2">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <CardContent className="p-2 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div className="space-y-1">
+                    <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
+                    <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" />
+                </div>
+                <div className="space-y-1">
+                    <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
+                    <Input id="sessionAcademicYear" value={sessionDefaults.academicYear || ''} onChange={e => handleSessionDefaultChange('academicYear', e.target.value)} placeholder="e.g., 2023-2024" />
+                </div>
+                 <div className="space-y-1">
                     <Label htmlFor="sessionClassName" className="text-sm font-medium">Current Class</Label>
-                    <Select value={sessionDefaults.className || ''} onValueChange={handleSessionClassChange}>
+                    <Select value={sessionDefaults.className || ''} onValueChange={value => handleSessionDefaultChange('className', value === ADD_CUSTOM_CLASS_VALUE ? '' : value)}>
                         <SelectTrigger id="sessionClassName"><SelectValue placeholder="Select or add class" /></SelectTrigger>
                         <SelectContent>
+                            <SelectItem value={ADD_CUSTOM_CLASS_VALUE} onSelect={() => setIsCustomClassNameDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
+                            <SelectSeparator />
                             {classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
                             {customClassNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-                            <SelectSeparator />
-                            <SelectItem value={ADD_CUSTOM_CLASS_VALUE}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
                 <div className="space-y-1">
-                    <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
-                    <Input
-                        id="sessionAcademicYear"
-                        name="academicYear"
-                        value={sessionDefaults.academicYear || ''}
-                        onChange={handleSessionYearChange}
-                        placeholder="e.g., 2023-2024"
-                    />
-                </div>
-                <div className="space-y-1">
                     <Label htmlFor="sessionAcademicTerm" className="text-sm font-medium">Academic Term</Label>
-                     <Select value={sessionDefaults.academicTerm || ''} onValueChange={handleSessionTermChange}>
+                     <Select value={sessionDefaults.academicTerm || ''} onValueChange={value => handleSessionDefaultChange('academicTerm', value)}>
                         <SelectTrigger id="sessionAcademicTerm"><SelectValue placeholder="Select term/semester" /></SelectTrigger>
                         <SelectContent>
                             {academicTermOptions.map(term => <SelectItem key={term} value={term}>{term}</SelectItem>)}
                         </SelectContent>
                     </Select>
+                </div>
+                <div className="space-y-1">
+                    <Label htmlFor="sessionTotalSchoolDays" className="text-sm font-medium">Total School Days</Label>
+                    <Input id="sessionTotalSchoolDays" type="number" value={sessionDefaults.totalSchoolDays ?? ''} onChange={e => handleSessionDefaultChange('totalSchoolDays', e.target.value === '' ? null : Number(e.target.value))} placeholder="e.g., 90" />
+                </div>
+                <div className="space-y-1">
+                    <Label htmlFor="sessionInstructorContact" className="text-sm font-medium">Instructor's Contact</Label>
+                    <Input id="sessionInstructorContact" value={sessionDefaults.instructorContact || ''} onChange={e => handleSessionDefaultChange('instructorContact', e.target.value)} placeholder="Phone or Email" />
+                </div>
+                <div className="space-y-1 flex items-center gap-2">
+                  <input type="file" id="sessionSchoolLogoUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'schoolLogoDataUri')} />
+                  <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('sessionSchoolLogoUpload')?.click()}><UploadCloud className="mr-2 h-4 w-4" />Logo</Button>
+                  {sessionDefaults.schoolLogoDataUri && <NextImage src={sessionDefaults.schoolLogoDataUri} alt="logo" width={40} height={40} className="rounded border p-1 object-contain"/>}
+                </div>
+                <div className="space-y-1 flex items-center gap-2">
+                  <input type="file" id="sessionHeadMasterSignatureUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'headMasterSignatureDataUri')} />
+                  <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('sessionHeadMasterSignatureUpload')?.click()}><Signature className="mr-2 h-4 w-4" />Signature</Button>
+                  {sessionDefaults.headMasterSignatureDataUri && <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>}
                 </div>
             </div>
         </CardContent>

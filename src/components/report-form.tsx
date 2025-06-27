@@ -66,10 +66,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [comparisonTermSelection, setComparisonTermSelection] = useState<string>('none');
 
   useEffect(() => {
-    // This effect now ONLY runs when a genuinely new student report is passed in.
-    // It compares the `id` to ensure it doesn't re-run on simple edits.
     setFormData(initialData);
-  }, [initialData.id]); // FIX: Depend on a stable primitive value (id) instead of the object reference.
+  }, [initialData.id]); 
 
   useEffect(() => {
     onFormUpdate(formData);
@@ -140,7 +138,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const handleImageUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
-    fieldName: keyof Pick<ReportData, 'studentPhotoDataUri' | 'schoolLogoDataUri' | 'headMasterSignatureDataUri'>
+    fieldName: keyof Pick<ReportData, 'studentPhotoDataUri'>
   ) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -148,7 +146,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       reader.onloadend = () => {
         const originalDataUri = reader.result as string;
         setFormData(prev => ({...prev, [fieldName]: originalDataUri}));
-        toast({ title: "Image Uploaded", description: `${fieldName === 'studentPhotoDataUri' ? 'Student photo' : 'Image'} uploaded successfully.` });
+        toast({ title: "Image Uploaded", description: `Student photo uploaded successfully.` });
       };
       reader.readAsDataURL(file);
     }
@@ -266,7 +264,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-8">
             <section className="space-y-6">
-              <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Student &amp; School Information</h3>
+              <h3 className="text-lg font-medium text-primary border-b pb-2 mb-4">Student Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  {/* Student Name */}
                 <div className="space-y-2">
@@ -296,11 +294,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                         </SelectContent>
                     </Select>
                 </div>
-                 {/* School Name, Phone, Email, etc. go here following the same pattern */}
-                 <div className="space-y-2">
-                    <Label htmlFor="schoolName" className="flex items-center"><Building className="mr-2 h-4 w-4" />School Name</Label>
-                    <Input id="schoolName" name="schoolName" value={formData.schoolName || ''} onChange={handleInputChange} placeholder="e.g., Faacom Academy" />
-                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="parentEmail" className="flex items-center"><Mail className="mr-2 h-4 w-4" />Parent Email</Label>
                     <Input id="parentEmail" name="parentEmail" type="email" value={formData.parentEmail || ''} onChange={handleInputChange} placeholder="e.g., parent@example.com" />
@@ -313,10 +306,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     <Label htmlFor="daysAttended" className="flex items-center"><CalendarCheck2 className="mr-2 h-4 w-4" />Days Attended</Label>
                     <Input id="daysAttended" name="daysAttended" type="number" value={formData.daysAttended ?? ''} onChange={handleInputChange} placeholder="e.g., 85" />
                  </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="totalSchoolDays" className="flex items-center"><CalendarDays className="mr-2 h-4 w-4" />Total School Days</Label>
-                    <Input id="totalSchoolDays" name="totalSchoolDays" type="number" value={formData.totalSchoolDays ?? ''} onChange={handleInputChange} placeholder="e.g., 90" />
-                 </div>
                  {isPromotionStatusApplicable && (
                     <div className="space-y-2">
                         <Label className="flex items-center"><Medal className="mr-2 h-4 w-4" />Promotion Status</Label>
@@ -328,24 +317,11 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                         </Select>
                     </div>
                  )}
-                 {/* Image Uploads */}
-                 <div className="space-y-2">
-                    <Label className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />School Logo</Label>
-                    <input type="file" id="schoolLogoUpload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'schoolLogoDataUri')} />
-                    <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('schoolLogoUpload')?.click()}><UploadCloud className="mr-2 h-4 w-4" />Upload Logo</Button>
-                    {formData.schoolLogoDataUri && <NextImage src={formData.schoolLogoDataUri} alt="logo" width={60} height={60} className="rounded border p-1"/>}
-                 </div>
                  <div className="space-y-2">
                     <Label className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />Student Photo</Label>
                     <input type="file" id="studentPhotoUpload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')} />
                     <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()}><UploadCloud className="mr-2 h-4 w-4" />Upload Photo</Button>
                     {formData.studentPhotoDataUri && <NextImage src={formData.studentPhotoDataUri} alt="student" width={80} height={100} className="rounded border"/>}
-                 </div>
-                 <div className="space-y-2">
-                    <Label className="flex items-center"><Signature className="mr-2 h-4 w-4 text-primary" />Head Master's Signature</Label>
-                    <input type="file" id="headMasterSignatureUpload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'headMasterSignatureDataUri')} />
-                    <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('headMasterSignatureUpload')?.click()}><UploadCloud className="mr-2 h-4 w-4" />Upload Signature</Button>
-                    {formData.headMasterSignatureDataUri && <NextImage src={formData.headMasterSignatureDataUri} alt="signature" width={100} height={50} className="rounded border p-1"/>}
                  </div>
               </div>
             </section>
@@ -449,10 +425,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                         </Button>
                     </div>
                     <Textarea id="teacherFeedback" name="teacherFeedback" value={formData.teacherFeedback || ''} onChange={handleInputChange} rows={4} className="border-accent" />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="instructorContact" className="flex items-center"><Phone className="mr-2 h-4 w-4"/>Instructor's Contact</Label>
-                    <Input id="instructorContact" name="instructorContact" value={formData.instructorContact || ''} onChange={handleInputChange} />
                 </div>
             </section>
 
