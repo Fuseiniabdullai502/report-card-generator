@@ -125,6 +125,7 @@ function AppContent() {
       return;
     }
 
+    // 1. Calculate overall average for every report first.
     const reportsWithAverages = listToProcess.map(report => {
       let totalScore = 0;
       let validSubjectCount = 0;
@@ -143,34 +144,59 @@ function AppContent() {
       return { ...report, overallAverage };
     });
 
-    const sortedReports = [...reportsWithAverages].sort((a, b) => (b.overallAverage ?? 0) - (a.overallAverage ?? 0));
-
-    let lastScore = -1;
-    let actualRank = 0;
-    let displayRankCounter = 0;
-
-    const rankedReports = sortedReports.map((report) => {
-      actualRank++;
-      if (report.overallAverage !== lastScore) {
-        displayRankCounter = actualRank;
-        lastScore = report.overallAverage ?? -1;
-        return { ...report, rank: formatRankString(displayRankCounter, false) };
-      } else {
-        return { ...report, rank: formatRankString(displayRankCounter, true) };
+    // 2. Group reports by class name.
+    const reportsByClass = new Map<string, ReportData[]>();
+    reportsWithAverages.forEach(report => {
+      const className = report.className || 'Unclassified';
+      if (!reportsByClass.has(className)) {
+        reportsByClass.set(className, []);
       }
+      reportsByClass.get(className)!.push(report);
     });
 
-    for (let i = 0; i < rankedReports.length; i++) {
-        if (i > 0 && rankedReports[i].overallAverage !== null && rankedReports[i].overallAverage === rankedReports[i-1].overallAverage) {
-            const baseRank = parseInt(rankedReports[i-1].rank!.replace('T-', '').replace(/(st|nd|rd|th)$/, ''));
-            rankedReports[i].rank = formatRankString(baseRank, true);
-             if (!rankedReports[i-1].rank?.startsWith('T-')) {
-                rankedReports[i-1].rank = formatRankString(baseRank, true);
-            }
+    const allClassRankedReports: ReportData[] = [];
+
+    // 3. Rank students within each class group.
+    reportsByClass.forEach((classReports) => {
+      const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? 0) - (a.overallAverage ?? 0));
+
+      let lastScore = -1;
+      let actualRank = 0;
+      let displayRankCounter = 0;
+
+      const rankedReportsInClass = sortedReports.map((report) => {
+        actualRank++;
+        if (report.overallAverage !== lastScore) {
+          displayRankCounter = actualRank;
+          lastScore = report.overallAverage ?? -1;
+          return { ...report, rank: formatRankString(displayRankCounter, false) };
+        } else {
+          return { ...report, rank: formatRankString(displayRankCounter, true) };
         }
-    }
-    setAllRankedReports(rankedReports);
-    // Preview index is now managed by the filter `useEffect` so we don't need to manage it here
+      });
+
+      // Handle ties correctly
+      for (let i = 0; i < rankedReportsInClass.length; i++) {
+          if (i > 0 && rankedReportsInClass[i].overallAverage !== null && rankedReportsInClass[i].overallAverage === rankedReportsInClass[i-1].overallAverage) {
+              const baseRank = parseInt(rankedReportsInClass[i-1].rank!.replace('T-', '').replace(/(st|nd|rd|th)$/, ''));
+              rankedReportsInClass[i].rank = formatRankString(baseRank, true);
+               if (!rankedReportsInClass[i-1].rank?.startsWith('T-')) {
+                  rankedReportsInClass[i-1].rank = formatRankString(baseRank, true);
+              }
+          }
+      }
+      
+      allClassRankedReports.push(...rankedReportsInClass);
+    });
+
+    // 4. Set the final list, sorted by class and then by rank for a stable and logical view.
+    const finalSortedList = allClassRankedReports.sort((a, b) => {
+      const classCompare = (a.className || '').localeCompare(b.className || '');
+      if (classCompare !== 0) return classCompare;
+      return (b.overallAverage ?? 0) - (a.overallAverage ?? 0);
+    });
+    
+    setAllRankedReports(finalSortedList);
   }, []);
 
   useEffect(() => {
@@ -757,7 +783,7 @@ function AppContent() {
                 <span className="block text-xs italic">
                   <Share2 className="inline-block mr-1 h-3 w-3 text-muted-foreground" /> Share options (Email/WhatsApp) below each report will open your default app.
                 </span>
-                {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on overall average across all reports.</span>}
+                {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on overall average within each class.</span>}
               </CardDescription>
             </CardHeader>
             <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">
