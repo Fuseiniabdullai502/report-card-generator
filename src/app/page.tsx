@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
@@ -85,7 +85,7 @@ function AppContent() {
       teacherId: undefined,
     };
   });
-  const [reportPrintList, setReportPrintList] = useState<ReportData[]>([]);
+  const [allRankedReports, setAllRankedReports] = useState<ReportData[]>([]);
   const [nextStudentEntryNumber, setNextStudentEntryNumber] = useState<number>(1);
   const [sessionDefaults, setSessionDefaults] = useState<Partial<ReportData>>({});
   const { toast } = useToast();
@@ -99,11 +99,29 @@ function AppContent() {
   const [customClassNames, setCustomClassNames] = useState<string[]>([]);
   const [isCustomClassNameDialogOpen, setIsCustomClassNameDialogOpen] = useState(false);
   const [customClassNameInputValue, setCustomClassNameInputValue] = useState('');
+  
+  const [printFilterClass, setPrintFilterClass] = useState<string>('all');
 
+  const availableClassesForFilter = useMemo(() => {
+    const classNames = new Set(allRankedReports.map(report => report.className).filter(Boolean));
+    return ['all', ...Array.from(classNames).sort()];
+  }, [allRankedReports]);
+
+  const filteredReports = useMemo(() => {
+    if (printFilterClass === 'all') {
+      return allRankedReports;
+    }
+    return allRankedReports.filter(report => report.className === printFilterClass);
+  }, [allRankedReports, printFilterClass]);
+
+  useEffect(() => {
+    // When the filter changes, reset the preview to the first report of the new list.
+    setCurrentPreviewIndex(0);
+  }, [printFilterClass]);
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
     if (listToProcess.length === 0) {
-      setReportPrintList([]);
+      setAllRankedReports([]);
       return;
     }
 
@@ -151,14 +169,9 @@ function AppContent() {
             }
         }
     }
-    setReportPrintList(rankedReports);
-    if (rankedReports.length > 0 && currentPreviewIndex >= rankedReports.length) {
-        setCurrentPreviewIndex(rankedReports.length -1);
-    } else if (rankedReports.length === 0) {
-        setCurrentPreviewIndex(0);
-    }
-
-  }, [currentPreviewIndex]);
+    setAllRankedReports(rankedReports);
+    // Preview index is now managed by the filter `useEffect` so we don't need to manage it here
+  }, []);
 
   useEffect(() => {
     setIsLoadingReports(true);
@@ -328,11 +341,11 @@ function AppContent() {
 
 
   const handleClearList = async () => {
-    if (reportPrintList.length === 0) {
+    if (allRankedReports.length === 0) {
         toast({ title: "Local View Already Clear", description: "No reports in the local view to clear. Firestore data is unaffected." });
         return;
     }
-    setReportPrintList([]);
+    setAllRankedReports([]);
     setCurrentPreviewIndex(0);
 
     toast({
@@ -354,22 +367,22 @@ function AppContent() {
   }
 
   const handlePrint = () => {
-    if (reportPrintList.length > 0) {
+    if (filteredReports.length > 0) {
       window.print();
     } else {
       toast({
         title: "No Reports in List",
-        description: "Please add reports to the list before printing.",
+        description: "Please add or filter reports to the list before printing.",
         variant: "destructive",
       });
     }
   };
 
   const handleDownloadAsPdf = () => {
-    if (reportPrintList.length === 0) {
+    if (filteredReports.length === 0) {
       toast({
         title: "No Reports to Download",
-        description: "Please add reports to the list before downloading as a PDF.",
+        description: "Please add or filter reports to the list before downloading as a PDF.",
         variant: "destructive",
       });
       return;
@@ -386,7 +399,7 @@ function AppContent() {
     }, 500);
   };
 
-  const reportsCount = reportPrintList.length;
+  const reportsCount = filteredReports.length;
 
   const handleNextPreview = () => {
     setCurrentPreviewIndex(prev => Math.min(prev + 1, reportsCount - 1));
@@ -432,24 +445,24 @@ function AppContent() {
 
 
   const currentClassNameForDashboard = useMemo(() => {
-    if (reportsCount > 0 && reportPrintList[currentPreviewIndex]) {
-      return reportPrintList[currentPreviewIndex].className || "N/A";
+    if (reportsCount > 0 && filteredReports[currentPreviewIndex]) {
+      return filteredReports[currentPreviewIndex].className || "N/A";
     }
-    const classNamesInList = new Set(reportPrintList.map(r => r.className).filter(Boolean));
+    const classNamesInList = new Set(filteredReports.map(r => r.className).filter(Boolean));
     if (classNamesInList.size === 1) return classNamesInList.values().next().value;
     if (classNamesInList.size > 1) return "Multiple Classes";
     return currentEditingReport.className || "N/A";
-  }, [reportPrintList, currentPreviewIndex, currentEditingReport.className, reportsCount]);
+  }, [filteredReports, currentPreviewIndex, currentEditingReport.className, reportsCount]);
 
   const currentAcademicTermForDashboard = useMemo(() => {
-     if (reportsCount > 0 && reportPrintList[currentPreviewIndex]) {
-      return reportPrintList[currentPreviewIndex].academicTerm || "N/A";
+     if (reportsCount > 0 && filteredReports[currentPreviewIndex]) {
+      return filteredReports[currentPreviewIndex].academicTerm || "N/A";
     }
-    const termsInList = new Set(reportPrintList.map(r => r.academicTerm).filter(Boolean));
+    const termsInList = new Set(filteredReports.map(r => r.academicTerm).filter(Boolean));
     if (termsInList.size === 1) return termsInList.values().next().value;
     if (termsInList.size > 1) return "Multiple Terms";
     return currentEditingReport.academicTerm || "N/A";
-  }, [reportPrintList, currentPreviewIndex, currentEditingReport.academicTerm, reportsCount]);
+  }, [filteredReports, currentPreviewIndex, currentEditingReport.academicTerm, reportsCount]);
 
   const schoolNameForDashboard = useMemo(() => {
     return sessionDefaults.schoolName || currentEditingReport.schoolName || "School";
@@ -457,12 +470,12 @@ function AppContent() {
 
   const academicTermForSchoolDashboard = useMemo(() => {
     if (reportsCount > 0) {
-      const uniqueTerms = new Set(reportPrintList.map(r => r.academicTerm).filter(Boolean));
+      const uniqueTerms = new Set(filteredReports.map(r => r.academicTerm).filter(Boolean));
       if (uniqueTerms.size === 1) return uniqueTerms.values().next().value;
       return "Multiple Terms Summary";
     }
     return currentEditingReport.academicTerm || "Term Summary";
-  }, [reportPrintList, currentEditingReport.academicTerm, reportsCount]);
+  }, [filteredReports, currentEditingReport.academicTerm, reportsCount]);
 
  const handleImportStudents = (selectedStudentNames: string[], destinationClass: string) => {
     if (selectedStudentNames.length === 0 || !destinationClass) {
@@ -644,8 +657,7 @@ function AppContent() {
           <ReportForm
             onFormUpdate={handleFormUpdate}
             initialData={currentEditingReport}
-            key={currentEditingReport.id}
-            reportPrintListForHistory={reportPrintList}
+            reportPrintListForHistory={allRankedReports}
             onSaveReport={handleSaveReportAndResetForm}
             onResetForm={handleResetToBlankForm}
           />
@@ -676,16 +688,19 @@ function AppContent() {
 
                 <div className="flex flex-col gap-2 items-stretch">
                   <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-                    <Button
-                        onClick={() => setIsImportStudentsDialogOpen(true)}
-                        variant="outline"
-                        size="sm"
-                        title="Import student data from previous term/class"
-                        disabled={isLoadingReports}
-                      >
-                       <Upload className="mr-2 h-4 w-4" />
-                       Import Promoted Students
-                     </Button>
+                    <Select value={printFilterClass} onValueChange={setPrintFilterClass}>
+                      <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter reports by class">
+                        <div className="flex items-center gap-2">
+                          <FolderDown className="h-4 w-4 text-primary" />
+                          <SelectValue placeholder="Filter by class..." />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableClassesForFilter.map(cls => (
+                          <SelectItem key={cls} value={cls}>{cls === 'all' ? 'All Classes' : cls}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                      <Button
                         onClick={() => setIsClassDashboardOpen(true)}
                         disabled={reportsCount === 0 || isLoadingReports}
@@ -712,36 +727,48 @@ function AppContent() {
                     </Button>
                     <Button onClick={handlePrint} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm">
                       <Printer className="mr-2 h-4 w-4" />
-                      Print All ({reportsCount})
+                      Print ({reportsCount})
                     </Button>
-                    <Button onClick={handleClearList} disabled={isLoadingReports && reportsCount === 0} variant="destructive" size="sm">
+                  </div>
+                   <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+                     <Button
+                        onClick={() => setIsImportStudentsDialogOpen(true)}
+                        variant="outline"
+                        size="sm"
+                        title="Import student data from previous term/class"
+                        disabled={isLoadingReports}
+                      >
+                       <Upload className="mr-2 h-4 w-4" />
+                       Import Promoted Students
+                     </Button>
+                    <Button onClick={handleClearList} disabled={isLoadingReports && allRankedReports.length === 0} variant="destructive" size="sm">
                       <Trash2 className="mr-2 h-4 w-4" />
                       Clear Local View
                     </Button>
-                  </div>
+                   </div>
                 </div>
               </div>
               <CardDescription className="mt-2 md:mt-1 space-y-1">
                 <span>
                   {reportsCount > 0
-                    ? 'This area shows one report at a time from the list. Use navigation buttons if multiple reports are in the list.'
+                    ? `Showing reports for: ${printFilterClass === 'all' ? 'All Classes' : printFilterClass}. Use navigation buttons if multiple reports are in the list.`
                     : 'This area shows a live preview of the data from the form. Click "Add Report to List" to save it to the database.'}
                 </span>
                 <span className="block text-xs italic">
                   <Share2 className="inline-block mr-1 h-3 w-3 text-muted-foreground" /> Share options (Email/WhatsApp) below each report will open your default app.
                 </span>
-                {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on overall average.</span>}
+                {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on overall average across all reports.</span>}
               </CardDescription>
             </CardHeader>
             <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">
-              {isLoadingReports && reportsCount === 0 ? (
+              {isLoadingReports && allRankedReports.length === 0 ? (
                  <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
                   <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
                   <h3 className="text-lg font-semibold">Loading Reports...</h3>
                   <p>Fetching your report data from the cloud.</p>
                 </div>
-              ) : reportsCount > 0 && reportPrintList[currentPreviewIndex] ? (
-                reportPrintList.map((reportData, index) => (
+              ) : reportsCount > 0 && filteredReports[currentPreviewIndex] ? (
+                filteredReports.map((reportData, index) => (
                   <React.Fragment key={reportData.id || `report-entry-${reportData.studentEntryNumber}`}>
                     {index === currentPreviewIndex && (
                        <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
@@ -753,7 +780,7 @@ function AppContent() {
                     </div>
                   </React.Fragment>
                 ))
-              ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
+              ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) && printFilterClass === 'all' ? (
                 <>
                   <div className="report-preview-item active-preview-screen" key={currentEditingReport.id}>
                     <ReportPreview data={currentEditingReport} />
@@ -762,9 +789,8 @@ function AppContent() {
               ) : (
                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
                   <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
-                  <h3 className="text-xl font-semibold mb-2">Report Preview Area</h3>
-                  <p>The report card preview will appear here as you fill out the form.</p>
-                  <p className="text-xs mt-1">When you finish, click "Add Report to List" to save it.</p>
+                  <h3 className="text-xl font-semibold mb-2">{printFilterClass !== 'all' && reportsCount === 0 ? `No Reports Found` : `Report Preview Area`}</h3>
+                  <p>{printFilterClass !== 'all' && reportsCount === 0 ? `No reports match the filter "${printFilterClass}". Select "All Classes" or add reports.` : `The report card preview will appear here as you fill out the form.`}</p>
                 </div>
               )}
             </CardContent>
@@ -789,7 +815,7 @@ function AppContent() {
         <ClassPerformanceDashboard
             isOpen={isClassDashboardOpen}
             onOpenChange={setIsClassDashboardOpen}
-            reports={reportPrintList}
+            reports={filteredReports}
             classNameProp={currentClassNameForDashboard}
             academicTerm={currentAcademicTermForDashboard}
         />
@@ -798,7 +824,7 @@ function AppContent() {
         <SchoolPerformanceDashboard
             isOpen={isSchoolDashboardOpen}
             onOpenChange={setIsSchoolDashboardOpen}
-            allReports={reportPrintList}
+            allReports={filteredReports}
             schoolNameProp={schoolNameForDashboard}
             academicTermProp={academicTermForSchoolDashboard}
         />
@@ -820,3 +846,5 @@ export default function Home() {
     <AppContent />
   );
 }
+
+    
