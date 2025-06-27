@@ -422,7 +422,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                 <ListPlus className="mr-2 h-4 w-4" />
                 Add Report to List
               </Button>
-              <Button type="button" variant="outline" className="flex-1" onClick={onResetForm}>
+              <Button type="button" variant="destructive" className="flex-1" onClick={onResetForm}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Clear for New Entry
               </Button>
