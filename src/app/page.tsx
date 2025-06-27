@@ -292,6 +292,23 @@ function AppContent() {
   }, [nextStudentEntryNumber, sessionDefaults, toast]);
 
   const handleSaveReportAndResetForm = async (formDataFromForm: ReportData) => {
+     // Check for duplicates before proceeding
+    const isDuplicate = allRankedReports.some(report =>
+        report.studentName?.trim().toLowerCase() === formDataFromForm.studentName?.trim().toLowerCase() &&
+        report.className === formDataFromForm.className &&
+        report.academicTerm === formDataFromForm.academicTerm &&
+        report.academicYear === formDataFromForm.academicYear
+    );
+
+    if (isDuplicate) {
+        toast({
+            title: "Report Already Exists",
+            description: `A report for '${formDataFromForm.studentName}' in '${formDataFromForm.className}' for this academic term already exists.`,
+            variant: "destructive",
+        });
+        return; // Prevent saving the duplicate
+    }
+    
     const reportToSaveForFirestore = {
       studentEntryNumber: formDataFromForm.studentEntryNumber,
       studentName: formDataFromForm.studentName || '',
@@ -889,3 +906,5 @@ export default function Home() {
     <AppContent />
   );
 }
+
+    
