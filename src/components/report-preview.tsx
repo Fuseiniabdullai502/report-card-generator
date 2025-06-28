@@ -151,7 +151,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 
   return (
     <div id="printable-report-area" className={cn("a4-page-simulation flex flex-col text-sm", templateStyles.overallReportBorderClass)}>
-      <header className={cn("mb-4", templateStyles.headerContainerClass)}> {/* mb-4 from mb-6 */}
+      <header className={cn("mb-4 print:mb-2", templateStyles.headerContainerClass)}>
         <div className="flex justify-between items-start">
           <div>
             <h2 className={templateStyles.headerTitleClass}>{data.schoolName || 'School Name'}</h2>
@@ -171,10 +171,10 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             />
           )}
         </div>
-        <h1 className={templateStyles.mainHeaderTextClass}>Student Report Card</h1>
+        <h1 className={cn(templateStyles.mainHeaderTextClass, "print:mt-1 print:text-2xl")}>Student Report Card</h1>
       </header>
 
-      <section className="mb-3 flex justify-between items-start"> {/* mb-3 from mb-4 */}
+      <section className="mb-3 print:mb-1.5 flex justify-between items-start">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs flex-grow pr-4">
           <div>
             <span className="font-semibold text-gray-600">Student Name:</span>
@@ -228,17 +228,17 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 
 
       {data.subjects && data.subjects.length > 0 && (
-        <section className="mb-3"> {/* mb-3 from mb-4 */}
+        <section className="mb-3 print:mb-1.5">
           <h3 className={templateStyles.sectionTitleClass}>Subject Performance</h3>
           <Table className={cn("border rounded-md text-xs", templateStyles.overallReportBorderClass)}>
             <TableHeader>
               <TableRow className={templateStyles.tableHeaderClass}>
-                <TableHead className="font-semibold text-gray-600 w-[28%] py-1 px-2">Subject</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2">CA (60)</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2">Exam (100)</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2">Final (100)</TableHead>
-                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2">Grade</TableHead>
-                <TableHead className="font-semibold text-gray-600 w-[25%] py-1 px-2">Remarks</TableHead>
+                <TableHead className="font-semibold text-gray-600 w-[28%] py-1 px-2 print:px-1.5">Subject</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2 print:px-1.5">CA (60)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2 print:px-1.5">Exam (100)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2 print:px-1.5">Final (100)</TableHead>
+                <TableHead className="text-center font-semibold text-gray-600 py-1 px-2 print:px-1.5">Grade</TableHead>
+                <TableHead className="font-semibold text-gray-600 w-[25%] py-1 px-2 print:px-1.5">Remarks</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -247,13 +247,13 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
                 const { grade, remarks, finalMark } = getGradeAndRemarks(subject.continuousAssessment, subject.examinationMark);
 
                 return (
-                  <TableRow key={index} className="hover:bg-gray-50">
-                    <TableCell className="font-medium text-gray-700 py-1 px-2">{subject.subjectName}</TableCell>
-                    <TableCell className="text-center text-gray-700 py-1 px-2">{subject.continuousAssessment === null || subject.continuousAssessment === undefined ? '-' : subject.continuousAssessment}</TableCell>
-                    <TableCell className="text-center text-gray-700 py-1 px-2">{subject.examinationMark === null || subject.examinationMark === undefined ? '-' : subject.examinationMark}</TableCell>
-                    <TableCell className="text-center text-gray-700 font-medium py-1 px-2">{finalMark}</TableCell>
-                    <TableCell className="text-center text-gray-700 py-1 px-2">{grade}</TableCell>
-                    <TableCell className="text-gray-700 py-1 px-2">{remarks}</TableCell>
+                  <TableRow key={index} className="hover:bg-gray-50 print:py-0">
+                    <TableCell className="font-medium text-gray-700 py-1 px-2 print:px-1.5">{subject.subjectName}</TableCell>
+                    <TableCell className="text-center text-gray-700 py-1 px-2 print:px-1.5">{subject.continuousAssessment === null || subject.continuousAssessment === undefined ? '-' : subject.continuousAssessment}</TableCell>
+                    <TableCell className="text-center text-gray-700 py-1 px-2 print:px-1.5">{subject.examinationMark === null || subject.examinationMark === undefined ? '-' : subject.examinationMark}</TableCell>
+                    <TableCell className="text-center text-gray-700 font-medium py-1 px-2 print:px-1.5">{finalMark}</TableCell>
+                    <TableCell className="text-center text-gray-700 py-1 px-2 print:px-1.5">{grade}</TableCell>
+                    <TableCell className="text-gray-700 py-1 px-2 print:px-1.5">{remarks}</TableCell>
                   </TableRow>
                 );
               })}
@@ -262,7 +262,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         </section>
       )}
 
-      <div className="space-y-3 flex-grow text-xs"> {/* space-y-3 from space-y-4 */}
+      <div className="space-y-3 print:space-y-1.5 flex-grow text-xs">
         {data.performanceSummary && (
           <ReportSection title="Overall Performance Summary" templateStyles={templateStyles}>
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{data.performanceSummary}</p>
@@ -294,7 +294,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         )}
       </div>
 
-      <footer className="mt-6 pt-3 border-t border-gray-300 text-[10px] text-gray-600"> {/* mt-6 pt-3 from mt-8 pt-4 */}
+      <footer className="mt-auto pt-3 print:pt-1.5 border-t border-gray-300 text-[10px] print:text-[8pt] text-gray-600">
         <div className="flex justify-between items-end">
           <div>
             <p><span className="font-semibold">Date Issued:</span> {currentDate}</p>
@@ -344,4 +344,5 @@ function ReportSection({ title, children, templateStyles, highlightColor }: Repo
     </div>
   );
 }
+
 
