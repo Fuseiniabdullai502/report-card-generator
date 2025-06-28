@@ -22,6 +22,7 @@ import type { GenerateClassInsightsOutput, GenerateClassInsightsInput } from '@/
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { calculateSubjectFinalMark } from '@/lib/calculations';
 
 
 interface ClassPerformanceDashboardProps {
@@ -52,37 +53,6 @@ export interface ClassStatistics {
   subjectStats: SubjectPerformanceStatForUI[];
   genderStats: GenderPerformanceStatForUI[];
 }
-
-function calculateInternalSubjectFinalMark(subject: SubjectEntry): number | null {
-  const caMarkInput = subject.continuousAssessment;
-  const examMarkInput = subject.examinationMark;
-
-  const caVal = Number(caMarkInput);
-  const examVal = Number(examMarkInput);
-  
-  const caIsValid = caMarkInput !== null && caMarkInput !== undefined && !Number.isNaN(caVal);
-  const examIsValid = examMarkInput !== null && examMarkInput !== undefined && !Number.isNaN(examVal);
-
-  if (!caIsValid && !examIsValid) {
-    return null; // Don't include in stats if no valid marks
-  }
-
-  const safeCaVal = caIsValid ? caVal : 0;
-  const safeExamVal = examIsValid ? examVal : 0;
-
-  const scaledCaMark = (safeCaVal / 60) * 40;
-  const scaledExamMark = (safeExamVal / 100) * 60;
-  
-  let finalPercentageMark = scaledCaMark + scaledExamMark;
-  finalPercentageMark = Math.min(finalPercentageMark, 100);
-  
-  if (Number.isNaN(finalPercentageMark)) {
-      return null;
-  }
-
-  return parseFloat(finalPercentageMark.toFixed(1));
-}
-
 
 export default function ClassPerformanceDashboard({
   isOpen,
@@ -138,7 +108,7 @@ export default function ClassPerformanceDashboard({
       reports.forEach(report => {
         report.subjects.forEach(subject => {
           if (subject.subjectName && subject.subjectName.trim() !== '') {
-            const finalMark = calculateInternalSubjectFinalMark(subject);
+            const finalMark = calculateSubjectFinalMark(subject);
             if (finalMark !== null && !Number.isNaN(finalMark)) {
               if (!subjectMap.has(subject.subjectName)) {
                 subjectMap.set(subject.subjectName, { scores: [] });

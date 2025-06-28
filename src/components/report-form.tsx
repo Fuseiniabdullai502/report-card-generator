@@ -18,6 +18,7 @@ import { Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activit
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { calculateOverallAverage } from '@/lib/calculations';
 
 interface ReportFormProps {
   onFormUpdate: (data: ReportData) => void;
@@ -91,6 +92,19 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     if (!formData.academicTerm || !formData.className) return false;
     return formData.academicTerm === 'Third Term' && !tertiaryLevelClasses.includes(formData.className);
   }, [formData.academicTerm, formData.className]);
+
+  useEffect(() => {
+    if (isPromotionStatusApplicable) {
+      const overallAverage = calculateOverallAverage(formData.subjects);
+
+      if (overallAverage !== null) {
+        const newPromotionStatus = overallAverage >= 50 ? 'Promoted' : 'Repeated';
+        if (formData.promotionStatus !== newPromotionStatus) {
+            setFormData(prev => ({ ...prev, promotionStatus: newPromotionStatus }));
+        }
+      }
+    }
+  }, [isPromotionStatusApplicable, formData.subjects, formData.promotionStatus]);
   
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

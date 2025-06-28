@@ -23,6 +23,7 @@ import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { calculateOverallAverage } from '@/lib/calculations';
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
@@ -36,37 +37,6 @@ const reportTemplateOptions = [
     { id: 'academicRed', name: 'Academic Red' },
     { id: 'creativeTeal', name: 'Creative Teal' },
 ];
-
-
-function calculateSubjectFinalMark(subject: SubjectEntry): number | null {
-  const caMarkInput = subject.continuousAssessment;
-  const examMarkInput = subject.examinationMark;
-
-  const caVal = Number(caMarkInput);
-  const examVal = Number(examMarkInput);
-  
-  const caIsValid = caMarkInput !== null && caMarkInput !== undefined && !Number.isNaN(caVal);
-  const examIsValid = examMarkInput !== null && examMarkInput !== undefined && !Number.isNaN(examVal);
-
-  if (!caIsValid && !examIsValid) {
-    return null;
-  }
-
-  const safeCaVal = caIsValid ? caVal : 0;
-  const safeExamVal = examIsValid ? examVal : 0;
-
-  const scaledCaMark = (safeCaVal / 60) * 40;
-  const scaledExamMark = (safeExamVal / 100) * 60;
-  
-  let finalPercentageMark = scaledCaMark + scaledExamMark;
-  finalPercentageMark = Math.min(finalPercentageMark, 100);
-  
-  if (Number.isNaN(finalPercentageMark)) {
-      return null;
-  }
-
-  return parseFloat(finalPercentageMark.toFixed(1));
-}
 
 
 function getOrdinalSuffix(n: number): string {
@@ -136,20 +106,7 @@ function AppContent() {
 
     // 1. Calculate overall average for every report first.
     const reportsWithAverages = listToProcess.map(report => {
-      let totalScore = 0;
-      let validSubjectCount = 0;
-      let hasValidSubjects = false;
-      report.subjects.forEach(subject => {
-        if (subject.subjectName && subject.subjectName.trim() !== '') {
-            hasValidSubjects = true;
-            const finalMark = calculateSubjectFinalMark(subject);
-            if (finalMark !== null) {
-                totalScore += finalMark;
-                validSubjectCount++;
-            }
-        }
-      });
-      const overallAverage = hasValidSubjects && validSubjectCount > 0 ? parseFloat((totalScore / validSubjectCount).toFixed(2)) : null;
+      const overallAverage = calculateOverallAverage(report.subjects);
       return { ...report, overallAverage };
     });
 
@@ -901,5 +858,3 @@ export default function Home() {
     <AppContent />
   );
 }
-
-    

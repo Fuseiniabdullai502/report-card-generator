@@ -18,9 +18,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader as ShadcnUITableHea
 import { Building, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, BookOpen, Sigma } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
 import { getAiSchoolInsightsAction } from '@/app/actions';
-import type { GenerateSchoolInsightsOutput, GenerateSchoolInsightsInput, ClassSummary as AIClassSummary, SchoolSubjectPerformanceStat as AISchoolSubjectStat, SchoolGenderPerformanceStat as AISchoolGenderStat } from '@/ai/flows/generate-school-insights-flow';
+import type { GenerateSchoolInsightsOutput, GenerateSchoolInsightsInput } from '@/ai/flows/generate-school-insights-flow';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { calculateSubjectFinalMark } from '@/lib/calculations';
 
 interface SchoolPerformanceDashboardProps {
   isOpen: boolean;
@@ -66,37 +67,6 @@ export interface SchoolStatistics {
   overallGenderStatsForSchoolUI: AggregatedSchoolGenderStatForUI[];
 }
 
-function calculateInternalSubjectFinalMark(subject: SubjectEntry): number | null {
-  const caMarkInput = subject.continuousAssessment;
-  const examMarkInput = subject.examinationMark;
-
-  const caVal = Number(caMarkInput);
-  const examVal = Number(examMarkInput);
-  
-  const caIsValid = caMarkInput !== null && caMarkInput !== undefined && !Number.isNaN(caVal);
-  const examIsValid = examMarkInput !== null && examMarkInput !== undefined && !Number.isNaN(examVal);
-
-  if (!caIsValid && !examIsValid) {
-    return null; // Don't include in stats if no valid marks
-  }
-
-  const safeCaVal = caIsValid ? caVal : 0;
-  const safeExamVal = examIsValid ? examVal : 0;
-
-  const scaledCaMark = (safeCaVal / 60) * 40;
-  const scaledExamMark = (safeExamVal / 100) * 60;
-  
-  let finalPercentageMark = scaledCaMark + scaledExamMark;
-  finalPercentageMark = Math.min(finalPercentageMark, 100);
-  
-  if (Number.isNaN(finalPercentageMark)) {
-      return null;
-  }
-
-  return parseFloat(finalPercentageMark.toFixed(1));
-}
-
-
 function aggregateSchoolData(reports: ReportData[]): SchoolStatistics | null {
   if (!reports || reports.length === 0) return null;
 
@@ -126,7 +96,7 @@ function aggregateSchoolData(reports: ReportData[]): SchoolStatistics | null {
     
     report.subjects.forEach(subject => {
       if (subject.subjectName && subject.subjectName.trim() !== '') {
-        const finalMark = calculateInternalSubjectFinalMark(subject);
+        const finalMark = calculateSubjectFinalMark(subject);
         if (finalMark !== null && !Number.isNaN(finalMark)) {
           // For class-level subject scores
           const classSubjectScores = classDataMap.get(report.className)!.subjectScores;
