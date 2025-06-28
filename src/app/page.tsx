@@ -76,6 +76,7 @@ function getOrdinalSuffix(n: number): string {
 }
 
 function formatRankString(rankNumber: number, isTie: boolean): string {
+  if (rankNumber <= 0) return 'N/A';
   const suffix = getOrdinalSuffix(rankNumber);
   return `${isTie ? 'T-' : ''}${rankNumber}${suffix}`;
 }
@@ -164,44 +165,58 @@ function AppContent() {
 
     const allClassRankedReports: ReportData[] = [];
 
-    // 3. Rank students within each class group.
+    // 3. Rank students strictly within each class group.
     reportsByClass.forEach((classReports) => {
-      const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? 0) - (a.overallAverage ?? 0));
+      // Sort reports for the current class in descending order of average score
+      const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
 
-      let lastScore = -1;
-      let actualRank = 0;
-      let displayRankCounter = 0;
+      // Assign rank numbers, handling ties
+      const reportsWithRankNumbers = sortedReports.map((report, index) => {
+        // If the report has no average, it can't be ranked
+        if (report.overallAverage === null || report.overallAverage === undefined) {
+          return { ...report, rank: 'N/A' };
+        }
 
-      const rankedReportsInClass = sortedReports.map((report) => {
-        actualRank++;
-        if (report.overallAverage !== lastScore) {
-          displayRankCounter = actualRank;
-          lastScore = report.overallAverage ?? -1;
-          return { ...report, rank: formatRankString(displayRankCounter, false) };
+        // The first student is always rank 1 (unless they have no score)
+        if (index === 0) {
+          return { ...report, rank: '1' };
+        }
+
+        // Compare with the previous student to check for a tie
+        const prevReport = sortedReports[index - 1];
+        if (report.overallAverage === prevReport.overallAverage) {
+          // It's a tie, assign the same rank as the previous student
+          return { ...report, rank: prevReport.rank! };
         } else {
-          return { ...report, rank: formatRankString(displayRankCounter, true) };
+          // Not a tie, rank is the current position (index + 1)
+          return { ...report, rank: (index + 1).toString() };
         }
       });
-
-      // Handle ties correctly
-      for (let i = 0; i < rankedReportsInClass.length; i++) {
-          if (i > 0 && rankedReportsInClass[i].overallAverage !== null && rankedReportsInClass[i].overallAverage === rankedReportsInClass[i-1].overallAverage) {
-              const baseRank = parseInt(rankedReportsInClass[i-1].rank!.replace('T-', '').replace(/(st|nd|rd|th)$/, ''));
-              rankedReportsInClass[i].rank = formatRankString(baseRank, true);
-               if (!rankedReportsInClass[i-1].rank?.startsWith('T-')) {
-                  rankedReportsInClass[i-1].rank = formatRankString(baseRank, true);
-              }
-          }
-      }
       
-      allClassRankedReports.push(...rankedReportsInClass);
+      // Format the ranks with suffixes and tie markers
+      const finalFormattedReports = reportsWithRankNumbers.map((report, index, arr) => {
+        if (report.rank === 'N/A' || !report.rank) return { ...report, rank: 'N/A' };
+
+        const rankNumber = parseInt(report.rank, 10);
+        if (isNaN(rankNumber)) return { ...report, rank: 'N/A' };
+        
+        // Check for a tie with the next or previous student
+        const isTiedWithNext = index < arr.length - 1 && arr[index + 1].rank === report.rank;
+        const isTiedWithPrev = index > 0 && arr[index - 1].rank === report.rank;
+        const isTie = isTiedWithNext || isTiedWithPrev;
+
+        return { ...report, rank: formatRankString(rankNumber, isTie) };
+      });
+
+      allClassRankedReports.push(...finalFormattedReports);
     });
 
     // 4. Set the final list, sorted by class and then by rank for a stable and logical view.
     const finalSortedList = allClassRankedReports.sort((a, b) => {
       const classCompare = (a.className || '').localeCompare(b.className || '');
       if (classCompare !== 0) return classCompare;
-      return (b.overallAverage ?? 0) - (a.overallAverage ?? 0);
+      // Use overallAverage for sorting, as rank is a string and not reliable for sorting here
+      return (b.overallAverage ?? -1) - (a.overallAverage ?? -1);
     });
     
     setAllRankedReports(finalSortedList);
