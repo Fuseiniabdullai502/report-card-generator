@@ -17,13 +17,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown, LayoutTemplate } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown, LayoutTemplate, LogOut } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { calculateOverallAverage } from '@/lib/calculations';
+import { useAuth } from '@/components/auth-provider';
+import { useRouter } from 'next/navigation';
+import type { User } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
@@ -51,7 +55,7 @@ function formatRankString(rankNumber: number, isTie: boolean): string {
   return `${isTie ? 'T-' : ''}${rankNumber}${suffix}`;
 }
 
-function AppContent() {
+function AppContent({ user }: { user: User }) {
   const [currentEditingReport, setCurrentEditingReport] = useState<ReportData>(() => {
     const base = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
     return {
@@ -61,7 +65,7 @@ function AppContent() {
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
-      teacherId: undefined,
+      teacherId: user.uid,
     };
   });
   const [allRankedReports, setAllRankedReports] = useState<ReportData[]>([]);
@@ -80,6 +84,8 @@ function AppContent() {
   const [customClassNameInputValue, setCustomClassNameInputValue] = useState('');
   
   const [printFilterClass, setPrintFilterClass] = useState<string>('all');
+  
+  const router = useRouter();
 
   const availableClassesForFilter = useMemo(() => {
     const classNames = new Set(allRankedReports.map(report => report.className).filter(Boolean));
@@ -94,7 +100,6 @@ function AppContent() {
   }, [allRankedReports, printFilterClass]);
 
   useEffect(() => {
-    // When the filter changes, reset the preview to the first report of the new list.
     setCurrentPreviewIndex(0);
   }, [printFilterClass]);
 
@@ -104,13 +109,11 @@ function AppContent() {
       return;
     }
 
-    // 1. Calculate overall average for every report first.
     const reportsWithAverages = listToProcess.map(report => {
       const overallAverage = calculateOverallAverage(report.subjects);
       return { ...report, overallAverage };
     });
 
-    // 2. Group reports by class name.
     const reportsByClass = new Map<string, ReportData[]>();
     reportsWithAverages.forEach(report => {
       const className = report.className || 'Unclassified';
@@ -122,42 +125,29 @@ function AppContent() {
 
     const allClassRankedReports: ReportData[] = [];
 
-    // 3. Rank students strictly within each class group.
     reportsByClass.forEach((classReports) => {
-      // Sort reports for the current class in descending order of average score
       const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
 
-      // Assign rank numbers, handling ties
       const reportsWithRankNumbers = sortedReports.map((report, index) => {
-        // If the report has no average, it can't be ranked
         if (report.overallAverage === null || report.overallAverage === undefined) {
           return { ...report, rank: 'N/A' };
         }
-
-        // The first student is always rank 1 (unless they have no score)
         if (index === 0) {
           return { ...report, rank: '1' };
         }
-
-        // Compare with the previous student to check for a tie
         const prevReport = sortedReports[index - 1];
         if (report.overallAverage === prevReport.overallAverage) {
-          // It's a tie, assign the same rank as the previous student
           return { ...report, rank: prevReport.rank! };
         } else {
-          // Not a tie, rank is the current position (index + 1)
           return { ...report, rank: (index + 1).toString() };
         }
       });
       
-      // Format the ranks with suffixes and tie markers
       const finalFormattedReports = reportsWithRankNumbers.map((report, index, arr) => {
         if (report.rank === 'N/A' || !report.rank) return { ...report, rank: 'N/A' };
-
         const rankNumber = parseInt(report.rank, 10);
         if (isNaN(rankNumber)) return { ...report, rank: 'N/A' };
         
-        // Check for a tie with the next or previous student
         const isTiedWithNext = index < arr.length - 1 && arr[index + 1].rank === report.rank;
         const isTiedWithPrev = index > 0 && arr[index - 1].rank === report.rank;
         const isTie = isTiedWithNext || isTiedWithPrev;
@@ -168,11 +158,9 @@ function AppContent() {
       allClassRankedReports.push(...finalFormattedReports);
     });
 
-    // 4. Set the final list, sorted by class and then by rank for a stable and logical view.
     const finalSortedList = allClassRankedReports.sort((a, b) => {
       const classCompare = (a.className || '').localeCompare(b.className || '');
       if (classCompare !== 0) return classCompare;
-      // Use overallAverage for sorting, as rank is a string and not reliable for sorting here
       return (b.overallAverage ?? -1) - (a.overallAverage ?? -1);
     });
     
@@ -221,7 +209,7 @@ function AppContent() {
           createdAt: undefined,
           overallAverage: undefined,
           rank: undefined,
-          teacherId: undefined,
+          teacherId: user.uid,
         }));
       }
     }, (error) => {
@@ -231,7 +219,7 @@ function AppContent() {
     });
 
     return () => unsubscribe();
-  }, [calculateAndSetRanks, toast, sessionDefaults]);
+  }, [calculateAndSetRanks, toast, sessionDefaults, user.uid]);
 
 
   const handleFormUpdate = useCallback((data: ReportData) => {
@@ -239,19 +227,19 @@ function AppContent() {
   }, []);
 
   const handleResetToBlankForm = useCallback(() => {
-    const newNextStudentEntryNumber = nextStudentEntryNumber; // Use the current next number
+    const newNextStudentEntryNumber = nextStudentEntryNumber;
 
     const newStudentBase = JSON.parse(JSON.stringify(defaultReportData));
     
     const newStudentDataForForm: ReportData = {
       ...newStudentBase,
-      ...sessionDefaults, // Apply session defaults
+      ...sessionDefaults,
       id: `unsaved-${Date.now()}`,
       studentEntryNumber: newNextStudentEntryNumber,
       createdAt: undefined,
       overallAverage: undefined,
       rank: undefined,
-      teacherId: undefined,
+      teacherId: user.uid,
     };
     
     setCurrentEditingReport(newStudentDataForForm);
@@ -261,10 +249,9 @@ function AppContent() {
       title: "Form Cleared",
       description: "Ready for a new student's report entry.",
     });
-  }, [nextStudentEntryNumber, sessionDefaults, toast]);
+  }, [nextStudentEntryNumber, sessionDefaults, toast, user.uid]);
 
   const handleSaveReportAndResetForm = async (formDataFromForm: ReportData) => {
-     // Check for duplicates before proceeding
     const isDuplicate = allRankedReports.some(report =>
         report.studentName?.trim().toLowerCase() === formDataFromForm.studentName?.trim().toLowerCase() &&
         report.className === formDataFromForm.className &&
@@ -278,10 +265,11 @@ function AppContent() {
             description: `A report for '${formDataFromForm.studentName}' in '${formDataFromForm.className}' for this academic term already exists.`,
             variant: "destructive",
         });
-        return; // Prevent saving the duplicate
+        return;
     }
     
     const reportToSaveForFirestore = {
+      teacherId: user.uid,
       studentEntryNumber: formDataFromForm.studentEntryNumber,
       studentName: formDataFromForm.studentName || '',
       className: formDataFromForm.className || '',
@@ -362,6 +350,16 @@ function AppContent() {
     handleResetToBlankForm();
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: "Logged Out", description: "You have been successfully logged out." });
+      router.push('/login');
+    } catch (error) {
+      toast({ title: "Logout Error", description: "Failed to log out.", variant: "destructive" });
+    }
+  };
+
 
   const handleClearList = async () => {
     if (allRankedReports.length === 0) {
@@ -385,7 +383,7 @@ function AppContent() {
         createdAt: undefined,
         overallAverage: undefined,
         rank: undefined,
-        teacherId: undefined,
+        teacherId: user.uid,
      });
   }
 
@@ -416,7 +414,6 @@ function AppContent() {
       description: "Your browser's print dialog will open. Please select 'Save as PDF' as the destination.",
     });
 
-    // A small delay can help ensure the toast is visible before the print dialog blocks the UI
     setTimeout(() => {
       window.print();
     }, 500);
@@ -497,6 +494,7 @@ function AppContent() {
         const profile = Object.values(profiles).find(p => p.studentName === studentName);
         if (profile) {
           const importedReportForFirestore = {
+            teacherId: user.uid,
             studentEntryNumber: currentImportEntryNumberBase + index,
             createdAt: serverTimestamp(),
             studentName: profile.studentName,
@@ -542,7 +540,6 @@ function AppContent() {
                 totalSchoolDays: sessionDefaults.totalSchoolDays ?? studentSpecificDefaultsForImport.totalSchoolDays,
                 headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? studentSpecificDefaultsForImport.headMasterSignatureDataUri,
                 instructorContact: sessionDefaults.instructorContact ?? studentSpecificDefaultsForImport.instructorContact,
-
                 studentName: studentSpecificDefaultsForImport.studentName,
                 gender: studentSpecificDefaultsForImport.gender,
                 studentPhotoDataUri: studentSpecificDefaultsForImport.studentPhotoDataUri,
@@ -556,13 +553,12 @@ function AppContent() {
                 hobbies: [...studentSpecificDefaultsForImport.hobbies],
                 teacherFeedback: studentSpecificDefaultsForImport.teacherFeedback,
                 promotionStatus: studentSpecificDefaultsForImport.promotionStatus,
-
                 id: `unsaved-${Date.now()}`,
                 studentEntryNumber: newNextEntryNumForForm,
                 createdAt: undefined,
                 overallAverage: undefined,
                 rank: undefined,
-                teacherId: undefined,
+                teacherId: user.uid,
             });
             setNextStudentEntryNumber(newNextEntryNumForForm);
             setSessionDefaults(prev => ({...prev, className: destinationClass}));
@@ -590,9 +586,10 @@ function AppContent() {
          <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
          <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
         </div>
-        <p className="text-muted-foreground mt-2 text-sm sm:text-base">Easily create, customize, rank, and print student report cards.</p>
+        <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.email}</p>
          <div className="absolute top-0 right-0 flex items-center gap-2">
           <ThemeToggleButton />
+          <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4"/>Logout</Button>
         </div>
       </header>
       
@@ -835,10 +832,9 @@ function AppContent() {
     {isSchoolDashboardOpen && (
         <SchoolPerformanceDashboard
             isOpen={isSchoolDashboardOpen}
-            onOpenChange={setIsSchoolDashboardOpen}
+            onOpencha_nge={setIsSchoolDashboardOpen}
             allReports={filteredReports}
             schoolNameProp={schoolNameForDashboard}
-            academicTermProp={academicTermForSchoolDashboard}
         />
     )}
     {isImportStudentsDialogOpen && (
@@ -854,7 +850,18 @@ function AppContent() {
 
 
 export default function Home() {
-  return (
-    <AppContent />
-  );
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return null;
+  }
+  
+  return <AppContent user={user} />;
 }

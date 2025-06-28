@@ -1,6 +1,7 @@
 // src/lib/firebase.ts
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore'; // For data persistence
+import { getAuth, Auth } from 'firebase/auth'; // Import Auth
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -20,6 +21,7 @@ if (!getApps().length) {
   app = getApp();
 }
 
-const db: Firestore = getFirestore(app); // Firestore instance enabled
+const db: Firestore = getFirestore(app);
+const auth: Auth = getAuth(app); // Create and export auth instance
 
-export { app, db };
+export { app, db, auth };
