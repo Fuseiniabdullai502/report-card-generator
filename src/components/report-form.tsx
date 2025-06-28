@@ -32,7 +32,7 @@ export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
 const ADD_CUSTOM_HOBBY_VALUE = "--add-custom-hobby--";
 
-const tertiaryLevelClasses = ["LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"];
+const tertiaryLevelClasses = ["Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 const genderOptions = ["Male", "Female"];
 const promotionStatusOptions = ["Promoted", "Repeated", "Graduated", "Under Review"];
 const predefinedSubjectsList = ["Mathematics", "English Language", "Science", "Computing", "Religious and Moral Education", "Creative Arts", "Geography", "Economics", "Biology", "Elective Mathematics"];

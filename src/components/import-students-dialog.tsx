@@ -35,10 +35,10 @@ interface ImportStudentsDialogProps {
 
 const classLevels = [
   "KG1", "KG2",
-  "BASIC 1", "BASIC 2", "BASIC 3", "BASIC 4", "BASIC 5", "BASIC 6",
+  "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6",
   "JHS1", "JHS2", "JHS3",
   "SHS1", "SHS2", "SHS3",
-  "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"
+  "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"
 ];
 
 
