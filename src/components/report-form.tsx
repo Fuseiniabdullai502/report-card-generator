@@ -56,7 +56,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const [customHobbyInputValue, setCustomHobbyInputValue] = useState('');
 
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
-  const [comparisonTermSelection, setComparisonTermSelection] = useState<string>('none');
 
   useEffect(() => {
     // Only reset the form state if the ID of the initial data changes.
@@ -186,8 +185,25 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       toast({ title: "Missing Information", description: "Please fill student name, class, term, and subject names.", variant: "destructive" });
       return;
     }
+
     let previousTermsDataForAI: GenerateReportInsightsInput['previousTermsData'] = [];
-    // ... (logic for previousTermsDataForAI as before) ...
+    if (reportPrintListForHistory && reportPrintListForHistory.length > 0) {
+      previousTermsDataForAI = reportPrintListForHistory
+        .filter(report => 
+          report.studentName?.trim().toLowerCase() === formData.studentName?.trim().toLowerCase() && 
+          report.academicTerm !== formData.academicTerm
+        )
+        .map(report => ({
+          termName: report.academicTerm || 'Unknown Term',
+          subjects: report.subjects.map(s => ({
+            subjectName: s.subjectName,
+            continuousAssessment: s.continuousAssessment,
+            examinationMark: s.examinationMark,
+          })),
+          overallAverage: report.overallAverage ?? null,
+        }));
+    }
+
     startReportInsightsAiTransition(async () => {
        const aiInput: GenerateReportInsightsInput = {
           studentName, className, currentAcademicTerm: academicTerm,
@@ -199,7 +215,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
        const result = await getAiReportInsightsAction(aiInput);
        if (result.success && result.insights) {
           setFormData(prev => ({ ...prev, ...result.insights }));
-          toast({ title: "AI Insights Generated" });
+          toast({ title: "AI Insights Generated", description: "Performance summary updated with term-over-term comparison." });
        } else {
           toast({ title: "Error Generating Insights", description: result.error || "Unknown error.", variant: "destructive" });
        }

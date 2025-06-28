@@ -15,14 +15,14 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader as ShadcnUITableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, FolderDown } from 'lucide-react';
+import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, FolderDown, History } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
 import type { GenerateClassInsightsOutput, GenerateClassInsightsInput } from '@/ai/flows/generate-class-insights-flow';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { calculateSubjectFinalMark } from '@/lib/calculations';
+import { calculateSubjectFinalMark, calculateOverallAverage } from '@/lib/calculations';
 
 
 interface ClassPerformanceDashboardProps {
@@ -54,6 +54,12 @@ export interface ClassStatistics {
   genderStats: GenderPerformanceStatForUI[];
 }
 
+interface HistoricalTermData {
+    term: string;
+    numStudents: number;
+    classAverage: number | null;
+}
+
 export default function ClassPerformanceDashboard({
   isOpen,
   onOpenChange,
@@ -69,6 +75,10 @@ export default function ClassPerformanceDashboard({
   const [aiError, setAiError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const [mostRecentTerm, setMostRecentTerm] = useState<string>('');
+  const [historicalData, setHistoricalData] = useState<HistoricalTermData[]>([]);
+
+
   useEffect(() => {
     if (isOpen) {
       const validInitial = availableClasses.includes(initialClassName) && initialClassName;
@@ -77,132 +87,162 @@ export default function ClassPerformanceDashboard({
     }
   }, [isOpen, initialClassName, availableClasses]);
 
-  const reports = useMemo(() => {
+  const reportsForClass = useMemo(() => {
     return allReports.filter(report => report.className === selectedClass);
   }, [allReports, selectedClass]);
   
-  const academicTerm = useMemo(() => {
-    if (reports.length > 0) {
-      const terms = new Set(reports.map(r => r.academicTerm).filter(Boolean));
-      if (terms.size === 1) return terms.values().next().value;
-      return "Multiple Terms";
-    }
-    return "";
-  }, [reports]);
-
 
   useEffect(() => {
-    if (isOpen && reports.length > 0) {
-      setIsLoadingStats(true);
-      const totalStudents = reports.length;
-
-      const validOverallAverages = reports
-        .map(r => r.overallAverage)
-        .filter(avg => avg !== undefined && avg !== null && !Number.isNaN(avg)) as number[];
-        
-      const overallClassAverage = validOverallAverages.length > 0 
-        ? parseFloat((validOverallAverages.reduce((a, b) => a + b, 0) / validOverallAverages.length).toFixed(2)) 
-        : null;
-
-      const subjectMap: Map<string, { scores: number[] }> = new Map();
-      reports.forEach(report => {
-        report.subjects.forEach(subject => {
-          if (subject.subjectName && subject.subjectName.trim() !== '') {
-            const finalMark = calculateSubjectFinalMark(subject);
-            if (finalMark !== null && !Number.isNaN(finalMark)) {
-              if (!subjectMap.has(subject.subjectName)) {
-                subjectMap.set(subject.subjectName, { scores: [] });
-              }
-              subjectMap.get(subject.subjectName)!.scores.push(finalMark);
-            }
-          }
-        });
-      });
-
-      const subjectStats: SubjectPerformanceStatForUI[] = Array.from(subjectMap.entries()).map(([subjectName, data]) => {
-        const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
-        const subjectAvg = validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null;
-        return {
-          subjectName,
-          numBelowAverage: validScores.filter(score => score < 40).length,
-          numAverage: validScores.filter(score => score >= 40 && score < 60).length,
-          numAboveAverage: validScores.filter(score => score >= 60).length,
-          classAverageForSubject: subjectAvg,
-        };
-      });
-
-      const genderMap: Map<string, { scores: number[]; count: number }> = new Map();
-      reports.forEach(report => {
-        const gender = report.gender || 'Unknown';
-        if (!genderMap.has(gender)) {
-            genderMap.set(gender, { scores: [], count: 0 });
-        }
-        if (report.overallAverage !== undefined && report.overallAverage !== null && !Number.isNaN(report.overallAverage)) {
-            genderMap.get(gender)!.scores.push(report.overallAverage);
-        }
-        genderMap.get(gender)!.count++;
-      });
-      
-      const genderStats: GenderPerformanceStatForUI[] = Array.from(genderMap.entries()).map(([gender, data]) => {
-        const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
-        return {
-            gender,
-            count: data.count,
-            averageScore: validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null,
-        };
-      });
-
-      const newStats = { overallClassAverage, totalStudents, subjectStats, genderStats };
-      setClassStats(newStats);
-      setIsLoadingStats(false);
-
-      setAiAdvice(null);
-      setAiError(null);
-      startAiTransition(async () => {
-        try {
-          const sanitizedAiInput: GenerateClassInsightsInput = {
-            className: selectedClass,
-            academicTerm,
-            overallClassAverage: newStats.overallClassAverage ?? 0,
-            totalStudents: newStats.totalStudents,
-            subjectStats: newStats.subjectStats.map(s => ({
-              ...s,
-              classAverageForSubject: s.classAverageForSubject ?? 0,
-            })),
-            genderStats: newStats.genderStats.map(g => ({
-              ...g,
-              averageScore: g.averageScore ?? 0,
-            })),
-          };
-          
-          const result = await getAiClassInsightsAction(sanitizedAiInput);
-          if (result.success && result.insights) {
-            setAiAdvice(result.insights);
-          } else {
-            const errorMessage = result.error || "An unknown error occurred while generating insights.";
-            setAiError(errorMessage);
-            toast({ title: "AI Insights Error", description: errorMessage, variant: "destructive" });
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          setAiError(errorMessage);
-          toast({ 
-            title: "AI Insights Request Failed", 
-            description: `A client-side error occurred: ${errorMessage}. Please check the browser console.`, 
-            variant: "destructive" 
-          });
-        }
-      });
-    } else if (isOpen && reports.length === 0) {
+    if (!isOpen || reportsForClass.length === 0) {
       setClassStats(null);
       setAiAdvice(null);
       setAiError(null);
-      setIsLoadingStats(false);
-    }
-  }, [isOpen, reports, selectedClass, academicTerm, toast]); 
+      setMostRecentTerm('');
+      setHistoricalData([]);
+      return;
+    };
+    
+    setIsLoadingStats(true);
+
+    const reportsByTerm = new Map<string, ReportData[]>();
+    reportsForClass.forEach(report => {
+        const term = report.academicTerm || 'Unknown Term';
+        if (!reportsByTerm.has(term)) {
+            reportsByTerm.set(term, []);
+        }
+        reportsByTerm.get(term)!.push(report);
+    });
+
+    const termOrder = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
+    const sortedTerms = Array.from(reportsByTerm.keys()).sort((a, b) => {
+        const indexA = termOrder.indexOf(a);
+        const indexB = termOrder.indexOf(b);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return a.localeCompare(b);
+    });
+
+    const newMostRecentTerm = sortedTerms[sortedTerms.length - 1] || '';
+    setMostRecentTerm(newMostRecentTerm);
+    
+    const reports = reportsByTerm.get(newMostRecentTerm) || [];
+    const totalStudents = reports.length;
+
+    const validOverallAverages = reports
+      .map(r => r.overallAverage)
+      .filter(avg => avg !== undefined && avg !== null && !Number.isNaN(avg)) as number[];
+      
+    const overallClassAverage = validOverallAverages.length > 0 
+      ? parseFloat((validOverallAverages.reduce((a, b) => a + b, 0) / validOverallAverages.length).toFixed(2)) 
+      : null;
+
+    const subjectMap: Map<string, { scores: number[] }> = new Map();
+    reports.forEach(report => {
+      report.subjects.forEach(subject => {
+        if (subject.subjectName && subject.subjectName.trim() !== '') {
+          const finalMark = calculateSubjectFinalMark(subject);
+          if (finalMark !== null && !Number.isNaN(finalMark)) {
+            if (!subjectMap.has(subject.subjectName)) {
+              subjectMap.set(subject.subjectName, { scores: [] });
+            }
+            subjectMap.get(subject.subjectName)!.scores.push(finalMark);
+          }
+        }
+      });
+    });
+
+    const subjectStats: SubjectPerformanceStatForUI[] = Array.from(subjectMap.entries()).map(([subjectName, data]) => {
+      const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
+      const subjectAvg = validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null;
+      return {
+        subjectName,
+        numBelowAverage: validScores.filter(score => score < 40).length,
+        numAverage: validScores.filter(score => score >= 40 && score < 60).length,
+        numAboveAverage: validScores.filter(score => score >= 60).length,
+        classAverageForSubject: subjectAvg,
+      };
+    });
+
+    const genderMap: Map<string, { scores: number[]; count: number }> = new Map();
+    reports.forEach(report => {
+      const gender = report.gender || 'Unknown';
+      if (!genderMap.has(gender)) {
+          genderMap.set(gender, { scores: [], count: 0 });
+      }
+      if (report.overallAverage !== undefined && report.overallAverage !== null && !Number.isNaN(report.overallAverage)) {
+          genderMap.get(gender)!.scores.push(report.overallAverage);
+      }
+      genderMap.get(gender)!.count++;
+    });
+    
+    const genderStats: GenderPerformanceStatForUI[] = Array.from(genderMap.entries()).map(([gender, data]) => {
+      const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
+      return {
+          gender,
+          count: data.count,
+          averageScore: validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null,
+      };
+    });
+
+    const newStats = { overallClassAverage, totalStudents, subjectStats, genderStats };
+    setClassStats(newStats);
+    setIsLoadingStats(false);
+    
+    const newHistoricalData = sortedTerms.map(term => {
+        const termReports = reportsByTerm.get(term)!;
+        const avg = calculateOverallAverage(termReports.flatMap(r => r.subjects));
+        return {
+            term: term,
+            numStudents: termReports.length,
+            classAverage: avg
+        };
+    });
+    setHistoricalData(newHistoricalData);
+
+
+    setAiAdvice(null);
+    setAiError(null);
+    startAiTransition(async () => {
+      try {
+        const sanitizedAiInput: GenerateClassInsightsInput = {
+          className: selectedClass,
+          academicTerm: newMostRecentTerm,
+          overallClassAverage: newStats.overallClassAverage ?? 0,
+          totalStudents: newStats.totalStudents,
+          subjectStats: newStats.subjectStats.map(s => ({
+            ...s,
+            classAverageForSubject: s.classAverageForSubject ?? 0,
+          })),
+          genderStats: newStats.genderStats.map(g => ({
+            ...g,
+            averageScore: g.averageScore ?? 0,
+          })),
+        };
+        
+        const result = await getAiClassInsightsAction(sanitizedAiInput);
+        if (result.success && result.insights) {
+          setAiAdvice(result.insights);
+        } else {
+          const errorMessage = result.error || "An unknown error occurred while generating insights.";
+          setAiError(errorMessage);
+          toast({ title: "AI Insights Error", description: errorMessage, variant: "destructive" });
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        setAiError(errorMessage);
+        toast({ 
+          title: "AI Insights Request Failed", 
+          description: `A client-side error occurred: ${errorMessage}. Please check the browser console.`, 
+          variant: "destructive" 
+        });
+      }
+    });
+
+  }, [isOpen, reportsForClass, selectedClass, toast]); 
 
   const handlePrint = () => {
-    if (!classStats || reports.length === 0) {
+    if (!classStats || reportsForClass.length === 0) {
       toast({title: "Nothing to Print", description: "Dashboard data is not available or no reports loaded.", variant: "destructive"});
       return;
     }
@@ -363,7 +403,7 @@ export default function ClassPerformanceDashboard({
             </Select>
           </div>
           <ShadcnDialogDescription className="text-xs text-muted-foreground pt-1">
-            {selectedClass ? `${selectedClass} - ${academicTerm}` : "Select a class to view its dashboard"}
+            {selectedClass ? `Showing detailed analysis for ${selectedClass} - ${mostRecentTerm || 'Latest Term'}` : "Select a class to view its dashboard"}
           </ShadcnDialogDescription>
         </ShadcnDialogHeader>
         
@@ -372,7 +412,7 @@ export default function ClassPerformanceDashboard({
           className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-6 space-y-6"
         >
             <div className="dashboard-print-header">
-                <h2 className="text-xl font-bold">Class Performance Dashboard: {selectedClass} ({academicTerm})</h2>
+                <h2 className="text-xl font-bold">Class Performance Dashboard: {selectedClass} ({mostRecentTerm})</h2>
                 <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
             </div>
 
@@ -383,7 +423,7 @@ export default function ClassPerformanceDashboard({
                 </CardContent>
               </Card>
             )}
-            {reports.length === 0 && !isLoadingStats && (
+            {reportsForClass.length === 0 && !isLoadingStats && (
                  <Card className="shadow-md">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Info className="mr-2 h-5 w-5" />No Reports Available</CardTitle>
@@ -393,13 +433,13 @@ export default function ClassPerformanceDashboard({
                     </CardContent>
                 </Card>
             )}
-            {!classStats && reports.length > 0 && !isLoadingStats && (
+            {!classStats && reportsForClass.length > 0 && !isLoadingStats && (
                  <Card className="shadow-md">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />Data Error</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground">Could not calculate class statistics. Please check report data or try again.</p>
+                        <p className="text-muted-foreground">Could not calculate class statistics for the most recent term. Please check report data or try again.</p>
                     </CardContent>
                 </Card>
             )}
@@ -408,7 +448,7 @@ export default function ClassPerformanceDashboard({
               <>
                 <Card className="shadow-md">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Users className="mr-2 h-5 w-5" />Overall Snapshot</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Users className="mr-2 h-5 w-5" />Overall Snapshot ({mostRecentTerm})</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                     <div>
@@ -424,10 +464,38 @@ export default function ClassPerformanceDashboard({
                   </CardContent>
                 </Card>
 
+                 {historicalData.length > 1 && (
+                    <Card className="shadow-md">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><History className="mr-2 h-5 w-5"/>Term-over-Term Comparison</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <Table className="border rounded-md min-w-[400px]">
+                                <ShadcnUITableHeader className="bg-muted/50">
+                                    <TableRow>
+                                        <TableHead className="font-semibold">Term</TableHead>
+                                        <TableHead className="text-center font-semibold"># Students</TableHead>
+                                        <TableHead className="text-center font-semibold">Class Average (%)</TableHead>
+                                    </TableRow>
+                                </ShadcnUITableHeader>
+                                <TableBody>
+                                    {historicalData.map(data => (
+                                        <TableRow key={data.term}>
+                                            <TableCell className="font-medium">{data.term}</TableCell>
+                                            <TableCell className="text-center">{data.numStudents}</TableCell>
+                                            <TableCell className="text-center">{data.classAverage?.toFixed(1) ?? 'N/A'}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                 )}
+
                 {classStats.subjectStats.length > 0 && (
                   <Card className="shadow-md">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><TrendingUp className="mr-2 h-5 w-5 text-green-600" />Subject Performance</CardTitle>
+                      <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><TrendingUp className="mr-2 h-5 w-5 text-green-600" />Subject Performance ({mostRecentTerm})</CardTitle>
                       <CardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject (Below Average &lt;40%, Average 40-59%, Above Average &ge;60%).</CardDescription>
                     </CardHeader>
                     <CardContent className="pt-4">
@@ -473,7 +541,7 @@ export default function ClassPerformanceDashboard({
                 {classStats.genderStats.length > 0 && (
                  <Card className="shadow-md">
                     <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics</CardTitle>
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics ({mostRecentTerm})</CardTitle>
                          <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</CardDescription>
                     </CardHeader>
                     <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center">
@@ -537,7 +605,7 @@ export default function ClassPerformanceDashboard({
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
                         {isLoadingAi && !aiAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
-                        AI Pedagogical Insights &amp; Advice
+                        AI Pedagogical Insights &amp; Advice ({mostRecentTerm})
                     </CardTitle>
                   </CardHeader>
                   {renderAiInsights()}
@@ -547,7 +615,7 @@ export default function ClassPerformanceDashboard({
           </div>
 
         <ShadcnDialogFooter className="w-full shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide">
-          <Button variant="outline" onClick={handlePrint} disabled={!classStats || reports.length === 0}>
+          <Button variant="outline" onClick={handlePrint} disabled={!classStats || reportsForClass.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
           <DialogClose asChild>

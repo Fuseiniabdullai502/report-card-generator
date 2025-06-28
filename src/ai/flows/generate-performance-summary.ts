@@ -26,7 +26,6 @@ const PreviousTermPerformanceSchema = z.object({
   termName: z.string().describe("The name of the previous academic term (e.g., 'First Term')."),
   subjects: z.array(FlowSubjectEntrySchema).describe("An array of subjects with their marks for that term."),
   overallAverage: z.number().nullable().optional().describe("The student's overall average for that term, if available."),
-  // Optionally, add daysAttended and totalSchoolDays for that term if needed for deeper comparison
 });
 
 // Define the Zod schema for the input - NOT EXPORTED
