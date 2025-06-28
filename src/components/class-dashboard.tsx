@@ -401,7 +401,7 @@ export default function ClassPerformanceDashboard({
           data-testid="dashboard-inner-scroll-container"
           className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-6 space-y-6"
         >
-            <div id="dashboard-print-header" className="dashboard-print-header hidden print:block px-6 pt-6 pb-4 mb-4 border-b">
+            <div className="dashboard-print-header">
                 <h2 className="text-xl font-bold">Class Performance Dashboard: {selectedClass} ({academicTerm})</h2>
                 <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
             </div>
