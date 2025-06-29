@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, deleteDoc, writeBatch, where } from 'firebase/firestore';
 import { calculateOverallAverage } from '@/lib/calculations';
 import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
@@ -170,9 +170,22 @@ function AppContent({ user }: { user: User }) {
   }, []);
 
   useEffect(() => {
+    if (!user?.uid) {
+        setIsLoadingReports(false);
+        return;
+    }
+    
     setIsLoadingReports(true);
     const reportsCollectionRef = collection(db, 'reports');
-    const q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
+    
+    let q;
+    // If the user is an admin, they see all reports.
+    // If they are an instructor, they only see reports they created.
+    if (role === 'admin') {
+        q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
+    } else {
+        q = query(reportsCollectionRef, where('teacherId', '==', user.uid), orderBy('createdAt', 'asc'));
+    }
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedReports: ReportData[] = [];
@@ -214,14 +227,23 @@ function AppContent({ user }: { user: User }) {
           teacherId: user.uid,
         }));
       }
-    }, (error) => {
+    }, (error: any) => { // Use 'any' to access the 'code' property
       console.error("Error fetching reports from Firestore:", error);
-      toast({ title: "Error Fetching Reports", description: "Could not load reports from the database.", variant: "destructive" });
+      if (error.code === 'failed-precondition') {
+        toast({ 
+          title: "Firestore Index Required", 
+          description: "A database index is needed to filter reports. Please check your browser's developer console for a link to create it. This is a one-time setup.",
+          variant: "destructive",
+          duration: 20000 
+        });
+      } else {
+        toast({ title: "Error Fetching Reports", description: "Could not load reports from the database.", variant: "destructive" });
+      }
       setIsLoadingReports(false);
     });
 
     return () => unsubscribe();
-  }, [calculateAndSetRanks, toast, sessionDefaults, user.uid]);
+  }, [role, user.uid, calculateAndSetRanks, toast, sessionDefaults]);
 
 
   const handleFormUpdate = useCallback((data: ReportData) => {
