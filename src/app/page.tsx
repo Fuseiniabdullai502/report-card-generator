@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, deleteDoc, writeBatch, where } from 'firebase/firestore';
+import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, deleteDoc, writeBatch, where, limit } from 'firebase/firestore';
 import { calculateOverallAverage } from '@/lib/calculations';
 import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
@@ -88,6 +88,8 @@ function AppContent({ user }: { user: User }) {
   
   const router = useRouter();
   const { role } = useAuth(); // Get user role
+  const [limitReports, setLimitReports] = useState(true);
+  const reportsLimit = 100;
 
   const availableClassesForFilter = useMemo(() => {
     const classNames = new Set(allRankedReports.map(report => report.className).filter(Boolean));
@@ -126,8 +128,12 @@ function AppContent({ user }: { user: User }) {
     });
 
     const allClassRankedReports: ReportData[] = [];
+    
+    // Optimization: Sort by class name first to avoid a final expensive sort
+    const sortedClassNames = Array.from(reportsByClass.keys()).sort();
 
-    reportsByClass.forEach((classReports) => {
+    sortedClassNames.forEach((className) => {
+      const classReports = reportsByClass.get(className)!;
       const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
 
       const reportsWithRankNumbers = sortedReports.map((report, index) => {
@@ -159,14 +165,8 @@ function AppContent({ user }: { user: User }) {
 
       allClassRankedReports.push(...finalFormattedReports);
     });
-
-    const finalSortedList = allClassRankedReports.sort((a, b) => {
-      const classCompare = (a.className || '').localeCompare(b.className || '');
-      if (classCompare !== 0) return classCompare;
-      return (b.overallAverage ?? -1) - (a.overallAverage ?? -1);
-    });
     
-    setAllRankedReports(finalSortedList);
+    setAllRankedReports(allClassRankedReports); // Already sorted by class and rank
   }, []);
 
   useEffect(() => {
@@ -179,12 +179,17 @@ function AppContent({ user }: { user: User }) {
     const reportsCollectionRef = collection(db, 'reports');
     
     let q;
-    // If the user is an admin, they see all reports.
-    // If they are an instructor, they only see reports they created.
     if (role === 'admin') {
+      if (limitReports) {
+        // For admins, initially load only the 100 most recent reports for performance.
+        q = query(reportsCollectionRef, orderBy('createdAt', 'desc'), limit(reportsLimit));
+      } else {
+        // Load all reports if requested.
         q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
+      }
     } else {
-        q = query(reportsCollectionRef, where('teacherId', '==', user.uid), orderBy('createdAt', 'asc'));
+      // Instructors only see their own reports.
+      q = query(reportsCollectionRef, where('teacherId', '==', user.uid), orderBy('createdAt', 'asc'));
     }
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -243,7 +248,7 @@ function AppContent({ user }: { user: User }) {
     });
 
     return () => unsubscribe();
-  }, [role, user.uid, calculateAndSetRanks, toast, sessionDefaults]);
+  }, [role, user.uid, calculateAndSetRanks, toast, sessionDefaults, limitReports]);
 
 
   const handleFormUpdate = useCallback((data: ReportData) => {
@@ -689,6 +694,19 @@ function AppContent({ user }: { user: User }) {
         </CardContent>
       </Card>
 
+      {role === 'admin' && limitReports && allRankedReports.length >= reportsLimit && (
+        <Alert className="mb-8 no-print">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Displaying Recent Reports</AlertTitle>
+            <AlertDescription className="flex justify-between items-center">
+                To improve performance, only the {reportsLimit} most recent reports are shown.
+                <Button onClick={() => setLimitReports(false)} size="sm" disabled={isLoadingReports}>
+                    {isLoadingReports ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                    Load All Reports
+                </Button>
+            </AlertDescription>
+        </Alert>
+      )}
 
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-5 gap-8">
         <section className="lg:col-span-2 no-print space-y-4">
