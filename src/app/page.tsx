@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown, LayoutTemplate, LogOut } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown, LayoutTemplate, LogOut, ShieldCheck } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
@@ -28,6 +28,7 @@ import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import type { User } from 'firebase/auth';
 import { signOut } from 'firebase/auth';
+import Link from 'next/link';
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
@@ -86,6 +87,7 @@ function AppContent({ user }: { user: User }) {
   const [printFilterClass, setPrintFilterClass] = useState<string>('all');
   
   const router = useRouter();
+  const { role } = useAuth(); // Get user role
 
   const availableClassesForFilter = useMemo(() => {
     const classNames = new Set(allRankedReports.map(report => report.className).filter(Boolean));
@@ -588,6 +590,11 @@ function AppContent({ user }: { user: User }) {
         </div>
         <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.email}</p>
          <div className="absolute top-0 right-0 flex items-center gap-2">
+           {role === 'admin' && (
+              <Button asChild variant="outline" size="sm">
+                  <Link href="/admin"><ShieldCheck className="mr-2 h-4 w-4"/>Admin</Link>
+              </Button>
+            )}
           <ThemeToggleButton />
           <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4"/>Logout</Button>
         </div>
