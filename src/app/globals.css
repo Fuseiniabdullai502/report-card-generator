@@ -159,6 +159,12 @@ body {
     print-color-adjust: exact !important; 
   }
 
+  /* When printing a dashboard, hide the main page's report preview container */
+  body.school-dashboard-is-open #report-preview-container,
+  body.class-dashboard-is-open #report-preview-container {
+    display: none !important;
+  }
+
   #report-preview-container { 
     position: static !important;
     width: 100% !important;
@@ -488,6 +494,7 @@ body {
     
 
     
+
 
 
 

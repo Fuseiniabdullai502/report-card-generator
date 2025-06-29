@@ -63,6 +63,17 @@ export default function SchoolPerformanceDashboard({
   const [historicalData, setHistoricalData] = useState<HistoricalSchoolTermData[]>([]);
 
   useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('school-dashboard-is-open');
+    } else {
+      document.body.classList.remove('school-dashboard-is-open');
+    }
+    return () => {
+      document.body.classList.remove('school-dashboard-is-open');
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (!isOpen || allReports.length === 0) {
       setSchoolStats(null);
       setAiSchoolAdvice(null);
@@ -564,7 +575,7 @@ export default function SchoolPerformanceDashboard({
             <Printer className="mr-2 h-4 w-4" /> Print School Dashboard
           </Button>
           <DialogClose asChild>
-            <Button variant="secondary">Close</Button>
+            <Button variant="secondary" onClick={() => onOpenChange(false)}>Close</Button>
           </DialogClose>
         </ShadcnDialogFooter>
       </DialogContent>

@@ -81,6 +81,17 @@ export default function ClassPerformanceDashboard({
 
   useEffect(() => {
     if (isOpen) {
+      document.body.classList.add('class-dashboard-is-open');
+    } else {
+      document.body.classList.remove('class-dashboard-is-open');
+    }
+    return () => {
+      document.body.classList.remove('class-dashboard-is-open');
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
       const validInitial = availableClasses.includes(initialClassName) && initialClassName;
       const defaultClass = availableClasses[0] || '';
       setSelectedClass(validInitial || defaultClass);
