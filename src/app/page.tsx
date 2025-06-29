@@ -832,7 +832,7 @@ function AppContent({ user }: { user: User }) {
     {isSchoolDashboardOpen && (
         <SchoolPerformanceDashboard
             isOpen={isSchoolDashboardOpen}
-            onOpencha_nge={setIsSchoolDashboardOpen}
+            onOpenChange={setIsSchoolDashboardOpen}
             allReports={filteredReports}
             schoolNameProp={schoolNameForDashboard}
         />
