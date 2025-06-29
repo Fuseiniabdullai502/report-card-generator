@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -38,6 +37,12 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (password.length < 6) {
+        setError("Password must be at least 6 characters long.");
+        return;
+    }
+
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -52,7 +57,25 @@ export default function RegisterPage() {
 
       router.push('/');
     } catch (err) {
-      setError((err as Error).message);
+      let errorMessage = "An unknown error occurred during registration.";
+      if (err instanceof Error && (err as any).code) {
+        switch ((err as any).code) {
+          case 'auth/email-already-in-use':
+            errorMessage = "This email address is already registered.";
+            break;
+          case 'auth/invalid-email':
+            errorMessage = "Please enter a valid email address.";
+            break;
+          case 'auth/weak-password':
+            errorMessage = "Password is too weak. It must be at least 6 characters.";
+            break;
+          default:
+            errorMessage = "Failed to register. Please try again.";
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
       setIsLoading(false);
     }
   };

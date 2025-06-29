@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -41,7 +40,25 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/');
     } catch (err) {
-      setError((err as Error).message);
+      let errorMessage = "An unknown error occurred during login.";
+      if (err instanceof Error && (err as any).code) {
+        switch ((err as any).code) {
+          case 'auth/invalid-credential':
+            errorMessage = "Incorrect email or password. Please try again.";
+            break;
+          case 'auth/user-disabled':
+            errorMessage = "This user account has been disabled.";
+            break;
+          case 'auth/invalid-email':
+            errorMessage = "The email address is not valid.";
+            break;
+          default:
+            errorMessage = "Failed to log in. Please check your credentials.";
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
       setIsLoading(false);
     }
   };
