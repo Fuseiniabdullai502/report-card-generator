@@ -384,12 +384,16 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                 <Input type="number" placeholder="1-100" value={formData.subjects[currentVisibleSubjectIndex].examinationMark ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'examinationMark', e.target.value === '' ? null : Number(e.target.value))} />
                             </div>
                         </div>
-                        <Button type="button" variant="destructive" onClick={() => removeSubject(currentVisibleSubjectIndex)} className="w-full mt-4" disabled={formData.subjects.length <= 1}>
-                           <Trash2 className="mr-2 h-4 w-4" /> Remove Current Subject
-                        </Button>
                     </div>
                 )}
-                 <Button type="button" variant="outline" onClick={addSubject} className="w-full"><PlusCircle className="mr-2 h-4 w-4" /> Add Subject</Button>
+                 <div className="flex gap-4">
+                    <Button type="button" variant="destructive" onClick={() => removeSubject(currentVisibleSubjectIndex)} className="flex-1" disabled={formData.subjects.length <= 1}>
+                       <Trash2 className="mr-2 h-4 w-4" /> Remove Current Subject
+                    </Button>
+                    <Button type="button" onClick={addSubject} className="flex-1">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Subject
+                    </Button>
+                 </div>
             </section>
 
             <Separator />
