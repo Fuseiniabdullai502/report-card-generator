@@ -323,6 +323,24 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     <Label htmlFor="daysAttended" className="flex items-center"><CalendarCheck2 className="mr-2 h-4 w-4" />Days Attended</Label>
                     <Input id="daysAttended" name="daysAttended" type="number" value={formData.daysAttended ?? ''} onChange={handleInputChange} placeholder="e.g., 85" />
                  </div>
+                 <div className="space-y-2">
+                    <Label className="flex items-center"><Smile className="mr-2 h-4 w-4"/>Hobbies</Label>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full justify-between">
+                                <span className="truncate">{formData.hobbies?.join(', ') || 'Select Hobbies'}</span><ChevronDown/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                            <ScrollArea className="h-[200px]">
+                            {predefinedHobbiesList.map(hobby => <DropdownMenuCheckboxItem key={hobby} checked={formData.hobbies?.includes(hobby)} onCheckedChange={checked => handleHobbyChange(hobby, checked)}>{hobby}</DropdownMenuCheckboxItem>)}
+                            {customHobbies.map(hobby => <DropdownMenuCheckboxItem key={hobby} checked={formData.hobbies?.includes(hobby)} onCheckedChange={checked => handleHobbyChange(hobby, checked)}>{hobby}</DropdownMenuCheckboxItem>)}
+                            </ScrollArea>
+                            <DropdownMenuSeparator/>
+                            <DropdownMenuItem onSelect={() => setIsCustomHobbyDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/>Add New Hobby...</DropdownMenuItem>
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                 </div>
                  {isPromotionStatusApplicable && (
                     <div className="space-y-2">
                         <Label className="flex items-center"><Medal className="mr-2 h-4 w-4" />Promotion Status</Label>
@@ -420,24 +438,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                         <Textarea id="areasForImprovement" name="areasForImprovement" value={formData.areasForImprovement || ''} onChange={handleInputChange} rows={3} />
                     </div>
                 </div>
-                 <div className="space-y-2">
-                    <Label className="flex items-center"><Smile className="mr-2 h-4 w-4"/>Hobbies</Label>
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="w-full justify-between">
-                                <span className="truncate">{formData.hobbies?.join(', ') || 'Select Hobbies'}</span><ChevronDown/>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                            <ScrollArea className="h-[200px]">
-                            {predefinedHobbiesList.map(hobby => <DropdownMenuCheckboxItem key={hobby} checked={formData.hobbies?.includes(hobby)} onCheckedChange={checked => handleHobbyChange(hobby, checked)}>{hobby}</DropdownMenuCheckboxItem>)}
-                            {customHobbies.map(hobby => <DropdownMenuCheckboxItem key={hobby} checked={formData.hobbies?.includes(hobby)} onCheckedChange={checked => handleHobbyChange(hobby, checked)}>{hobby}</DropdownMenuCheckboxItem>)}
-                            </ScrollArea>
-                            <DropdownMenuSeparator/>
-                            <DropdownMenuItem onSelect={() => setIsCustomHobbyDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/>Add New Hobby...</DropdownMenuItem>
-                        </DropdownMenuContent>
-                     </DropdownMenu>
-                 </div>
                 <div className="space-y-2">
                     <div className="flex justify-between items-center mb-1">
                         <Label htmlFor="teacherFeedback" className="flex items-center"><Sparkles className="mr-2 h-4 w-4 text-accent"/>Teacher's Feedback</Label>
