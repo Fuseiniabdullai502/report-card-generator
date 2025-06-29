@@ -237,14 +237,16 @@ function AppContent({ user }: { user: User }) {
     setCurrentEditingReport(prev => ({...prev, ...data}));
   }, []);
 
-  const handleResetToBlankForm = useCallback(() => {
+  const handleResetToBlankForm = useCallback((newDefaults?: Partial<ReportData>) => {
     const newNextStudentEntryNumber = nextStudentEntryNumber;
-
     const newStudentBase = JSON.parse(JSON.stringify(defaultReportData));
     
+    // Use the explicitly passed defaults if they exist, otherwise fall back to the state.
+    const defaultsToApply = newDefaults || sessionDefaults;
+
     const newStudentDataForForm: ReportData = {
       ...newStudentBase,
-      ...sessionDefaults,
+      ...defaultsToApply,
       id: `unsaved-${Date.now()}`,
       studentEntryNumber: newNextStudentEntryNumber,
       createdAt: undefined,
@@ -358,7 +360,7 @@ function AppContent({ user }: { user: User }) {
     };
     setSessionDefaults(newSessionDefaults);
 
-    handleResetToBlankForm();
+    handleResetToBlankForm(newSessionDefaults);
   };
 
   const handleLogout = async () => {
@@ -875,3 +877,5 @@ export default function Home() {
   
   return <AppContent user={user} />;
 }
+
+    
