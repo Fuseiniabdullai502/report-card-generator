@@ -3,34 +3,20 @@ import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 
+// --- SECURITY WARNING ---
+// The configuration keys below are hardcoded for immediate testing purposes only.
+// This is NOT a secure practice for a real application.
+// In a production environment, these keys should be stored in a .env.local file
+// and accessed via process.env, as was the original intention of this file.
+// Anyone with access to this code can see and use these keys.
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  apiKey: "AIzaSyCRe24-c5OnazQ2jbs84eiLnQheopbiIno",
+  authDomain: "report-card-generator-e3zkv.firebaseapp.com",
+  projectId: "report-card-generator-e3zkv",
+  storageBucket: "report-card-generator-e3zkv.firebasestorage.app",
+  messagingSenderId: "103786735519",
+  appId: "1:103786735519:web:22922ed07e07c3dd817faa"
 };
-
-// Function to validate the config
-const validateFirebaseConfig = (config: typeof firebaseConfig) => {
-    const requiredKeys: (keyof typeof firebaseConfig)[] = [
-        'apiKey', 
-        'authDomain', 
-        'projectId', 
-    ];
-    const missingKeys = requiredKeys.filter(key => !config[key]);
-
-    if (missingKeys.length > 0) {
-        throw new Error(
-            `Firebase configuration is missing required keys: ${missingKeys.join(', ')}. ` +
-            `Please ensure your .env.local file is in the project root and contains all NEXT_PUBLIC_FIREBASE_* variables. ` +
-            `You must restart the development server after creating or editing this file.`
-        );
-    }
-};
-
 
 // Initialize Firebase
 let app: FirebaseApp;
@@ -38,7 +24,6 @@ let auth: Auth;
 let db: Firestore;
 
 try {
-    validateFirebaseConfig(firebaseConfig); // Validate before initializing
     if (!getApps().length) {
       app = initializeApp(firebaseConfig);
     } else {
