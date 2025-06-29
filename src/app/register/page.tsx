@@ -1,9 +1,9 @@
+
 'use client';
 
 import { useState } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, runTransaction, collection, query, where, getDocs, serverTimestamp, limit } from 'firebase/firestore';
 import { useRouter, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -53,39 +53,8 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      // Create the user in Firebase Auth first
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const newUser = userCredential.user;
-
-      // Now, run a transaction to check for an invite and create the user document
-      await runTransaction(db, async (transaction) => {
-        const invitesRef = collection(db, 'invites');
-        const q = query(invitesRef, where('email', '==', newUser.email?.toLowerCase()), limit(1));
-        
-        const inviteSnapshot = await getDocs(q);
-        let userRole = 'instructor'; // Default role
-        let inviteDocRef = null;
-
-        if (!inviteSnapshot.empty) {
-          const inviteDoc = inviteSnapshot.docs[0];
-          userRole = inviteDoc.data().role || 'instructor';
-          inviteDocRef = inviteDoc.ref;
-        }
-
-        const newUserDocRef = doc(db, 'users', newUser.uid);
-        transaction.set(newUserDocRef, {
-          uid: newUser.uid,
-          email: newUser.email,
-          role: userRole,
-          createdAt: serverTimestamp(),
-        });
-
-        // If an invite was found and used, delete it
-        if (inviteDocRef) {
-          transaction.delete(inviteDocRef);
-        }
-      });
-
+      // Create the user in Firebase Auth
+      await createUserWithEmailAndPassword(auth, email, password);
       router.push('/');
     } catch (err) {
       let errorMessage = "An unknown error occurred during registration.";

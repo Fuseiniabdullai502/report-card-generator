@@ -215,39 +215,3 @@ export async function getAiSchoolInsightsAction(
     return { success: false, error: errorMessage };
   }
 }
-
-// Schema for inviting a new user
-const InviteUserActionInputSchema = z.object({
-  email: z.string().email("Please enter a valid email address."),
-  role: z.enum(['instructor', 'admin']).default('instructor'),
-});
-
-export async function inviteUserAction(
-  input: { email: string; role: 'instructor' | 'admin' }
-): Promise<{ success: boolean; error?: string }> {
-  // IMPORTANT: In a production application, this action must be protected
-  // to ensure only authenticated admins can execute it. This would typically
-  // involve verifying a Firebase ID token on a secure backend.
-  // For this prototype, access is only restricted at the UI level.
-  try {
-    const { email, role } = InviteUserActionInputSchema.parse(input);
-
-    await addDoc(collection(db, "invites"), {
-      email: email.toLowerCase(),
-      role: role,
-      createdAt: serverTimestamp(),
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error("Error inviting user:", error);
-    let errorMessage = "Failed to send invite.";
-    if (error instanceof z.ZodError) {
-      errorMessage = "Invalid input: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
-    } else if (error instanceof Error) {
-      // Check for Firestore permission errors if possible, though generic is safer
-      errorMessage = error.message;
-    }
-    return { success: false, error: errorMessage };
-  }
-}

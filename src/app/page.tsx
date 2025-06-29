@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown, LayoutTemplate, LogOut, ShieldCheck } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown, LayoutTemplate, LogOut } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
@@ -87,9 +87,6 @@ function AppContent({ user }: { user: User }) {
   const [printFilterClass, setPrintFilterClass] = useState<string>('all');
   
   const router = useRouter();
-  const { role } = useAuth(); // Get user role
-  const [limitReports, setLimitReports] = useState(true);
-  const reportsLimit = 100;
 
   const availableClassesForFilter = useMemo(() => {
     const classNames = new Set(allRankedReports.map(report => report.className).filter(Boolean));
@@ -175,19 +172,7 @@ function AppContent({ user }: { user: User }) {
     setIsLoadingReports(true);
     const reportsCollectionRef = collection(db, 'reports');
     
-    let q;
-    if (role === 'admin') {
-      if (limitReports) {
-        // For admins, initially load only the 100 most recent reports for performance.
-        q = query(reportsCollectionRef, orderBy('createdAt', 'desc'), limit(reportsLimit));
-      } else {
-        // Load all reports if requested.
-        q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
-      }
-    } else {
-      // Instructors only see their own reports.
-      q = query(reportsCollectionRef, where('teacherId', '==', user.uid), orderBy('createdAt', 'asc'));
-    }
+    const q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedReports: ReportData[] = [];
@@ -211,12 +196,6 @@ function AppContent({ user }: { user: User }) {
         }
       });
       
-      // If reports were fetched in descending order for the initial admin view,
-      // reverse them here to restore chronological order for processing.
-      if (role === 'admin' && limitReports) {
-        fetchedReports.reverse();
-      }
-
       setCustomClassNames(prev => [...new Set([...prev, ...Array.from(classNamesFromDB)])]);
       calculateAndSetRanks(fetchedReports);
       setNextStudentEntryNumber(maxEntryNum + 1);
@@ -251,7 +230,7 @@ function AppContent({ user }: { user: User }) {
     });
 
     return () => unsubscribe();
-  }, [role, user.uid, calculateAndSetRanks, toast, sessionDefaults, limitReports]);
+  }, [user.uid, calculateAndSetRanks, toast, sessionDefaults]);
 
 
   const handleFormUpdate = useCallback((data: ReportData) => {
@@ -620,11 +599,6 @@ function AppContent({ user }: { user: User }) {
         </div>
         <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.email}</p>
          <div className="absolute top-0 right-0 flex items-center gap-2">
-           {role === 'admin' && (
-              <Button asChild variant="outline" size="sm">
-                  <Link href="/admin"><ShieldCheck className="mr-2 h-4 w-4"/>Admin</Link>
-              </Button>
-            )}
           <ThemeToggleButton />
           <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4"/>Logout</Button>
         </div>
@@ -696,20 +670,6 @@ function AppContent({ user }: { user: User }) {
             </div>
         </CardContent>
       </Card>
-
-      {role === 'admin' && limitReports && allRankedReports.length >= reportsLimit && (
-        <Alert className="mb-8 no-print">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Displaying Recent Reports</AlertTitle>
-            <AlertDescription className="flex justify-between items-center">
-                To improve performance, only the {reportsLimit} most recent reports are shown.
-                <Button onClick={() => setLimitReports(false)} size="sm" disabled={isLoadingReports}>
-                    {isLoadingReports ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                    Load All Reports
-                </Button>
-            </AlertDescription>
-        </Alert>
-      )}
 
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-5 gap-8">
         <section className="lg:col-span-2 no-print space-y-4">
