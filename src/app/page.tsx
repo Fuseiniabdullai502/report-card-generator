@@ -109,65 +109,62 @@ function AppContent({ user }: { user: User }) {
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
     if (listToProcess.length === 0) {
-      setAllRankedReports([]);
-      return;
+        setAllRankedReports([]);
+        return;
     }
 
     const reportsWithAverages = listToProcess.map(report => {
-      const overallAverage = calculateOverallAverage(report.subjects);
-      return { ...report, overallAverage };
+        const overallAverage = calculateOverallAverage(report.subjects);
+        return { ...report, overallAverage };
     });
 
     const reportsByClass = new Map<string, ReportData[]>();
     reportsWithAverages.forEach(report => {
-      const className = report.className || 'Unclassified';
-      if (!reportsByClass.has(className)) {
-        reportsByClass.set(className, []);
-      }
-      reportsByClass.get(className)!.push(report);
+        const className = report.className || 'Unclassified';
+        if (!reportsByClass.has(className)) {
+            reportsByClass.set(className, []);
+        }
+        reportsByClass.get(className)!.push(report);
     });
 
     const allClassRankedReports: ReportData[] = [];
-    
-    // Optimization: Sort by class name first to avoid a final expensive sort
-    const sortedClassNames = Array.from(reportsByClass.keys()).sort();
+    reportsByClass.forEach((classReports) => {
+        const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
 
-    sortedClassNames.forEach((className) => {
-      const classReports = reportsByClass.get(className)!;
-      const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
-
-      const reportsWithRankNumbers = sortedReports.map((report, index) => {
-        if (report.overallAverage === null || report.overallAverage === undefined) {
-          return { ...report, rank: 'N/A' };
-        }
-        if (index === 0) {
-          return { ...report, rank: '1' };
-        }
-        const prevReport = sortedReports[index - 1];
-        if (report.overallAverage === prevReport.overallAverage) {
-          return { ...report, rank: prevReport.rank! };
-        } else {
-          return { ...report, rank: (index + 1).toString() };
-        }
-      });
-      
-      const finalFormattedReports = reportsWithRankNumbers.map((report, index, arr) => {
-        if (report.rank === 'N/A' || !report.rank) return { ...report, rank: 'N/A' };
-        const rankNumber = parseInt(report.rank, 10);
-        if (isNaN(rankNumber)) return { ...report, rank: 'N/A' };
+        const reportsWithRankNumbers = sortedReports.map((report, index) => {
+            if (report.overallAverage === null || report.overallAverage === undefined) {
+                return { ...report, rank: 'N/A' };
+            }
+            if (index === 0) {
+                return { ...report, rank: '1' };
+            }
+            const prevReport = sortedReports[index - 1];
+            if (report.overallAverage === prevReport.overallAverage) {
+                return { ...report, rank: prevReport.rank! };
+            } else {
+                return { ...report, rank: (index + 1).toString() };
+            }
+        });
         
-        const isTiedWithNext = index < arr.length - 1 && arr[index + 1].rank === report.rank;
-        const isTiedWithPrev = index > 0 && arr[index - 1].rank === report.rank;
-        const isTie = isTiedWithNext || isTiedWithPrev;
+        const finalFormattedReports = reportsWithRankNumbers.map((report, index, arr) => {
+            if (report.rank === 'N/A' || !report.rank) return { ...report, rank: 'N/A' };
+            const rankNumber = parseInt(report.rank, 10);
+            if (isNaN(rankNumber)) return { ...report, rank: 'N/A' };
+            
+            const isTiedWithNext = index < arr.length - 1 && arr[index + 1].rank === report.rank;
+            const isTiedWithPrev = index > 0 && arr[index - 1].rank === report.rank;
+            const isTie = isTiedWithNext || isTiedWithPrev;
 
-        return { ...report, rank: formatRankString(rankNumber, isTie) };
-      });
+            return { ...report, rank: formatRankString(rankNumber, isTie) };
+        });
 
-      allClassRankedReports.push(...finalFormattedReports);
+        allClassRankedReports.push(...finalFormattedReports);
     });
-    
-    setAllRankedReports(allClassRankedReports); // Already sorted by class and rank
-  }, []);
+
+    // Restore original sort order for consistency
+    setAllRankedReports(allClassRankedReports.sort((a, b) => (a.className || '').localeCompare(b.className || '') || (a.studentEntryNumber || 0) - (b.studentEntryNumber || 0)));
+}, []);
+
 
   useEffect(() => {
     if (!user?.uid) {
@@ -214,6 +211,12 @@ function AppContent({ user }: { user: User }) {
         }
       });
       
+      // If reports were fetched in descending order for the initial admin view,
+      // reverse them here to restore chronological order for processing.
+      if (role === 'admin' && limitReports) {
+        fetchedReports.reverse();
+      }
+
       setCustomClassNames(prev => [...new Set([...prev, ...Array.from(classNamesFromDB)])]);
       calculateAndSetRanks(fetchedReports);
       setNextStudentEntryNumber(maxEntryNum + 1);
