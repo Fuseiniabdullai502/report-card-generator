@@ -62,6 +62,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     // This prevents resets on every keystroke from the parent.
     if (initialData.id !== formData.id) {
         setFormData(initialData);
+        setCurrentVisibleSubjectIndex(0); // Reset the subject pager to the first subject
     }
   }, [initialData, formData.id]);
 
