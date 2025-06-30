@@ -57,6 +57,14 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
 
+  const usedSubjectNames = useMemo(() => 
+    new Set(formData.subjects.map(s => s.subjectName).filter(Boolean))
+  , [formData.subjects]);
+
+  const allAvailableSubjects = useMemo(() => {
+      return [...new Set([...predefinedSubjectsList, ...customSubjects])].sort();
+  }, [customSubjects]);
+
   useEffect(() => {
     // Only reset the form state if the ID of the initial data changes.
     // This prevents resets on every keystroke from the parent.
@@ -116,6 +124,18 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   };
 
   const handleSubjectChange = (index: number, field: keyof SubjectEntry, value: string | number | null) => {
+    if (field === 'subjectName') {
+        const isDuplicate = formData.subjects.some((subject, i) => i !== index && subject.subjectName === value);
+        if (isDuplicate) {
+            toast({
+                title: "Duplicate Subject",
+                description: `The subject "${value}" has already been selected for this student.`,
+                variant: "destructive",
+            });
+            return;
+        }
+    }
+
     const updatedSubjects = [...formData.subjects];
     updatedSubjects[index] = { ...updatedSubjects[index], [field]: value };
     setFormData(prev => ({ ...prev, subjects: updatedSubjects }));
@@ -381,7 +401,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                         <div className="grid grid-cols-1 md:grid-cols-[3fr_1.5fr_1.5fr] gap-4 items-start">
                             <div className="space-y-2">
                                 <Label className="flex items-center"><BookOpenText className="mr-2 h-4 w-4"/>Subject Name</Label>
-                                <Select value={formData.subjects[currentVisibleSubjectIndex].subjectName} onValueChange={value => {
+                                <Select value={formData.subjects[currentVisibleSubjectIndex].subjectName || ''} onValueChange={value => {
                                     if(value === ADD_CUSTOM_SUBJECT_VALUE) {
                                         setCurrentCustomSubjectTargetIndex(currentVisibleSubjectIndex);
                                         setIsCustomSubjectDialogOpen(true);
@@ -391,8 +411,16 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                 }}>
                                     <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
                                     <SelectContent>
-                                        {predefinedSubjectsList.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                                        {customSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                        {allAvailableSubjects.map(s => (
+                                          <SelectItem 
+                                            key={s} 
+                                            value={s}
+                                            disabled={usedSubjectNames.has(s) && s !== formData.subjects[currentVisibleSubjectIndex].subjectName}
+                                          >
+                                            {s}
+                                          </SelectItem>
+                                        ))}
+                                        <SelectSeparator />
                                         <SelectItem value={ADD_CUSTOM_SUBJECT_VALUE}><PlusCircle className="mr-2 h-4 w-4"/>Add New Subject...</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -412,7 +440,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                     <Button type="button" variant="destructive" onClick={() => removeSubject(currentVisibleSubjectIndex)} className="flex-1" disabled={formData.subjects.length <= 1}>
                        <Trash2 className="mr-2 h-4 w-4" /> Remove Current Subject
                     </Button>
-                    <Button type="button" onClick={addSubject} className="flex-1">
+                    <Button type="button" onClick={addSubject} className="flex-1 bg-primary">
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Subject
                     </Button>
                  </div>
