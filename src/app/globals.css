@@ -322,7 +322,8 @@ body {
   #class-dashboard-dialog-content .card,
   #school-dashboard-dialog-content .card {
     page-break-inside: avoid !important;
-    margin-bottom: 6px !important; 
+    margin-bottom: 6px !important;
+    box-shadow: none !important;
   }
   #class-dashboard-dialog-content .card-header,
   #school-dashboard-dialog-content .card-header {
@@ -494,6 +495,7 @@ body {
     
 
     
+
 
 
 
