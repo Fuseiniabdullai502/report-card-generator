@@ -102,17 +102,15 @@ export default function ClassPerformanceDashboard({
     return allReports.filter(report => report.className === selectedClass);
   }, [allReports, selectedClass]);
   
-
+  // Effect for calculating statistics when the class or reports change
   useEffect(() => {
     if (!isOpen || reportsForClass.length === 0) {
       setClassStats(null);
-      setAiAdvice(null);
-      setAiError(null);
       setMostRecentTerm('');
       setHistoricalData([]);
       return;
-    };
-    
+    }
+
     setIsLoadingStats(true);
 
     const reportsByTerm = new Map<string, ReportData[]>();
@@ -210,7 +208,15 @@ export default function ClassPerformanceDashboard({
         };
     });
     setHistoricalData(newHistoricalData);
+  }, [isOpen, reportsForClass]);
 
+  // Effect for generating AI insights when stats are updated
+  useEffect(() => {
+    if (!isOpen || !classStats || !selectedClass || !mostRecentTerm) {
+      setAiAdvice(null);
+      setAiError(null);
+      return;
+    }
 
     setAiAdvice(null);
     setAiError(null);
@@ -218,16 +224,16 @@ export default function ClassPerformanceDashboard({
       try {
         const sanitizedAiInput: GenerateClassInsightsInput = {
           className: selectedClass,
-          academicTerm: newMostRecentTerm,
-          overallClassAverage: newStats.overallClassAverage ?? 0,
-          totalStudents: newStats.totalStudents,
-          subjectStats: newStats.subjectStats.map(s => ({
+          academicTerm: mostRecentTerm,
+          overallClassAverage: classStats.overallClassAverage ?? null,
+          totalStudents: classStats.totalStudents,
+          subjectStats: classStats.subjectStats.map(s => ({
             ...s,
-            classAverageForSubject: s.classAverageForSubject ?? 0,
+            classAverageForSubject: s.classAverageForSubject ?? null,
           })),
-          genderStats: newStats.genderStats.map(g => ({
+          genderStats: classStats.genderStats.map(g => ({
             ...g,
-            averageScore: g.averageScore ?? 0,
+            averageScore: g.averageScore ?? null,
           })),
         };
         
@@ -249,8 +255,7 @@ export default function ClassPerformanceDashboard({
         });
       }
     });
-
-  }, [isOpen, reportsForClass, selectedClass, toast]); 
+  }, [isOpen, classStats, selectedClass, mostRecentTerm, toast]);
 
   const handlePrint = () => {
     if (!classStats || reportsForClass.length === 0) {
