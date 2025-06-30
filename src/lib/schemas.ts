@@ -25,7 +25,7 @@ export const ReportDataSchema = z.object({
   studentEntryNumber: z.number(), // Persisted input order number
   studentName: z.string().min(1, 'Student name is required'),
   className: z.string().min(1, 'Class name is required'),
-  gender: z.string().optional(),
+  gender: z.string().min(1, 'Gender is required'),
   schoolName: z.string().optional(),
   schoolLogoDataUri: z.string().optional().describe("A data URI of the school's logo."),
   academicYear: z.string().optional(),
@@ -76,7 +76,7 @@ export type ReportData = z.infer<typeof ReportDataSchema>;
 export const defaultReportData: Omit<ReportData, 'id' | 'studentEntryNumber' | 'teacherId' | 'createdAt' | 'overallAverage' | 'rank'> & { subjects: SubjectEntry[]; hobbies: string[] } = {
   studentName: '',
   className: '',
-  gender: undefined,
+  gender: '',
   schoolName: '',
   schoolLogoDataUri: undefined,
   academicYear: '',
