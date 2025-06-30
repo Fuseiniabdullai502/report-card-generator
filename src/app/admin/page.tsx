@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { Loader2, Shield } from 'lucide-react';
@@ -10,28 +10,24 @@ export default function AdminPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  if (loading) {
+  useEffect(() => {
+    if (loading) {
+      return; // Wait for auth state to resolve
+    }
+    if (!user) {
+      router.replace('/login');
+    } else if (user.role !== 'admin') {
+      router.replace('/');
+    }
+  }, [user, loading, router]);
+
+
+  if (loading || !user || user.role !== 'admin') {
     return (
       <div className="flex justify-center items-center h-screen w-screen bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
-  }
-
-  if (!user) {
-    router.replace('/login');
-    return null;
-  }
-  
-  if (user.role !== 'admin') {
-     router.replace('/');
-     return (
-        <div className="flex flex-col justify-center items-center h-screen w-screen bg-background text-destructive">
-            <Shield className="h-16 w-16 mb-4" />
-            <h1 className="text-2xl font-bold">Access Denied</h1>
-            <p className="text-lg">Redirecting you to the home page...</p>
-        </div>
-     );
   }
 
   return (

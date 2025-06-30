@@ -14,36 +14,22 @@ const firebaseConfig = {
 };
 
 // Basic validation to ensure environment variables are loaded.
+// This will throw a clear error if the .env.local file is not set up.
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
   throw new Error(
-    'Firebase config is missing. Make sure you have a .env.local file with your Firebase project configuration. See README.md for more details.'
+    'Firebase config is missing in environment variables. Make sure you have a .env.local file with your Firebase project configuration. See README.md for more details.'
   );
 }
 
 // Initialize Firebase
 let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-
-try {
-    if (!getApps().length) {
-      app = initializeApp(firebaseConfig);
-    } else {
-      app = getApp();
-    }
-    db = getFirestore(app);
-    auth = getAuth(app);
-} catch (error) {
-    console.error("CRITICAL: Failed to initialize Firebase. App will not work correctly.", error);
-    // Create a proxy to throw an error if auth or db are used
-    const errorMessage = error instanceof Error ? error.message : "Firebase failed to initialize. Check server logs.";
-    const thrower = () => { throw new Error(errorMessage); };
-    
-    // We create dummy objects that will throw if used.
-    // This prevents the app from crashing on load but provides clear errors when auth/db are accessed.
-    app = {} as FirebaseApp;
-    db = new Proxy({}, { get: thrower }) as Firestore;
-    auth = new Proxy({}, { get: thrower }) as Auth;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
 }
+
+const db: Firestore = getFirestore(app);
+const auth: Auth = getAuth(app);
 
 export { app, db, auth };
