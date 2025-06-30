@@ -350,6 +350,9 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
                                 {promotionStatusOptions.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
                             </SelectContent>
                         </Select>
+                        <p className="text-xs text-muted-foreground italic">
+                            Note: Status is automatically set based on the overall average (&gt;=50% is Promoted). You can override it if needed.
+                        </p>
                     </div>
                  )}
                  <div className="space-y-2">
