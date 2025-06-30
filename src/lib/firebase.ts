@@ -3,20 +3,22 @@ import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 
-// --- SECURITY WARNING ---
-// The configuration keys below are hardcoded for immediate testing purposes only.
-// This is NOT a secure practice for a real application.
-// In a production environment, these keys should be stored in a .env.local file
-// and accessed via process.env, as was the original intention of this file.
-// Anyone with access to this code can see and use these keys.
 const firebaseConfig = {
-  apiKey: "AIzaSyCRe24-c5OnazQ2jbs84eiLnQheopbiIno",
-  authDomain: "report-card-generator-e3zkv.firebaseapp.com",
-  projectId: "report-card-generator-e3zkv",
-  storageBucket: "report-card-generator-e3zkv.firebasestorage.app",
-  messagingSenderId: "103786735519",
-  appId: "1:103786735519:web:22922ed07e07c3dd817faa"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
+
+// Basic validation to ensure environment variables are loaded.
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  throw new Error(
+    'Firebase config is missing. Make sure you have a .env.local file with your Firebase project configuration. See README.md for more details.'
+  );
+}
 
 // Initialize Firebase
 let app: FirebaseApp;
@@ -43,6 +45,5 @@ try {
     db = new Proxy({}, { get: thrower }) as Firestore;
     auth = new Proxy({}, { get: thrower }) as Auth;
 }
-
 
 export { app, db, auth };

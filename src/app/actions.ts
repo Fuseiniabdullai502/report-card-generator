@@ -1,4 +1,3 @@
-
 // src/app/actions.ts
 'use server';
 
@@ -21,7 +20,7 @@ import {
 } from '@/ai/flows/generate-school-insights-flow';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 
 
 // Schema for student feedback generation
@@ -214,4 +213,71 @@ export async function getAiSchoolInsightsAction(
     }
     return { success: false, error: errorMessage };
   }
+}
+
+// User Management Actions
+export async function inviteUserAction(formData: FormData) {
+  const email = formData.get('email') as string;
+  if (!email) {
+    return { success: false, message: 'Email is required.' };
+  }
+
+  try {
+    const usersRef = collection(db, 'users');
+    const qUser = query(usersRef, where('email', '==', email));
+    const userSnapshot = await getDocs(qUser);
+    if (!userSnapshot.empty) {
+      return { success: false, message: 'User with this email already exists.' };
+    }
+
+    const invitesRef = collection(db, 'invites');
+    const qInvite = query(invitesRef, where('email', '==', email), where('status', '==', 'pending'));
+    const inviteSnapshot = await getDocs(qInvite);
+    if (!inviteSnapshot.empty) {
+      return { success: false, message: 'A pending invite already exists for this email.' };
+    }
+
+    await addDoc(invitesRef, {
+      email,
+      status: 'pending',
+      createdAt: serverTimestamp(),
+    });
+
+    return { success: true, message: `Invite sent to ${email}.` };
+  } catch (error) {
+    console.error('Error inviting user:', error);
+    return { success: false, message: 'Failed to send invite. Please try again.' };
+  }
+}
+
+export async function verifyInviteAction(email: string) {
+  try {
+    const invitesRef = collection(db, 'invites');
+    const q = query(invitesRef, where('email', '==', email), where('status', '==', 'pending'));
+    const querySnapshot = await getDocs(q);
+    return { success: !querySnapshot.empty };
+  } catch (error) {
+    console.error('Error verifying invite:', error);
+    return { success: false };
+  }
+}
+
+export async function completeInviteAction(email: string, userId: string) {
+    try {
+        const invitesRef = collection(db, 'invites');
+        const q = query(invitesRef, where('email', '==', email), where('status', '==', 'pending'));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            throw new Error("No pending invite found for this email.");
+        }
+
+        const inviteDoc = querySnapshot.docs[0];
+        await setDoc(doc(db, 'invites', inviteDoc.id), { status: 'completed' }, { merge: true });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error completing invite:', error);
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
 }

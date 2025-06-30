@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
+import { verifyInviteAction } from '@/app/actions';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -56,9 +56,20 @@ export default function RegisterPage() {
     }
 
     setIsLoading(true);
+
     try {
-      // Create the user in Firebase Auth
+      // Step 1: Verify if the user has been invited
+      const inviteCheck = await verifyInviteAction(email);
+      if (!inviteCheck.success) {
+        setError("Registration failed. You must be invited by an administrator.");
+        setIsLoading(false);
+        return;
+      }
+      
+      // Step 2: Create the user in Firebase Auth
       await createUserWithEmailAndPassword(auth, email, password);
+      
+      // onAuthStateChanged in AuthProvider will handle creating the user doc and completing the invite
       router.push('/');
     } catch (err) {
       let errorMessage = "An unknown error occurred during registration.";
@@ -89,8 +100,8 @@ export default function RegisterPage() {
     <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-background">
       <Card className="w-full max-w-sm shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-headline text-primary">Create an Account</CardTitle>
-          <CardDescription>Get started by creating your instructor account.</CardDescription>
+          <CardTitle className="text-2xl font-headline text-primary">Complete Your Registration</CardTitle>
+          <CardDescription>You must be invited by an admin to register.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
