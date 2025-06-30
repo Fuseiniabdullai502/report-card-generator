@@ -264,6 +264,26 @@ function AppContent({ user }: { user: User }) {
     });
   }, [nextStudentEntryNumber, sessionDefaults, toast, user.uid]);
 
+  const handleClearAndReset = useCallback(() => {
+    // First, update sessionDefaults with the latest info from the current form
+    // This ensures that when we reset, we use the most recent session-like settings
+    const newDefaults = {
+      schoolName: currentEditingReport.schoolName,
+      schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
+      className: currentEditingReport.className,
+      academicYear: currentEditingReport.academicYear,
+      academicTerm: currentEditingReport.academicTerm,
+      selectedTemplateId: currentEditingReport.selectedTemplateId,
+      totalSchoolDays: currentEditingReport.totalSchoolDays,
+      headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
+      instructorContact: currentEditingReport.instructorContact,
+    };
+    setSessionDefaults(newDefaults);
+    
+    // Now, call the reset function, passing the new defaults to avoid stale state issues
+    handleResetToBlankForm(newDefaults);
+  }, [currentEditingReport, handleResetToBlankForm]);
+
   const handleSaveReportAndResetForm = async (formDataFromForm: ReportData) => {
     const isDuplicate = allRankedReports.some(report =>
         report.studentName?.trim().toLowerCase() === formDataFromForm.studentName?.trim().toLowerCase() &&
@@ -442,8 +462,7 @@ function AppContent({ user }: { user: User }) {
   };
 
   const handleSessionDefaultChange = (field: keyof typeof sessionDefaults, value: any) => {
-    const newSessionDefaults = { ...sessionDefaults, [field]: value };
-    setSessionDefaults(newSessionDefaults);
+    setSessionDefaults(prev => ({ ...prev, [field]: value }));
     setCurrentEditingReport(prev => ({...prev, [field]: value}));
   };
 
@@ -679,7 +698,7 @@ function AppContent({ user }: { user: User }) {
             initialData={currentEditingReport}
             reportPrintListForHistory={allRankedReports}
             onSaveReport={handleSaveReportAndResetForm}
-            onResetForm={handleResetToBlankForm}
+            onResetForm={handleClearAndReset}
           />
         </section>
 
