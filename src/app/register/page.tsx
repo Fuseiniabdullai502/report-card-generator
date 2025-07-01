@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -58,12 +59,16 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      // Step 1: Verify if the user has been invited
-      const inviteCheck = await verifyInviteAction(email);
-      if (!inviteCheck.success) {
-        setError("Registration failed. You must be invited by an administrator.");
-        setIsLoading(false);
-        return;
+      const isAdminRegistering = email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+
+      // Step 1: Verify if the user has been invited, unless it's the admin.
+      if (!isAdminRegistering) {
+        const inviteCheck = await verifyInviteAction(email);
+        if (!inviteCheck.success) {
+          setError("Registration failed. You must be invited by an administrator.");
+          setIsLoading(false);
+          return;
+        }
       }
       
       // Step 2: Create the user in Firebase Auth
