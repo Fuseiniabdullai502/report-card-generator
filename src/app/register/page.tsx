@@ -3,7 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
-import { verifyInviteAction } from '@/app/actions';
+import { verifyInviteAction, completeInviteAction } from '@/app/actions';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -61,27 +62,47 @@ export default function RegisterPage() {
     try {
       const isAdminRegistering = email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
-      // Step 1: Verify if the user has been invited, unless it's the admin.
+      // Step 1: Verify invite if not admin
       if (!isAdminRegistering) {
         const inviteCheck = await verifyInviteAction(email);
         if (!inviteCheck.success) {
-          setError("Registration failed. You must be invited by an administrator.");
-          setIsLoading(false);
-          return;
+          throw new Error("Registration failed. You must be invited by an administrator.");
         }
       }
       
       // Step 2: Create the user in Firebase Auth
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const newFirebaseUser = userCredential.user;
+
+      // Step 3: Create the user document in Firestore and complete the invite
+      const userDocRef = doc(db, 'users', newFirebaseUser.uid);
+      const role = isAdminRegistering ? 'admin' : 'user';
+
+      // Mark invite as completed for regular users
+      if (!isAdminRegistering) {
+          const completeResult = await completeInviteAction(email, newFirebaseUser.uid);
+          if (!completeResult.success) {
+              // This is an edge case. The user is created in Auth but the invite couldn't be marked.
+              // For simplicity, we'll log it and continue. In a production app, you might delete the auth user here.
+              console.error(`Failed to complete invite for ${email}: ${completeResult.error}`);
+          }
+      }
+
+      await setDoc(userDocRef, {
+        email: newFirebaseUser.email,
+        role: role,
+        createdAt: serverTimestamp(),
+      });
       
-      // onAuthStateChanged in AuthProvider will handle creating the user doc and completing the invite
+      // onAuthStateChanged in AuthProvider will now simply read the user's data.
       router.push('/');
+
     } catch (err) {
       let errorMessage = "An unknown error occurred during registration.";
       if (err instanceof Error && (err as any).code) {
         switch ((err as any).code) {
           case 'auth/email-already-in-use':
-            errorMessage = "This email address is already registered.";
+            errorMessage = "This email address is already registered. Please try logging in.";
             break;
           case 'auth/invalid-email':
             errorMessage = "Please enter a valid email address.";

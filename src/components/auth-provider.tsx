@@ -2,11 +2,10 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { type User, onAuthStateChanged, getAdditionalUserInfo } from 'firebase/auth';
+import { type User, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
-import { completeInviteAction } from '@/app/actions';
 
 export interface CustomUser extends User {
   role: 'admin' | 'user' | null;
@@ -25,47 +24,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
+      try {
         if (firebaseUser) {
             const userDocRef = doc(db, 'users', firebaseUser.uid);
             const userDoc = await getDoc(userDocRef);
-            
-            // Check if the current user's email matches the admin email from environment variables.
-            const isAdmin = firebaseUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+            const isAdminEmail = firebaseUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
             if (userDoc.exists()) {
                 const userData = userDoc.data();
-                const currentRole = userData.role || 'user';
+                let userRole = userData.role || 'user';
 
-                // If the user is the designated admin but their role in the DB is not 'admin', update it.
-                // This corrects the role for an admin who may have logged in before the role system was in place.
-                if (isAdmin && currentRole !== 'admin') {
+                // Self-healing check: If the user has the admin email but their role isn't 'admin' in the DB, fix it.
+                if (isAdminEmail && userRole !== 'admin') {
                     await setDoc(userDocRef, { role: 'admin' }, { merge: true });
+                    userRole = 'admin';
+                }
+                setUser({ ...firebaseUser, role: userRole });
+            } else {
+                // This is an edge case: an auth user exists without a DB record.
+                // This can happen if registration failed midway, or for an admin's very first sign-in.
+                if (isAdminEmail) {
+                    // Create the admin document on the fly if it doesn't exist.
+                    console.log(`Admin user document for ${firebaseUser.email} not found. Creating it now.`);
+                    await setDoc(userDocRef, {
+                        email: firebaseUser.email,
+                        role: 'admin',
+                        createdAt: serverTimestamp()
+                    });
                     setUser({ ...firebaseUser, role: 'admin' });
                 } else {
-                    setUser({ ...firebaseUser, role: currentRole });
+                    // For a non-admin, this is an invalid state. Log them out to prevent access.
+                    console.warn(`User ${firebaseUser.uid} exists in Auth but not in Firestore. Logging out.`);
+                    await auth.signOut();
+                    setUser(null);
                 }
-            } else {
-                // This is a new user (first time login/registration).
-                const role = isAdmin ? 'admin' : 'user';
-
-                // For a regular new user, complete the server-side invite process.
-                if (!isAdmin) {
-                    await completeInviteAction(firebaseUser.email!, firebaseUser.uid);
-                }
-
-                // Create their user document in Firestore with the correct role.
-                await setDoc(userDocRef, {
-                    email: firebaseUser.email,
-                    role: role,
-                    createdAt: serverTimestamp(),
-                });
-                setUser({ ...firebaseUser, role: role });
             }
         } else {
             // User is not logged in.
             setUser(null);
         }
+      } catch (error) {
+          console.error("Error in onAuthStateChanged listener:", error);
+          setUser(null);
+          // Don't leave the app in a hanging state.
+      } finally {
         setLoading(false);
+      }
     });
 
     return () => unsubscribe();
