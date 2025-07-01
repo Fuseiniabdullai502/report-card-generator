@@ -60,7 +60,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const isAdminRegistering = email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+      const isAdminRegistering = email.toLowerCase() === process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
 
       // Step 1: For regular users, verify the invite BEFORE creating the auth user.
       if (!isAdminRegistering) {
@@ -99,9 +99,10 @@ export default function RegisterPage() {
     } catch (err) {
       let errorMessage = "An unknown error occurred during registration.";
       if (err instanceof Error && (err as any).code) {
-        switch ((err as any).code) {
+        const errorCode = (err as any).code;
+        switch (errorCode) {
           case 'auth/email-already-in-use':
-            errorMessage = "This email address is already registered. Please try logging in, or delete the old user in the Firebase Console if you are the admin.";
+            errorMessage = "This email is already in use. Please log in or use a different email.";
             break;
           case 'auth/invalid-email':
             errorMessage = "Please enter a valid email address.";
@@ -110,7 +111,7 @@ export default function RegisterPage() {
             errorMessage = "Password is too weak. It must be at least 6 characters.";
             break;
           default:
-            errorMessage = `Failed to register. Please try again. Code: ${(err as any).code}`;
+            errorMessage = `Failed to register. Please try again. (Error: ${errorCode})`;
         }
       } else if (err instanceof Error) {
         errorMessage = err.message;

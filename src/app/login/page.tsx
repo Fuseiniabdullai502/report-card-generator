@@ -67,18 +67,22 @@ export default function LoginPage() {
     } catch (err) {
       let errorMessage = "An unknown error occurred during login.";
       if (err instanceof Error && (err as any).code) {
-        switch ((err as any).code) {
+        const errorCode = (err as any).code;
+        switch (errorCode) {
           case 'auth/invalid-credential':
-            errorMessage = "Incorrect email or password. Please try again.";
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+            errorMessage = "Incorrect email or password. Please check your credentials and try again.";
             break;
           case 'auth/user-disabled':
-            errorMessage = "This user account has been disabled.";
+            errorMessage = "This user account has been disabled. Please contact the administrator.";
             break;
           case 'auth/invalid-email':
-            errorMessage = "The email address is not valid.";
+            errorMessage = "The email address you entered is not valid.";
             break;
           default:
-            errorMessage = "Failed to log in. Please check your credentials.";
+            // Show the actual error code for better diagnosis.
+            errorMessage = `An unexpected error occurred. Please try again. (Error: ${errorCode})`;
         }
       } else if (err instanceof Error) {
         errorMessage = err.message;
