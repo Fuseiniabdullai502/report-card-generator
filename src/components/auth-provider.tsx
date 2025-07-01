@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -15,7 +16,7 @@ interface AuthContextType {
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<CustomUser | null>(null);
@@ -24,21 +25,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // User is logged in, now get their custom data (role)
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          // User document exists, add role to user object
-          setUser({ ...firebaseUser, role: userDoc.data().role || 'user' });
-        } else {
-          // This case should be handled by login/register pages.
-          // For safety, we treat them as a regular user without a role,
-          // which might restrict access until login/register fixes the doc.
-           console.warn(`User document for ${firebaseUser.uid} not found in Firestore.`);
-           setUser({ ...firebaseUser, role: null });
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+
+          if (userDocSnap.exists()) {
+            const role = userDocSnap.data().role ?? 'user';
+            setUser({ ...firebaseUser, role });
+          } else {
+            console.warn(`No Firestore doc found for user ${firebaseUser.uid}`);
+            setUser({ ...firebaseUser, role: null });
+          }
+        } catch (error) {
+          console.error('Error fetching user role from Firestore:', error);
+          setUser({ ...firebaseUser, role: null });
         }
       } else {
-        // User is not logged in
         setUser(null);
       }
       setLoading(false);
@@ -62,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
