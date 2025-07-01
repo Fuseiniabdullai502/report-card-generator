@@ -62,7 +62,7 @@ export default function RegisterPage() {
     try {
       const isAdminRegistering = email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
-      // Step 1: Verify invite if not admin
+      // Step 1: For regular users, verify the invite BEFORE creating the auth user.
       if (!isAdminRegistering) {
         const inviteCheck = await verifyInviteAction(email);
         if (!inviteCheck.success) {
@@ -70,31 +70,30 @@ export default function RegisterPage() {
         }
       }
       
-      // Step 2: Create the user in Firebase Auth
+      // Step 2: Now that checks have passed, create the user in Firebase Auth.
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const newFirebaseUser = userCredential.user;
 
-      // Step 3: Create the user document in Firestore and complete the invite
-      const userDocRef = doc(db, 'users', newFirebaseUser.uid);
+      // Determine the role.
       const role = isAdminRegistering ? 'admin' : 'user';
 
-      // Mark invite as completed for regular users
-      if (!isAdminRegistering) {
-          const completeResult = await completeInviteAction(email, newFirebaseUser.uid);
-          if (!completeResult.success) {
-              // This is an edge case. The user is created in Auth but the invite couldn't be marked.
-              // For simplicity, we'll log it and continue. In a production app, you might delete the auth user here.
-              console.error(`Failed to complete invite for ${email}: ${completeResult.error}`);
-          }
-      }
-
-      await setDoc(userDocRef, {
+      // Step 3: Create the user document in Firestore.
+      await setDoc(doc(db, 'users', newFirebaseUser.uid), {
         email: newFirebaseUser.email,
         role: role,
         createdAt: serverTimestamp(),
       });
       
-      // onAuthStateChanged in AuthProvider will now simply read the user's data.
+      // Step 4: If it was a regular user, complete their invite.
+      if (!isAdminRegistering) {
+          const completeResult = await completeInviteAction(email, newFirebaseUser.uid);
+          if (!completeResult.success) {
+              // Log this edge case, but the user is already registered, so we proceed.
+              console.error(`Failed to mark invite as completed for ${email}: ${completeResult.error}`);
+          }
+      }
+      
+      // Redirect to the main page. AuthProvider will pick up the new user state.
       router.push('/');
 
     } catch (err) {
@@ -102,7 +101,7 @@ export default function RegisterPage() {
       if (err instanceof Error && (err as any).code) {
         switch ((err as any).code) {
           case 'auth/email-already-in-use':
-            errorMessage = "This email address is already registered. Please try logging in.";
+            errorMessage = "This email address is already registered. Please try logging in, or delete the old user in the Firebase Console if you are the admin.";
             break;
           case 'auth/invalid-email':
             errorMessage = "Please enter a valid email address.";
@@ -111,7 +110,7 @@ export default function RegisterPage() {
             errorMessage = "Password is too weak. It must be at least 6 characters.";
             break;
           default:
-            errorMessage = "Failed to register. Please try again.";
+            errorMessage = `Failed to register. Please try again. Code: ${(err as any).code}`;
         }
       } else if (err instanceof Error) {
         errorMessage = err.message;
@@ -126,8 +125,8 @@ export default function RegisterPage() {
     <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-background">
       <Card className="w-full max-w-sm shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-headline text-primary">Complete Your Registration</CardTitle>
-          <CardDescription>You must be invited by an admin to register.</CardDescription>
+          <CardTitle className="text-2xl font-headline text-primary">Create Your Account</CardTitle>
+          <CardDescription>Enter your details to register. You must be invited by an admin unless you are the admin.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
