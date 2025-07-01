@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, LogIn, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -44,26 +43,10 @@ export default function LoginPage() {
     setError(null);
     setIsLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const loggedInUser = userCredential.user;
-
-      // Self-healing logic for the admin user. This ensures the admin's Firestore doc exists.
-      if (loggedInUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
-        const userDocRef = doc(db, 'users', loggedInUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        // If the document doesn't exist or the role is not 'admin', create/update it.
-        if (!userDoc.exists() || userDoc.data().role !== 'admin') {
-            await setDoc(userDocRef, {
-                email: loggedInUser.email,
-                role: 'admin',
-                createdAt: userDoc.exists() ? userDoc.data().createdAt : serverTimestamp()
-            }, { merge: true }); // Merge ensures we don't overwrite other fields if they exist.
-        }
-      }
-
+      await signInWithEmailAndPassword(auth, email, password);
+      // On successful login, the AuthProvider's onAuthStateChanged will handle
+      // setting the user state and redirecting.
       router.push('/');
-
     } catch (err) {
       let errorMessage = "An unknown error occurred during login.";
       if (err instanceof Error && (err as any).code) {
@@ -81,14 +64,14 @@ export default function LoginPage() {
             errorMessage = "The email address you entered is not valid.";
             break;
           default:
-            // Show the actual error code for better diagnosis.
             errorMessage = `An unexpected error occurred. Please try again. (Error: ${errorCode})`;
         }
       } else if (err instanceof Error) {
         errorMessage = err.message;
       }
       setError(errorMessage);
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   };
 

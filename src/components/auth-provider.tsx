@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { type User, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 export interface CustomUser extends User {
@@ -26,24 +26,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
-          const userDocRef = doc(db, 'users', firebaseUser.uid);
-          const userDoc = await getDoc(userDocRef);
+          const isAdminByEmail = firebaseUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
           
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            const isAdminByEmail = firebaseUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-            // Ensure the role is correctly set, especially for the admin
-            const role = (isAdminByEmail && userData.role !== 'admin') ? 'admin' : userData.role || 'user';
-            
-            setUser({ ...firebaseUser, role });
+          if (isAdminByEmail) {
+            // This is the admin user. Ensure their Firestore document is correct.
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (!userDoc.exists() || userDoc.data().role !== 'admin') {
+              // Admin document is missing or role is wrong. Create/update it.
+              await setDoc(userDocRef, {
+                email: firebaseUser.email,
+                role: 'admin',
+                createdAt: userDoc.exists() ? userDoc.data().createdAt : serverTimestamp()
+              }, { merge: true });
+            }
+            // Now set the user state with the guaranteed 'admin' role.
+            setUser({ ...firebaseUser, role: 'admin' });
           } else {
-            // This is an invalid state if a non-admin is in Auth but not Firestore.
-            // The registration flow handles creating the document, so this case implies an issue.
-            // For the admin, their document might be created on first login via the self-healing logic.
-            // But with the simplified provider, we will just log out any user without a DB record for safety.
-            console.warn(`User ${firebaseUser.uid} exists in Auth but not Firestore. Logging out.`);
-            await auth.signOut();
-            setUser(null);
+            // This is a regular user. Just get their document.
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists()) {
+              setUser({ ...firebaseUser, role: userDoc.data().role || 'user' });
+            } else {
+              // Regular user exists in Auth but not Firestore. This is an invalid state. Log them out.
+              console.warn(`User ${firebaseUser.uid} exists in Auth but not Firestore. Logging out.`);
+              await auth.signOut();
+              setUser(null);
+            }
           }
         } else {
           setUser(null);
