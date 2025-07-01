@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -86,14 +85,11 @@ export default function RegisterPage() {
       
       // Step 4: If it was a regular user, complete their invite.
       if (!isAdminRegistering) {
-          const completeResult = await completeInviteAction(email, newFirebaseUser.uid);
-          if (!completeResult.success) {
-              // Log this edge case, but the user is already registered, so we proceed.
-              console.error(`Failed to mark invite as completed for ${email}: ${completeResult.error}`);
-          }
+          await completeInviteAction(email, newFirebaseUser.uid);
       }
       
-      // Redirect to the main page. AuthProvider will pick up the new user state.
+      // Registration successful, redirect to home page.
+      // AuthProvider will pick up the new user state and their role from the document we just created.
       router.push('/');
 
     } catch (err) {
@@ -111,7 +107,7 @@ export default function RegisterPage() {
             errorMessage = "Password is too weak. It must be at least 6 characters.";
             break;
           default:
-            errorMessage = `Failed to register. Please try again. (Error: ${errorCode})`;
+            errorMessage = (err as any).message; // Use the actual message from the error object
         }
       } else if (err instanceof Error) {
         errorMessage = err.message;

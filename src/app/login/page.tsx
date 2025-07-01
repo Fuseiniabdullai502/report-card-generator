@@ -1,9 +1,9 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -23,13 +23,11 @@ export default function LoginPage() {
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Redirect if user is already logged in
     if (!authLoading && user) {
       router.push('/');
     }
   }, [user, authLoading, router]);
 
-  // Show a loading screen while auth state is resolving or if a redirect is imminent
   if (authLoading || user) {
     return (
       <div className="flex justify-center items-center h-screen w-screen bg-background">
@@ -43,10 +41,26 @@ export default function LoginPage() {
     setError(null);
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // On successful login, the AuthProvider's onAuthStateChanged will handle
-      // setting the user state and redirecting.
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const loggedInUser = userCredential.user;
+
+      // Self-healing for admin account: Check and fix Firestore document on login
+      const isAdminByEmail = loggedInUser.email?.toLowerCase() === process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
+      if (isAdminByEmail) {
+        const userDocRef = doc(db, 'users', loggedInUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (!userDoc.exists() || userDoc.data().role !== 'admin') {
+          await setDoc(userDocRef, {
+            email: loggedInUser.email,
+            role: 'admin',
+            createdAt: userDoc.exists() ? userDoc.data().createdAt : serverTimestamp()
+          }, { merge: true });
+        }
+      }
+      
+      // On successful login and document check/fix, AuthProvider will handle the redirect.
       router.push('/');
+
     } catch (err) {
       let errorMessage = "An unknown error occurred during login.";
       if (err instanceof Error && (err as any).code) {
@@ -64,7 +78,7 @@ export default function LoginPage() {
             errorMessage = "The email address you entered is not valid.";
             break;
           default:
-            errorMessage = `An unexpected error occurred. Please try again. (Error: ${errorCode})`;
+            errorMessage = (err as any).message; // Use the actual message from the error object
         }
       } else if (err instanceof Error) {
         errorMessage = err.message;
