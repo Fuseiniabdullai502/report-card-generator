@@ -1,13 +1,21 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, LogIn, Eye, EyeOff } from 'lucide-react';
@@ -40,52 +48,63 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
+
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const loggedInUser = userCredential.user;
 
-      // Self-healing for admin account: Check and fix Firestore document on login
-      const isAdminByEmail = loggedInUser.email?.toLowerCase() === process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
-      if (isAdminByEmail) {
+      // Ensure admin email is defined in env
+      const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
+      const userEmail = loggedInUser.email?.toLowerCase();
+
+      // If login is admin, ensure Firestore doc reflects that
+      if (adminEmail && userEmail === adminEmail) {
         const userDocRef = doc(db, 'users', loggedInUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (!userDoc.exists() || userDoc.data().role !== 'admin') {
-          await setDoc(userDocRef, {
-            email: loggedInUser.email,
-            role: 'admin',
-            createdAt: userDoc.exists() ? userDoc.data().createdAt : serverTimestamp()
-          }, { merge: true });
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (!userDocSnap.exists() || userDocSnap.data().role !== 'admin') {
+          await setDoc(
+            userDocRef,
+            {
+              email: loggedInUser.email,
+              role: 'admin',
+              createdAt: userDocSnap.exists()
+                ? userDocSnap.data().createdAt
+                : serverTimestamp(),
+            },
+            { merge: true }
+          );
         }
       }
-      
-      // On successful login and document check/fix, AuthProvider will handle the redirect.
-      router.push('/');
 
+      // Let AuthProvider handle redirect
+      router.push('/');
     } catch (err) {
-      let errorMessage = "An unknown error occurred during login.";
+      let errorMessage = 'An unknown error occurred during login.';
       if (err instanceof Error && (err as any).code) {
         const errorCode = (err as any).code;
         switch (errorCode) {
           case 'auth/invalid-credential':
           case 'auth/user-not-found':
           case 'auth/wrong-password':
-            errorMessage = "Incorrect email or password. Please check your credentials and try again.";
+            errorMessage = 'Incorrect email or password. Please check your credentials and try again.';
             break;
           case 'auth/user-disabled':
-            errorMessage = "This user account has been disabled. Please contact the administrator.";
+            errorMessage = 'This user account has been disabled. Please contact the administrator.';
             break;
           case 'auth/invalid-email':
-            errorMessage = "The email address you entered is not valid.";
+            errorMessage = 'The email address you entered is not valid.';
             break;
           default:
-            errorMessage = (err as any).message; // Use the actual message from the error object
+            errorMessage = (err as any).message;
         }
       } else if (err instanceof Error) {
         errorMessage = err.message;
       }
+      console.error('Login Error:', err); // Helpful for debugging
       setError(errorMessage);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -125,7 +144,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -133,8 +152,17 @@ export default function LoginPage() {
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="animate-spin" /> : <LogIn className="mr-2" />}
-              Log In
+              {isLoading ? (
+                <>
+                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                  Logging in...
+                </>
+              ) : (
+                <>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Log In
+                </>
+              )}
             </Button>
           </form>
         </CardContent>
