@@ -24,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // User is logged in via Firebase Auth. Now check Firestore.
         try {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDocSnap = await getDoc(userDocRef);
@@ -34,10 +35,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           let role: 'admin' | 'user' | null = 'user'; // Default role
 
           if (adminEmail && userEmail === adminEmail) {
-            // This is the admin. Ensure their document is correct.
+            // This is the designated admin user.
             role = 'admin';
+            // Self-heal: Ensure their Firestore document exists and has the correct role.
+            // This is safe to run on every load for the admin.
             if (!userDocSnap.exists() || userDocSnap.data().role !== 'admin') {
-              // Self-heal: Create or update the admin's Firestore document
               await setDoc(userDocRef, {
                 email: firebaseUser.email,
                 role: 'admin',
@@ -49,8 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (userDocSnap.exists()) {
               role = userDocSnap.data().role ?? 'user';
             } else {
-              // This can happen if a user is created in Auth but not in Firestore.
-              // We'll create a basic record for them.
+              // This can happen if a user was created in Auth but not Firestore (e.g., incomplete registration).
+              // We will create a document for them to prevent errors.
+              console.warn(`User document for ${userEmail} not found. Creating one with default 'user' role.`);
               await setDoc(userDocRef, {
                   email: firebaseUser.email,
                   role: 'user',
@@ -64,16 +67,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         } catch (error) {
           console.error('Error in AuthProvider while fetching/setting user role:', error);
-          setUser({ ...firebaseUser, role: null }); // Fallback on error
+          setUser({ ...firebaseUser, role: null }); // Fallback on error, user is logged in but has no role.
         }
       } else {
+        // User is not logged in.
         setUser(null);
       }
+      // Set loading to false after all async operations are done.
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once on mount.
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
