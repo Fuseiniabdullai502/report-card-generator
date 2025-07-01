@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { type User, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 export interface CustomUser extends User {
@@ -24,50 +24,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true);
       try {
         if (firebaseUser) {
-            const userDocRef = doc(db, 'users', firebaseUser.uid);
-            const userDoc = await getDoc(userDocRef);
-            const isAdminEmail = firebaseUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
-                let userRole = userData.role || 'user';
-
-                // Self-healing check: If the user has the admin email but their role isn't 'admin' in the DB, fix it.
-                if (isAdminEmail && userRole !== 'admin') {
-                    await setDoc(userDocRef, { role: 'admin' }, { merge: true });
-                    userRole = 'admin';
-                }
-                setUser({ ...firebaseUser, role: userRole });
-            } else {
-                // This is an edge case: an auth user exists without a DB record.
-                // This can happen if registration failed midway, or for an admin's very first sign-in.
-                if (isAdminEmail) {
-                    // Create the admin document on the fly if it doesn't exist.
-                    console.log(`Admin user document for ${firebaseUser.email} not found. Creating it now.`);
-                    await setDoc(userDocRef, {
-                        email: firebaseUser.email,
-                        role: 'admin',
-                        createdAt: serverTimestamp()
-                    });
-                    setUser({ ...firebaseUser, role: 'admin' });
-                } else {
-                    // For a non-admin, this is an invalid state. Log them out to prevent access.
-                    console.warn(`User ${firebaseUser.uid} exists in Auth but not in Firestore. Logging out.`);
-                    await auth.signOut();
-                    setUser(null);
-                }
-            }
-        } else {
-            // User is not logged in.
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const isAdminByEmail = firebaseUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+            // Ensure the role is correctly set, especially for the admin
+            const role = (isAdminByEmail && userData.role !== 'admin') ? 'admin' : userData.role || 'user';
+            
+            setUser({ ...firebaseUser, role });
+          } else {
+            // This is an invalid state if a non-admin is in Auth but not Firestore.
+            // The registration flow handles creating the document, so this case implies an issue.
+            // For the admin, their document might be created on first login via the self-healing logic.
+            // But with the simplified provider, we will just log out any user without a DB record for safety.
+            console.warn(`User ${firebaseUser.uid} exists in Auth but not Firestore. Logging out.`);
+            await auth.signOut();
             setUser(null);
+          }
+        } else {
+          setUser(null);
         }
       } catch (error) {
-          console.error("Error in onAuthStateChanged listener:", error);
-          setUser(null);
-          // Don't leave the app in a hanging state.
+        console.error("Error in AuthProvider:", error);
+        setUser(null);
       } finally {
         setLoading(false);
       }
