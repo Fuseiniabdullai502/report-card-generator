@@ -1,10 +1,9 @@
-
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { type User, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 export interface CustomUser extends User {
@@ -28,17 +27,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDocSnap = await getDoc(userDocRef);
+          
+          const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
+          const userEmail = firebaseUser.email?.toLowerCase();
+          
+          let role: 'admin' | 'user' | null = 'user'; // Default role
 
-          if (userDocSnap.exists()) {
-            const role = userDocSnap.data().role ?? 'user';
-            setUser({ ...firebaseUser, role });
+          if (adminEmail && userEmail === adminEmail) {
+            // This is the admin. Ensure their document is correct.
+            role = 'admin';
+            if (!userDocSnap.exists() || userDocSnap.data().role !== 'admin') {
+              // Self-heal: Create or update the admin's Firestore document
+              await setDoc(userDocRef, {
+                email: firebaseUser.email,
+                role: 'admin',
+                createdAt: userDocSnap.exists() ? userDocSnap.data().createdAt : serverTimestamp(),
+              }, { merge: true });
+            }
           } else {
-            console.warn(`No Firestore doc found for user ${firebaseUser.uid}`);
-            setUser({ ...firebaseUser, role: null });
+            // This is a regular user.
+            if (userDocSnap.exists()) {
+              role = userDocSnap.data().role ?? 'user';
+            } else {
+              // This can happen if a user is created in Auth but not in Firestore.
+              // We'll create a basic record for them.
+              await setDoc(userDocRef, {
+                  email: firebaseUser.email,
+                  role: 'user',
+                  createdAt: serverTimestamp(),
+              }, { merge: true });
+              role = 'user';
+            }
           }
+          
+          setUser({ ...firebaseUser, role });
+
         } catch (error) {
-          console.error('Error fetching user role from Firestore:', error);
-          setUser({ ...firebaseUser, role: null });
+          console.error('Error in AuthProvider while fetching/setting user role:', error);
+          setUser({ ...firebaseUser, role: null }); // Fallback on error
         }
       } else {
         setUser(null);

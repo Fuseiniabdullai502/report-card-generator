@@ -1,10 +1,8 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -50,35 +48,11 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const loggedInUser = userCredential.user;
-
-      // Ensure admin email is defined in env
-      const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
-      const userEmail = loggedInUser.email?.toLowerCase();
-
-      // If login is admin, ensure Firestore doc reflects that
-      if (adminEmail && userEmail === adminEmail) {
-        const userDocRef = doc(db, 'users', loggedInUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        if (!userDocSnap.exists() || userDocSnap.data().role !== 'admin') {
-          await setDoc(
-            userDocRef,
-            {
-              email: loggedInUser.email,
-              role: 'admin',
-              createdAt: userDocSnap.exists()
-                ? userDocSnap.data().createdAt
-                : serverTimestamp(),
-            },
-            { merge: true }
-          );
-        }
-      }
-
-      // Let AuthProvider handle redirect
-      router.push('/');
+      // The AuthProvider will now handle setting the role correctly on login.
+      // We just need to sign in here.
+      await signInWithEmailAndPassword(auth, email, password);
+      // The useEffect hook will handle the redirect once the AuthProvider updates the user state.
+      router.push('/'); 
     } catch (err) {
       let errorMessage = 'An unknown error occurred during login.';
       if (err instanceof Error && (err as any).code) {
