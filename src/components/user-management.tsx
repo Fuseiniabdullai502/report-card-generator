@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useState, useEffect, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { inviteUserAction } from '@/app/actions';
@@ -42,7 +42,7 @@ export default function UserManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const [formState, formAction] = useFormState(inviteUserAction, {
+  const [formState, formAction] = useActionState(inviteUserAction, {
     success: false,
     message: '',
   });
