@@ -216,7 +216,10 @@ export async function getAiSchoolInsightsAction(
 }
 
 // User Management Actions
-export async function inviteUserAction(formData: FormData) {
+export async function inviteUserAction(
+  prevState: { success: boolean; message: string; },
+  formData: FormData
+) {
   const email = formData.get('email') as string;
   if (!email) {
     return { success: false, message: 'Email is required.' };
