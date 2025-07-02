@@ -3,36 +3,36 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if the requesting user is an admin.
-    function isAdmin() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Users can manage their own document. Admins can read any user's document.
+    
+    // USERS collection
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin();
-      allow write: if request.auth.uid == userId;
+      // Allow user creation on signup, or if the user is an admin.
+      // A user can update their own data.
+      allow create: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      
+      // A user can read their own data, or if the user is an admin.
+      allow read, update: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+
+      // Only admins can delete users.
+      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Invites can be created by admins.
-    // They can be read by any authenticated user to allow for invite verification on the client.
-    // They can be updated by any authenticated user to allow them to complete their own invite upon registration.
+    // INVITES collection
     match /invites/{inviteId} {
-      allow read: if request.auth != null;
-      allow create: if isAdmin();
-      allow update: if request.auth != null;
-      allow delete: if isAdmin();
+      // Any authenticated user can read invites (to check for their own invite).
+      allow read: if request.auth.uid != null;
+
+      // Only admins can create, update, or delete invites.
+      allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Reports can be created by any authenticated user for themselves.
-    // They can be read by any authenticated user (for dashboards).
-    // They can only be updated/deleted by their creator (teacherId) or an admin.
+    // REPORTS collection
     match /reports/{reportId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.teacherId == request.auth.uid;
-      allow update, delete: if request.auth != null && (resource.data.teacherId == request.auth.uid || isAdmin());
+      // Any authenticated user can read all reports (for dashboards) and create new ones.
+      allow read, create: if request.auth.uid != null;
+      
+      // A user can update/delete their own reports. An admin can also update/delete any report.
+      allow update, delete: if request.auth.uid == resource.data.teacherId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }

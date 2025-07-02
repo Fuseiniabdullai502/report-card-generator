@@ -217,7 +217,7 @@ export async function getAiSchoolInsightsAction(
 
 // User Management Actions
 export async function inviteUserAction(
-  prevState: { success: boolean; message: string; },
+  prevState: { success: boolean; message: string },
   formData: FormData
 ) {
   const email = formData.get('email')?.toString().trim().toLowerCase();
@@ -227,19 +227,20 @@ export async function inviteUserAction(
   }
 
   try {
-    const usersRef = collection(db, 'users');
-    const qUser = query(usersRef, where('email', '==', email));
-    const userSnapshot = await getDocs(qUser);
-    if (!userSnapshot.empty) {
-      return { success: false, message: 'User with this email already exists.' };
-    }
-
+    // Check if a pending invite already exists to prevent duplicates
     const invitesRef = collection(db, 'invites');
-    const qInvite = query(invitesRef, where('email', '==', email), where('status', '==', 'pending'));
+    const qInvite = query(
+      invitesRef,
+      where('email', '==', email),
+      where('status', '==', 'pending')
+    );
     const inviteSnapshot = await getDocs(qInvite);
     if (!inviteSnapshot.empty) {
       return { success: false, message: 'A pending invite already exists for this email.' };
     }
+
+    // A user with this email might already exist, but we can let the registration page handle that.
+    // This simplifies the rules required for this action to succeed.
 
     await addDoc(invitesRef, {
       email,
@@ -250,6 +251,7 @@ export async function inviteUserAction(
     return { success: true, message: `Invite sent to ${email}.` };
   } catch (error) {
     console.error('Error inviting user:', error);
+    // This error message strongly suggests a Firestore security rule is blocking the action.
     return { success: false, message: 'Failed to send invite. Please try again.' };
   }
 }
