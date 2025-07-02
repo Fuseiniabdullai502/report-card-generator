@@ -1,8 +1,7 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useActionState, useFormStatus } from 'react-dom';
+import { useState, useEffect, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { inviteUserAction } from '@/app/actions';
@@ -57,7 +56,6 @@ export default function UserManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // now correctly imported
   const [formState, formAction] = useActionState(inviteUserAction, {
     success: false,
     message: '',
@@ -118,7 +116,6 @@ export default function UserManagement() {
             Enter the email address of the user you want to invite. They will be able to register after receiving the invite.
           </CardDescription>
         </CardHeader>
-        {/* make sure this action actually fires now */}
         <form key="invite-form" action={formAction}>
           <CardContent>
             <Input name="email" type="email" placeholder="teacher@school.com" required />
