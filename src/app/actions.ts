@@ -221,8 +221,14 @@ export async function verifyInviteAction(email: string) {
     const q = query(invitesRef, where('email', '==', email.toLowerCase()), where('status', '==', 'pending'));
     const querySnapshot = await getDocs(q);
     return { success: !querySnapshot.empty };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error verifying invite:', error);
+    // Firestore often fails with a "FAILED_PRECONDITION" error if a composite index is missing.
+    // This provides a more helpful message to the developer.
+    if (error.code === 'failed-precondition') {
+        const detailedError = 'This is likely due to a missing Firestore index. Please check your browser\'s developer console for a link to create the required index for the "invites" collection on the "email" and "status" fields.';
+        console.error(detailedError);
+    }
     return { success: false };
   }
 }
@@ -241,8 +247,12 @@ export async function completeInviteAction(email: string, userId: string) {
         await setDoc(doc(db, 'invites', inviteDoc.id), { status: 'completed' }, { merge: true });
 
         return { success: true };
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error completing invite:', error);
+        if (error.code === 'failed-precondition') {
+            const detailedError = 'This is likely due to a missing Firestore index. Please check your browser\'s developer console for a link to create the required index for the "invites" collection on the "email" and "status" fields.';
+            console.error(detailedError);
+        }
         return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }

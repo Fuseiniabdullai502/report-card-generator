@@ -2,27 +2,36 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // USER documents can be read by their owner or an admin.
-    // They can only be written to by their owner. This protects the 'role'.
+    
+    // User documents
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      allow write: if request.auth.uid == userId;
+      // An authenticated user can read or update their own document.
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      // An admin can read any user's document.
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // INVITES can be read by anyone (necessary for pre-registration check).
-    // They can only be created by an admin.
-    // They can be updated by any authenticated user (to complete their own invite).
-    match /invites/{inviteId} {
-      allow read, update: if true;
-      allow create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // REPORTS can be read by any authenticated user (for dashboards).
-    // They can only be written/deleted by their owner (teacherId) or an admin.
+    // Report documents
     match /reports/{reportId} {
-      allow read: if request.auth != null;
-      allow write, delete: if request.auth != null && (request.resource.data.teacherId == request.auth.uid || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+        // Any authenticated user can read reports.
+        allow read: if request.auth != null;
+        // Only the user who created the report or an admin can write to it.
+        allow write: if request.auth != null && (request.resource.data.teacherId == request.auth.uid || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+    
+    // Invite documents
+    match /invites/{inviteId} {
+      // REGISTRATION: Anyone can query the invites collection to see if their email is on the pending list.
+      // This is required for the registration page to work before a user is logged in.
+      allow list: if true;
+      allow get: if true;
+      
+      // ADMIN: Only an admin can create new invites.
+      allow create: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      
+      // USER COMPLETING REGISTRATION: An authenticated user can update an invite.
+      // We don't check for email matching here, as this is handled by the server action after successful user creation.
+      allow update: if request.auth != null && request.resource.data.status == 'completed';
     }
   }
 }
