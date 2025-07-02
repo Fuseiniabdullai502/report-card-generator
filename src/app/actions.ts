@@ -220,9 +220,10 @@ export async function inviteUserAction(
   prevState: { success: boolean; message: string; },
   formData: FormData
 ) {
-  const email = formData.get('email') as string;
-  if (!email) {
-    return { success: false, message: 'Email is required.' };
+  const email = formData.get('email')?.toString().trim().toLowerCase();
+
+  if (!email || !email.includes('@')) {
+    return { success: false, message: 'Please enter a valid email address.' };
   }
 
   try {
@@ -256,7 +257,7 @@ export async function inviteUserAction(
 export async function verifyInviteAction(email: string) {
   try {
     const invitesRef = collection(db, 'invites');
-    const q = query(invitesRef, where('email', '==', email), where('status', '==', 'pending'));
+    const q = query(invitesRef, where('email', '==', email.toLowerCase()), where('status', '==', 'pending'));
     const querySnapshot = await getDocs(q);
     return { success: !querySnapshot.empty };
   } catch (error) {
@@ -268,7 +269,7 @@ export async function verifyInviteAction(email: string) {
 export async function completeInviteAction(email: string, userId: string) {
     try {
         const invitesRef = collection(db, 'invites');
-        const q = query(invitesRef, where('email', '==', email), where('status', '==', 'pending'));
+        const q = query(invitesRef, where('email', '==', email.toLowerCase()), where('status', '==', 'pending'));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
