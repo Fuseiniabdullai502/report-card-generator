@@ -215,36 +215,6 @@ export async function getAiSchoolInsightsAction(
 }
 
 // User Management Actions
-export async function inviteUserAction(
-  prevState: { success: boolean; message: string },
-  formData: FormData
-) {
-  const email = formData.get('email')?.toString().trim().toLowerCase();
-
-  if (!email || !email.includes('@')) {
-    return { success: false, message: 'Please enter a valid email address.' };
-  }
-
-  try {
-    // To simplify permissions, we remove the check for existing invites.
-    // The registration page already prevents existing users from re-registering
-    // and an invite can only be used once. This reduces the required Firestore
-    // permissions for this action to 'create' only on the 'invites' collection.
-    
-    await addDoc(collection(db, 'invites'), {
-      email,
-      status: 'pending',
-      createdAt: serverTimestamp(),
-    });
-
-    return { success: true, message: `Invite sent to ${email}. They can now register.` };
-  } catch (error) {
-    console.error('Error inviting user:', error);
-    // Provide a more helpful error message pointing directly to the likely cause.
-    return { success: false, message: 'Failed to send invite. This is likely a Firestore security rule issue. Please ensure your rules allow an admin to create documents in the "invites" collection. See firestore.rules for the correct implementation.' };
-  }
-}
-
 export async function verifyInviteAction(email: string) {
   try {
     const invitesRef = collection(db, 'invites');

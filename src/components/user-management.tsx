@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect, useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { useState, useEffect, FormEvent } from 'react';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { inviteUserAction } from '@/app/actions';
 import {
   Card,
   CardContent,
@@ -40,37 +38,14 @@ interface InviteData {
   createdAt: any;
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending} aria-busy={pending}>
-      {pending ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2" />}
-      Send Invite
-    </Button>
-  );
-}
-
 export default function UserManagement() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [invites, setInvites] = useState<InviteData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const [formState, formAction] = useActionState(inviteUserAction, {
-    success: false,
-    message: '',
-  });
-
-  useEffect(() => {
-    if (formState.message) {
-      console.log('🧾 Invite Form State:', formState);
-      toast({
-        title: formState.success ? 'Success' : 'Error',
-        description: formState.message,
-        variant: formState.success ? 'default' : 'destructive',
-      });
-    }
-  }, [formState, toast]);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -87,6 +62,9 @@ export default function UserManagement() {
         }))
       );
       setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching users:", error);
+      setIsLoading(false);
     });
 
     const unsubInv = onSnapshot(invitesQ, (snap) => {
@@ -98,6 +76,8 @@ export default function UserManagement() {
           createdAt: d.data().createdAt ?? null,
         }))
       );
+    }, (error) => {
+      console.error("Error fetching invites:", error);
     });
 
     return () => {
@@ -105,6 +85,46 @@ export default function UserManagement() {
       unsubInv();
     };
   }, []);
+
+  const handleSendInvite = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsSendingInvite(true);
+
+    const email = inviteEmail.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      toast({
+        title: 'Invalid Email',
+        description: 'Please enter a valid email address.',
+        variant: 'destructive',
+      });
+      setIsSendingInvite(false);
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'invites'), {
+        email,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      });
+
+      toast({
+        title: 'Success',
+        description: `Invite sent to ${email}. They can now register.`,
+      });
+      setInviteEmail('');
+    } catch (error) {
+      console.error('Error sending invite:', error);
+      toast({
+        title: 'Failed to send invite',
+        description: 'This is likely a Firestore security rule issue. Please ensure your rules allow an admin to create documents in the "invites" collection.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingInvite(false);
+    }
+  };
+
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -117,12 +137,22 @@ export default function UserManagement() {
             Enter the email address of the user you want to invite. They will be able to register after receiving the invite.
           </CardDescription>
         </CardHeader>
-        <form key="invite-form" action={formAction}>
+        <form onSubmit={handleSendInvite}>
           <CardContent>
-            <Input name="email" type="email" placeholder="teacher@school.com" required />
+            <Input
+              name="email"
+              type="email"
+              placeholder="teacher@school.com"
+              required
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+            />
           </CardContent>
           <CardFooter>
-            <SubmitButton />
+            <Button type="submit" disabled={isSendingInvite}>
+              {isSendingInvite ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2" />}
+              Send Invite
+            </Button>
           </CardFooter>
         </form>
       </Card>
