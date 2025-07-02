@@ -614,12 +614,7 @@ function AppContent({ user }: { user: CustomUser }) {
     <>
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground">
       <header className="mb-8 text-center no-print relative">
-        <div className="flex items-center justify-center gap-3">
-         <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-         <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
-        </div>
-        <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.email}</p>
-         <div className="absolute top-0 right-0 flex items-center gap-2">
+        <div className="absolute top-0 left-0 flex items-center gap-2">
             {user.role === 'admin' && (
                 <Link href="/admin" passHref>
                     <Button variant="outline" size="sm">
@@ -628,6 +623,15 @@ function AppContent({ user }: { user: CustomUser }) {
                     </Button>
                 </Link>
             )}
+        </div>
+
+        <div className="flex items-center justify-center gap-3">
+         <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
+         <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
+        </div>
+        <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.email}</p>
+         
+        <div className="absolute top-0 right-0 flex items-center gap-2">
           <ThemeToggleButton />
           <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4"/>Logout</Button>
         </div>
