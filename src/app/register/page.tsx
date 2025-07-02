@@ -1,9 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -12,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
-import { verifyInviteAction, completeInviteAction } from '@/app/actions';
+import { registerUserAction } from '@/app/actions';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -58,65 +55,17 @@ export default function RegisterPage() {
 
     setIsLoading(true);
 
-    try {
-      const normalizedEmail = email.toLowerCase();
-      const isAdminRegistering = normalizedEmail === process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
+    const result = await registerUserAction({ email, password });
 
-      // Step 1: For regular users, verify the invite BEFORE creating the auth user.
-      if (!isAdminRegistering) {
-        const inviteCheck = await verifyInviteAction(normalizedEmail);
-        if (!inviteCheck.success) {
-          throw new Error("Registration failed. You must be invited by an administrator.");
-        }
-      }
-      
-      // Step 2: Now that checks have passed, create the user in Firebase Auth.
-      const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
-      const newFirebaseUser = userCredential.user;
-
-      // Determine the role.
-      const role = isAdminRegistering ? 'admin' : 'user';
-
-      // Step 3: Create the user document in Firestore.
-      await setDoc(doc(db, 'users', newFirebaseUser.uid), {
-        email: newFirebaseUser.email,
-        role: role,
-        createdAt: serverTimestamp(),
-      });
-      
-      // Step 4: If it was a regular user, complete their invite.
-      if (!isAdminRegistering) {
-          await completeInviteAction(normalizedEmail, newFirebaseUser.uid);
-      }
-      
-      // Registration successful, redirect to home page.
-      // AuthProvider will pick up the new user state and their role from the document we just created.
+    if (result.success) {
+      // AuthProvider will pick up the new user state and their role.
+      // Redirect to the main application page.
       router.push('/');
-
-    } catch (err) {
-      let errorMessage = "An unknown error occurred during registration.";
-      if (err instanceof Error && (err as any).code) {
-        const errorCode = (err as any).code;
-        switch (errorCode) {
-          case 'auth/email-already-in-use':
-            errorMessage = "This email is already in use. Please log in or use a different email.";
-            break;
-          case 'auth/invalid-email':
-            errorMessage = "Please enter a valid email address.";
-            break;
-          case 'auth/weak-password':
-            errorMessage = "Password is too weak. It must be at least 6 characters.";
-            break;
-          default:
-            errorMessage = (err as any).message; // Use the actual message from the error object
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      setError(errorMessage);
-    } finally {
-        setIsLoading(false);
+    } else {
+      setError(result.message);
     }
+
+    setIsLoading(false);
   };
 
   return (

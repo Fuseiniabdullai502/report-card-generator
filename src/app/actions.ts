@@ -18,8 +18,9 @@ import {
   type GenerateSchoolInsightsOutput,
 } from '@/ai/flows/generate-school-insights-flow';
 import { z } from 'zod';
-import { db } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 
 // Schema for student feedback generation
@@ -214,45 +215,91 @@ export async function getAiSchoolInsightsAction(
   }
 }
 
-// User Management Actions
-export async function verifyInviteAction(email: string) {
-  try {
-    const invitesRef = collection(db, 'invites');
-    const q = query(invitesRef, where('email', '==', email.toLowerCase()), where('status', '==', 'pending'));
-    const querySnapshot = await getDocs(q);
-    return { success: !querySnapshot.empty };
-  } catch (error: any) {
-    console.error('Error verifying invite:', error);
-    // Firestore often fails with a "FAILED_PRECONDITION" error if a composite index is missing.
-    // This provides a more helpful message to the developer.
-    if (error.code === 'failed-precondition') {
-        const detailedError = 'This is likely due to a missing Firestore index. Please check your browser\'s developer console for a link to create the required index for the "invites" collection on the "email" and "status" fields.';
-        console.error(detailedError);
-    }
-    return { success: false };
-  }
-}
+// New single action for user registration
+export async function registerUserAction(data: {
+  email: string;
+  password: string;
+}): Promise<{ success: boolean; message: string }> {
+  const { email, password } = data;
+  const trimmedEmail = email.trim().toLowerCase();
 
-export async function completeInviteAction(email: string, userId: string) {
-    try {
+  try {
+    const isAdminRegistering =
+      trimmedEmail === process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
+
+    // For non-admins, check for a pending invite first.
+    if (!isAdminRegistering) {
+      const invitesRef = collection(db, 'invites');
+      const inviteQuery = query(
+        invitesRef,
+        where('email', '==', trimmedEmail),
+        where('status', '==', 'pending')
+      );
+      const inviteSnapshot = await getDocs(inviteQuery);
+
+      if (inviteSnapshot.empty) {
+        return {
+          success: false,
+          message: 'Registration failed. You must be invited by an administrator.',
+        };
+      }
+    }
+
+    // Create user in Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      trimmedEmail,
+      password
+    );
+    const newUser = userCredential.user;
+    const role = isAdminRegistering ? 'admin' : 'user';
+
+    // Create user document in Firestore
+    await setDoc(doc(db, 'users', newUser.uid), {
+      email: trimmedEmail,
+      role: role,
+      createdAt: serverTimestamp(),
+    });
+
+    // If it was a regular user, update their invite to 'completed'
+    if (!isAdminRegistering) {
         const invitesRef = collection(db, 'invites');
-        const q = query(invitesRef, where('email', '==', email.toLowerCase()), where('status', '==', 'pending'));
+        const q = query(invitesRef, where('email', '==', trimmedEmail), where('status', '==', 'pending'));
         const querySnapshot = await getDocs(q);
 
-        if (querySnapshot.empty) {
-            throw new Error("No pending invite found for this email.");
+        if (!querySnapshot.empty) {
+            const inviteDoc = querySnapshot.docs[0];
+            await setDoc(doc(db, 'invites', inviteDoc.id), { status: 'completed', completedAt: serverTimestamp() }, { merge: true });
         }
-
-        const inviteDoc = querySnapshot.docs[0];
-        await setDoc(doc(db, 'invites', inviteDoc.id), { status: 'completed' }, { merge: true });
-
-        return { success: true };
-    } catch (error: any) {
-        console.error('Error completing invite:', error);
-        if (error.code === 'failed-precondition') {
-            const detailedError = 'This is likely due to a missing Firestore index. Please check your browser\'s developer console for a link to create the required index for the "invites" collection on the "email" and "status" fields.';
-            console.error(detailedError);
-        }
-        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
+
+    return { success: true, message: 'Registration successful!' };
+
+  } catch (error: any) {
+    console.error('Registration Error:', error);
+
+    let errorMessage = 'An unexpected error occurred during registration.';
+    if (error.code) {
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'This email is already in use. Please log in or use a different email.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'Password is too weak. It must be at least 6 characters.';
+          break;
+        case 'failed-precondition':
+             errorMessage = 'This is likely due to a missing Firestore index. Please check your browser\'s developer console for a link to create the required index for the "invites" collection on the "email" and "status" fields.';
+             break;
+        default:
+          errorMessage = error.message;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    return { success: false, message: errorMessage };
+  }
 }
