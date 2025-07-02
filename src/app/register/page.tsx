@@ -55,7 +55,7 @@ export default function RegisterPage() {
 
     setIsLoading(true);
 
-    const result = await registerUserAction({ email, password });
+    const result = await registerUserAction({ email: email.trim().toLowerCase(), password });
 
     if (result.success) {
       // AuthProvider will pick up the new user state and their role.
