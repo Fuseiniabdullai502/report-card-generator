@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import {
   Card,
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Send, UserPlus } from 'lucide-react';
+import { Loader2, Send, UserPlus, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface UserData {
@@ -102,6 +102,26 @@ export default function UserManagement() {
     }
 
     try {
+      // Check if user already exists in the 'users' collection
+      const usersRef = collection(db, 'users');
+      const userQuery = query(usersRef, where('email', '==', email));
+      const userSnapshot = await getDocs(userQuery);
+      if (!userSnapshot.empty) {
+        toast({ title: 'User Exists', description: `A user with the email ${email} is already registered.`, variant: 'destructive' });
+        setIsSendingInvite(false);
+        return;
+      }
+      
+      // Check if a pending invite already exists for this email
+      const invitesRef = collection(db, 'invites');
+      const inviteQuery = query(invitesRef, where('email', '==', email), where('status', '==', 'pending'));
+      const inviteSnapshot = await getDocs(inviteQuery);
+      if (!inviteSnapshot.empty) {
+        toast({ title: 'Invite Exists', description: `A pending invite for ${email} already exists.`, variant: 'destructive' });
+        setIsSendingInvite(false);
+        return;
+      }
+      
       await addDoc(collection(db, 'invites'), {
         email,
         status: 'pending',
@@ -109,15 +129,15 @@ export default function UserManagement() {
       });
 
       toast({
-        title: 'Success',
-        description: `Invite sent to ${email}. They can now register.`,
+        title: 'User Authorized',
+        description: `User with email ${email} has been authorized. You can now ask them to register.`,
       });
       setInviteEmail('');
     } catch (error) {
       console.error('Error sending invite:', error);
       toast({
-        title: 'Failed to send invite',
-        description: 'This is likely a Firestore security rule issue. Please ensure your rules allow an admin to create documents in the "invites" collection.',
+        title: 'Authorization Failed',
+        description: 'Failed to authorize the user. Please check your Firestore security rules and internet connection.',
         variant: 'destructive',
       });
     } finally {
@@ -131,10 +151,10 @@ export default function UserManagement() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <UserPlus /> Invite New User
+            <UserPlus /> Authorize New User
           </CardTitle>
           <CardDescription>
-            Enter the email address of the user you want to invite. They will be able to register after receiving the invite.
+            Enter an email address to authorize a new user. You must then notify them yourself so they can visit the registration page to create an account. No email is sent from this system.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSendInvite}>
@@ -150,8 +170,8 @@ export default function UserManagement() {
           </CardContent>
           <CardFooter>
             <Button type="submit" disabled={isSendingInvite}>
-              {isSendingInvite ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2" />}
-              Send Invite
+              {isSendingInvite ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2" />}
+              Authorize User
             </Button>
           </CardFooter>
         </form>
@@ -160,7 +180,7 @@ export default function UserManagement() {
       <Card>
         <CardHeader>
           <CardTitle>User & Invite Status</CardTitle>
-          <CardDescription>List of all registered users and pending invitations.</CardDescription>
+          <CardDescription>List of all registered users and pending authorizations.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -194,14 +214,14 @@ export default function UserManagement() {
                     <TableRow key={invite.id}>
                       <TableCell>{invite.email}</TableCell>
                       <TableCell className="capitalize italic text-yellow-600">
-                        Pending Invite
+                        Pending Authorization
                       </TableCell>
                     </TableRow>
                   ))}
                 {users.length === 0 && invites.filter((i) => i.status === 'pending').length === 0 && (
                   <TableRow>
                     <TableCell colSpan={2} className="text-center text-muted-foreground">
-                      No users or invites found.
+                      No users or pending authorizations found.
                     </TableCell>
                   </TableRow>
                 )}
