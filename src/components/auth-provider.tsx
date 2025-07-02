@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // User is logged in via Firebase Auth. Now check Firestore.
+        console.log('👤 Authenticated user:', firebaseUser.email);
         try {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDocSnap = await getDoc(userDocRef);
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (userDocSnap.exists()) {
               role = userDocSnap.data().role ?? 'user';
             } else {
-              // This can happen if a user was created in Auth but not Firestore (e.g., incomplete registration).
+              // This can happen if a user was created in Auth but not in Firestore (e.g., incomplete registration).
               // We will create a document for them to prevent errors.
               console.warn(`User document for ${userEmail} not found. Creating one with default 'user' role.`);
               await setDoc(userDocRef, {
@@ -63,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
           
+          console.log('📄 Firestore role:', role);
           setUser({ ...firebaseUser, role });
 
         } catch (error) {
