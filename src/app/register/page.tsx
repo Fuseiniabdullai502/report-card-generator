@@ -59,18 +59,19 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const isAdminRegistering = email.toLowerCase() === process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
+      const normalizedEmail = email.toLowerCase();
+      const isAdminRegistering = normalizedEmail === process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
 
       // Step 1: For regular users, verify the invite BEFORE creating the auth user.
       if (!isAdminRegistering) {
-        const inviteCheck = await verifyInviteAction(email);
+        const inviteCheck = await verifyInviteAction(normalizedEmail);
         if (!inviteCheck.success) {
           throw new Error("Registration failed. You must be invited by an administrator.");
         }
       }
       
       // Step 2: Now that checks have passed, create the user in Firebase Auth.
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
       const newFirebaseUser = userCredential.user;
 
       // Determine the role.
@@ -85,7 +86,7 @@ export default function RegisterPage() {
       
       // Step 4: If it was a regular user, complete their invite.
       if (!isAdminRegistering) {
-          await completeInviteAction(email, newFirebaseUser.uid);
+          await completeInviteAction(normalizedEmail, newFirebaseUser.uid);
       }
       
       // Registration successful, redirect to home page.

@@ -50,7 +50,7 @@ export default function LoginPage() {
     try {
       // The AuthProvider will now handle setting the role correctly on login.
       // We just need to sign in here.
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email.toLowerCase(), password);
       // The useEffect hook will handle the redirect once the AuthProvider updates the user state.
       router.push('/'); 
     } catch (err) {
