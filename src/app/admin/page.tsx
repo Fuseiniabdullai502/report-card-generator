@@ -10,10 +10,17 @@ export default function AdminPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  // Debugging: log user object to check if role is loaded
   useEffect(() => {
-    if (loading) {
-      return; // Wait for auth state to resolve
+    if (user) {
+      console.log("AdminPanel loaded user:", user);
     }
+  }, [user]);
+
+  // Redirect logic
+  useEffect(() => {
+    if (loading) return;
+
     if (!user) {
       router.replace('/login');
     } else if (user.role !== 'admin') {
@@ -21,7 +28,7 @@ export default function AdminPage() {
     }
   }, [user, loading, router]);
 
-
+  // Show loader while waiting or blocking unauthorized access
   if (loading || !user || user.role !== 'admin') {
     return (
       <div className="flex justify-center items-center h-screen w-screen bg-background">
@@ -30,6 +37,7 @@ export default function AdminPage() {
     );
   }
 
+  // Render admin dashboard
   return (
     <main className="container mx-auto p-4 md:p-8">
       <header className="mb-8">
@@ -37,7 +45,9 @@ export default function AdminPage() {
           <Shield className="h-8 w-8" />
           Admin Panel
         </h1>
-        <p className="text-muted-foreground mt-2">Manage user access and review application data.</p>
+        <p className="text-muted-foreground mt-2">
+          Manage user access and review application data.
+        </p>
       </header>
       <UserManagement />
     </main>
