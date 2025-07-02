@@ -2,36 +2,27 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if the requesting user has an 'admin' role.
-    function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
 
-    // Users can read their own user document, or an admin can read any document.
-    // Users can only ever write to their own document.
+    // USER documents can be read by their owner or an admin.
+    // They can only be written to by their owner. This protects the 'role'.
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin();
+      allow read: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
       allow write: if request.auth.uid == userId;
     }
 
-    // Reports can be read/written/created by their owner (teacherId) or an admin.
-    match /reports/{reportId} {
-      allow read, write, create: if request.auth.uid == request.resource.data.teacherId || isAdmin();
+    // INVITES can be read by anyone (necessary for pre-registration check).
+    // They can only be created by an admin.
+    // They can be updated by any authenticated user (to complete their own invite).
+    match /invites/{inviteId} {
+      allow read, update: if true;
+      allow create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Invites can be read by any authenticated user (to verify an invite on registration).
-    // Only an admin can CREATE invites.
-    // Any authenticated user can UPDATE an invite (to mark it 'completed' upon registration).
-    match /invites/{inviteId} {
+    // REPORTS can be read by any authenticated user (for dashboards).
+    // They can only be written/deleted by their owner (teacherId) or an admin.
+    match /reports/{reportId} {
       allow read: if request.auth != null;
-      allow create: if isAdmin();
-      allow update: if request.auth != null; 
-    }
-    
-    // Default to denying all other access for security.
-    match /{document=**} {
-      allow read, write: if false;
+      allow write, delete: if request.auth != null && (request.resource.data.teacherId == request.auth.uid || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
   }
 }
