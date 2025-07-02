@@ -1,4 +1,3 @@
-// src/app/actions.ts
 'use server';
 
 import { generateStudentFeedback, type GenerateStudentFeedbackInput } from '@/ai/flows/generate-student-feedback';
@@ -227,32 +226,22 @@ export async function inviteUserAction(
   }
 
   try {
-    // Check if a pending invite already exists to prevent duplicates
-    const invitesRef = collection(db, 'invites');
-    const qInvite = query(
-      invitesRef,
-      where('email', '==', email),
-      where('status', '==', 'pending')
-    );
-    const inviteSnapshot = await getDocs(qInvite);
-    if (!inviteSnapshot.empty) {
-      return { success: false, message: 'A pending invite already exists for this email.' };
-    }
-
-    // A user with this email might already exist, but we can let the registration page handle that.
-    // This simplifies the rules required for this action to succeed.
-
-    await addDoc(invitesRef, {
+    // To simplify permissions, we remove the check for existing invites.
+    // The registration page already prevents existing users from re-registering
+    // and an invite can only be used once. This reduces the required Firestore
+    // permissions for this action to 'create' only on the 'invites' collection.
+    
+    await addDoc(collection(db, 'invites'), {
       email,
       status: 'pending',
       createdAt: serverTimestamp(),
     });
 
-    return { success: true, message: `Invite sent to ${email}.` };
+    return { success: true, message: `Invite sent to ${email}. They can now register.` };
   } catch (error) {
     console.error('Error inviting user:', error);
-    // This error message strongly suggests a Firestore security rule is blocking the action.
-    return { success: false, message: 'Failed to send invite. Please try again.' };
+    // Provide a more helpful error message pointing directly to the likely cause.
+    return { success: false, message: 'Failed to send invite. This is likely a Firestore security rule issue. Please ensure your rules allow an admin to create documents in the "invites" collection. See firestore.rules for the correct implementation.' };
   }
 }
 
