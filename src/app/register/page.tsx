@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -62,7 +63,7 @@ export default function RegisterPage() {
       // Redirect to the main application page.
       router.push('/');
     } else {
-      setError(result.message);
+      setError(result.message || 'Registration failed. Please try again.');
     }
 
     setIsLoading(false);
@@ -73,7 +74,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-sm shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline text-primary">Create Your Account</CardTitle>
-          <CardDescription>Enter your details to register. You must be invited by an admin unless you are the admin.</CardDescription>
+          <CardDescription>Enter your details to register. You must be invited by an admin.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
@@ -134,8 +135,17 @@ export default function RegisterPage() {
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="animate-spin" /> : <UserPlus className="mr-2" />}
-              Register
+              {isLoading ? (
+                <>
+                  <Loader2 className="animate-spin mr-2" />
+                  Registering...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="mr-2" />
+                  Register
+                </>
+              )}
             </Button>
           </form>
         </CardContent>
