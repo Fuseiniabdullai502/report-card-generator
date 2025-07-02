@@ -63,6 +63,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     if (formState.message) {
+      console.log('🧾 Invite Form State:', formState);
       toast({
         title: formState.success ? 'Success' : 'Error',
         description: formState.message,
