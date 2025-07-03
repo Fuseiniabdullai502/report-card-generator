@@ -261,35 +261,18 @@ export default function ClassPerformanceDashboard({
   }, [isOpen, classStats, selectedClass, mostRecentTerm, toast]);
 
   const handlePrint = () => {
-    if (!classStats || reportsForClass.length === 0) {
-      toast({title: "Nothing to Print", description: "Dashboard data is not available or no reports loaded.", variant: "destructive"});
-      return;
-    }
     if (!printRef.current) return;
     const content = printRef.current.innerHTML;
     const win = window.open('', '', 'width=900,height=700');
-    if (!win) {
-        toast({title: "Print Error", description: "Could not open print window. Please check your browser's pop-up settings.", variant: "destructive"});
-        return;
-    }
+    if (!win) return;
     win.document.write(`
       <html>
         <head>
-          <title>Class Dashboard - ${selectedClass} - ${mostRecentTerm}</title>
+          <title>Class Dashboard</title>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; padding: 20px; color: #333; }
-            h1, h2, h3, h4, h5 { color: #111; }
-            table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; font-size: 0.8rem; }
-            td, th { border: 1px solid #ccc; padding: 6px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .card { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1rem; overflow: hidden; }
-            .card-header { padding: 1rem; background-color: #f7f7f7; border-bottom: 1px solid #ddd; }
-            .card-title { font-size: 1.25rem; margin: 0; }
-            .card-content { padding: 1rem; }
-            .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-            .list-disc { padding-left: 20px; }
-            .print-header { text-align: center; margin-bottom: 2rem; border-bottom: 1px solid #ccc; padding-bottom: 1rem; }
-            .recharts-responsive-container { display: none; } /* Hide interactive charts for static print */
+            body { font-family: sans-serif; padding: 20px; }
+            table { border-collapse: collapse; width: 100%; }
+            td, th { border: 1px solid #999; padding: 8px; }
           </style>
         </head>
         <body>${content}</body>
@@ -464,9 +447,8 @@ export default function ClassPerformanceDashboard({
           </ShadcnDialogDescription>
         </ShadcnDialogHeader>
         
-        <div 
+        <div
           ref={printRef}
-          data-testid="dashboard-inner-scroll-container"
           className="flex-1 min-h-[80vh] overflow-y-auto overflow-x-auto p-6 space-y-6"
         >
             <div className="dashboard-print-header">
