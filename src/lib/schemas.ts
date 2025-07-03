@@ -20,14 +20,16 @@ export const SubjectEntrySchema = z.object({
 export type SubjectEntry = z.infer<typeof SubjectEntrySchema>;
 
 export const ReportDataSchema = z.object({
-  id: z.string(), // Locally generated, persisted
-  teacherId: z.string().optional(), // Firebase UID of the teacher who created it
-  studentEntryNumber: z.number(), // Persisted input order number
+  id: z.string(),
+  teacherId: z.string().optional(),
+  studentEntryNumber: z.number(),
   studentName: z.string().min(1, 'Student name is required'),
   className: z.string().min(1, 'Class name is required'),
   gender: z.string().min(1, 'Gender is required'),
   schoolName: z.string().optional(),
-  schoolLogoDataUri: z.string().nullable().optional().describe("A data URI of the school's logo."),
+  schoolLogoDataUri: z.union([z.string(), z.null(), z.literal('')])
+    .optional()
+    .describe("A data URI of the school's logo."),
   academicYear: z.string().optional(),
   academicTerm: z.string().optional(),
   selectedTemplateId: z.string().optional().default('default'),
@@ -53,16 +55,24 @@ export const ReportDataSchema = z.object({
     .array(SubjectEntrySchema)
     .min(1, 'At least one subject is required.')
     .default([{ subjectName: '', continuousAssessment: null, examinationMark: null }]),
-  overallAverage: z.number().optional(), // Calculated client-side for display
-  rank: z.string().optional(), // Calculated client-side for display
+  overallAverage: z.number().optional(),
+  rank: z.string().optional(),
   promotionStatus: z.string().nullable().optional(),
-  studentPhotoDataUri: z.string().nullable().optional().describe("A data URI of the student's photo."),
-  headMasterSignatureDataUri: z.string().nullable().optional().describe("A data URI of the Head Master's signature."),
-  createdAt: z.any().optional(), // For Firestore serverTimestamp. Will be FieldValue on write, Timestamp on read.
-  updatedAt: z.any().optional(), // For Firestore serverTimestamp on updates.
+  studentPhotoDataUri: z.union([z.string(), z.null(), z.literal('')])
+    .optional()
+    .describe("A data URI of the student's photo."),
+  headMasterSignatureDataUri: z.union([z.string(), z.null(), z.literal('')])
+    .optional()
+    .describe("A data URI of the Head Master's signature."),
+  createdAt: z.any().optional(),
+  updatedAt: z.any().optional(),
 }).refine(data => {
-  if (data.daysAttended !== null && data.daysAttended !== undefined &&
-      data.totalSchoolDays !== null && data.totalSchoolDays !== undefined) {
+  if (
+    data.daysAttended !== null &&
+    data.daysAttended !== undefined &&
+    data.totalSchoolDays !== null &&
+    data.totalSchoolDays !== undefined
+  ) {
     return data.daysAttended <= data.totalSchoolDays;
   }
   return true;
@@ -73,8 +83,10 @@ export const ReportDataSchema = z.object({
 
 export type ReportData = z.infer<typeof ReportDataSchema>;
 
-// Default data for a new form, id and studentEntryNumber are assigned dynamically
-export const defaultReportData: Omit<ReportData, 'id' | 'studentEntryNumber' | 'teacherId' | 'createdAt' | 'overallAverage' | 'rank' | 'updatedAt'> & { subjects: SubjectEntry[]; hobbies: string[] } = {
+export const defaultReportData: Omit<
+  ReportData,
+  'id' | 'studentEntryNumber' | 'teacherId' | 'createdAt' | 'overallAverage' | 'rank' | 'updatedAt'
+> & { subjects: SubjectEntry[]; hobbies: string[] } = {
   studentName: '',
   className: '',
   gender: '',
