@@ -199,7 +199,12 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
                       {isPromotionStatusRelevant && data.promotionStatus && (
                       <tr>
                           <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Promotion:</td>
-                          <td className="font-bold text-gray-800 pb-0.5 print:pb-0" colSpan={3}>{data.promotionStatus}</td>
+                          <td className="font-bold text-gray-800 pb-0.5 print:pb-0" colSpan={3}>
+                            <div className="flex items-center gap-2">
+                              {data.promotionStatus === 'Promoted' && <Award className="h-4 w-4 text-green-600" />}
+                              <span>{data.promotionStatus}</span>
+                            </div>
+                          </td>
                       </tr>
                       )}
                   </tbody>
