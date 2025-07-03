@@ -570,7 +570,7 @@ export default function SchoolPerformanceDashboard({
             )}
           </div>
 
-        <ShadcnDialogFooter className="w-full shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide">
+        <ShadcnDialogFooter className="w-full shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide flex-row justify-end space-x-2">
           <Button variant="outline" onClick={handlePrint} disabled={!schoolStats || allReports.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print School Dashboard
           </Button>

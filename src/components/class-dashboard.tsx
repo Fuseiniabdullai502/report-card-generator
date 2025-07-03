@@ -57,7 +57,6 @@ export interface ClassStatistics {
 interface HistoricalTermData {
     term: string;
     numStudents: number;
-    numClasses: number;
     classAverage: number | null;
 }
 
@@ -202,11 +201,9 @@ export default function ClassPerformanceDashboard({
     const newHistoricalData = sortedTerms.map(term => {
         const termReports = reportsByTerm.get(term)!;
         const avg = calculateOverallAverage(termReports.flatMap(r => r.subjects ?? []));
-        const numClasses = new Set(termReports.map(r => r.className)).size;
         return {
             term,
             numStudents: termReports.length,
-            numClasses,
             classAverage: avg
         };
     });
@@ -501,7 +498,6 @@ export default function ClassPerformanceDashboard({
                                     <TableRow>
                                         <TableHead className="font-semibold">Term</TableHead>
                                         <TableHead className="text-center font-semibold"># Students</TableHead>
-                                        <TableHead className="text-center font-semibold"># Classes</TableHead>
                                         <TableHead className="text-center font-semibold">Class Average (%)</TableHead>
                                     </TableRow>
                                 </ShadcnUITableHeader>
@@ -510,7 +506,6 @@ export default function ClassPerformanceDashboard({
                                         <TableRow key={data.term}>
                                             <TableCell className="font-medium">{data.term}</TableCell>
                                             <TableCell className="text-center">{data.numStudents}</TableCell>
-                                            <TableCell className="text-center">{data.numClasses}</TableCell>
                                             <TableCell className="text-center">{data.classAverage?.toFixed(1) ?? 'N/A'}</TableCell>
                                         </TableRow>
                                     ))}
@@ -537,7 +532,7 @@ export default function ClassPerformanceDashboard({
                               height={80} 
                               interval={0} 
                               tick={{ fontSize: 10 }}
-                              tickFormatter={(name) => name.length > 15 ? `${name.slice(0, 15)}…` : name}
+                              tickFormatter={(name) => name.length > 12 ? `${name.slice(0, 12)}…` : name}
                             />
                             <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', fillOpacity: 0.3 }} />
@@ -650,7 +645,7 @@ export default function ClassPerformanceDashboard({
             )}
           </div>
 
-        <ShadcnDialogFooter className="w-full shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide">
+        <ShadcnDialogFooter className="w-full shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide flex-row justify-end space-x-2">
           <Button variant="outline" onClick={handlePrint} disabled={!classStats || reportsForClass.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
@@ -662,5 +657,3 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
-
-    
