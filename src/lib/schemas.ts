@@ -27,7 +27,7 @@ export const ReportDataSchema = z.object({
   className: z.string().min(1, 'Class name is required'),
   gender: z.string().min(1, 'Gender is required'),
   schoolName: z.string().optional(),
-  schoolLogoDataUri: z.string().optional().describe("A data URI of the school's logo."),
+  schoolLogoDataUri: z.string().nullable().optional().describe("A data URI of the school's logo."),
   academicYear: z.string().optional(),
   academicTerm: z.string().optional(),
   selectedTemplateId: z.string().optional().default('default'),
@@ -55,9 +55,9 @@ export const ReportDataSchema = z.object({
     .default([{ subjectName: '', continuousAssessment: null, examinationMark: null }]),
   overallAverage: z.number().optional(), // Calculated client-side for display
   rank: z.string().optional(), // Calculated client-side for display
-  promotionStatus: z.string().optional(),
-  studentPhotoDataUri: z.string().optional().describe("A data URI of the student's photo."),
-  headMasterSignatureDataUri: z.string().optional().describe("A data URI of the Head Master's signature."),
+  promotionStatus: z.string().nullable().optional(),
+  studentPhotoDataUri: z.string().nullable().optional().describe("A data URI of the student's photo."),
+  headMasterSignatureDataUri: z.string().nullable().optional().describe("A data URI of the Head Master's signature."),
   createdAt: z.any().optional(), // For Firestore serverTimestamp. Will be FieldValue on write, Timestamp on read.
   updatedAt: z.any().optional(), // For Firestore serverTimestamp on updates.
 }).refine(data => {
