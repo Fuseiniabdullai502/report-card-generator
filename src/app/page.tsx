@@ -172,7 +172,19 @@ function AppContent({ user }: { user: CustomUser }) {
     setIsLoadingReports(true);
     const reportsCollectionRef = collection(db, 'reports');
     
-    const q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
+    // Conditionally build the query based on user role
+    let q;
+    if (user.role === 'admin') {
+      // Admin can see all reports. This requires Firestore rules to allow this.
+      q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
+    } else {
+      // Regular user sees only their own reports. This is more secure and performant.
+      q = query(
+        reportsCollectionRef, 
+        where('teacherId', '==', user.uid),
+        orderBy('createdAt', 'asc')
+      );
+    }
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedReports: ReportData[] = [];
@@ -230,7 +242,7 @@ function AppContent({ user }: { user: CustomUser }) {
     });
 
     return () => unsubscribe();
-  }, [user.uid, calculateAndSetRanks, toast, sessionDefaults]);
+  }, [user.uid, user.role, calculateAndSetRanks, toast, sessionDefaults]);
 
 
   const handleFormUpdate = useCallback((data: ReportData) => {
