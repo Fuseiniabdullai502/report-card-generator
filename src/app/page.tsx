@@ -503,40 +503,27 @@ function AppContent({ user }: { user: CustomUser }) {
      });
   }
 
-  const handlePrint = () => {
-    if (filteredReports.length > 0) {
-      window.print();
-    } else {
-      toast({
-        title: "No Reports in List",
-        description: "Please add or filter reports to the list before printing.",
-        variant: "destructive",
-      });
-      return;
-    }
-  };
-
-  const handleDownloadAsPdf = () => {
-    if (filteredReports.length === 0) {
-      toast({
-        title: "No Reports to Download",
-        description: "Please add or filter reports to the list before downloading as a PDF.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Preparing PDF Download...",
-      description: "Your browser's print dialog will open. Please select 'Save as PDF' as the destination.",
-    });
-
-    setTimeout(() => {
-      window.print();
-    }, 500);
-  };
-
   const reportsCount = filteredReports.length;
+
+  const handleInitiatePrint = (isPdfDownload: boolean) => {
+    if (reportsCount === 0) {
+      toast({
+        title: `Nothing to ${isPdfDownload ? 'Download' : 'Print'}`,
+        description: "Add or filter reports to the list to use this feature.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isPdfDownload) {
+      toast({
+        title: "Preparing PDF Download...",
+        description: "Your browser's print dialog will open. Please select 'Save as PDF' as the destination.",
+      });
+    }
+
+    window.print();
+  };
 
   const handleNextPreview = () => {
     setCurrentPreviewIndex(prev => Math.min(prev + 1, reportsCount - 1));
@@ -928,11 +915,11 @@ function AppContent({ user }: { user: CustomUser }) {
                        <Building className="mr-2 h-4 w-4" />
                        School Overview
                      </Button>
-                    <Button onClick={handleDownloadAsPdf} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Download all reports in the list as a single PDF" : "Add or filter reports to the list to enable download"}>
+                    <Button onClick={() => handleInitiatePrint(true)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Download all reports in the list as a single PDF" : "Add or filter reports to the list to enable download"}>
                       <Download className="mr-2 h-4 w-4" />
                       Download as PDF
                     </Button>
-                    <Button onClick={handlePrint} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Print all reports in the list" : "Add or filter reports to the list to enable printing"}>
+                    <Button onClick={() => handleInitiatePrint(false)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Print all reports in the list" : "Add or filter reports to the list to enable printing"}>
                       <Printer className="mr-2 h-4 w-4" />
                       Print ({reportsCount})
                     </Button>
