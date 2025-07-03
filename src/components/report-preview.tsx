@@ -138,7 +138,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 
   const isPromotionStatusRelevant = data.academicTerm === 'Third Term' && 
                                    data.className && 
-                                   !tertiaryLevelClassesList.includes(data.className);
+                                   !tertiaryLevelClassesList.includes(data.className.toUpperCase());
   
   const hobbiesText = data.hobbies && data.hobbies.length > 0 ? data.hobbies.join(', ') : '';
   
@@ -173,57 +173,51 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         </div>
         <h1 className={cn(templateStyles.mainHeaderTextClass, "print:mt-1 print:text-2xl")}>Student Report Card</h1>
       </header>
-
-      <section className="mb-1.5 print:mb-1 flex justify-between items-start">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-0.5 text-xs flex-grow pr-4">
-          <div>
-            <span className="font-semibold text-gray-600">Student Name:</span>
-            <p className="text-gray-800 text-sm font-semibold">{data.studentName}</p>
+      
+      <section className="mb-2 print:mb-1 flex justify-between items-start gap-4">
+          <div className="flex-grow">
+              <table className="w-full text-xs">
+                  <tbody>
+                      <tr>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Student Name:</td>
+                          <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0">{data.studentName || 'N/A'}</td>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Class:</td>
+                          <td className="font-bold text-gray-800 pb-0.5 print:pb-0">{data.className || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Gender:</td>
+                          <td className="text-gray-800 pr-4 pb-0.5 print:pb-0">{data.gender || 'N/A'}</td>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Attendance:</td>
+                          <td className="text-gray-800 pb-0.5 print:pb-0">{attendanceString}</td>
+                      </tr>
+                      <tr>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Position:</td>
+                          <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0">{data.rank || 'N/A'}</td>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Overall Avg:</td>
+                          <td className="font-bold text-gray-800 pb-0.5 print:pb-0">{data.overallAverage !== undefined && data.overallAverage !== null ? `${data.overallAverage.toFixed(2)}%` : 'N/A'}</td>
+                      </tr>
+                      {isPromotionStatusRelevant && data.promotionStatus && (
+                      <tr>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Promotion:</td>
+                          <td className="font-bold text-gray-800 pb-0.5 print:pb-0" colSpan={3}>{data.promotionStatus}</td>
+                      </tr>
+                      )}
+                  </tbody>
+              </table>
           </div>
-          <div>
-            <span className="font-semibold text-gray-600">Class:</span>
-            <p className="text-gray-800 text-sm font-semibold">{data.className}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-gray-600">Gender:</span>
-            <p className="text-gray-800 text-sm font-semibold">{data.gender || 'N/A'}</p>
-          </div>
-          <div>
-            <span className="font-semibold text-gray-600">Attendance:</span>
-            <p className="text-gray-800 text-sm font-semibold">{attendanceString}</p>
-          </div>
-          {data.rank && (
-            <div className="col-span-1">
-              <span className="font-semibold text-gray-600 flex items-center"><Award className="mr-1 h-3.5 w-3.5 text-amber-500" />Position:</span>
-              <p className="text-gray-800 text-sm font-semibold">{data.rank}</p>
-            </div>
+          {data.studentPhotoDataUri && (
+              <div className="flex-shrink-0 text-center">
+                  <Image
+                      src={data.studentPhotoDataUri}
+                      alt={`${data.studentName || 'Student'}'s photo`}
+                      width={80}
+                      height={100}
+                      className="object-cover rounded border border-gray-300 shadow-sm"
+                      data-ai-hint="student portrait"
+                  />
+                  <p className="text-xs text-gray-700 mt-1 font-medium">{data.studentName}</p>
+              </div>
           )}
-           {data.overallAverage !== undefined && data.overallAverage !== null && (
-            <div className="col-span-1">
-              <span className="font-semibold text-gray-600">Overall Avg:</span>
-              <p className="text-gray-800 text-sm font-semibold">{data.overallAverage.toFixed(2)}%</p>
-            </div>
-          )}
-          {isPromotionStatusRelevant && data.promotionStatus && (
-            <div className="sm:col-span-1">
-              <span className="font-semibold text-gray-600 flex items-center"><Medal className="mr-1 h-3.5 w-3.5 text-green-600" />Promotion:</span>
-              <p className="text-gray-800 text-sm font-semibold">{data.promotionStatus}</p>
-            </div>
-          )}
-        </div>
-        {data.studentPhotoDataUri && (
-          <div className="ml-auto flex-shrink-0 text-center">
-            <Image
-              src={data.studentPhotoDataUri}
-              alt={`${data.studentName || 'Student'}'s photo`}
-              width={80}
-              height={100}
-              className="object-cover rounded border border-gray-300 shadow-sm"
-              data-ai-hint="student portrait"
-            />
-            <p className="text-xs text-gray-700 mt-1 font-medium">{data.studentName}</p>
-          </div>
-        )}
       </section>
 
 
