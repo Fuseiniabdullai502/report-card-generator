@@ -59,6 +59,7 @@ export const ReportDataSchema = z.object({
   studentPhotoDataUri: z.string().optional().describe("A data URI of the student's photo."),
   headMasterSignatureDataUri: z.string().optional().describe("A data URI of the Head Master's signature."),
   createdAt: z.any().optional(), // For Firestore serverTimestamp. Will be FieldValue on write, Timestamp on read.
+  updatedAt: z.any().optional(), // For Firestore serverTimestamp on updates.
 }).refine(data => {
   if (data.daysAttended !== null && data.daysAttended !== undefined &&
       data.totalSchoolDays !== null && data.totalSchoolDays !== undefined) {
@@ -73,7 +74,7 @@ export const ReportDataSchema = z.object({
 export type ReportData = z.infer<typeof ReportDataSchema>;
 
 // Default data for a new form, id and studentEntryNumber are assigned dynamically
-export const defaultReportData: Omit<ReportData, 'id' | 'studentEntryNumber' | 'teacherId' | 'createdAt' | 'overallAverage' | 'rank'> & { subjects: SubjectEntry[]; hobbies: string[] } = {
+export const defaultReportData: Omit<ReportData, 'id' | 'studentEntryNumber' | 'teacherId' | 'createdAt' | 'overallAverage' | 'rank' | 'updatedAt'> & { subjects: SubjectEntry[]; hobbies: string[] } = {
   studentName: '',
   className: '',
   gender: '',

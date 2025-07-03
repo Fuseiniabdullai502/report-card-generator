@@ -14,7 +14,7 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction } from '@/app/actions';
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
-import { Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit3, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, History, ListPlus } from 'lucide-react';
+import { Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, History, ListPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -23,6 +23,7 @@ import { calculateOverallAverage } from '@/lib/calculations';
 interface ReportFormProps {
   onFormUpdate: (data: ReportData) => void;
   initialData: ReportData;
+  isEditing?: boolean;
   reportPrintListForHistory?: ReportData[];
   onSaveReport: (data: ReportData) => Promise<void>;
   onResetForm: () => void;
@@ -39,7 +40,7 @@ const promotionStatusOptions = ["Promoted", "Repeated", "Graduated", "Under Revi
 const predefinedSubjectsList = ["Mathematics", "English Language", "Science", "Computing", "Religious and Moral Education", "Creative Arts", "Geography", "Economics", "Biology", "Elective Mathematics"];
 const predefinedHobbiesList = ["Reading", "Sports (General)", "Music", "Art & Craft", "Debating", "Coding/Programming", "Gardening", "Volunteering", "Cooking/Baking", "Drama/Theater"];
 
-export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory, onSaveReport, onResetForm }: ReportFormProps) {
+export default function ReportForm({ onFormUpdate, initialData, isEditing = false, reportPrintListForHistory, onSaveReport, onResetForm }: ReportFormProps) {
   const formData = initialData; // This component is now fully controlled by the parent.
 
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
@@ -259,9 +260,20 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const handleGenerateAiTeacherFeedback = async () => {
     const { studentName, className, performanceSummary, strengths, areasForImprovement } = formData;
-    if (!studentName || !className || !performanceSummary || !strengths || !areasForImprovement) {
-      toast({ title: "Missing Information", description: "Please fill core performance fields first.", variant: "destructive" });
-      return;
+    if (!studentName?.trim()) {
+      toast({ title: "Missing Information", description: "Please provide the Student Name.", variant: "destructive" }); return;
+    }
+    if (!className?.trim()) {
+      toast({ title: "Missing Information", description: "Please provide the Class Name.", variant: "destructive" }); return;
+    }
+    if (!performanceSummary?.trim()) {
+      toast({ title: "Missing Information", description: "Please provide the Performance Summary.", variant: "destructive" }); return;
+    }
+    if (!strengths?.trim()) {
+      toast({ title: "Missing Information", description: "Please provide the Strengths.", variant: "destructive" }); return;
+    }
+    if (!areasForImprovement?.trim()) {
+      toast({ title: "Missing Information", description: "Please provide the Areas for Improvement.", variant: "destructive" }); return;
     }
     startTeacherFeedbackAiTransition(async () => {
        const result = await getAiFeedbackAction({ studentName, className, performanceSummary, strengths, areasForImprovement });
@@ -316,12 +328,18 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     <Card className="shadow-lg">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Edit3 className="h-6 w-6 text-primary" />
+          <Edit className="h-6 w-6 text-primary" />
           <CardTitle className="font-headline text-2xl">
-            Report Details (Entry #{formData.studentEntryNumber})
+            {isEditing ? `Editing Report` : `Report Details (Entry #${formData.studentEntryNumber})`}
           </CardTitle>
         </div>
-        <CardDescription>Enter student information, performance, and subject marks for class: <span className="font-semibold text-primary">{formData.className || "N/A"}</span></CardDescription>
+        <CardDescription>
+            {isEditing
+                ? `Editing report for ${formData.studentName || '...'} in class ${formData.className || '...'}`
+                : `Enter student information, performance, and subject marks for class: `
+            }
+            {!isEditing && <span className="font-semibold text-primary">{formData.className || "N/A"}</span>}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -499,8 +517,8 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
             
             <div className="flex flex-row gap-4 pt-4">
               <Button type="submit" className="flex-1" disabled={isReportInsightsAiLoading || isTeacherFeedbackAiLoading}>
-                <ListPlus className="mr-2 h-4 w-4" />
-                Add Report to List
+                 {isEditing ? <Edit className="mr-2 h-4 w-4" /> : <ListPlus className="mr-2 h-4 w-4" />}
+                 {isEditing ? 'Update Report' : 'Add Report to List'}
               </Button>
               <Button type="button" variant="destructive" className="flex-1" onClick={onResetForm}>
                 <Trash2 className="mr-2 h-4 w-4" />

@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, deleteDoc, writeBatch, where, limit } from 'firebase/firestore';
+import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, setDoc, deleteDoc, writeBatch, where, limit } from 'firebase/firestore';
 import { calculateOverallAverage } from '@/lib/calculations';
 import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
@@ -64,6 +64,7 @@ function AppContent({ user }: { user: CustomUser }) {
       id: `unsaved-${Date.now()}`,
       studentEntryNumber: 1,
       createdAt: undefined,
+      updatedAt: undefined,
       overallAverage: undefined,
       rank: undefined,
       teacherId: user.uid,
@@ -254,13 +255,14 @@ function AppContent({ user }: { user: CustomUser }) {
       setIsLoadingReports(false);
 
       if (fetchedReports.length === 0) {
-        const baseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
+        const baseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId' | 'updatedAt'>;
         setCurrentEditingReport(prev => ({
           ...baseReset,
           ...sessionDefaults,
           studentEntryNumber: maxEntryNum + 1,
           id: `unsaved-${Date.now()}`,
           createdAt: undefined,
+          updatedAt: undefined,
           overallAverage: undefined,
           rank: undefined,
           teacherId: user.uid,
@@ -302,6 +304,7 @@ function AppContent({ user }: { user: CustomUser }) {
       id: `unsaved-${Date.now()}`,
       studentEntryNumber: newNextStudentEntryNumber,
       createdAt: undefined,
+      updatedAt: undefined,
       overallAverage: undefined,
       rank: undefined,
       teacherId: user.uid,
@@ -337,21 +340,25 @@ function AppContent({ user }: { user: CustomUser }) {
     handleResetToBlankForm(newDefaults);
   }, [currentEditingReport, handleResetToBlankForm]);
 
-  const handleSaveReportAndResetForm = async (formDataFromForm: ReportData) => {
-    const isDuplicate = allRankedReports.some(report =>
-        report.studentName?.trim().toLowerCase() === formDataFromForm.studentName?.trim().toLowerCase() &&
-        report.className === formDataFromForm.className &&
-        report.academicTerm === formDataFromForm.academicTerm &&
-        report.academicYear === formDataFromForm.academicYear
-    );
+  const handleSaveOrUpdateReport = async (formDataFromForm: ReportData) => {
+    const isEditing = !formDataFromForm.id.startsWith('unsaved-');
 
-    if (isDuplicate) {
-        toast({
-            title: "Report Already Exists",
-            description: `A report for '${formDataFromForm.studentName}' in '${formDataFromForm.className}' for this academic term already exists.`,
-            variant: "destructive",
-        });
-        return;
+    if (!isEditing) {
+        const isDuplicate = allRankedReports.some(report =>
+            report.studentName?.trim().toLowerCase() === formDataFromForm.studentName?.trim().toLowerCase() &&
+            report.className === formDataFromForm.className &&
+            report.academicTerm === formDataFromForm.academicTerm &&
+            report.academicYear === formDataFromForm.academicYear
+        );
+
+        if (isDuplicate) {
+            toast({
+                title: "Report Already Exists",
+                description: `A report for '${formDataFromForm.studentName}' in '${formDataFromForm.className}' for this academic term already exists.`,
+                variant: "destructive",
+            });
+            return;
+        }
     }
     
     const reportToSaveForFirestore = {
@@ -384,26 +391,40 @@ function AppContent({ user }: { user: CustomUser }) {
       studentPhotoDataUri: formDataFromForm.studentPhotoDataUri || null,
       headMasterSignatureDataUri: formDataFromForm.headMasterSignatureDataUri || null,
       clientSideId: formDataFromForm.id,
-      createdAt: serverTimestamp(),
     };
 
     try {
-      await addDoc(collection(db, 'reports'), reportToSaveForFirestore);
-      toast({
-        title: "Report Submitted",
-        description: `${reportToSaveForFirestore.studentName}'s report submitted to Firestore. List will update.`,
-      });
+        if (isEditing) {
+            const reportRef = doc(db, 'reports', formDataFromForm.id);
+            await setDoc(reportRef, {
+                ...reportToSaveForFirestore,
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+            toast({
+                title: "Report Updated",
+                description: `${reportToSaveForFirestore.studentName}'s report has been successfully updated.`,
+            });
+        } else {
+            await addDoc(collection(db, 'reports'), {
+                ...reportToSaveForFirestore,
+                createdAt: serverTimestamp(),
+            });
+            toast({
+                title: "Report Submitted",
+                description: `${reportToSaveForFirestore.studentName}'s report submitted to Firestore. List will update.`,
+            });
+        }
     } catch (error) {
-      console.error("Detailed Firestore Save Error: ", error);
-      toast({
-        title: "Firestore Save Error",
-        description: `Could not save report. ${error instanceof Error ? error.message : String(error)}`,
-        variant: "destructive",
-      });
-      return;
+        console.error("Detailed Firestore Save Error: ", error);
+        toast({
+            title: "Firestore Save Error",
+            description: `Could not save report. ${error instanceof Error ? error.message : String(error)}`,
+            variant: "destructive",
+        });
+        return;
     }
 
-    if (reportToSaveForFirestore.academicTerm === 'First Term' && reportToSaveForFirestore.studentName) {
+    if (!isEditing && reportToSaveForFirestore.academicTerm === 'First Term' && reportToSaveForFirestore.studentName) {
       try {
         const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
         const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
@@ -435,6 +456,15 @@ function AppContent({ user }: { user: CustomUser }) {
 
     handleResetToBlankForm(newSessionDefaults);
   };
+  
+  const handleLoadReportForEditing = (reportToEdit: ReportData) => {
+    setCurrentEditingReport(reportToEdit);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast({
+        title: `Editing Report for ${reportToEdit.studentName}`,
+        description: "The report data has been loaded into the form.",
+    });
+  };
 
   const handleLogout = async () => {
     try {
@@ -459,13 +489,14 @@ function AppContent({ user }: { user: CustomUser }) {
       description: "Your local view of reports has been cleared. Data in Firestore is not affected. The list will repopulate from Firestore if data exists there. Form is reset for new entry.",
     });
 
-    const newBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId'>;
+    const newBase = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId' | 'updatedAt'>;
     setCurrentEditingReport({
         ...newBase,
         ...sessionDefaults,
         id: `unsaved-${Date.now()}`,
         studentEntryNumber: nextStudentEntryNumber,
         createdAt: undefined,
+        updatedAt: undefined,
         overallAverage: undefined,
         rank: undefined,
         teacherId: user.uid,
@@ -641,6 +672,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 id: `unsaved-${Date.now()}`,
                 studentEntryNumber: newNextEntryNumForForm,
                 createdAt: undefined,
+                updatedAt: undefined,
                 overallAverage: undefined,
                 rank: undefined,
                 teacherId: user.uid,
@@ -802,8 +834,9 @@ function AppContent({ user }: { user: CustomUser }) {
           <ReportForm
             onFormUpdate={handleFormUpdate}
             initialData={currentEditingReport}
+            isEditing={!currentEditingReport.id.startsWith('unsaved-')}
             reportPrintListForHistory={allRankedReports}
-            onSaveReport={handleSaveReportAndResetForm}
+            onSaveReport={handleSaveOrUpdateReport}
             onResetForm={handleClearAndReset}
           />
         </section>
@@ -946,7 +979,7 @@ function AppContent({ user }: { user: CustomUser }) {
                   <React.Fragment key={reportData.id || `report-entry-${reportData.studentEntryNumber}`}>
                     {index === currentPreviewIndex && (
                        <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
-                         <ReportActions report={reportData} />
+                         <ReportActions report={reportData} onEditReport={handleLoadReportForEditing} />
                        </div>
                     )}
                     <div className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>

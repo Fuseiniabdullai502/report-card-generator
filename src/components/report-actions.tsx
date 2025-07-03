@@ -3,14 +3,15 @@
 
 import type { ReportData } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
-import { Mail, MessageSquare, User } from 'lucide-react'; // Using MessageSquare for WhatsApp-like icon
+import { Mail, MessageSquare, User, Edit } from 'lucide-react'; // Using MessageSquare for WhatsApp-like icon
 import { useToast } from "@/hooks/use-toast";
 
 interface ReportActionsProps {
   report: ReportData;
+  onEditReport: (report: ReportData) => void;
 }
 
-export default function ReportActions({ report }: ReportActionsProps) {
+export default function ReportActions({ report, onEditReport }: ReportActionsProps) {
   const { toast } = useToast();
 
   const handleEmailParent = () => {
@@ -54,6 +55,14 @@ export default function ReportActions({ report }: ReportActionsProps) {
           Share Report for: {report.studentName || 'N/A'} (Entry #{report.studentEntryNumber || 'N/A'})
         </h4>
         <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEditReport(report)}
+            title="Load this report into the form for editing"
+          >
+            <Edit className="mr-2 h-4 w-4" /> Edit Report
+          </Button>
           <Button
             variant="outline"
             size="sm"
