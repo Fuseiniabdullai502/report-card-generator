@@ -895,11 +895,11 @@ function AppContent({ user }: { user: CustomUser }) {
                        <Building className="mr-2 h-4 w-4" />
                        School Overview
                      </Button>
-                    <Button onClick={handleDownloadAsPdf} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm">
+                    <Button onClick={handleDownloadAsPdf} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Download all reports in the list as a single PDF" : "Add or filter reports to the list to enable download"}>
                       <Download className="mr-2 h-4 w-4" />
                       Download as PDF
                     </Button>
-                    <Button onClick={handlePrint} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm">
+                    <Button onClick={handlePrint} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Print all reports in the list" : "Add or filter reports to the list to enable printing"}>
                       <Printer className="mr-2 h-4 w-4" />
                       Print ({reportsCount})
                     </Button>
@@ -1034,5 +1034,3 @@ export default function Home() {
   
   return <AppContent user={user} />;
 }
-
-    
