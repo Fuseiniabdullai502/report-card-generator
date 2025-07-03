@@ -40,7 +40,8 @@ const predefinedSubjectsList = ["Mathematics", "English Language", "Science", "C
 const predefinedHobbiesList = ["Reading", "Sports (General)", "Music", "Art & Craft", "Debating", "Coding/Programming", "Gardening", "Volunteering", "Cooking/Baking", "Drama/Theater"];
 
 export default function ReportForm({ onFormUpdate, initialData, reportPrintListForHistory, onSaveReport, onResetForm }: ReportFormProps) {
-  const [formData, setFormData] = useState<ReportData>(initialData);
+  const formData = initialData; // This component is now fully controlled by the parent.
+
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
   const [isImageEditingAiLoading, startImageEditingAiTransition] = useTransition();
@@ -57,6 +58,16 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
 
+  // Reset subject pager if the form is reset (detected by ID change)
+  useEffect(() => {
+    const currentId = initialData.id;
+    const previousId = sessionStorage.getItem('reportFormId');
+    if (currentId !== previousId) {
+      setCurrentVisibleSubjectIndex(0);
+      sessionStorage.setItem('reportFormId', currentId);
+    }
+  }, [initialData.id]);
+
   const usedSubjectNames = useMemo(() => 
     new Set(formData.subjects.map(s => s.subjectName).filter(Boolean))
   , [formData.subjects]);
@@ -64,20 +75,6 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   const allAvailableSubjects = useMemo(() => {
       return [...new Set([...predefinedSubjectsList, ...customSubjects])].sort();
   }, [customSubjects]);
-
-  useEffect(() => {
-    // Only reset the form state if the ID of the initial data changes.
-    // This prevents resets on every keystroke from the parent.
-    if (initialData.id !== formData.id) {
-        setFormData(initialData);
-        setCurrentVisibleSubjectIndex(0); // Reset the subject pager to the first subject
-    }
-  }, [initialData, formData.id]);
-
-
-  useEffect(() => {
-    onFormUpdate(formData);
-  }, [formData, onFormUpdate]);
   
   const studentNameHistory = React.useMemo(() => {
     const namesFromList = reportPrintListForHistory?.map(report => report.studentName).filter(Boolean) || [];
@@ -108,19 +105,19 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       if (overallAverage !== null) {
         const newPromotionStatus = overallAverage >= 50 ? 'Promoted' : 'Repeated';
         if (formData.promotionStatus !== newPromotionStatus) {
-            setFormData(prev => ({ ...prev, promotionStatus: newPromotionStatus }));
+            onFormUpdate({ ...formData, promotionStatus: newPromotionStatus });
         }
       }
     }
-  }, [isPromotionStatusApplicable, formData.subjects, formData.promotionStatus]);
+  }, [isPromotionStatusApplicable, formData.subjects, formData.promotionStatus, onFormUpdate, formData]);
   
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    onFormUpdate({ ...formData, [name]: value });
   };
   
   const handleSelectChange = (name: keyof ReportData, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    onFormUpdate({ ...formData, [name]: value });
   };
 
   const handleSubjectChange = (index: number, field: keyof SubjectEntry, value: string | number | null) => {
@@ -138,12 +135,12 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
 
     const updatedSubjects = [...formData.subjects];
     updatedSubjects[index] = { ...updatedSubjects[index], [field]: value };
-    setFormData(prev => ({ ...prev, subjects: updatedSubjects }));
+    onFormUpdate({ ...formData, subjects: updatedSubjects });
   };
 
   const addSubject = () => {
     const newSubjects = [...formData.subjects, { subjectName: '', continuousAssessment: null, examinationMark: null }];
-    setFormData(prev => ({ ...prev, subjects: newSubjects }));
+    onFormUpdate({ ...formData, subjects: newSubjects });
     setCurrentVisibleSubjectIndex(newSubjects.length - 1);
   };
   
@@ -153,7 +150,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       return;
     }
     const updatedSubjects = formData.subjects.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, subjects: updatedSubjects }));
+    onFormUpdate({ ...formData, subjects: updatedSubjects });
      if (currentVisibleSubjectIndex >= updatedSubjects.length && updatedSubjects.length > 0) {
         setCurrentVisibleSubjectIndex(updatedSubjects.length - 1);
     }
@@ -164,7 +161,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       const newHobbies = checked
           ? [...currentHobbies, hobby]
           : currentHobbies.filter(h => h !== hobby);
-      setFormData(prev => ({ ...prev, hobbies: newHobbies }));
+      onFormUpdate({ ...formData, hobbies: newHobbies });
   };
 
   const handleImageUpload = (
@@ -176,7 +173,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
       const reader = new FileReader();
       reader.onloadend = () => {
         const originalDataUri = reader.result as string;
-        setFormData(prev => ({...prev, [fieldName]: originalDataUri}));
+        onFormUpdate({...formData, [fieldName]: originalDataUri});
         toast({ title: "Image Uploaded", description: `Student photo uploaded successfully.` });
       };
       reader.readAsDataURL(file);
@@ -235,7 +232,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
        };
        const result = await getAiReportInsightsAction(aiInput);
        if (result.success && result.insights) {
-          setFormData(prev => ({ ...prev, ...result.insights }));
+          onFormUpdate({ ...formData, ...result.insights });
           toast({ title: "AI Insights Generated", description: "Performance summary updated with term-over-term comparison." });
        } else {
           toast({ title: "Error Generating Insights", description: result.error || "Unknown error.", variant: "destructive" });
@@ -252,7 +249,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     startTeacherFeedbackAiTransition(async () => {
        const result = await getAiFeedbackAction({ studentName, className, performanceSummary, strengths, areasForImprovement });
        if (result.success && result.feedback) {
-          setFormData(prev => ({ ...prev, teacherFeedback: result.feedback }));
+          onFormUpdate({ ...formData, teacherFeedback: result.feedback });
           toast({ title: "AI Feedback Generated" });
        } else {
           toast({ title: "Error Generating Feedback", description: result.error || "Unknown error.", variant: "destructive" });
@@ -265,7 +262,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
     startImageEditingAiTransition(async () => {
        const result = await editImageWithAiAction({ photoDataUri, prompt: editPrompt });
        if (result.success && result.editedPhotoDataUri) {
-          setFormData(prev => ({ ...prev, studentPhotoDataUri: result.editedPhotoDataUri }));
+          onFormUpdate({ ...formData, studentPhotoDataUri: result.editedPhotoDataUri });
           toast({ title: "AI Image Edit Successful" });
        } else {
           toast({ title: "AI Image Edit Failed", description: result.error || "Unknown error.", variant: "destructive" });
