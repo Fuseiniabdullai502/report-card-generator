@@ -1,37 +1,25 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // User documents
+
+    // USERS Collection
     match /users/{userId} {
-      // An authenticated user can read or update their own document.
-      allow read, update: if request.auth != null && request.auth.uid == userId;
-      // An admin can read any user's document.
-      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow create: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read, update: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Report documents
-    match /reports/{reportId} {
-        // Any authenticated user can read reports.
-        allow read: if request.auth != null;
-        // Only the user who created the report or an admin can write to it.
-        allow write: if request.auth != null && (request.resource.data.teacherId == request.auth.uid || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
-    }
-    
-    // Invite documents
+    // INVITES Collection
     match /invites/{inviteId} {
-      // REGISTRATION: Anyone can query the invites collection to see if their email is on the pending list.
-      // This is required for the registration page to work before a user is logged in.
-      allow list: if true;
-      allow get: if true;
-      
-      // ADMIN: Only an admin can create new invites.
-      allow create: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      
-      // USER COMPLETING REGISTRATION: An authenticated user can update an invite.
-      // We don't check for email matching here, as this is handled by the server action after successful user creation.
-      allow update: if request.auth != null && request.resource.data.status == 'completed';
+      allow read: if request.auth.uid != null;
+      allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // REPORTS Collection
+    match /reports/{reportId} {
+      allow read, create: if request.auth.uid != null;
+      allow update, delete: if request.auth.uid == resource.data.teacherId ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
