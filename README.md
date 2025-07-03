@@ -8,28 +8,24 @@ To get started with development, you first need to set up your environment varia
 
 ### Environment Setup
 
-1.  Create a `.env.local` file in the root of your project by copying the example `.env` file:
-    ```bash
-    cp .env .env.local
-    ```
-2.  Open your new `.env.local` file. You will need to add your keys and admin email here.
+Open the `.env` file in the root of your project and add the required values for the variables listed there.
 
 #### Admin User Setup
 
 To give yourself admin privileges, you need to specify your email address. This will grant you access to the Admin Panel to invite other users.
 
-1.  In your `.env.local` file, add your admin email:
-    ```
-    NEXT_PUBLIC_ADMIN_EMAIL="your-admin-email@example.com"
-    ```
-    **Important:** The first time you log in with this email, the application will automatically assign you the 'admin' role.
+In your `.env` file, set the `NEXT_PUBLIC_ADMIN_EMAIL` variable:
+```
+NEXT_PUBLIC_ADMIN_EMAIL="your-admin-email@example.com"
+```
+**Important:** The first time you log in with this email, the application will automatically assign you the 'admin' role.
 
 #### Google AI (Genkit) Setup
 
 The AI features in this application are powered by Google's Gemini models through Genkit. To use them, you need a Google AI API key.
 
 1.  [**Get an API key from Google AI Studio**](https://aistudio.google.com/app/apikey).
-2.  In your `.env.local` file, add your API key:
+2.  In your `.env` file, set the `GOOGLE_API_KEY` variable:
     ```
     GOOGLE_API_KEY="YOUR_API_KEY_HERE"
     ```
@@ -41,18 +37,7 @@ The application uses Firebase for authentication and Firestore to save all repor
 1.  If you don't have one, [**create a Firebase project**](https://firebase.google.com/docs/web/setup#create-project).
 2.  In your project's dashboard, go to **Project Settings** (the gear icon) > **General** tab.
 3.  Scroll down to the "Your apps" section and click on the **Web** icon (`</>`) to register a new web app. If you already have a web app, you can use its configuration.
-4.  After registering, Firebase will show you a configuration object. Copy the values from this object into your `.env.local` file.
-
-    ```
-    # Firebase Configuration
-    NEXT_PUBLIC_FIREBASE_API_KEY="YOUR_FIREBASE_API_KEY"
-    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="YOUR_FIREBASE_AUTH_DOMAIN"
-    NEXT_PUBLIC_FIREBASE_PROJECT_ID="YOUR_FIREBASE_PROJECT_ID"
-    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="YOUR_FIREBASE_STORAGE_BUCKET"
-    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="YOUR_FIREBASE_MESSAGING_SENDER_ID"
-    NEXT_PUBLIC_FIREBASE_APP_ID="YOUR_FIREBASE_APP_ID"
-    NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="YOUR_FIREBASE_MEASUREMENT_ID"
-    ```
+4.  After registering, Firebase will show you a configuration object. Copy the values from this object into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file.
 5. In the Firebase console, go to **Build > Firestore Database** and click **Create database**. Start in **test mode** for easy setup. This will create the necessary collections (`reports`, `users`, `invites`) automatically when the app is run.
 
 ### Running the Development Server
