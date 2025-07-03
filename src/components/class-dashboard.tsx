@@ -74,7 +74,6 @@ export default function ClassPerformanceDashboard({
   const [isLoadingAi, startAiTransition] = useTransition();
   const [aiError, setAiError] = useState<string | null>(null);
   const { toast } = useToast();
-  const printRef = useRef<HTMLDivElement>(null);
 
   const [mostRecentTerm, setMostRecentTerm] = useState<string>('');
   const [historicalData, setHistoricalData] = useState<HistoricalTermData[]>([]);
@@ -261,27 +260,11 @@ export default function ClassPerformanceDashboard({
   }, [isOpen, classStats, selectedClass, mostRecentTerm, toast]);
 
   const handlePrint = () => {
-    if (!printRef.current) return;
-    const content = printRef.current.innerHTML;
-    const win = window.open('', '', 'width=900,height=700');
-    if (!win) return;
-    win.document.write(`
-      <html>
-        <head>
-          <title>Class Dashboard</title>
-          <style>
-            body { font-family: sans-serif; padding: 20px; }
-            table { border-collapse: collapse; width: 100%; }
-            td, th { border: 1px solid #999; padding: 8px; }
-          </style>
-        </head>
-        <body>${content}</body>
-      </html>
-    `);
-    win.document.close();
-    win.focus();
-    win.print();
-    win.close();
+    if (!classStats || reportsForClass.length === 0) {
+      toast({title: "Nothing to Print", description: "Class dashboard data is not available.", variant: "destructive"});
+      return;
+    }
+    window.print();
   };
 
   const subjectPerformanceChartData = useMemo(() => {
@@ -448,7 +431,7 @@ export default function ClassPerformanceDashboard({
         </ShadcnDialogHeader>
         
         <div
-          ref={printRef}
+          data-testid="dashboard-inner-scroll-container"
           className="flex-1 min-h-[80vh] overflow-y-auto overflow-x-auto p-6 space-y-6"
         >
             <div className="dashboard-print-header">
