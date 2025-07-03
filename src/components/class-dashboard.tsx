@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useMemo, useState, useTransition } from 'react';
+import React, { useEffect, useMemo, useState, useTransition, useRef } from 'react';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import {
@@ -74,6 +74,7 @@ export default function ClassPerformanceDashboard({
   const [isLoadingAi, startAiTransition] = useTransition();
   const [aiError, setAiError] = useState<string | null>(null);
   const { toast } = useToast();
+  const printRef = useRef<HTMLDivElement>(null);
 
   const [mostRecentTerm, setMostRecentTerm] = useState<string>('');
   const [historicalData, setHistoricalData] = useState<HistoricalTermData[]>([]);
@@ -264,7 +265,40 @@ export default function ClassPerformanceDashboard({
       toast({title: "Nothing to Print", description: "Dashboard data is not available or no reports loaded.", variant: "destructive"});
       return;
     }
-    window.print();
+    if (!printRef.current) return;
+    const content = printRef.current.innerHTML;
+    const win = window.open('', '', 'width=900,height=700');
+    if (!win) {
+        toast({title: "Print Error", description: "Could not open print window. Please check your browser's pop-up settings.", variant: "destructive"});
+        return;
+    }
+    win.document.write(`
+      <html>
+        <head>
+          <title>Class Dashboard - ${selectedClass} - ${mostRecentTerm}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; padding: 20px; color: #333; }
+            h1, h2, h3, h4, h5 { color: #111; }
+            table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; font-size: 0.8rem; }
+            td, th { border: 1px solid #ccc; padding: 6px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .card { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1rem; overflow: hidden; }
+            .card-header { padding: 1rem; background-color: #f7f7f7; border-bottom: 1px solid #ddd; }
+            .card-title { font-size: 1.25rem; margin: 0; }
+            .card-content { padding: 1rem; }
+            .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+            .list-disc { padding-left: 20px; }
+            .print-header { text-align: center; margin-bottom: 2rem; border-bottom: 1px solid #ccc; padding-bottom: 1rem; }
+            .recharts-responsive-container { display: none; } /* Hide interactive charts for static print */
+          </style>
+        </head>
+        <body>${content}</body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
   };
 
   const subjectPerformanceChartData = useMemo(() => {
@@ -404,7 +438,7 @@ export default function ClassPerformanceDashboard({
         id="class-dashboard-dialog-content"
         className="max-w-4xl w-[90vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden"
       >
-        <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
+        <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10 no-print">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
               <BarChart3 className="mr-3 h-6 w-6" />
@@ -431,8 +465,9 @@ export default function ClassPerformanceDashboard({
         </ShadcnDialogHeader>
         
         <div 
+          ref={printRef}
           data-testid="dashboard-inner-scroll-container"
-          className="flex-1 min-h-[85vh] overflow-y-auto overflow-x-auto p-6 space-y-6"
+          className="flex-1 min-h-[80vh] overflow-y-auto overflow-x-auto p-6 space-y-6"
         >
             <div className="dashboard-print-header">
                 <h2 className="text-xl font-bold">Class Performance Dashboard: {selectedClass} ({mostRecentTerm})</h2>
