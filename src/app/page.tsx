@@ -84,25 +84,65 @@ function AppContent({ user }: { user: CustomUser }) {
   const [isCustomClassNameDialogOpen, setIsCustomClassNameDialogOpen] = useState(false);
   const [customClassNameInputValue, setCustomClassNameInputValue] = useState('');
   
-  const [printFilterClass, setPrintFilterClass] = useState<string>('all');
+  // State for filters
+  const [adminFilters, setAdminFilters] = useState({
+    schoolName: 'all',
+    className: 'all',
+    academicYear: 'all',
+    academicTerm: 'all',
+  });
+  const [userClassFilter, setUserClassFilter] = useState<string>('all');
   
   const router = useRouter();
 
-  const availableClassesForFilter = useMemo(() => {
-    const classNames = new Set(allRankedReports.map(report => report.className).filter(Boolean));
-    return ['all', ...Array.from(classNames).sort()];
+  // Generate options for filter dropdowns
+  const allFilterOptions = useMemo(() => {
+    const schools = new Set<string>();
+    const classes = new Set<string>();
+    const years = new Set<string>();
+    const terms = new Set<string>();
+
+    allRankedReports.forEach(report => {
+        if (report.schoolName) schools.add(report.schoolName);
+        if (report.className) classes.add(report.className);
+        if (report.academicYear) years.add(report.academicYear);
+        if (report.academicTerm) terms.add(report.academicTerm);
+    });
+
+    return {
+        schools: ['all', ...Array.from(schools).sort()],
+        classes: ['all', ...Array.from(classes).sort()],
+        years: ['all', ...Array.from(years).sort()],
+        terms: ['all', ...Array.from(terms).sort()],
+    };
   }, [allRankedReports]);
 
+  // Apply filters based on user role
   const filteredReports = useMemo(() => {
-    if (printFilterClass === 'all') {
-      return allRankedReports;
+    let reports = allRankedReports;
+    if (user.role === 'admin') {
+      reports = reports.filter(report => 
+        (adminFilters.schoolName === 'all' || report.schoolName === adminFilters.schoolName) &&
+        (adminFilters.className === 'all' || report.className === adminFilters.className) &&
+        (adminFilters.academicYear === 'all' || report.academicYear === adminFilters.academicYear) &&
+        (adminFilters.academicTerm === 'all' || report.academicTerm === adminFilters.academicTerm)
+      );
+    } else {
+      if (userClassFilter !== 'all') {
+        reports = reports.filter(report => report.className === userClassFilter);
+      }
     }
-    return allRankedReports.filter(report => report.className === printFilterClass);
-  }, [allRankedReports, printFilterClass]);
+    return reports;
+  }, [allRankedReports, user.role, adminFilters, userClassFilter]);
 
+  // Reset preview index when filters change
   useEffect(() => {
     setCurrentPreviewIndex(0);
-  }, [printFilterClass]);
+  }, [adminFilters, userClassFilter]);
+
+  const handleAdminFilterChange = (filterName: keyof typeof adminFilters, value: string) => {
+    setAdminFilters(prev => ({ ...prev, [filterName]: value }));
+  };
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
     if (listToProcess.length === 0) {
@@ -268,7 +308,7 @@ function AppContent({ user }: { user: CustomUser }) {
     };
     
     setCurrentEditingReport(newStudentDataForForm);
-    setCurrentVisibleSubjectIndex(0); // Reset subject pager
+    // setCurrentVisibleSubjectIndex(0); // Reset subject pager
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     toast({
@@ -441,6 +481,7 @@ function AppContent({ user }: { user: CustomUser }) {
         description: "Please add or filter reports to the list before printing.",
         variant: "destructive",
       });
+      return;
     }
   };
 
@@ -620,6 +661,46 @@ function AppContent({ user }: { user: CustomUser }) {
     }
     setIsImportStudentsDialogOpen(false);
   };
+  
+    const initialClassForDashboard = useMemo(() => {
+        const currentClassFilter = user.role === 'admin' ? adminFilters.className : userClassFilter;
+        if (currentClassFilter !== 'all') {
+            return currentClassFilter;
+        }
+        const available = allFilterOptions.classes.filter(c => c !== 'all');
+        return available.length > 0 ? available[0] : '';
+    }, [user.role, adminFilters.className, userClassFilter, allFilterOptions.classes]);
+
+    const prettyFilterKey = (key: string) => {
+        switch (key) {
+            case 'schoolName': return 'School';
+            case 'className': return 'Class';
+            case 'academicYear': return 'Year';
+            case 'academicTerm': return 'Term';
+            default: return key;
+        }
+    };
+    
+    const filterDescription = useMemo(() => {
+        if (user.role === 'admin') {
+            const activeFilters = Object.entries(adminFilters)
+                .filter(([, value]) => value !== 'all')
+                .map(([key, value]) => `${prettyFilterKey(key)}: ${value}`)
+                .join(', ');
+            return activeFilters ? `Filtering by: ${activeFilters}` : 'Showing all reports in the system.';
+        }
+        return `Showing reports for: ${userClassFilter === 'all' ? 'All Classes' : userClassFilter}.`;
+    }, [user.role, adminFilters, userClassFilter]);
+
+    const noReportsFoundMessage = useMemo(() => {
+        if (reportsCount === 0 && allRankedReports.length > 0) {
+            if (user.role === 'admin') {
+                return 'No reports match the selected admin filters. Try broadening your criteria.';
+            }
+            return `No reports match the filter "${userClassFilter}". Select "All Classes" or add reports.`;
+        }
+        return `The report card preview will appear here as you fill out the form.`;
+    }, [reportsCount, allRankedReports.length, user.role, userClassFilter]);
 
 
   return (
@@ -752,19 +833,48 @@ function AppContent({ user }: { user: CustomUser }) {
 
                 <div className="flex flex-col gap-2 items-stretch">
                   <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-                    <Select value={printFilterClass} onValueChange={setPrintFilterClass}>
-                      <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter reports by class">
-                        <div className="flex items-center gap-2">
-                          <FolderDown className="h-4 w-4 text-primary" />
-                          <SelectValue placeholder="Filter by class..." />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableClassesForFilter.map(cls => (
-                          <SelectItem key={cls} value={cls}>{cls === 'all' ? 'All Classes' : cls}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {user.role === 'admin' ? (
+                        <>
+                            <Select value={adminFilters.schoolName} onValueChange={value => handleAdminFilterChange('schoolName', value)}>
+                                <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by school">
+                                    <div className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by school..." /></div>
+                                </SelectTrigger>
+                                <SelectContent>{allFilterOptions.schools.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Schools' : s}</SelectItem>)}</SelectContent>
+                            </Select>
+                            <Select value={adminFilters.className} onValueChange={value => handleAdminFilterChange('className', value)}>
+                                <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by class">
+                                    <div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by class..." /></div>
+                                </SelectTrigger>
+                                <SelectContent>{allFilterOptions.classes.map(c => <SelectItem key={c} value={c}>{c === 'all' ? 'All Classes' : c}</SelectItem>)}</SelectContent>
+                            </Select>
+                            <Select value={adminFilters.academicYear} onValueChange={value => handleAdminFilterChange('academicYear', value)}>
+                                <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by year">
+                                    <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by year..." /></div>
+                                </SelectTrigger>
+                                <SelectContent>{allFilterOptions.years.map(y => <SelectItem key={y} value={y}>{y === 'all' ? 'All Years' : y}</SelectItem>)}</SelectContent>
+                            </Select>
+                            <Select value={adminFilters.academicTerm} onValueChange={value => handleAdminFilterChange('academicTerm', value)}>
+                                <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by term">
+                                    <div className="flex items-center gap-2"><BookMarked className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by term..." /></div>
+                                </SelectTrigger>
+                                <SelectContent>{allFilterOptions.terms.map(t => <SelectItem key={t} value={t}>{t === 'all' ? 'All Terms' : t}</SelectItem>)}</SelectContent>
+                            </Select>
+                        </>
+                    ) : (
+                         <Select value={userClassFilter} onValueChange={setUserClassFilter}>
+                           <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter reports by class">
+                             <div className="flex items-center gap-2">
+                               <FolderDown className="h-4 w-4 text-primary" />
+                               <SelectValue placeholder="Filter by class..." />
+                             </div>
+                           </SelectTrigger>
+                           <SelectContent>
+                             {allFilterOptions.classes.map(cls => (
+                               <SelectItem key={cls} value={cls}>{cls === 'all' ? 'All Classes' : cls}</SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
+                    )}
                      <Button
                         onClick={() => setIsClassDashboardOpen(true)}
                         disabled={reportsCount === 0 || isLoadingReports}
@@ -815,7 +925,7 @@ function AppContent({ user }: { user: CustomUser }) {
               <CardDescription className="mt-2 md:mt-1 space-y-1">
                 <span>
                   {reportsCount > 0
-                    ? `Showing reports for: ${printFilterClass === 'all' ? 'All Classes' : printFilterClass}. Use navigation buttons if multiple reports are in the list.`
+                    ? `${filterDescription} Use navigation buttons if multiple reports are in the list.`
                     : 'This area shows a live preview of the data from the form. Click "Add Report to List" to save it to the database.'}
                 </span>
                 <span className="block text-xs italic">
@@ -844,7 +954,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     </div>
                   </React.Fragment>
                 ))
-              ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) && printFilterClass === 'all' ? (
+              ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
                 <>
                   <div className="report-preview-item active-preview-screen" key={currentEditingReport.id}>
                     <ReportPreview data={currentEditingReport} />
@@ -853,8 +963,8 @@ function AppContent({ user }: { user: CustomUser }) {
               ) : (
                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
                   <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
-                  <h3 className="text-xl font-semibold mb-2">{printFilterClass !== 'all' && reportsCount === 0 ? `No Reports Found` : `Report Preview Area`}</h3>
-                  <p>{printFilterClass !== 'all' && reportsCount === 0 ? `No reports match the filter "${printFilterClass}". Select "All Classes" or add reports.` : `The report card preview will appear here as you fill out the form.`}</p>
+                  <h3 className="text-xl font-semibold mb-2">{reportsCount === 0 && allRankedReports.length > 0 ? `No Reports Found` : `Report Preview Area`}</h3>
+                  <p>{noReportsFoundMessage}</p>
                 </div>
               )}
             </CardContent>
@@ -880,8 +990,8 @@ function AppContent({ user }: { user: CustomUser }) {
             isOpen={isClassDashboardOpen}
             onOpenChange={setIsClassDashboardOpen}
             allReports={allRankedReports}
-            availableClasses={availableClassesForFilter.filter(c => c !== 'all')}
-            initialClassName={printFilterClass === 'all' ? (availableClassesForFilter[1] || '') : printFilterClass}
+            availableClasses={allFilterOptions.classes.filter(c => c !== 'all')}
+            initialClassName={initialClassForDashboard}
         />
     )}
     {isSchoolDashboardOpen && (
@@ -924,3 +1034,5 @@ export default function Home() {
   
   return <AppContent user={user} />;
 }
+
+    
