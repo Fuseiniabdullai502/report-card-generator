@@ -104,7 +104,13 @@ const generateClassInsightsFlow = ai.defineFlow(
   async (input) => {
     const {output} = await prompt(input);
     if (!output) {
-        throw new Error('AI failed to generate class insights. The model may not have returned the expected output format, or the input was insufficient. Please check the data or try again.');
+      // Don't throw an error for empty output, just return a result indicating no insights.
+      return {
+          overallAssessment: '',
+          strengths: [],
+          areasForConcern: [],
+          actionableAdvice: [],
+      };
     }
     return {
         overallAssessment: output.overallAssessment || '',

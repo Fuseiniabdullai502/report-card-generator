@@ -69,7 +69,10 @@ const generateStudentFeedbackFlow = ai.defineFlow(
   async input => {
     const {output} = await generateStudentFeedbackPrompt(input);
     if (!output) {
-      throw new Error('AI failed to generate feedback. The model may not have returned the expected output format.');
+      // Don't throw an error for empty output, just return an empty object.
+      return {
+          feedback: ''
+      };
     }
     // Return the output, providing a default empty string if feedback is missing.
     return {

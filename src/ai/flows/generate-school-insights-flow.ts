@@ -119,7 +119,14 @@ const generateSchoolInsightsFlow = ai.defineFlow(
   async (input) => {
     const {output} = await prompt(input);
     if (!output) {
-        throw new Error('AI failed to generate school insights. The model may not have returned the expected output format, or the input was insufficient.');
+        // Don't throw an error, just return an empty object.
+        return {
+            overallSchoolAssessment: '',
+            keyStrengthsSchoolWide: [],
+            areasForConcernSchoolWide: [],
+            actionableAdviceForSchool: [],
+            interClassObservations: [],
+        };
     }
     return {
         overallSchoolAssessment: output.overallSchoolAssessment || '',

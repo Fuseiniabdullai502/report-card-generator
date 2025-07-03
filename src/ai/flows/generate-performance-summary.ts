@@ -147,7 +147,12 @@ const generateReportInsightsFlow = ai.defineFlow(
   async input => {
     const {output} = await generateReportInsightsPrompt(input);
     if (!output) {
-      throw new Error('AI failed to generate insights based on the provided data. The model may not have returned the expected output format or the input was insufficient.');
+      // Don't throw an error for empty output, just return an empty object.
+      return {
+          performanceSummary: '',
+          strengths: '',
+          areasForImprovement: '',
+      };
     }
     // Return the output, but provide default empty strings for any missing optional fields
     return {
