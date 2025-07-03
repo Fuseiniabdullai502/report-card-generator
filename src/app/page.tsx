@@ -724,7 +724,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
   return (
     <>
-    <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground">
+    <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground main-app-container">
       <header className="mb-8 text-center no-print relative">
         <div className="absolute top-0 left-0 flex items-center gap-2">
             {user.role === 'admin' && (

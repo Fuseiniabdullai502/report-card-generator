@@ -164,6 +164,13 @@ body {
   body.class-dashboard-is-open #report-preview-container {
     display: none !important;
   }
+  
+  /* When printing a dashboard, hide the entire main application content */
+  body.class-dashboard-is-open .main-app-container,
+  body.school-dashboard-is-open .main-app-container {
+    display: none !important;
+  }
+
 
   #report-preview-container { 
     position: static !important;
@@ -495,6 +502,7 @@ body {
     
 
     
+
 
 
 
