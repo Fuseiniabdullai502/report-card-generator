@@ -2,34 +2,28 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // USERS Collection
-    // - Users can create their own user document upon registration.
-    // - Users can read/update their own document.
-    // - Admin can read/update/delete any user document.
-    match /users/{userId} {
-      allow create: if request.auth.uid == userId;
-      allow read, update: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // INVITES Collection
-    // - ANYONE can read the invite list to check for an invite during registration. This is necessary.
-    // - ONLY ADMINS can create, update, or delete invites.
+    
+    // Allow ANYONE to query (list) the invites collection.
+    // This is required for the registration page to check if an email has been invited.
     match /invites/{inviteId} {
-      allow read: if true;
-      allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Explicitly allow get (single doc) and list (queries) for anyone.
+      allow get, list: if true;
+      
+      // Only admins can write (create, update, delete) invites.
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // REPORTS Collection
-    // - Any logged-in user can create a report.
-    // - An admin can read any report.
-    // - A user can only read their own reports.
-    // - A user can update/delete their own reports, and an admin can update/delete any report.
+    // Secure the users collection.
+    match /users/{userId} {
+      allow read, update: if request.auth != null && (request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Secure the reports collection.
     match /reports/{reportId} {
-      allow create: if request.auth.uid != null;
-      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || request.auth.uid == resource.data.teacherId;
-      allow update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || request.auth.uid == resource.data.teacherId;
+      allow read, create: if request.auth != null;
+      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.teacherId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
   }
 }
