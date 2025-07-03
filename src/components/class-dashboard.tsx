@@ -57,6 +57,7 @@ export interface ClassStatistics {
 interface HistoricalTermData {
     term: string;
     numStudents: number;
+    numClasses: number;
     classAverage: number | null;
 }
 
@@ -148,7 +149,7 @@ export default function ClassPerformanceDashboard({
 
     const subjectMap: Map<string, { scores: number[] }> = new Map();
     reports.forEach(report => {
-      report.subjects.forEach(subject => {
+      (report.subjects ?? []).forEach(subject => {
         if (subject.subjectName && subject.subjectName.trim() !== '') {
           const finalMark = calculateSubjectFinalMark(subject);
           if (finalMark !== null && !Number.isNaN(finalMark)) {
@@ -200,10 +201,12 @@ export default function ClassPerformanceDashboard({
     
     const newHistoricalData = sortedTerms.map(term => {
         const termReports = reportsByTerm.get(term)!;
-        const avg = calculateOverallAverage(termReports.flatMap(r => r.subjects));
+        const avg = calculateOverallAverage(termReports.flatMap(r => r.subjects ?? []));
+        const numClasses = new Set(termReports.map(r => r.className)).size;
         return {
-            term: term,
+            term,
             numStudents: termReports.length,
+            numClasses,
             classAverage: avg
         };
     });
@@ -227,10 +230,12 @@ export default function ClassPerformanceDashboard({
           academicTerm: mostRecentTerm,
           overallClassAverage: classStats.overallClassAverage ?? null,
           totalStudents: classStats.totalStudents,
-          subjectStats: classStats.subjectStats.map(s => ({
-            ...s,
-            classAverageForSubject: s.classAverageForSubject ?? null,
-          })),
+          subjectStats: classStats.subjectStats
+            .filter(s => s.subjectName.trim() !== '')
+            .map(s => ({
+              ...s,
+              classAverageForSubject: s.classAverageForSubject ?? null,
+            })),
           genderStats: classStats.genderStats.map(g => ({
             ...g,
             averageScore: g.averageScore ?? null,
@@ -284,7 +289,7 @@ export default function ClassPerformanceDashboard({
 
 
   const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
-    if (active && payload && payload.length) {
+    if (active && Array.isArray(payload) && payload.length) {
       return (
         <div className="p-2 bg-background/90 border rounded-md shadow-lg backdrop-blur-sm text-xs">
           <p className="label font-semibold text-foreground">{`${label}`}</p>
@@ -342,9 +347,14 @@ export default function ClassPerformanceDashboard({
        if (!hasContent) {
         return (
             <CardContent className="pt-4 text-accent-foreground/80">
-                 <div className="flex items-center p-3 bg-blue-500/10 border border-blue-500/30 rounded-md">
-                    <Info className="mr-2 h-5 w-5 text-blue-400 shrink-0" />
-                    <span className="text-sm">AI analysis complete. No specific points were raised by the AI for the provided data.</span>
+                 <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-md">
+                    <div className="flex items-center">
+                        <Info className="mr-2 h-5 w-5 text-blue-400 shrink-0" />
+                        <span className="text-sm">AI analysis complete. No specific points were raised by the AI for the provided data.</span>
+                    </div>
+                     <p className="text-xs text-muted-foreground mt-2">
+                        <strong>Note:</strong> This usually means the AI didn't detect any statistically significant trends or patterns in the class data.
+                    </p>
                 </div>
             </CardContent>
         );
@@ -425,7 +435,7 @@ export default function ClassPerformanceDashboard({
         
         <div 
           data-testid="dashboard-inner-scroll-container"
-          className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-6 space-y-6"
+          className="flex-1 min-h-[85vh] overflow-y-auto overflow-x-auto p-6 space-y-6"
         >
             <div className="dashboard-print-header">
                 <h2 className="text-xl font-bold">Class Performance Dashboard: {selectedClass} ({mostRecentTerm})</h2>
@@ -486,11 +496,12 @@ export default function ClassPerformanceDashboard({
                             <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><History className="mr-2 h-5 w-5"/>Term-over-Term Comparison</CardTitle>
                         </CardHeader>
                         <CardContent className="pt-4">
-                            <Table className="border rounded-md min-w-[400px]">
+                            <Table className="border rounded-md min-w-[500px]">
                                 <ShadcnUITableHeader className="bg-muted/50">
                                     <TableRow>
                                         <TableHead className="font-semibold">Term</TableHead>
                                         <TableHead className="text-center font-semibold"># Students</TableHead>
+                                        <TableHead className="text-center font-semibold"># Classes</TableHead>
                                         <TableHead className="text-center font-semibold">Class Average (%)</TableHead>
                                     </TableRow>
                                 </ShadcnUITableHeader>
@@ -499,6 +510,7 @@ export default function ClassPerformanceDashboard({
                                         <TableRow key={data.term}>
                                             <TableCell className="font-medium">{data.term}</TableCell>
                                             <TableCell className="text-center">{data.numStudents}</TableCell>
+                                            <TableCell className="text-center">{data.numClasses}</TableCell>
                                             <TableCell className="text-center">{data.classAverage?.toFixed(1) ?? 'N/A'}</TableCell>
                                         </TableRow>
                                     ))}
@@ -518,7 +530,15 @@ export default function ClassPerformanceDashboard({
                       <div data-testid="subject-barchart-container" className="h-[300px] min-w-[500px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={subjectPerformanceChartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                            <XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{ fontSize: 10 }} />
+                            <XAxis 
+                              dataKey="name" 
+                              angle={-35} 
+                              textAnchor="end" 
+                              height={80} 
+                              interval={0} 
+                              tick={{ fontSize: 10 }}
+                              tickFormatter={(name) => name.length > 15 ? `${name.slice(0, 15)}…` : name}
+                            />
                             <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', fillOpacity: 0.3 }} />
                             <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
@@ -642,3 +662,5 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
+
+    
