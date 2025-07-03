@@ -199,9 +199,26 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
   // AI Function Handlers
   const handleGenerateAiReportInsights = async () => {
     const { studentName, className, subjects, daysAttended, totalSchoolDays, academicTerm } = formData;
-    if (!studentName || !className || !academicTerm || !subjects || subjects.some(s => !s.subjectName)) {
-      toast({ title: "Missing Information", description: "Please fill student name, class, term, and subject names.", variant: "destructive" });
+    
+    if (!studentName?.trim()) {
+      toast({ title: "Missing Student Name", description: "Please enter the student's name.", variant: "destructive" });
       return;
+    }
+    if (!className?.trim()) {
+      toast({ title: "Missing Class Name", description: "Please select a class in the 'Session Controls' section.", variant: "destructive" });
+      return;
+    }
+    if (!academicTerm?.trim()) {
+      toast({ title: "Missing Academic Term", description: "Please select a term in the 'Session Controls' section.", variant: "destructive" });
+      return;
+    }
+
+    // Filter out any subjects that are empty or just whitespace
+    const validSubjects = subjects.filter(s => s.subjectName && s.subjectName.trim() !== '');
+
+    if (validSubjects.length === 0) {
+        toast({ title: "No Valid Subjects", description: "Please add at least one subject with a name.", variant: "destructive" });
+        return;
     }
 
     let previousTermsDataForAI: GenerateReportInsightsInput['previousTermsData'] = [];
@@ -227,7 +244,7 @@ export default function ReportForm({ onFormUpdate, initialData, reportPrintListF
           studentName, className, currentAcademicTerm: academicTerm,
           daysAttended: daysAttended === null ? null : Number(daysAttended),
           totalSchoolDays: totalSchoolDays === null ? null : Number(totalSchoolDays),
-          subjects: subjects.map(s => ({ subjectName: s.subjectName, continuousAssessment: s.continuousAssessment, examinationMark: s.examinationMark })),
+          subjects: validSubjects.map(s => ({ subjectName: s.subjectName, continuousAssessment: s.continuousAssessment, examinationMark: s.examinationMark })),
           previousTermsData: previousTermsDataForAI!.length > 0 ? previousTermsDataForAI : undefined,
        };
        const result = await getAiReportInsightsAction(aiInput);
