@@ -34,6 +34,7 @@ export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 const academicTermOptions = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
+const academicYearOptions = ["2024/2025", "2025/2026", "2026/2027", "2027/2028", "2028/2029", "2029/2030", "2030/2031", "2031/2032", "2032/2033", "2033/2034", "2034/2035"];
 const reportTemplateOptions = [
     { id: 'default', name: 'Default Template' },
     { id: 'professionalBlue', name: 'Professional Blue' },
@@ -762,7 +763,12 @@ function AppContent({ user }: { user: CustomUser }) {
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
-                    <Input id="sessionAcademicYear" value={sessionDefaults.academicYear || ''} onChange={e => handleSessionDefaultChange('academicYear', e.target.value)} placeholder="e.g., 2023-2024" />
+                     <Select value={sessionDefaults.academicYear || ''} onValueChange={value => handleSessionDefaultChange('academicYear', value)}>
+                        <SelectTrigger id="sessionAcademicYear"><SelectValue placeholder="Select academic year" /></SelectTrigger>
+                        <SelectContent>
+                            {academicYearOptions.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                 </div>
                  <div className="space-y-1">
                     <Label htmlFor="sessionClassName" className="text-sm font-medium">Current Class</Label>
