@@ -157,6 +157,13 @@ body {
     background-color: white !important;
     -webkit-print-color-adjust: exact !important; 
     print-color-adjust: exact !important; 
+    color: black !important;
+  }
+  
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
   }
 
   /* When printing a dashboard, hide the main page's report preview container */
@@ -275,6 +282,10 @@ body {
   body > [data-radix-portal] > [data-radix-dialog-overlay],
   body > [data-radix-portal] > [data-radix-focus-guard] {
     display: none !important;
+  }
+
+  body.class-dashboard-is-open {
+    overflow: visible !important;
   }
 
   #class-dashboard-dialog-content,
@@ -411,7 +422,9 @@ body {
   #school-dashboard-dialog-content .no-print,
   #school-dashboard-dialog-content > .dialog-header:not(.school-dashboard-print-header),
   #school-dashboard-dialog-content > .sticky.top-0,
-  #school-dashboard-dialog-content > .sticky.bottom-0 { 
+  #school-dashboard-dialog-content > .sticky.bottom-0,
+  .dialog-footer-print-hide,
+  .dialog-header-print-hide { 
     display: none !important;
   }
   #class-dashboard-dialog-content > button[aria-label="Close"], 
@@ -465,6 +478,8 @@ body {
   #school-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper {
     width: 100% !important; 
     height: 100% !important; 
+    max-height: 100% !important;
+    overflow: visible !important;
   }
   #class-dashboard-dialog-content .recharts-surface,
   #school-dashboard-dialog-content .recharts-surface { 
@@ -502,6 +517,7 @@ body {
     
 
     
+
 
 
 
