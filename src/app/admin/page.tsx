@@ -5,6 +5,7 @@ import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { Loader2, Shield } from 'lucide-react';
 import UserManagement from '@/components/user-management';
+import SchoolRanking from '@/components/school-ranking';
 
 export default function AdminPage() {
   const { user, loading } = useAuth();
@@ -50,6 +51,7 @@ export default function AdminPage() {
         </p>
       </header>
       <UserManagement />
+      <SchoolRanking />
     </main>
   );
 }
