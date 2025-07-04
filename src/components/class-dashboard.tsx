@@ -420,7 +420,7 @@ export default function ClassPerformanceDashboard({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
               <BarChart3 className="mr-3 h-6 w-6" />
-              Class Performance Dashboard
+              Class Dashboard: {schoolNameProp}
             </ShadcnDialogTitle>
             <Select value={selectedClass} onValueChange={setSelectedClass} disabled={availableClasses.length === 0}>
               <SelectTrigger className="w-full sm:w-[250px]" title="Select a class to view its dashboard">
@@ -438,7 +438,7 @@ export default function ClassPerformanceDashboard({
             </Select>
           </div>
           <ShadcnDialogDescription className="text-xs text-muted-foreground pt-1">
-            {selectedClass ? `Showing detailed analysis for ${selectedClass} - ${mostRecentTerm || 'Latest Term'}` : "Select a class to view its dashboard"}
+            {selectedClass ? `Analysis for ${selectedClass} (${academicYearProp}, ${mostRecentTerm || 'Latest Term'})` : "Select a class to view its dashboard"}
           </ShadcnDialogDescription>
         </ShadcnDialogHeader>
         

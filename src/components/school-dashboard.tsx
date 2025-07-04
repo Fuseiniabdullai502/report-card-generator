@@ -323,10 +323,10 @@ export default function SchoolPerformanceDashboard({
         <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
           <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
             <Building className="mr-3 h-6 w-6" />
-            School Performance Dashboard: {schoolNameProp}
+            School Dashboard: {schoolNameProp}
           </ShadcnDialogTitle>
           <ShadcnDialogDescription className="text-xs text-muted-foreground pt-1">
-            {mostRecentTerm ? `Analysis for ${mostRecentTerm}` : "Aggregated insights for the entire school"}
+            {mostRecentTerm ? `Analysis for ${academicYearProp}, ${mostRecentTerm}` : "Aggregated insights for the entire school"}
           </ShadcnDialogDescription>
         </ShadcnDialogHeader>
         
