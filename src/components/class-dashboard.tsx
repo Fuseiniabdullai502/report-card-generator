@@ -31,6 +31,7 @@ interface ClassPerformanceDashboardProps {
   allReports: ReportData[];
   availableClasses: string[];
   initialClassName: string;
+  schoolNameProp: string;
 }
 
 interface SubjectPerformanceStatForUI {
@@ -66,6 +67,7 @@ export default function ClassPerformanceDashboard({
   allReports,
   availableClasses,
   initialClassName,
+  schoolNameProp,
 }: ClassPerformanceDashboardProps) {
   const [selectedClass, setSelectedClass] = useState(initialClassName);
   const [classStats, setClassStats] = useState<ClassStatistics | null>(null);
@@ -313,7 +315,7 @@ export default function ClassPerformanceDashboard({
     if (isLoadingAi && !aiAdvice && !aiError) {
       return (
         <CardContent className="pt-4 flex items-center justify-center text-accent-foreground/80">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> Generating AI pedagogical insights...
+          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> Generating pedagogical insights...
         </CardContent>
       );
     }
@@ -323,7 +325,7 @@ export default function ClassPerformanceDashboard({
           <div className="flex items-start p-4 bg-destructive/10 border border-destructive/30 rounded-md">
             <AlertTriangle className="mr-3 h-6 w-6 text-destructive shrink-0 mt-1" />
             <div>
-              <p className="font-semibold text-destructive">AI Insights Unavailable</p>
+              <p className="font-semibold text-destructive">Insights Unavailable</p>
               <p className="text-sm mt-1">The AI failed to generate insights. The error was:</p>
               <pre className="mt-2 p-2 bg-destructive/20 rounded text-xs font-mono whitespace-pre-wrap">
                   {aiError}
@@ -355,7 +357,7 @@ export default function ClassPerformanceDashboard({
                  <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-md">
                     <div className="flex items-center">
                         <Info className="mr-2 h-5 w-5 text-blue-400 shrink-0" />
-                        <span className="text-sm">AI analysis complete. No specific points were raised by the AI for the provided data.</span>
+                        <span className="text-sm">Analysis complete. No specific points were raised by the AI for the provided data.</span>
                     </div>
                      <p className="text-xs text-muted-foreground mt-2">
                         <strong>Note:</strong> This usually means the AI didn't detect any statistically significant trends or patterns in the class data.
@@ -443,7 +445,7 @@ export default function ClassPerformanceDashboard({
           className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6"
         >
             <div className="dashboard-print-header">
-                <h2 className="text-xl font-bold">Class Performance Dashboard: {selectedClass} ({mostRecentTerm})</h2>
+                <h2 className="text-xl font-bold">{schoolNameProp} - Class Performance: {selectedClass} ({mostRecentTerm})</h2>
                 <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
             </div>
 
@@ -644,7 +646,7 @@ export default function ClassPerformanceDashboard({
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
                         {isLoadingAi && !aiAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
-                        AI Pedagogical Insights &amp; Advice ({mostRecentTerm})
+                        Pedagogical Insights &amp; Advice ({mostRecentTerm})
                     </CardTitle>
                   </CardHeader>
                   {renderAiInsights()}

@@ -215,7 +215,7 @@ export default function SchoolPerformanceDashboard({
     if (isLoadingAi && !aiSchoolAdvice && !aiError) {
       return (
         <CardContent className="pt-4 flex items-center justify-center text-accent-foreground/80">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> Generating AI school-level insights...
+          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> Generating school-level insights...
         </CardContent>
       );
     }
@@ -225,7 +225,7 @@ export default function SchoolPerformanceDashboard({
           <div className="flex items-start p-4 bg-destructive/10 border border-destructive/30 rounded-md">
             <AlertTriangle className="mr-3 h-6 w-6 text-destructive shrink-0 mt-1" />
             <div>
-              <p className="font-semibold text-destructive">AI School Insights Unavailable</p>
+              <p className="font-semibold text-destructive">School Insights Unavailable</p>
               <p className="text-sm mt-1">The AI failed to generate insights. The error was:</p>
               <pre className="mt-2 p-2 bg-destructive/20 rounded text-xs font-mono whitespace-pre-wrap">
                   {aiError}
@@ -257,7 +257,7 @@ export default function SchoolPerformanceDashboard({
             <CardContent className="pt-4 text-accent-foreground/80">
                  <div className="flex items-center p-3 bg-blue-500/10 border border-blue-500/30 rounded-md">
                     <Info className="mr-2 h-5 w-5 text-blue-400 shrink-0" />
-                    <span className="text-sm">AI analysis complete. No specific school-wide points were raised by the AI for the provided data.</span>
+                    <span className="text-sm">Analysis complete. No specific school-wide points were raised by the AI for the provided data.</span>
                 </div>
             </CardContent>
         );
@@ -333,7 +333,7 @@ export default function SchoolPerformanceDashboard({
           className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-6 space-y-6"
         >
             <div className="school-dashboard-print-header">
-                <h2 className="text-xl font-bold">School Performance Dashboard: {schoolNameProp} ({mostRecentTerm})</h2>
+                <h2 className="text-xl font-bold">{schoolNameProp} - School Performance Dashboard ({mostRecentTerm})</h2>
                 <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
             </div>
 
@@ -561,7 +561,7 @@ export default function SchoolPerformanceDashboard({
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
                         {isLoadingAi && !aiSchoolAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
-                        AI School-Level Insights &amp; Advice ({mostRecentTerm})
+                        School-Level Insights &amp; Advice ({mostRecentTerm})
                     </CardTitle>
                   </CardHeader>
                   {renderAiSchoolInsights()}

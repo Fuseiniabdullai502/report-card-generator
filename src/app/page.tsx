@@ -1018,6 +1018,7 @@ function AppContent({ user }: { user: CustomUser }) {
             allReports={allRankedReports}
             availableClasses={allFilterOptions.classes.filter(c => c !== 'all')}
             initialClassName={initialClassForDashboard}
+            schoolNameProp={schoolNameForDashboard}
         />
     )}
     {isSchoolDashboardOpen && (
