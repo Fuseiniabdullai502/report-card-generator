@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useMemo, useState, useTransition } from 'react';
+import React, { useEffect, useMemo, useState, useTransition, useCallback } from 'react';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader as ShadcnUITableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, FolderDown, History } from 'lucide-react';
+import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, FolderDown, History, RefreshCw } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
 import type { GenerateClassInsightsOutput, GenerateClassInsightsInput } from '@/ai/flows/generate-class-insights-flow';
@@ -106,6 +106,52 @@ export default function ClassPerformanceDashboard({
     return allReports.filter(report => report.className === selectedClass);
   }, [allReports, selectedClass]);
   
+  const fetchAiInsights = useCallback(async () => {
+    if (!classStats || !selectedClass || !mostRecentTerm) {
+      return;
+    }
+
+    setAiAdvice(null);
+    setAiError(null);
+    startAiTransition(async () => {
+      try {
+        const sanitizedAiInput: GenerateClassInsightsInput = {
+          className: selectedClass,
+          academicTerm: mostRecentTerm,
+          overallClassAverage: classStats.overallClassAverage ?? null,
+          totalStudents: classStats.totalStudents,
+          subjectStats: classStats.subjectStats
+            .filter(s => s.subjectName.trim() !== '')
+            .map(s => ({
+              ...s,
+              classAverageForSubject: s.classAverageForSubject ?? null,
+            })),
+          genderStats: classStats.genderStats.map(g => ({
+            ...g,
+            averageScore: g.averageScore ?? null,
+          })),
+        };
+        
+        const result = await getAiClassInsightsAction(sanitizedAiInput);
+        if (result.success && result.insights) {
+          setAiAdvice(result.insights);
+        } else {
+          const errorMessage = result.error || "An unknown error occurred while generating insights.";
+          setAiError(errorMessage);
+          toast({ title: "AI Insights Error", description: errorMessage, variant: "destructive" });
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        setAiError(errorMessage);
+        toast({ 
+          title: "AI Insights Request Failed", 
+          description: `A client-side error occurred: ${errorMessage}. Please check the browser console.`, 
+          variant: "destructive" 
+        });
+      }
+    });
+  }, [classStats, selectedClass, mostRecentTerm, toast]);
+
   // Effect for calculating statistics when the class or reports change
   useEffect(() => {
     if (!isOpen || reportsForClass.length === 0) {
@@ -216,52 +262,10 @@ export default function ClassPerformanceDashboard({
 
   // Effect for generating AI insights when stats are updated
   useEffect(() => {
-    if (!isOpen || !classStats || !selectedClass || !mostRecentTerm) {
-      setAiAdvice(null);
-      setAiError(null);
-      return;
+    if (isOpen && classStats) {
+      fetchAiInsights();
     }
-
-    setAiAdvice(null);
-    setAiError(null);
-    startAiTransition(async () => {
-      try {
-        const sanitizedAiInput: GenerateClassInsightsInput = {
-          className: selectedClass,
-          academicTerm: mostRecentTerm,
-          overallClassAverage: classStats.overallClassAverage ?? null,
-          totalStudents: classStats.totalStudents,
-          subjectStats: classStats.subjectStats
-            .filter(s => s.subjectName.trim() !== '')
-            .map(s => ({
-              ...s,
-              classAverageForSubject: s.classAverageForSubject ?? null,
-            })),
-          genderStats: classStats.genderStats.map(g => ({
-            ...g,
-            averageScore: g.averageScore ?? null,
-          })),
-        };
-        
-        const result = await getAiClassInsightsAction(sanitizedAiInput);
-        if (result.success && result.insights) {
-          setAiAdvice(result.insights);
-        } else {
-          const errorMessage = result.error || "An unknown error occurred while generating insights.";
-          setAiError(errorMessage);
-          toast({ title: "AI Insights Error", description: errorMessage, variant: "destructive" });
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        setAiError(errorMessage);
-        toast({ 
-          title: "AI Insights Request Failed", 
-          description: `A client-side error occurred: ${errorMessage}. Please check the browser console.`, 
-          variant: "destructive" 
-        });
-      }
-    });
-  }, [isOpen, classStats, selectedClass, mostRecentTerm, toast]);
+  }, [isOpen, classStats, fetchAiInsights]);
 
   const handlePrint = () => {
     if (reportsForClass.length === 0) {
@@ -646,10 +650,16 @@ export default function ClassPerformanceDashboard({
                 
                 <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50")}>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
-                        {isLoadingAi && !aiAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
-                        Pedagogical Insights &amp; Advice ({mostRecentTerm})
-                    </CardTitle>
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <CardTitle className="text-lg font-semibold text-primary flex items-center">
+                          {isLoadingAi && !aiAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
+                          Pedagogical Insights &amp; Advice ({mostRecentTerm})
+                      </CardTitle>
+                      <Button variant="outline" size="sm" onClick={fetchAiInsights} disabled={isLoadingAi || !classStats}>
+                        <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingAi ? 'animate-spin' : ''}`} />
+                        Reload
+                      </Button>
+                    </div>
                   </CardHeader>
                   {renderAiInsights()}
                 </Card>

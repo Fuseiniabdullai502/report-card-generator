@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useMemo, useState, useTransition } from 'react';
+import React, { useEffect, useMemo, useState, useTransition, useCallback } from 'react';
 import type { ReportData } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader as ShadcnUITableHeader, TableRow } from '@/components/ui/table';
-import { Building, Users, TrendingUp, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, BookOpen, Sigma, History } from 'lucide-react';
+import { Building, Users, TrendingUp, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, BookOpen, Sigma, History, RefreshCw } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
 import { getAiSchoolInsightsAction } from '@/app/actions';
 import type { GenerateSchoolInsightsOutput, GenerateSchoolInsightsInput } from '@/ai/flows/generate-school-insights-flow';
@@ -75,6 +75,52 @@ export default function SchoolPerformanceDashboard({
     };
   }, [isOpen]);
 
+  const fetchSchoolAiInsights = useCallback(async () => {
+    if (!schoolStats) {
+      return;
+    }
+
+    setAiSchoolAdvice(null);
+    setAiError(null);
+    startAiTransition(async () => {
+      try {
+        const sanitizedAiInput: GenerateSchoolInsightsInput = {
+          schoolName: schoolNameProp,
+          academicTerm: mostRecentTerm,
+          overallSchoolAverage: schoolStats.overallSchoolAverage ?? null,
+          totalStudentsInSchool: schoolStats.totalStudentsInSchool,
+          numberOfClassesRepresented: schoolStats.numberOfClassesRepresented,
+          classSummaries: schoolStats.classSummariesForUI.map(cs => ({
+            className: cs.className,
+            classAverage: cs.classAverage ?? null,
+            numberOfStudents: cs.numberOfStudents,
+          })),
+          overallSubjectStatsForSchool: schoolStats.overallSubjectStatsForSchoolUI.map(s => ({
+            ...s,
+            schoolAverageForSubject: s.schoolAverageForSubject ?? null,
+          })),
+          overallGenderStatsForSchool: schoolStats.overallGenderStatsForSchoolUI.map(g => ({
+            ...g,
+            averageScore: g.averageScore ?? null,
+          })),
+        };
+
+        const result = await getAiSchoolInsightsAction(sanitizedAiInput);
+        if (result.success && result.insights) {
+          setAiSchoolAdvice(result.insights);
+        } else {
+          const errorMessage = result.error || "An unknown error occurred while generating school insights.";
+          setAiError(errorMessage);
+          toast({ title: "AI School Insights Error", description: errorMessage, variant: "destructive" });
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        setAiError(errorMessage);
+        toast({ title: "AI School Insights Request Failed", description: `Client error: ${errorMessage}`, variant: "destructive" });
+      }
+    });
+  }, [schoolStats, schoolNameProp, mostRecentTerm, toast]);
+
   useEffect(() => {
     if (!isOpen || allReports.length === 0) {
       setSchoolStats(null);
@@ -111,12 +157,10 @@ export default function SchoolPerformanceDashboard({
 
     const reportsForCurrentTerm = reportsByTerm.get(newMostRecentTerm) || [];
     
-    // Calculate stats for the most recent term
     const newStats = aggregateSchoolDataForTerm(reportsForCurrentTerm);
     setSchoolStats(newStats);
     setIsLoadingStats(false);
     
-    // Calculate historical data
     const newHistoricalData = sortedTerms.map(term => {
         const termReports = reportsByTerm.get(term)!;
         const avg = calculateOverallAverage(termReports.flatMap(r => r.subjects));
@@ -129,48 +173,13 @@ export default function SchoolPerformanceDashboard({
         };
     });
     setHistoricalData(newHistoricalData);
+  }, [isOpen, allReports]); 
 
-    if (newStats) {
-      setAiSchoolAdvice(null);
-      setAiError(null);
-      startAiTransition(async () => {
-        try {
-          const sanitizedAiInput: GenerateSchoolInsightsInput = {
-            schoolName: schoolNameProp,
-            academicTerm: newMostRecentTerm,
-            overallSchoolAverage: newStats.overallSchoolAverage ?? null,
-            totalStudentsInSchool: newStats.totalStudentsInSchool,
-            numberOfClassesRepresented: newStats.numberOfClassesRepresented,
-            classSummaries: newStats.classSummariesForUI.map(cs => ({
-              className: cs.className,
-              classAverage: cs.classAverage ?? null,
-              numberOfStudents: cs.numberOfStudents,
-            })),
-            overallSubjectStatsForSchool: newStats.overallSubjectStatsForSchoolUI.map(s => ({
-              ...s,
-              schoolAverageForSubject: s.schoolAverageForSubject ?? null,
-            })),
-            overallGenderStatsForSchool: newStats.overallGenderStatsForSchoolUI.map(g => ({
-              ...g,
-              averageScore: g.averageScore ?? null,
-            })),
-          };
-
-          const result = await getAiSchoolInsightsAction(sanitizedAiInput);
-          if (result.success && result.insights) {
-            setAiSchoolAdvice(result.insights);
-          } else {
-            const errorMessage = result.error || "An unknown error occurred while generating school insights.";
-            setAiError(errorMessage);
-            toast({ title: "AI School Insights Error", description: errorMessage, variant: "destructive" });
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          toast({ title: "AI School Insights Request Failed", description: `Client error: ${errorMessage}`, variant: "destructive" });
-        }
-      });
+  useEffect(() => {
+    if (isOpen && schoolStats) {
+      fetchSchoolAiInsights();
     }
-  }, [isOpen, allReports, schoolNameProp, toast]); 
+  }, [isOpen, schoolStats, fetchSchoolAiInsights]);
 
   const handlePrint = () => {
     if (!schoolStats || allReports.length === 0) {
@@ -561,10 +570,16 @@ export default function SchoolPerformanceDashboard({
                 
                 <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50")}>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
-                        {isLoadingAi && !aiSchoolAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
-                        School-Level Insights &amp; Advice ({mostRecentTerm})
-                    </CardTitle>
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <CardTitle className="text-lg font-semibold text-primary flex items-center">
+                          {isLoadingAi && !aiSchoolAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
+                          School-Level Insights &amp; Advice ({mostRecentTerm})
+                      </CardTitle>
+                      <Button variant="outline" size="sm" onClick={fetchSchoolAiInsights} disabled={isLoadingAi || !schoolStats}>
+                        <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingAi ? 'animate-spin' : ''}`} />
+                        Reload
+                      </Button>
+                    </div>
                   </CardHeader>
                   {renderAiSchoolInsights()}
                 </Card>
