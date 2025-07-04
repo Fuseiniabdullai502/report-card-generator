@@ -41,7 +41,7 @@ export default function AdminPage() {
   // Render admin dashboard
   return (
     <main className="container mx-auto p-4 md:p-8">
-      <header className="mb-8">
+      <header className="mb-8 no-print">
         <h1 className="text-3xl font-bold text-primary flex items-center gap-3">
           <Shield className="h-8 w-8" />
           Admin Panel
@@ -50,7 +50,9 @@ export default function AdminPage() {
           Manage user access and review application data.
         </p>
       </header>
-      <UserManagement />
+      <div className="no-print">
+        <UserManagement />
+      </div>
       <SchoolRanking />
     </main>
   );

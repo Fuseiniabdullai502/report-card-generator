@@ -142,6 +142,9 @@ body {
   .school-dashboard-print-header {
     display: none;
   }
+  .school-ranking-print-header {
+    display: none;
+  }
 }
 
 
@@ -513,6 +516,40 @@ body {
    #school-dashboard-dialog-content .recharts-cartesian-axis-tick text {
     font-size: 6pt !important;
   }
+  
+  /* School Ranking Print Styles */
+  #school-ranking-card {
+      border: none !important;
+      box-shadow: none !important;
+  }
+
+  #school-ranking-card .card-header {
+      display: none !important;
+  }
+
+  .school-ranking-print-header {
+      display: block !important;
+      text-align: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #ccc;
+  }
+
+  .school-ranking-print-header h2 {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: black !important;
+  }
+  .school-ranking-print-header p {
+      font-size: 0.875rem;
+      color: black !important;
+  }
+
+  #school-ranking-card .table th,
+  #school-ranking-card .table td {
+      padding: 4px 6px !important;
+      font-size: 9pt !important;
+  }
 }
     
 
@@ -521,6 +558,7 @@ body {
     
 
     
+
 
 
 

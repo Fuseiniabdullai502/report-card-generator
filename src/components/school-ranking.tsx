@@ -7,8 +7,9 @@ import type { ReportData } from '@/lib/schemas';
 import { calculateOverallAverage } from '@/lib/calculations';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, School, Trophy } from 'lucide-react';
+import { Loader2, School, Trophy, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 interface SchoolPerformance {
   schoolName: string;
@@ -112,16 +113,32 @@ export default function SchoolRanking() {
 
     return () => unsubscribe();
   }, [toast]);
+  
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
-    <Card className="mt-8">
+    <Card className="mt-8" id="school-ranking-card">
+       <div className="school-ranking-print-header">
+        <h2>School Performance Rankings</h2>
+        <p>Schools ranked by overall average score. Generated on: {new Date().toLocaleDateString()}</p>
+      </div>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Trophy /> School Performance Rankings
-        </CardTitle>
-        <CardDescription>
-          Schools are ranked based on the overall average score of all their students' reports in the system.
-        </CardDescription>
+         <div className="flex justify-between items-start">
+            <div>
+                <CardTitle className="flex items-center gap-2">
+                <Trophy /> School Performance Rankings
+                </CardTitle>
+                <CardDescription>
+                Schools are ranked based on the overall average score of all their students' reports in the system.
+                </CardDescription>
+            </div>
+             <Button onClick={handlePrint} variant="outline" size="sm" className="no-print">
+                <Printer className="mr-2 h-4 w-4" />
+                Print Rankings
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
