@@ -147,6 +147,10 @@ body {
 
 /* Print styles */
 @media print {
+  html {
+    color-scheme: light !important;
+  }
+  
   .no-print {
     display: none !important;
   }
@@ -517,6 +521,7 @@ body {
     
 
     
+
 
 
 
