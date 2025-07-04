@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData } from '@/lib/schemas';
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, setDoc, deleteDoc, writeBatch, where, limit } from 'firebase/firestore';
+import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, setDoc, deleteDoc, writeBatch, where, getDocs } from 'firebase/firestore';
 import { calculateOverallAverage } from '@/lib/calculations';
 import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
@@ -94,6 +94,8 @@ function AppContent({ user }: { user: CustomUser }) {
     academicTerm: 'all',
   });
   const [userClassFilter, setUserClassFilter] = useState<string>('all');
+  
+  const [originalUserSchoolName, setOriginalUserSchoolName] = useState<string | null>(null);
   
   const router = useRouter();
 
@@ -250,6 +252,14 @@ function AppContent({ user }: { user: CustomUser }) {
         }
       });
       
+      if (user.role !== 'admin') {
+          const firstSchool = fetchedReports.find(r => r.schoolName?.trim())?.schoolName || null;
+          setOriginalUserSchoolName(firstSchool);
+          if (firstSchool && !sessionDefaults.schoolName) {
+              setSessionDefaults(prev => ({...prev, schoolName: firstSchool}));
+          }
+      }
+      
       setCustomClassNames(prev => [...new Set([...prev, ...Array.from(classNamesFromDB)])]);
       calculateAndSetRanks(fetchedReports);
       setNextStudentEntryNumber(maxEntryNum + 1);
@@ -285,7 +295,7 @@ function AppContent({ user }: { user: CustomUser }) {
     });
 
     return () => unsubscribe();
-  }, [user.uid, user.role, calculateAndSetRanks, toast, sessionDefaults]);
+  }, [user.uid, user.role, calculateAndSetRanks, toast]);
 
 
   const handleFormUpdate = useCallback((data: ReportData) => {
@@ -343,6 +353,44 @@ function AppContent({ user }: { user: CustomUser }) {
 
   const handleSaveOrUpdateReport = async (formDataFromForm: ReportData) => {
     const isEditing = !formDataFromForm.id.startsWith('unsaved-');
+
+    // --- BATCH UPDATE LOGIC FOR SCHOOL NAME CHANGE (NON-ADMINS) ---
+    const newSchoolName = formDataFromForm.schoolName?.trim() || null;
+    if (
+        user.role !== 'admin' &&
+        originalUserSchoolName &&
+        newSchoolName &&
+        newSchoolName !== originalUserSchoolName
+    ) {
+        try {
+            const reportsRef = collection(db, 'reports');
+            const q = query(reportsRef, where('teacherId', '==', user.uid));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const batch = writeBatch(db);
+                querySnapshot.forEach((docToUpdate) => {
+                    const reportRef = doc(db, 'reports', docToUpdate.id);
+                    batch.update(reportRef, { schoolName: newSchoolName });
+                });
+                await batch.commit();
+                toast({
+                    title: "School Name Updated",
+                    description: `Your school has been renamed to "${newSchoolName}" across all your reports.`,
+                });
+                setOriginalUserSchoolName(newSchoolName); // Update state to prevent re-triggering
+            }
+        } catch (batchError) {
+            console.error("Error updating school name across reports:", batchError);
+            toast({
+                title: "School Rename Failed",
+                description: "Could not update the school name on your existing reports. Please try again.",
+                variant: "destructive",
+            });
+            return; // Stop the save process if batch fails
+        }
+    }
+    // --- END BATCH UPDATE LOGIC ---
 
     if (!isEditing) {
         const isDuplicate = allRankedReports.some(report =>
@@ -415,6 +463,11 @@ function AppContent({ user }: { user: CustomUser }) {
                 description: `${reportToSaveForFirestore.studentName}'s report submitted to Firestore. List will update.`,
             });
         }
+        
+        if (user.role !== 'admin' && newSchoolName && !originalUserSchoolName) {
+            setOriginalUserSchoolName(newSchoolName);
+        }
+
     } catch (error) {
         console.error("Detailed Firestore Save Error: ", error);
         toast({
