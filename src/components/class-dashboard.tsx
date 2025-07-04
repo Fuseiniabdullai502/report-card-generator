@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useMemo, useState, useTransition, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useTransition } from 'react';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import {
@@ -261,10 +261,18 @@ export default function ClassPerformanceDashboard({
 
   const handlePrint = () => {
     if (!classStats || reportsForClass.length === 0) {
-      toast({title: "Nothing to Print", description: "Class dashboard data is not available.", variant: "destructive"});
+      toast({
+        title: "Nothing to Print",
+        description: "Class dashboard data is not available.",
+        variant: "destructive",
+      });
       return;
     }
-    window.print();
+
+    // A small delay can help ensure all styles and elements are rendered before the print dialog opens.
+    setTimeout(() => {
+      window.print();
+    }, 300);
   };
 
   const subjectPerformanceChartData = useMemo(() => {
@@ -645,7 +653,7 @@ export default function ClassPerformanceDashboard({
             )}
           </div>
 
-        <ShadcnDialogFooter className="w-full shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide flex-row justify-end space-x-2">
+        <ShadcnDialogFooter className="w-full shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide flex flex-row justify-end space-x-2">
           <Button variant="outline" onClick={handlePrint} disabled={!classStats || reportsForClass.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
