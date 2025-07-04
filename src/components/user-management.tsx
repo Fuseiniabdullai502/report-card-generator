@@ -21,8 +21,19 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Send, UserPlus, CheckCircle } from 'lucide-react';
+import { Loader2, Send, UserPlus, CheckCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { deleteInviteAction } from '@/app/actions';
 
 interface UserData {
   id: string;
@@ -46,6 +57,8 @@ export default function UserManagement() {
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [inviteToDelete, setInviteToDelete] = useState<InviteData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -145,91 +158,141 @@ export default function UserManagement() {
     }
   };
 
+  const handleDeleteInvite = async () => {
+    if (!inviteToDelete) return;
+
+    setIsDeleting(true);
+    const result = await deleteInviteAction({ inviteId: inviteToDelete.id });
+
+    if (result.success) {
+      toast({
+        title: 'Invite Deleted',
+        description: `The invite for ${inviteToDelete.email} has been removed.`,
+      });
+    } else {
+      toast({
+        title: 'Deletion Failed',
+        description: result.message,
+        variant: 'destructive',
+      });
+    }
+    setIsDeleting(false);
+    setInviteToDelete(null); // This will also close the dialog
+  };
 
   return (
-    <div className="grid gap-8 md:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserPlus /> Authorize New User
-          </CardTitle>
-          <CardDescription>
-            Enter an email address to authorize a new user. You must then notify them yourself so they can visit the registration page to create an account. No email is sent from this system.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSendInvite}>
-          <CardContent>
-            <Input
-              name="email"
-              type="email"
-              placeholder="teacher@school.com"
-              required
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-            />
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={isSendingInvite}>
-              {isSendingInvite ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2" />}
-              Authorize User
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+    <>
+      <div className="grid gap-8 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus /> Authorize New User
+            </CardTitle>
+            <CardDescription>
+              Enter an email address to authorize a new user. You must then notify them yourself so they can visit the registration page to create an account. No email is sent from this system.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSendInvite}>
+            <CardContent>
+              <Input
+                name="email"
+                type="email"
+                placeholder="teacher@school.com"
+                required
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" disabled={isSendingInvite}>
+                {isSendingInvite ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2" />}
+                Authorize User
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>User & Invite Status</CardTitle>
-          <CardDescription>List of all registered users and pending authorizations.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Status / Role</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell>{u.email}</TableCell>
-                    <TableCell
-                      className={`capitalize font-semibold ${
-                        u.role === 'admin' ? 'text-blue-600' : 'text-green-600'
-                      }`}
-                    >
-                      {u.role}
-                    </TableCell>
+        <Card>
+          <CardHeader>
+            <CardTitle>User & Invite Status</CardTitle>
+            <CardDescription>List of all registered users and pending authorizations.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status / Role</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-                {invites
-                  .filter((i) => i.status === 'pending')
-                  .map((invite) => (
-                    <TableRow key={invite.id}>
-                      <TableCell>{invite.email}</TableCell>
-                      <TableCell className="capitalize italic text-yellow-600">
-                        Pending Authorization
+                </TableHeader>
+                <TableBody>
+                  {users.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell>{u.email}</TableCell>
+                      <TableCell
+                        className={`capitalize font-semibold ${
+                          u.role === 'admin' ? 'text-blue-600' : 'text-green-600'
+                        }`}
+                      >
+                        {u.role}
                       </TableCell>
+                      <TableCell />
                     </TableRow>
                   ))}
-                {users.length === 0 && invites.filter((i) => i.status === 'pending').length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={2} className="text-center text-muted-foreground">
-                      No users or pending authorizations found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                  {invites
+                    .filter((i) => i.status === 'pending')
+                    .map((invite) => (
+                      <TableRow key={invite.id}>
+                        <TableCell>{invite.email}</TableCell>
+                        <TableCell className="capitalize italic text-yellow-600">
+                          Pending Authorization
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  {users.length === 0 && invites.filter((i) => i.status === 'pending').length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center text-muted-foreground">
+                        No users or pending authorizations found.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      
+      <AlertDialog open={!!inviteToDelete} onOpenChange={(open) => !open && setInviteToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the invite
+              for <strong>{inviteToDelete?.email}</strong> and they will not be able to register.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setInviteToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteInvite} disabled={isDeleting}>
+              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

@@ -19,7 +19,7 @@ import {
 } from '@/ai/flows/generate-school-insights-flow';
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 
@@ -300,6 +300,32 @@ export async function registerUserAction(data: {
       errorMessage = error.message;
     }
     
+    return { success: false, message: errorMessage };
+  }
+}
+
+// Action for deleting an invite
+const DeleteInviteActionInputSchema = z.object({
+  inviteId: z.string().min(1, 'Invite ID is required.'),
+});
+
+export async function deleteInviteAction(
+  data: { inviteId: string }
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { inviteId } = DeleteInviteActionInputSchema.parse(data);
+    
+    await deleteDoc(doc(db, 'invites', inviteId));
+    
+    return { success: true, message: 'Invite successfully deleted.' };
+  } catch (error: any) {
+    console.error('Error deleting invite:', error);
+    let errorMessage = 'An unexpected error occurred while deleting the invite.';
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for deleting invite: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
     return { success: false, message: errorMessage };
   }
 }
