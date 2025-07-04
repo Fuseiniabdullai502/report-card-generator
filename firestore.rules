@@ -9,8 +9,11 @@ service cloud.firestore {
       // Explicitly allow get (single doc) and list (queries) for anyone.
       allow get, list: if true;
       
-      // Only admins can write (create, update, delete) invites.
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Only admins can create or update invites.
+      allow create, update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      
+      // Explicitly allow admins to delete invites. This resolves the permission error.
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Secure the users collection.
