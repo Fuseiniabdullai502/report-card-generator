@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useMemo, useState, useTransition } from 'react';
@@ -440,7 +439,7 @@ export default function ClassPerformanceDashboard({
         
         <div
           data-testid="dashboard-inner-scroll-container"
-          className="flex-1 min-h-[80vh] overflow-y-auto overflow-x-auto p-6 space-y-6"
+          className="flex-1 max-h-none overflow-visible p-6 space-y-6 print:overflow-visible print:h-auto"
         >
             <div className="dashboard-print-header">
                 <h2 className="text-xl font-bold">Class Performance Dashboard: {selectedClass} ({mostRecentTerm})</h2>
