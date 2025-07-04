@@ -581,6 +581,15 @@ function AppContent({ user }: { user: CustomUser }) {
     return currentEditingReport.academicTerm || "Term Summary";
   }, [filteredReports, currentEditingReport.academicTerm, reportsCount]);
 
+  const academicYearForDashboard = useMemo(() => {
+    if (reportsCount > 0) {
+      const uniqueYears = new Set(filteredReports.map(r => r.academicYear).filter(Boolean));
+      if (uniqueYears.size === 1) return uniqueYears.values().next().value;
+      return "Multiple Years";
+    }
+    return currentEditingReport.academicYear || "Academic Year";
+  }, [filteredReports, currentEditingReport.academicYear, reportsCount]);
+
  const handleImportStudents = (selectedStudentNames: string[], destinationClass: string) => {
     if (selectedStudentNames.length === 0 || !destinationClass) {
       toast({ title: "Import Error", description: "No students selected or destination class missing.", variant: "destructive" });
@@ -1019,6 +1028,7 @@ function AppContent({ user }: { user: CustomUser }) {
             availableClasses={allFilterOptions.classes.filter(c => c !== 'all')}
             initialClassName={initialClassForDashboard}
             schoolNameProp={schoolNameForDashboard}
+            academicYearProp={academicYearForDashboard}
         />
     )}
     {isSchoolDashboardOpen && (
@@ -1027,6 +1037,7 @@ function AppContent({ user }: { user: CustomUser }) {
             onOpenChange={setIsSchoolDashboardOpen}
             allReports={filteredReports}
             schoolNameProp={schoolNameForDashboard}
+            academicYearProp={academicYearForDashboard}
         />
     )}
     {isImportStudentsDialogOpen && (

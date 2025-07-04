@@ -32,6 +32,7 @@ interface ClassPerformanceDashboardProps {
   availableClasses: string[];
   initialClassName: string;
   schoolNameProp: string;
+  academicYearProp: string;
 }
 
 interface SubjectPerformanceStatForUI {
@@ -68,6 +69,7 @@ export default function ClassPerformanceDashboard({
   availableClasses,
   initialClassName,
   schoolNameProp,
+  academicYearProp,
 }: ClassPerformanceDashboardProps) {
   const [selectedClass, setSelectedClass] = useState(initialClassName);
   const [classStats, setClassStats] = useState<ClassStatistics | null>(null);
@@ -445,8 +447,8 @@ export default function ClassPerformanceDashboard({
           className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6"
         >
             <div className="dashboard-print-header">
-                <h2 className="text-xl font-bold">{schoolNameProp} - Class Performance: {selectedClass} ({mostRecentTerm})</h2>
-                <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
+                <h2 className="text-xl font-bold">{schoolNameProp} - Class Performance: {selectedClass}</h2>
+                <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
             </div>
 
             {(isLoadingStats && !classStats) && (

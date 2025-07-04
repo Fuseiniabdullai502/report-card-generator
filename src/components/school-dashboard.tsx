@@ -28,6 +28,7 @@ interface SchoolPerformanceDashboardProps {
   onOpenChange: (isOpen: boolean) => void;
   allReports: ReportData[];
   schoolNameProp: string;
+  academicYearProp: string;
 }
 
 interface HistoricalSchoolTermData {
@@ -51,6 +52,7 @@ export default function SchoolPerformanceDashboard({
   onOpenChange,
   allReports,
   schoolNameProp,
+  academicYearProp,
 }: SchoolPerformanceDashboardProps) {
   const [schoolStats, setSchoolStats] = useState<SchoolStatistics | null>(null);
   const [aiSchoolAdvice, setAiSchoolAdvice] = useState<GenerateSchoolInsightsOutput | null>(null);
@@ -333,8 +335,8 @@ export default function SchoolPerformanceDashboard({
           className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-6 space-y-6"
         >
             <div className="school-dashboard-print-header">
-                <h2 className="text-xl font-bold">{schoolNameProp} - School Performance Dashboard ({mostRecentTerm})</h2>
-                <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
+                <h2 className="text-xl font-bold">{schoolNameProp} - School Performance Dashboard</h2>
+                <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
             </div>
 
             {(isLoadingStats && !schoolStats) && (
