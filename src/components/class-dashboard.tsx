@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useMemo, useState, useTransition } from 'react';
@@ -259,7 +260,7 @@ export default function ClassPerformanceDashboard({
   }, [isOpen, classStats, selectedClass, mostRecentTerm, toast]);
 
   const handlePrint = () => {
-    if (!classStats || reportsForClass.length === 0) {
+    if (reportsForClass.length === 0) {
       toast({
         title: "Nothing to Print",
         description: "Class dashboard data is not available.",
@@ -411,7 +412,7 @@ export default function ClassPerformanceDashboard({
         id="class-dashboard-dialog-content"
         className="max-w-4xl w-[90vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden"
       >
-        <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10 no-print">
+        <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10 dialog-header-print-hide">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
               <BarChart3 className="mr-3 h-6 w-6" />
@@ -439,7 +440,7 @@ export default function ClassPerformanceDashboard({
         
         <div
           data-testid="dashboard-inner-scroll-container"
-          className="flex-1 max-h-none overflow-visible p-6 space-y-6 print:overflow-visible print:h-auto"
+          className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6"
         >
             <div className="dashboard-print-header">
                 <h2 className="text-xl font-bold">Class Performance Dashboard: {selectedClass} ({mostRecentTerm})</h2>
