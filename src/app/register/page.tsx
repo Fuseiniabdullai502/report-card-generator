@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { registerUserAction } from '@/app/actions';
+import { useToast } from "@/hooks/use-toast";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -21,6 +22,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
 
   const { user, loading: authLoading } = useAuth();
 
@@ -59,6 +61,10 @@ export default function RegisterPage() {
     const result = await registerUserAction({ email: email.trim().toLowerCase(), password });
 
     if (result.success) {
+      toast({
+        title: "Registration Complete",
+        description: result.message,
+      });
       // AuthProvider will pick up the new user state and their role.
       // Redirect to the main application page.
       router.push('/');

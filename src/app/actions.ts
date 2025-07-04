@@ -273,7 +273,7 @@ export async function registerUserAction(data: {
         }
     }
 
-    return { success: true, message: 'Registration successful!' };
+    return { success: true, message: 'Successfully registered! You will now be redirected.' };
 
   } catch (error: any) {
     console.error('Registration Error:', error);
