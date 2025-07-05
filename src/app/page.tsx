@@ -29,6 +29,7 @@ import { useRouter } from 'next/navigation';
 import type { CustomUser } from '@/components/auth-provider';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
+import { ghanaRegions, ghanaRegionsAndDistricts } from '@/lib/ghana-regions-districts';
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
@@ -99,7 +100,16 @@ function AppContent({ user }: { user: CustomUser }) {
   
   const router = useRouter();
 
-  const ghanaRegions = ["Ahafo", "Ashanti", "Bono", "Bono East", "Central", "Eastern", "Greater Accra", "North East", "Northern", "Oti", "Savannah", "Upper East", "Upper West", "Volta", "Western", "Western North"];
+  const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (sessionDefaults.region && typeof sessionDefaults.region === 'string') {
+        const districts = ghanaRegionsAndDistricts[sessionDefaults.region] || [];
+        setAvailableDistricts(districts.sort());
+    } else {
+        setAvailableDistricts([]);
+    }
+  }, [sessionDefaults.region]);
 
   // Generate options for filter dropdowns
   const allFilterOptions = useMemo(() => {
@@ -599,8 +609,17 @@ function AppContent({ user }: { user: CustomUser }) {
   };
 
   const handleSessionDefaultChange = (field: keyof typeof sessionDefaults, value: any) => {
-    setSessionDefaults(prev => ({ ...prev, [field]: value }));
-    setCurrentEditingReport(prev => ({...prev, [field]: value}));
+    const newDefaults = { ...sessionDefaults, [field]: value };
+    
+    if (field === 'region') {
+        const newRegion = value as string;
+        const districts = newRegion ? (ghanaRegionsAndDistricts[newRegion] || []) : [];
+        setAvailableDistricts(districts.sort());
+        newDefaults.district = ''; // Reset district when region changes
+    }
+    
+    setSessionDefaults(newDefaults);
+    setCurrentEditingReport(prev => ({...prev, ...newDefaults}));
   };
 
   const handleSessionImageUpload = (
@@ -847,7 +866,22 @@ function AppContent({ user }: { user: CustomUser }) {
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="sessionDistrict" className="text-sm font-medium">District/Municipal</Label>
-                    <Input id="sessionDistrict" value={sessionDefaults.district || ''} onChange={e => handleSessionDefaultChange('district', e.target.value)} placeholder="e.g., Tamale" />
+                    <Select 
+                        value={sessionDefaults.district || ''} 
+                        onValueChange={value => handleSessionDefaultChange('district', value)}
+                        disabled={!sessionDefaults.region || availableDistricts.length === 0}
+                    >
+                        <SelectTrigger id="sessionDistrict">
+                            <SelectValue placeholder="Select district" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableDistricts.length > 0 ? (
+                                availableDistricts.map(district => <SelectItem key={district} value={district}>{district}</SelectItem>)
+                            ) : (
+                                <SelectItem value="-" disabled>Select a region first</SelectItem>
+                            )}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="sessionCircuit" className="text-sm font-medium">Circuit</Label>
