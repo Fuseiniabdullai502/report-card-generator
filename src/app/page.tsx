@@ -356,7 +356,7 @@ function AppContent({ user }: { user: CustomUser }) {
   const handleClearAndReset = useCallback(() => {
     // First, update sessionDefaults with the latest info from the current form
     // This ensures that when we reset, we use the most recent session-like settings
-    const newDefaults = {
+    const newDefaults: Partial<ReportData> = {
       schoolName: currentEditingReport.schoolName,
       region: currentEditingReport.region,
       district: currentEditingReport.district,
@@ -1205,6 +1205,7 @@ function AppContent({ user }: { user: CustomUser }) {
             allReports={filteredReports}
             schoolNameProp={schoolNameForDashboard}
             academicYearProp={academicYearForDashboard}
+            userRole={user.role}
         />
     )}
     {isImportStudentsDialogOpen && (

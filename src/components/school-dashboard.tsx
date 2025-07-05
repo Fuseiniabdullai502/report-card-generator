@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader as ShadcnUITableHeader, TableRow } from '@/components/ui/table';
-import { Building, Users, TrendingUp, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, BookOpen, Sigma, History, RefreshCw } from 'lucide-react';
+import { Building, Users, TrendingUp, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, BookOpen, Sigma, History, RefreshCw, Trophy } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
 import { getAiSchoolInsightsAction } from '@/app/actions';
 import type { GenerateSchoolInsightsOutput, GenerateSchoolInsightsInput } from '@/ai/flows/generate-school-insights-flow';
@@ -29,6 +29,7 @@ interface SchoolPerformanceDashboardProps {
   allReports: ReportData[];
   schoolNameProp: string;
   academicYearProp: string;
+  userRole: 'admin' | 'user' | null;
 }
 
 interface HistoricalSchoolTermData {
@@ -47,12 +48,20 @@ interface SchoolStatistics {
   overallGenderStatsForSchoolUI: Array<{ gender: string; count: number; averageScore: number | null; }>;
 }
 
+interface SchoolRankData {
+    schoolName: string;
+    studentCount: number;
+    average: number;
+    rank: string;
+}
+
 export default function SchoolPerformanceDashboard({
   isOpen,
   onOpenChange,
   allReports,
   schoolNameProp,
   academicYearProp,
+  userRole,
 }: SchoolPerformanceDashboardProps) {
   const [schoolStats, setSchoolStats] = useState<SchoolStatistics | null>(null);
   const [aiSchoolAdvice, setAiSchoolAdvice] = useState<GenerateSchoolInsightsOutput | null>(null);
@@ -63,6 +72,7 @@ export default function SchoolPerformanceDashboard({
   
   const [mostRecentTerm, setMostRecentTerm] = useState<string>('');
   const [historicalData, setHistoricalData] = useState<HistoricalSchoolTermData[]>([]);
+  const [rankedSchools, setRankedSchools] = useState<SchoolRankData[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -128,6 +138,7 @@ export default function SchoolPerformanceDashboard({
       setAiError(null);
       setMostRecentTerm('');
       setHistoricalData([]);
+      setRankedSchools([]);
       return;
     }
 
@@ -173,7 +184,66 @@ export default function SchoolPerformanceDashboard({
         };
     });
     setHistoricalData(newHistoricalData);
-  }, [isOpen, allReports]); 
+
+    // School Ranking Logic for Admin
+    if (userRole === 'admin') {
+        const reportsBySchool = new Map<string, ReportData[]>();
+        allReports.forEach(report => {
+            const schoolName = report.schoolName?.trim();
+            if (schoolName) {
+              if (!reportsBySchool.has(schoolName)) {
+                reportsBySchool.set(schoolName, []);
+              }
+              reportsBySchool.get(schoolName)!.push(report);
+            }
+        });
+
+        const schoolPerformances = Array.from(reportsBySchool.entries()).map(([schoolName, schoolReports]) => {
+            const allAverages = schoolReports
+              .map(report => calculateOverallAverage(report.subjects))
+              .filter(avg => avg !== null) as number[];
+
+            const average = allAverages.length > 0
+              ? allAverages.reduce((sum, avg) => sum + avg, 0) / allAverages.length
+              : 0;
+
+            return {
+              schoolName,
+              studentCount: schoolReports.length,
+              average,
+            };
+        });
+
+        const sortedSchools = schoolPerformances
+            .sort((a, b) => b.average - a.average)
+            .map((school, index, arr) => {
+              const rankNumber = (index > 0 && school.average === arr[index - 1].average)
+                ? (arr[index - 1] as any).rankNumber
+                : index + 1;
+              return { ...school, rankNumber };
+            });
+        
+        const getOrdinalSuffix = (n: number): string => {
+            const s = ['th', 'st', 'nd', 'rd'];
+            const v = n % 100;
+            return s[(v - 20) % 10] || s[v] || s[0];
+        };
+
+        const finalRankedSchools = sortedSchools.map((school, index, arr) => {
+            const { rankNumber } = school;
+            const isTiedWithNext = index < arr.length - 1 && arr[index + 1].rankNumber === rankNumber;
+            const isTiedWithPrev = index > 0 && arr[index - 1].rankNumber === rankNumber;
+            const isTie = isTiedWithNext || isTiedWithPrev;
+            const rankString = `${isTie ? 'T-' : ''}${rankNumber}${getOrdinalSuffix(rankNumber)}`;
+            return { ...school, rank: rankString };
+        });
+
+        setRankedSchools(finalRankedSchools);
+    } else {
+        setRankedSchools([]);
+    }
+
+  }, [isOpen, allReports, userRole]); 
 
   useEffect(() => {
     if (isOpen && schoolStats) {
@@ -451,6 +521,42 @@ export default function SchoolPerformanceDashboard({
                                             <TableCell className="font-medium py-2 px-3">{cs.className}</TableCell>
                                             <TableCell className="text-center py-2 px-3">{cs.numberOfStudents}</TableCell>
                                             <TableCell className="text-center py-2 px-3">{cs.classAverage?.toFixed(1) || 'N/A'}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {userRole === 'admin' && rankedSchools.length > 1 && (
+                    <Card className="shadow-md">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
+                                <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
+                                School Performance Ranking
+                            </CardTitle>
+                            <CardDescription className="text-xs text-muted-foreground pt-1">
+                                Ranking of all schools in the system based on their overall student average.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <Table className="border rounded-md bg-card min-w-[500px]">
+                                <ShadcnUITableHeader className="bg-muted/50">
+                                    <TableRow>
+                                        <TableHead className="font-semibold py-2 px-3 w-[80px]">Rank</TableHead>
+                                        <TableHead className="font-semibold py-2 px-3">School Name</TableHead>
+                                        <TableHead className="text-center font-semibold py-2 px-3">Students</TableHead>
+                                        <TableHead className="text-right font-semibold py-2 px-3">Avg (%)</TableHead>
+                                    </TableRow>
+                                </ShadcnUITableHeader>
+                                <TableBody>
+                                    {rankedSchools.map(school => (
+                                        <TableRow key={school.schoolName}>
+                                            <TableCell className="font-bold text-lg py-2 px-3">{school.rank}</TableCell>
+                                            <TableCell className="font-medium py-2 px-3">{school.schoolName}</TableCell>
+                                            <TableCell className="text-center py-2 px-3">{school.studentCount}</TableCell>
+                                            <TableCell className="text-right font-semibold py-2 px-3">{school.average.toFixed(2)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
