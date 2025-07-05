@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -48,11 +49,21 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // The AuthProvider will now handle setting the role correctly on login.
-      // We just need to sign in here.
-      await signInWithEmailAndPassword(auth, email.toLowerCase(), password);
-      // The useEffect hook will handle the redirect once the AuthProvider updates the user state.
-      router.push('/'); 
+      const userCredential = await signInWithEmailAndPassword(auth, email.toLowerCase(), password);
+
+      // Check user status in Firestore before allowing login to proceed
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists() && userDocSnap.data().status === 'inactive') {
+        // User is deactivated, sign them out and show an error
+        await signOut(auth);
+        setError('This user account has been deactivated by an administrator.');
+        setIsLoading(false);
+        return;
+      }
+
+      router.push('/');
     } catch (err) {
       let errorMessage = 'An unknown error occurred during login.';
       if (err instanceof Error && (err as any).code) {

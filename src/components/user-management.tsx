@@ -20,6 +20,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -33,12 +35,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { deleteInviteAction } from '@/app/actions';
+import { deleteInviteAction, updateUserStatusAction } from '@/app/actions';
 
 interface UserData {
   id: string;
   email: string;
   role: 'admin' | 'user';
+  status: 'active' | 'inactive';
   createdAt: any;
 }
 
@@ -80,6 +83,7 @@ export default function UserManagement() {
           id: d.id,
           email: d.data().email ?? 'unknown',
           role: d.data().role ?? 'user',
+          status: d.data().status ?? 'active',
           createdAt: d.data().createdAt ?? null,
         }))
       );
@@ -194,6 +198,30 @@ export default function UserManagement() {
     setIsDeleting(false);
     setInviteToDelete(null); // This will also close the dialog
   };
+  
+  const handleStatusChange = async (userId: string, currentStatus: 'active' | 'inactive') => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    
+    // Optimistic UI update
+    setUsers(users => users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+
+    const result = await updateUserStatusAction({ userId, status: newStatus });
+
+    if (!result.success) {
+      toast({
+        title: 'Update Failed',
+        description: result.message,
+        variant: 'destructive',
+      });
+      // Revert UI on failure
+      setUsers(users => users.map(u => u.id === userId ? { ...u, status: currentStatus } : u));
+    } else {
+        toast({
+            title: 'Status Updated',
+            description: `User has been set to ${newStatus}.`,
+        });
+    }
+  };
 
   const totalUsers = users.length;
   const pendingInvitesCount = invites.filter(i => i.status === 'pending').length;
@@ -272,31 +300,50 @@ export default function UserManagement() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Email</TableHead>
-                    <TableHead>Status / Role</TableHead>
+                    <TableHead>Details</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.map((u) => (
                     <TableRow key={u.id}>
-                      <TableCell>{u.email}</TableCell>
-                      <TableCell
-                        className={`capitalize font-semibold ${
-                          u.role === 'admin' ? 'text-blue-600' : 'text-green-600'
-                        }`}
-                      >
-                        {u.role}
+                      <TableCell className="font-medium">{u.email}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col text-xs">
+                          <span className={`capitalize font-semibold ${u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>
+                            Role: {u.role}
+                          </span>
+                          <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>
+                            Status: {u.status}
+                          </span>
+                        </div>
                       </TableCell>
-                      <TableCell />
+                      <TableCell className="text-right">
+                        {u.role !== 'admin' ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <Label htmlFor={`switch-${u.id}`} className="text-xs">
+                              {u.status === 'active' ? 'Active' : 'Inactive'}
+                            </Label>
+                            <Switch
+                              id={`switch-${u.id}`}
+                              checked={u.status === 'active'}
+                              onCheckedChange={() => handleStatusChange(u.id, u.status)}
+                              aria-label={`Toggle status for ${u.email}`}
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Cannot modify</span>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                   {invites
                     .filter((i) => i.status === 'pending')
                     .map((invite) => (
                       <TableRow key={invite.id}>
-                        <TableCell>{invite.email}</TableCell>
-                        <TableCell className="capitalize italic text-yellow-600">
-                          Pending Authorization
+                        <TableCell className="font-medium">{invite.email}</TableCell>
+                        <TableCell className="italic text-yellow-600 text-sm">
+                          Pending Invite
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}>
@@ -306,7 +353,7 @@ export default function UserManagement() {
                         </TableCell>
                       </TableRow>
                     ))}
-                  {users.length === 0 && invites.filter((i) => i.status === 'pending').length === 0 && (
+                  {(users.length === 0 && invites.filter((i) => i.status === 'pending').length === 0) && (
                     <TableRow>
                       <TableCell colSpan={3} className="text-center text-muted-foreground">
                         No users or pending authorizations found.

@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 
 export interface CustomUser extends User {
   role: 'admin' | 'user' | null;
+  status: 'active' | 'inactive' | null;
 }
 
 interface AuthContextType {
@@ -34,42 +35,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userEmail = firebaseUser.email?.toLowerCase();
           
           let role: 'admin' | 'user' | null = 'user'; // Default role
+          let status: 'active' | 'inactive' | null = 'active'; // Default status
 
           if (adminEmail && userEmail === adminEmail) {
             // This is the designated admin user.
             role = 'admin';
-            // Self-heal: Ensure their Firestore document exists and has the correct role.
-            // This is safe to run on every load for the admin.
-            if (!userDocSnap.exists() || userDocSnap.data().role !== 'admin') {
+            status = 'active'; // Admins are always active
+            // Self-heal: Ensure their Firestore document exists and has the correct role and status.
+            if (!userDocSnap.exists() || userDocSnap.data().role !== 'admin' || userDocSnap.data().status !== 'active') {
               await setDoc(userDocRef, {
                 email: firebaseUser.email,
                 role: 'admin',
+                status: 'active',
                 createdAt: userDocSnap.exists() ? userDocSnap.data().createdAt : serverTimestamp(),
               }, { merge: true });
             }
           } else {
             // This is a regular user.
             if (userDocSnap.exists()) {
-              role = userDocSnap.data().role ?? 'user';
+              const userData = userDocSnap.data();
+              role = userData.role ?? 'user';
+              status = userData.status ?? 'active';
             } else {
-              // This can happen if a user was created in Auth but not in Firestore (e.g., incomplete registration).
-              // We will create a document for them to prevent errors.
-              console.warn(`User document for ${userEmail} not found. Creating one with default 'user' role.`);
+              // This can happen if a user was created in Auth but not in Firestore.
+              console.warn(`User document for ${userEmail} not found. Creating one with 'user' role and 'active' status.`);
               await setDoc(userDocRef, {
                   email: firebaseUser.email,
                   role: 'user',
+                  status: 'active',
                   createdAt: serverTimestamp(),
               }, { merge: true });
               role = 'user';
+              status = 'active';
             }
           }
           
-          console.log('📄 Firestore role:', role);
-          setUser({ ...firebaseUser, role });
+          console.log('📄 Firestore role:', role, 'Status:', status);
+          setUser({ ...firebaseUser, role, status });
 
         } catch (error) {
           console.error('Error in AuthProvider while fetching/setting user role:', error);
-          setUser({ ...firebaseUser, role: null }); // Fallback on error, user is logged in but has no role.
+          setUser({ ...firebaseUser, role: null, status: null }); // Fallback on error
         }
       } else {
         // User is not logged in.

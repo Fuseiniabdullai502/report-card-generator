@@ -19,7 +19,7 @@ import {
 } from '@/ai/flows/generate-school-insights-flow';
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 
@@ -259,6 +259,7 @@ export async function registerUserAction(data: {
       email: trimmedEmail,
       role: role,
       createdAt: serverTimestamp(),
+      status: 'active',
     });
 
     // If it was a regular user, update their invite to 'completed'
@@ -323,6 +324,34 @@ export async function deleteInviteAction(
     let errorMessage = 'An unexpected error occurred while deleting the invite.';
     if (error instanceof z.ZodError) {
       errorMessage = "Invalid input for deleting invite: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, message: errorMessage };
+  }
+}
+
+// Action for updating user status
+const UpdateUserStatusActionInputSchema = z.object({
+  userId: z.string().min(1, 'User ID is required.'),
+  status: z.enum(['active', 'inactive']),
+});
+
+export async function updateUserStatusAction(
+  data: { userId: string; status: 'active' | 'inactive' }
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { userId, status } = UpdateUserStatusActionInputSchema.parse(data);
+    
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, { status });
+    
+    return { success: true, message: `User status updated to ${status}.` };
+  } catch (error: any) {
+    console.error('Error updating user status:', error);
+    let errorMessage = 'An unexpected error occurred.';
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
     } else if (error.message) {
       errorMessage = error.message;
     }
