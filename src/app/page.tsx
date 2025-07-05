@@ -833,7 +833,7 @@ function AppContent({ user }: { user: CustomUser }) {
             <CardDescription className="text-xs">Set defaults for the current data entry session. These apply to all new reports.</CardDescription>
         </CardHeader>
         <CardContent className="p-2 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
                 <div className="space-y-1">
                     <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
                     <Input id="sessionRegion" value={sessionDefaults.region || ''} onChange={e => handleSessionDefaultChange('region', e.target.value)} placeholder="e.g., Northern" />
