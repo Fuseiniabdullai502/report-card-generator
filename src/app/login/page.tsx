@@ -51,12 +51,10 @@ export default function LoginPage() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email.toLowerCase(), password);
 
-      // Check user status in Firestore before allowing login to proceed
       const userDocRef = doc(db, 'users', userCredential.user.uid);
       const userDocSnap = await getDoc(userDocRef);
 
       if (userDocSnap.exists() && userDocSnap.data().status === 'inactive') {
-        // User is deactivated, sign them out and show an error
         await signOut(auth);
         setError('This user account has been deactivated by an administrator.');
         setIsLoading(false);
@@ -86,7 +84,7 @@ export default function LoginPage() {
       } else if (err instanceof Error) {
         errorMessage = err.message;
       }
-      console.error('Login Error:', err); // Helpful for debugging
+      console.error('Login Error:', err);
       setError(errorMessage);
     } finally {
       setIsLoading(false);
