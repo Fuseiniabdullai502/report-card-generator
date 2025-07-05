@@ -65,11 +65,9 @@ The Admin SDK is required for secure server actions like deactivating users and 
 
 ### Troubleshooting
 
-#### "Firebase Admin SDK initialization failed..." Error
+#### "Admin features are disabled..." or "PERMISSION_DENIED" Error
 
-If you see an error message that says **`Firebase Admin SDK initialization failed`** when you try to run the application or use an admin feature, it means your **Admin SDK Credentials are not set up correctly** for your environment. The application has shut down or disabled admin features to protect your data.
-
-This is a **configuration issue**, not a code bug. To fix it, you must provide the server with secure credentials.
+If you see an error message that says **`Admin features are disabled. The Firebase Admin SDK failed to initialize...`** when you try to use an admin feature, it means your **Admin SDK Credentials are not set up correctly** for your environment. This is a configuration issue, not a code bug. To fix it, you must provide the server with secure credentials.
 
 **To fix this for local development:**
 
