@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Send, UserPlus, CheckCircle, Trash2 } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -65,6 +65,15 @@ export default function UserManagement() {
     const usersQ = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
     const invitesQ = query(collection(db, 'invites'), orderBy('createdAt', 'desc'));
 
+    let usersLoaded = false;
+    let invitesLoaded = false;
+
+    const checkLoadingDone = () => {
+      if (usersLoaded && invitesLoaded) {
+        setIsLoading(false);
+      }
+    };
+
     const unsubUsers = onSnapshot(usersQ, (snap) => {
       setUsers(
         snap.docs.map((d) => ({
@@ -74,10 +83,12 @@ export default function UserManagement() {
           createdAt: d.data().createdAt ?? null,
         }))
       );
-      setIsLoading(false);
+      usersLoaded = true;
+      checkLoadingDone();
     }, (error) => {
       console.error("Error fetching users:", error);
-      setIsLoading(false);
+      usersLoaded = true;
+      checkLoadingDone();
     });
 
     const unsubInv = onSnapshot(invitesQ, (snap) => {
@@ -89,8 +100,12 @@ export default function UserManagement() {
           createdAt: d.data().createdAt ?? null,
         }))
       );
+      invitesLoaded = true;
+      checkLoadingDone();
     }, (error) => {
       console.error("Error fetching invites:", error);
+      invitesLoaded = true;
+      checkLoadingDone();
     });
 
     return () => {
@@ -180,8 +195,38 @@ export default function UserManagement() {
     setInviteToDelete(null); // This will also close the dialog
   };
 
+  const totalUsers = users.length;
+  const pendingInvitesCount = invites.filter(i => i.status === 'pending').length;
+
   return (
     <>
+      <div className="grid gap-4 md:grid-cols-2 mb-8">
+        <Card className="border-primary/50 shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-primary">Total Registered Users</CardTitle>
+            <Users className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent>
+            <div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : totalUsers}</div>
+            <p className="text-xs text-muted-foreground">
+                All users with access to the system.
+            </p>
+            </CardContent>
+        </Card>
+        <Card className="border-amber-500/50 shadow-lg hover:shadow-amber-500/20 transition-shadow duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-amber-600">Pending Invites</CardTitle>
+            <Hourglass className="h-5 w-5 text-amber-600" />
+            </CardHeader>
+            <CardContent>
+            <div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : pendingInvitesCount}</div>
+            <p className="text-xs text-muted-foreground">
+                Users authorized but not yet registered.
+            </p>
+            </CardContent>
+        </Card>
+      </div>
+      
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>
