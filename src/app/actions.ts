@@ -19,6 +19,7 @@ import {
 } from '@/ai/flows/generate-school-insights-flow';
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin'; // Import the admin db instance
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
@@ -305,7 +306,7 @@ export async function registerUserAction(data: {
   }
 }
 
-// Action for deleting an invite
+// Action for deleting an invite - NOW USES FIREBASE ADMIN SDK
 const DeleteInviteActionInputSchema = z.object({
   inviteId: z.string().min(1, 'Invite ID is required.'),
 });
@@ -316,7 +317,7 @@ export async function deleteInviteAction(
   try {
     const { inviteId } = DeleteInviteActionInputSchema.parse(data);
     
-    await deleteDoc(doc(db, 'invites', inviteId));
+    await adminDb.collection('invites').doc(inviteId).delete();
     
     return { success: true, message: 'Invite successfully deleted.' };
   } catch (error: any) {
@@ -331,7 +332,7 @@ export async function deleteInviteAction(
   }
 }
 
-// Action for updating user status
+// Action for updating user status - NOW USES FIREBASE ADMIN SDK
 const UpdateUserStatusActionInputSchema = z.object({
   userId: z.string().min(1, 'User ID is required.'),
   status: z.enum(['active', 'inactive']),
@@ -343,8 +344,8 @@ export async function updateUserStatusAction(
   try {
     const { userId, status } = UpdateUserStatusActionInputSchema.parse(data);
     
-    const userDocRef = doc(db, 'users', userId);
-    await updateDoc(userDocRef, { status });
+    const userDocRef = adminDb.collection('users').doc(userId);
+    await userDocRef.update({ status });
     
     return { success: true, message: `User status updated to ${status}.` };
   } catch (error: any) {

@@ -4,7 +4,7 @@ This is a Next.js application built in Firebase Studio that allows educators to 
 
 ## Getting Started
 
-To get started with development, you first need to set up your environment variables. This app requires keys for Google AI (for AI features) and Firebase (for database and user management).
+To get started with development, you first need to set up your environment variables. This app requires keys for Google AI (for AI features) and Firebase (for database, user management, and secure admin actions).
 
 ### Environment Setup
 
@@ -30,15 +30,30 @@ The AI features in this application are powered by Google's Gemini models throug
     GOOGLE_API_KEY="YOUR_API_KEY_HERE"
     ```
 
-#### Firebase Setup
+#### Firebase Setup (Client & Admin)
 
-The application uses Firebase for authentication and Firestore to save all report card and user data. You need to connect it to a Firebase project.
+The application uses Firebase for authentication and Firestore. You need to connect it to a Firebase project and provide two sets of credentials: one for the client-side app (browser) and one for the Admin SDK (server).
 
 1.  If you don't have one, [**create a Firebase project**](https://firebase.google.com/docs/web/setup#create-project).
-2.  In your project's dashboard, go to **Project Settings** (the gear icon) > **General** tab.
-3.  Scroll down to the "Your apps" section and click on the **Web** icon (`</>`) to register a new web app. If you already have a web app, you can use its configuration.
-4.  After registering, Firebase will show you a configuration object. Copy the values from this object into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file.
-5. In the Firebase console, go to **Build > Firestore Database** and click **Create database**. Start in **test mode** for easy setup. This will create the necessary collections (`reports`, `users`, `invites`) automatically when the app is run.
+2.  In the Firebase console, go to **Build > Firestore Database** and click **Create database**. Start in **test mode** for easy setup. This will create the necessary collections (`reports`, `users`, `invites`) automatically when the app is run.
+
+##### Step 1: Client SDK Credentials (for the browser)
+
+1.  In your project's dashboard, go to **Project Settings** (the gear icon) > **General** tab.
+2.  Scroll down to the "Your apps" section and click on the **Web** icon (`</>`) to register a new web app. If you already have a web app, you can use its configuration.
+3.  After registering, Firebase will show you a configuration object. Copy the values from this object into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file.
+
+##### Step 2: Admin SDK Credentials (for the server)
+
+The Admin SDK is required for secure server actions like deactivating users.
+
+1.  In the Firebase console, go to **Project Settings** > **Service accounts** tab.
+2.  Click the **"Generate new private key"** button. A JSON file will be downloaded.
+3.  Open the downloaded JSON file and copy the following values into your `.env` file:
+    *   `project_id` -> `FIREBASE_PROJECT_ID`
+    *   `client_email` -> `FIREBASE_CLIENT_EMAIL`
+    *   `private_key` -> `FIREBASE_PRIVATE_KEY`
+4.  **Important for `FIREBASE_PRIVATE_KEY`**: You must copy the entire key, including the `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` lines, and wrap the whole thing in double quotes (`"`).
 
 ### Running the Development Server
 
@@ -50,10 +65,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### How to Use the Invite System
+### How to Use the Invite & User Management System
 
 1.  Log in using the email you designated as the admin email.
 2.  You will see an "Admin Panel" button in the header. Click it to go to `/admin`.
-3.  On the admin page, enter the email address of a user you want to invite and click "Send Invite".
-4.  The invited user can now go to the `/register` page and create an account using their email address.
-5.  Users who have not been invited will not be able to register.
+3.  On the admin page, you can authorize new users by entering their email address.
+4.  Once authorized, the user can go to the `/register` page and create an account. Users who have not been authorized will not be able to register.
+5.  You can also activate or deactivate existing user accounts directly from the admin panel. Deactivated users will not be able to log in.
