@@ -41,7 +41,7 @@ The application uses Firebase for authentication and Firestore. You need to conn
 
 1.  In your project's dashboard, go to **Project Settings** (the gear icon) > **General** tab.
 2.  Scroll down to the "Your apps" section and click on the **Web** icon (`</>`) to register a new web app. If you already have a web app, you can use its configuration.
-3.  After registering, Firebase will show you a configuration object. Copy the values from this object into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file. This includes your `measurementId`.
+3.  After registering, Firebase will show you a configuration object. Copy the values from this object into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file. The keys you need from this object are `apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`, and `measurementId`.
 
 ##### Step 2: Admin SDK Credentials (for the server)
 
