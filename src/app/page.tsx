@@ -542,14 +542,31 @@ function AppContent({ user }: { user: CustomUser }) {
     handleResetToBlankForm(newSessionDefaults);
   };
   
-  const handleLoadReportForEditing = (reportToEdit: ReportData) => {
+  const handleLoadReportForEditing = useCallback((reportToEdit: ReportData) => {
     setCurrentEditingReport(reportToEdit);
+    
+    const newDefaults: Partial<ReportData> = {
+      schoolName: reportToEdit.schoolName,
+      region: reportToEdit.region,
+      district: reportToEdit.district,
+      circuit: reportToEdit.circuit,
+      schoolLogoDataUri: reportToEdit.schoolLogoDataUri,
+      className: reportToEdit.className,
+      academicYear: reportToEdit.academicYear,
+      academicTerm: reportToEdit.academicTerm,
+      selectedTemplateId: reportToEdit.selectedTemplateId,
+      totalSchoolDays: reportToEdit.totalSchoolDays,
+      headMasterSignatureDataUri: reportToEdit.headMasterSignatureDataUri,
+      instructorContact: reportToEdit.instructorContact,
+    };
+    setSessionDefaults(newDefaults);
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
     toast({
         title: `Editing Report for ${reportToEdit.studentName}`,
         description: "The report data has been loaded into the form.",
     });
-  };
+  }, [toast]);
 
   const handleLogout = async () => {
     try {
@@ -866,7 +883,7 @@ function AppContent({ user }: { user: CustomUser }) {
       <Card className="mb-8 p-4 no-print">
         <CardHeader className="p-2">
             <CardTitle className="text-lg flex items-center"><Users className="mr-2 h-5 w-5 text-primary"/>Session Controls</CardTitle>
-            <CardDescription className="text-xs">Set defaults for the current data entry session. These apply to all new reports.</CardDescription>
+            <CardDescription className="text-xs">These settings apply to the current report and are carried over for new entries.</CardDescription>
         </CardHeader>
         <CardContent className="p-2 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
