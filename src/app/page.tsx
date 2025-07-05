@@ -99,6 +99,8 @@ function AppContent({ user }: { user: CustomUser }) {
   
   const router = useRouter();
 
+  const ghanaRegions = ["Ahafo", "Ashanti", "Bono", "Bono East", "Central", "Eastern", "Greater Accra", "North East", "Northern", "Oti", "Savannah", "Upper East", "Upper West", "Volta", "Western", "Western North"];
+
   // Generate options for filter dropdowns
   const allFilterOptions = useMemo(() => {
     const schools = new Set<string>();
@@ -836,7 +838,12 @@ function AppContent({ user }: { user: CustomUser }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
                 <div className="space-y-1">
                     <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
-                    <Input id="sessionRegion" value={sessionDefaults.region || ''} onChange={e => handleSessionDefaultChange('region', e.target.value)} placeholder="e.g., Northern" />
+                    <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)}>
+                        <SelectTrigger id="sessionRegion"><SelectValue placeholder="Select region" /></SelectTrigger>
+                        <SelectContent>
+                            {ghanaRegions.map(region => <SelectItem key={region} value={region}>{region}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="sessionDistrict" className="text-sm font-medium">District/Municipal</Label>
