@@ -179,20 +179,12 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
               <table className="w-full text-xs">
                   <tbody>
                       <tr>
-                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Region:</td>
-                          <td className="text-gray-800 pr-4 pb-0.5 print:pb-0">{data.region || 'N/A'}</td>
-                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">District:</td>
-                          <td className="text-gray-800 pr-4 pb-0.5 print:pb-0">{data.district || 'N/A'}</td>
-                      </tr>
-                      <tr>
-                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Circuit:</td>
-                          <td className="text-gray-800 pr-4 pb-0.5 print:pb-0">{data.circuit || 'N/A'}</td>
-                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Class:</td>
-                          <td className="font-bold text-gray-800 pb-0.5 print:pb-0">{data.className || 'N/A'}</td>
-                      </tr>
-                      <tr>
                           <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Student Name:</td>
-                          <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0">{data.studentName || 'N/A'}</td>
+                          <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0" colSpan={3}>{data.studentName || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Class:</td>
+                          <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0">{data.className || 'N/A'}</td>
                           <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Gender:</td>
                           <td className="text-gray-800 pr-4 pb-0.5 print:pb-0">{data.gender || 'N/A'}</td>
                       </tr>
