@@ -41,18 +41,18 @@ The application uses Firebase for authentication and Firestore. You need to conn
 
 1.  In your project's dashboard, go to **Project Settings** (the gear icon) > **General** tab.
 2.  Scroll down to the "Your apps" section and click on the **Web** icon (`</>`) to register a new web app. If you already have a web app, you can use its configuration.
-3.  After registering, Firebase will show you a configuration object. Copy the values from this object into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file.
+3.  After registering, Firebase will show you a configuration object. Copy the values from this object into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file. This includes your `measurementId`.
 
 ##### Step 2: Admin SDK Credentials (for the server)
 
 The Admin SDK is required for secure server actions like deactivating users.
 
 1.  In the Firebase console, go to **Project Settings** > **Service accounts** tab.
-2.  Click the **"Generate new private key"** button. A JSON file will be downloaded.
-3.  Open the downloaded JSON file and copy the following values into your `.env` file:
-    *   `project_id` -> `FIREBASE_PROJECT_ID`
-    *   `client_email` -> `FIREBASE_CLIENT_EMAIL`
-    *   `private_key` -> `FIREBASE_PRIVATE_KEY`
+2.  Click the **"Generate new private key"** button. A JSON file will be downloaded to your computer.
+3.  Open this downloaded JSON file. You will need to copy three values from it into your `.env` file:
+    *   Find the `"project_id"` line and copy its value to `FIREBASE_PROJECT_ID`.
+    *   Find the `"client_email"` line and copy its value to `FIREBASE_CLIENT_EMAIL`. It will look like an email address.
+    *   Find the `"private_key"` line and copy its value to `FIREBASE_PRIVATE_KEY`.
 4.  **Important for `FIREBASE_PRIVATE_KEY`**: You must copy the entire key, including the `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` lines, and wrap the whole thing in double quotes (`"`).
 
 ### Troubleshooting
