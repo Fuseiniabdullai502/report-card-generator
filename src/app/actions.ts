@@ -19,7 +19,7 @@ import {
 } from '@/ai/flows/generate-school-insights-flow';
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
-import { adminDb } from '@/lib/firebase-admin'; // Import the admin db instance
+import admin from '@/lib/firebase-admin'; // Import the default admin instance
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
@@ -317,7 +317,7 @@ export async function deleteInviteAction(
   try {
     const { inviteId } = DeleteInviteActionInputSchema.parse(data);
     
-    await adminDb.collection('invites').doc(inviteId).delete();
+    await admin.firestore().collection('invites').doc(inviteId).delete();
     
     return { success: true, message: 'Invite successfully deleted.' };
   } catch (error: any) {
@@ -344,7 +344,7 @@ export async function updateUserStatusAction(
   try {
     const { userId, status } = UpdateUserStatusActionInputSchema.parse(data);
     
-    const userDocRef = adminDb.collection('users').doc(userId);
+    const userDocRef = admin.firestore().collection('users').doc(userId);
     await userDocRef.update({ status });
     
     return { success: true, message: `User status updated to ${status}.` };
