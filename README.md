@@ -55,6 +55,16 @@ The Admin SDK is required for secure server actions like deactivating users.
     *   `private_key` -> `FIREBASE_PRIVATE_KEY`
 4.  **Important for `FIREBASE_PRIVATE_KEY`**: You must copy the entire key, including the `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` lines, and wrap the whole thing in double quotes (`"`).
 
+### Troubleshooting
+
+#### "Admin features are disabled" or "PERMISSION_DENIED" Error
+
+If you see an error message like `"Admin features are disabled. The Firebase Admin SDK failed to initialize..."` when trying to deactivate a user or delete an invite, it means your **Admin SDK Credentials are not set up correctly** in your `.env` file.
+
+These powerful actions require a secure server environment. Please double-check that you have followed **Step 2: Admin SDK Credentials** above and that the `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, and `FIREBASE_PRIVATE_KEY` values in your `.env` file are present and correct.
+
+**The most common mistake is with the `FIREBASE_PRIVATE_KEY`**. Make sure you copy the entire key, including the `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` parts, and wrap the entire value in double quotes.
+
 ### Running the Development Server
 
 Once your environment is set up, you can run the development server:
