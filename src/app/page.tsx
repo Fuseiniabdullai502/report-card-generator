@@ -869,7 +869,7 @@ function AppContent({ user }: { user: CustomUser }) {
             <CardDescription className="text-xs">Set defaults for the current data entry session. These apply to all new reports.</CardDescription>
         </CardHeader>
         <CardContent className="p-2 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                     <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
                     <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)}>
@@ -914,7 +914,9 @@ function AppContent({ user }: { user: CustomUser }) {
                         ))}
                     </datalist>
                 </div>
-                <div className="space-y-1">
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                <div className="space-y-1 md:col-span-2">
                     <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
                     <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" />
                 </div>
