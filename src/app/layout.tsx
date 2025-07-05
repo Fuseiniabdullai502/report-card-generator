@@ -1,5 +1,5 @@
 
-import type {Metadata} from 'next';
+import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/theme-provider';
@@ -46,8 +46,6 @@ export const metadata: Metadata = {
     images: [OG_IMAGE_URL],
   },
 
-  viewport: 'minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover',
-
   robots: {
     index: true,
     follow: true,
@@ -65,6 +63,13 @@ export const metadata: Metadata = {
     title: APP_NAME,
     statusBarStyle: 'default', 
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  minimumScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
