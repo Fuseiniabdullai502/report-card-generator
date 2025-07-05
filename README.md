@@ -43,7 +43,7 @@ The application uses Firebase for authentication and Firestore. You need to conn
 
 ##### Step 2: Admin SDK Credentials (for the server)
 
-The Admin SDK is required for secure server actions like deactivating users and deleting invites. This setup supports two methods: a local file for development and an environment variable for production (e.g., Vercel, Firebase App Hosting).
+The Admin SDK is required for secure server actions like deactivating users and deleting invites. This setup supports a local file for development. For production, you would typically set the `GOOGLE_APPLICATION_CREDENTIALS` content as a single environment variable in your hosting provider's settings.
 
 **For Local Development:**
 
@@ -55,13 +55,6 @@ The Admin SDK is required for secure server actions like deactivating users and 
     GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json
     ```
 5.  The `.gitignore` file is already configured to prevent this sensitive file from being committed to your repository.
-
-**For Production (Vercel, etc.):**
-
-1.  Open the `firebase-service-account.json` file you downloaded.
-2.  Copy the **entire content** of the file.
-3.  In your deployment provider's dashboard (e.g., Vercel), create a new environment variable named `FIREBASE_SERVICE_ACCOUNT`.
-4.  Paste the entire JSON content as the value for this variable. The JSON must be a single line. If you copy from a formatted file, you might need to convert it to a single line. Most hosting providers handle this correctly.
 
 ### Troubleshooting
 
@@ -76,12 +69,7 @@ If you see an error message that says **`Admin features are disabled. The Fireba
 3.  Make sure you have placed this file in the **root directory** of this project.
 4.  Make sure the line `GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json` in your `.env` file is **uncommented** (the `#` is removed).
 
-**To fix this for production (e.g., Vercel):**
-
-1.  Make sure you have created an environment variable named `FIREBASE_SERVICE_ACCOUNT` in your hosting provider's settings.
-2.  Make sure its value is the **entire, single-line JSON content** from your `firebase-service-account.json` file.
-
-Once you have correctly configured either the local file or the production environment variable, restart your development server. The error will be resolved.
+Once you have correctly configured the local file, restart your development server. The error will be resolved.
 
 ### Running the Development Server
 
