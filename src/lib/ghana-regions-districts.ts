@@ -18,4 +18,9 @@ export const ghanaRegionsAndDistricts: Record<string, string[]> = {
     "Western North": ["Aowin Municipal", "Bibiani-Anhwiaso-Bekwai Municipal", "Bia East", "Bia West", "Bodi", "Juaboso", "Sefwi-Akontombra", "Sefwi-Wiawso Municipal", "Suaman"]
 };
 
-export const ghanaRegions = Object.keys(ghanaRegionsAndDistricts);
+export const ghanaRegions = Object.keys(ghanaRegionsAndDistricts).sort();
+
+export const ghanaDistrictsAndCircuits: Record<string, string[]> = {
+    "Ejura Sekyedumase Municipal": ["Ejura South", "Ejura East", "Ejura North", "Ejura West", "Ejura Central"],
+    // Other districts and their circuits can be added here in the future
+};

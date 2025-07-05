@@ -29,7 +29,7 @@ import { useRouter } from 'next/navigation';
 import type { CustomUser } from '@/components/auth-provider';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
-import { ghanaRegions, ghanaRegionsAndDistricts } from '@/lib/ghana-regions-districts';
+import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
@@ -101,6 +101,7 @@ function AppContent({ user }: { user: CustomUser }) {
   const router = useRouter();
 
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+  const [availableCircuits, setAvailableCircuits] = useState<string[]>([]);
 
   useEffect(() => {
     if (sessionDefaults.region && typeof sessionDefaults.region === 'string') {
@@ -110,6 +111,15 @@ function AppContent({ user }: { user: CustomUser }) {
         setAvailableDistricts([]);
     }
   }, [sessionDefaults.region]);
+  
+  useEffect(() => {
+    if (sessionDefaults.district && typeof sessionDefaults.district === 'string') {
+        const circuits = ghanaDistrictsAndCircuits[sessionDefaults.district] || [];
+        setAvailableCircuits(circuits.sort());
+    } else {
+        setAvailableCircuits([]);
+    }
+  }, [sessionDefaults.district]);
 
   // Generate options for filter dropdowns
   const allFilterOptions = useMemo(() => {
@@ -616,6 +626,11 @@ function AppContent({ user }: { user: CustomUser }) {
         const districts = newRegion ? (ghanaRegionsAndDistricts[newRegion] || []) : [];
         setAvailableDistricts(districts.sort());
         newDefaults.district = ''; // Reset district when region changes
+        newDefaults.circuit = ''; // Also reset circuit
+    }
+
+    if (field === 'district') {
+        newDefaults.circuit = ''; // Reset circuit when district changes
     }
     
     setSessionDefaults(newDefaults);
@@ -885,7 +900,19 @@ function AppContent({ user }: { user: CustomUser }) {
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="sessionCircuit" className="text-sm font-medium">Circuit</Label>
-                    <Input id="sessionCircuit" value={sessionDefaults.circuit || ''} onChange={e => handleSessionDefaultChange('circuit', e.target.value)} placeholder="e.g., Kalpohin" />
+                    <Input 
+                        id="sessionCircuit" 
+                        value={sessionDefaults.circuit || ''} 
+                        onChange={e => handleSessionDefaultChange('circuit', e.target.value)} 
+                        placeholder="e.g., Kalpohin"
+                        list="circuit-datalist"
+                        disabled={!sessionDefaults.district}
+                    />
+                    <datalist id="circuit-datalist">
+                        {availableCircuits.map(circuit => (
+                            <option key={circuit} value={circuit} />
+                        ))}
+                    </datalist>
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
