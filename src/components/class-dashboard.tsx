@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader as ShadcnUITableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, Users, TrendingUp, Percent, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, FolderDown, History, RefreshCw } from 'lucide-react';
+import { BarChart3, Users, TrendingUp, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, FolderDown, History, RefreshCw, Trophy } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
 import type { GenerateClassInsightsOutput, GenerateClassInsightsInput } from '@/ai/flows/generate-class-insights-flow';
@@ -73,6 +73,7 @@ export default function ClassPerformanceDashboard({
 }: ClassPerformanceDashboardProps) {
   const [selectedClass, setSelectedClass] = useState(initialClassName);
   const [classStats, setClassStats] = useState<ClassStatistics | null>(null);
+  const [rankedStudents, setRankedStudents] = useState<ReportData[]>([]);
   const [aiAdvice, setAiAdvice] = useState<GenerateClassInsightsOutput | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isLoadingAi, startAiTransition] = useTransition();
@@ -158,6 +159,7 @@ export default function ClassPerformanceDashboard({
       setClassStats(null);
       setMostRecentTerm('');
       setHistoricalData([]);
+      setRankedStudents([]);
       return;
     }
 
@@ -186,6 +188,9 @@ export default function ClassPerformanceDashboard({
     setMostRecentTerm(newMostRecentTerm);
     
     const reports = reportsByTerm.get(newMostRecentTerm) || [];
+    const sortedStudents = [...reports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
+    setRankedStudents(sortedStudents);
+
     const totalStudents = reports.length;
 
     const validOverallAverages = reports
@@ -500,6 +505,35 @@ export default function ClassPerformanceDashboard({
                         {classStats.overallClassAverage !== null ? `${classStats.overallClassAverage.toFixed(2)}%` : 'N/A'}
                       </p>
                     </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-md">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Trophy className="mr-2 h-5 w-5 text-yellow-500" />Student Ranking ({mostRecentTerm})</CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground pt-1">Students in this class ranked by their overall average for the term.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                      <Table className="border rounded-md min-w-[500px]">
+                          <ShadcnUITableHeader className="bg-muted/50">
+                              <TableRow>
+                                  <TableHead className="font-semibold w-[80px]">Rank</TableHead>
+                                  <TableHead className="font-semibold">Student Name</TableHead>
+                                  <TableHead className="text-right font-semibold">Average (%)</TableHead>
+                              </TableRow>
+                          </ShadcnUITableHeader>
+                          <TableBody>
+                              {rankedStudents.map((student) => (
+                                  <TableRow key={student.id}>
+                                      <TableCell className="font-bold text-lg">{student.rank || 'N/A'}</TableCell>
+                                      <TableCell>{student.studentName}</TableCell>
+                                      <TableCell className="text-right font-semibold">
+                                          {student.overallAverage !== undefined && student.overallAverage !== null ? student.overallAverage.toFixed(2) : 'N/A'}
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
                   </CardContent>
                 </Card>
 
