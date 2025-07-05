@@ -179,34 +179,44 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
               <table className="w-full text-xs">
                   <tbody>
                       <tr>
-                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Student Name:</td>
-                          <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0">{data.studentName || 'N/A'}</td>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Region:</td>
+                          <td className="text-gray-800 pr-4 pb-0.5 print:pb-0">{data.region || 'N/A'}</td>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">District:</td>
+                          <td className="text-gray-800 pr-4 pb-0.5 print:pb-0">{data.district || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Circuit:</td>
+                          <td className="text-gray-800 pr-4 pb-0.5 print:pb-0">{data.circuit || 'N/A'}</td>
                           <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Class:</td>
                           <td className="font-bold text-gray-800 pb-0.5 print:pb-0">{data.className || 'N/A'}</td>
                       </tr>
                       <tr>
+                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Student Name:</td>
+                          <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0">{data.studentName || 'N/A'}</td>
                           <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Gender:</td>
                           <td className="text-gray-800 pr-4 pb-0.5 print:pb-0">{data.gender || 'N/A'}</td>
+                      </tr>
+                      <tr>
                           <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Attendance:</td>
                           <td className="text-gray-800 pb-0.5 print:pb-0">{attendanceString}</td>
-                      </tr>
-                      <tr>
                           <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Position:</td>
                           <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0">{data.rank || 'N/A'}</td>
-                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Overall Avg:</td>
-                          <td className="font-bold text-gray-800 pb-0.5 print:pb-0">{data.overallAverage !== undefined && data.overallAverage !== null ? `${data.overallAverage.toFixed(2)}%` : 'N/A'}</td>
                       </tr>
-                      {isPromotionStatusRelevant && data.promotionStatus && (
                       <tr>
-                          <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Promotion:</td>
-                          <td className="font-bold text-gray-800 pb-0.5 print:pb-0" colSpan={3}>
-                            <div className="flex items-center gap-2">
-                              {data.promotionStatus === 'Promoted' && <Award className="h-4 w-4 text-green-600" />}
-                              <span>{data.promotionStatus}</span>
-                            </div>
-                          </td>
+                           <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Overall Avg:</td>
+                           <td className="font-bold text-gray-800 pb-0.5 print:pb-0">{data.overallAverage !== undefined && data.overallAverage !== null ? `${data.overallAverage.toFixed(2)}%` : 'N/A'}</td>
+                          {isPromotionStatusRelevant && data.promotionStatus ? (
+                          <>
+                              <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Promotion:</td>
+                              <td className="font-bold text-gray-800 pb-0.5 print:pb-0">
+                                <div className="flex items-center gap-2">
+                                  {data.promotionStatus === 'Promoted' && <Award className="h-4 w-4 text-green-600" />}
+                                  <span>{data.promotionStatus}</span>
+                                </div>
+                              </td>
+                          </>
+                          ) : <td colSpan={2}></td>}
                       </tr>
-                      )}
                   </tbody>
               </table>
           </div>

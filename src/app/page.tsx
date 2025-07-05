@@ -336,6 +336,9 @@ function AppContent({ user }: { user: CustomUser }) {
     // This ensures that when we reset, we use the most recent session-like settings
     const newDefaults = {
       schoolName: currentEditingReport.schoolName,
+      region: currentEditingReport.region,
+      district: currentEditingReport.district,
+      circuit: currentEditingReport.circuit,
       schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
       className: currentEditingReport.className,
       academicYear: currentEditingReport.academicYear,
@@ -417,6 +420,9 @@ function AppContent({ user }: { user: CustomUser }) {
       className: formDataFromForm.className || '',
       gender: formDataFromForm.gender,
       schoolName: formDataFromForm.schoolName || '',
+      region: formDataFromForm.region || '',
+      district: formDataFromForm.district || '',
+      circuit: formDataFromForm.circuit || '',
       schoolLogoDataUri: formDataFromForm.schoolLogoDataUri || null,
       academicYear: formDataFromForm.academicYear || '',
       academicTerm: formDataFromForm.academicTerm || '',
@@ -497,6 +503,9 @@ function AppContent({ user }: { user: CustomUser }) {
 
     const newSessionDefaults = {
       schoolName: reportToSaveForFirestore.schoolName,
+      region: reportToSaveForFirestore.region,
+      district: reportToSaveForFirestore.district,
+      circuit: reportToSaveForFirestore.circuit,
       schoolLogoDataUri: reportToSaveForFirestore.schoolLogoDataUri,
       className: reportToSaveForFirestore.className,
       academicYear: reportToSaveForFirestore.academicYear,
@@ -668,6 +677,9 @@ function AppContent({ user }: { user: CustomUser }) {
             studentPhotoDataUri: profile.studentPhotoDataUri ?? null,
             className: destinationClass,
             schoolName: sessionDefaults.schoolName ?? defaultReportData.schoolName,
+            region: sessionDefaults.region ?? defaultReportData.region,
+            district: sessionDefaults.district ?? defaultReportData.district,
+            circuit: sessionDefaults.circuit ?? defaultReportData.circuit,
             schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? null,
             academicYear: sessionDefaults.academicYear ?? defaultReportData.academicYear,
             academicTerm: sessionDefaults.academicTerm ?? defaultReportData.academicTerm,
@@ -698,6 +710,9 @@ function AppContent({ user }: { user: CustomUser }) {
 
             setCurrentEditingReport({
                 schoolName: sessionDefaults.schoolName ?? studentSpecificDefaultsForImport.schoolName,
+                region: sessionDefaults.region ?? studentSpecificDefaultsForImport.region,
+                district: sessionDefaults.district ?? studentSpecificDefaultsForImport.district,
+                circuit: sessionDefaults.circuit ?? studentSpecificDefaultsForImport.circuit,
                 schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? studentSpecificDefaultsForImport.schoolLogoDataUri,
                 className: destinationClass,
                 academicYear: sessionDefaults.academicYear ?? studentSpecificDefaultsForImport.academicYear,
@@ -818,7 +833,19 @@ function AppContent({ user }: { user: CustomUser }) {
             <CardDescription className="text-xs">Set defaults for the current data entry session. These apply to all new reports.</CardDescription>
         </CardHeader>
         <CardContent className="p-2 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                <div className="space-y-1">
+                    <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
+                    <Input id="sessionRegion" value={sessionDefaults.region || ''} onChange={e => handleSessionDefaultChange('region', e.target.value)} placeholder="e.g., Northern" />
+                </div>
+                <div className="space-y-1">
+                    <Label htmlFor="sessionDistrict" className="text-sm font-medium">District/Municipal</Label>
+                    <Input id="sessionDistrict" value={sessionDefaults.district || ''} onChange={e => handleSessionDefaultChange('district', e.target.value)} placeholder="e.g., Tamale" />
+                </div>
+                <div className="space-y-1">
+                    <Label htmlFor="sessionCircuit" className="text-sm font-medium">Circuit</Label>
+                    <Input id="sessionCircuit" value={sessionDefaults.circuit || ''} onChange={e => handleSessionDefaultChange('circuit', e.target.value)} placeholder="e.g., Kalpohin" />
+                </div>
                 <div className="space-y-1">
                     <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
                     <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" />

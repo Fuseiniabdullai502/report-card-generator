@@ -27,6 +27,9 @@ export const ReportDataSchema = z.object({
   className: z.string().min(1, 'Class name is required'),
   gender: z.string().min(1, 'Gender is required'),
   schoolName: z.string().optional(),
+  region: z.string().optional(),
+  district: z.string().optional(),
+  circuit: z.string().optional(),
   schoolLogoDataUri: z.union([z.string(), z.null(), z.literal('')])
     .optional()
     .describe("A data URI of the school's logo."),
@@ -91,6 +94,9 @@ export const defaultReportData: Omit<
   className: '',
   gender: '',
   schoolName: '',
+  region: '',
+  district: '',
+  circuit: '',
   schoolLogoDataUri: undefined,
   academicYear: '',
   academicTerm: undefined,
