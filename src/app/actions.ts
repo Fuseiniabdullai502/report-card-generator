@@ -582,7 +582,7 @@ export async function getUsersAction(currentUser: {
       usersQuery = usersQuery.where('schoolName', '==', currentUser.schoolName).where('role', '==', 'user');
     }
 
-    const usersSnapshot = await usersQuery.orderBy('createdAt', 'desc').get();
+    const usersSnapshot = await usersQuery.get();
     
     const users = usersSnapshot.docs
       .filter(doc => doc.id !== currentUser.id)
@@ -600,6 +600,11 @@ export async function getUsersAction(currentUser: {
           classNames: data.classNames,
           createdAt: data.createdAt?.toDate().toISOString() ?? null,
         };
+      })
+      .sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
       });
       
     return { success: true, users: users as UserForAdmin[] };
@@ -618,8 +623,7 @@ export async function getInvitesAction(currentUser: {
     }
 
   try {
-    // For now, admins see all invites. This could be scoped down later if needed.
-    const invitesSnapshot = await admin.firestore().collection('invites').orderBy('createdAt', 'desc').get();
+    const invitesSnapshot = await admin.firestore().collection('invites').get();
     const invites = invitesSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -634,7 +638,13 @@ export async function getInvitesAction(currentUser: {
         classNames: data.classNames,
         createdAt: data.createdAt?.toDate().toISOString() ?? null,
       };
+    })
+    .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
     });
+
     return { success: true, invites: invites as InviteForAdmin[] };
   } catch (error: any) {
     console.error('Error fetching invites via server action:', error);
