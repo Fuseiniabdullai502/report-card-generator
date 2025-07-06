@@ -308,6 +308,65 @@ export async function registerUserAction(data: {
   }
 }
 
+// Action for authorizing a user (creating an invite) - NOW USES FIREBASE ADMIN SDK
+const AuthorizeUserActionInputSchema = z.object({
+  email: z.string().email('Please enter a valid email address.'),
+});
+
+export async function authorizeUserAction(
+  data: z.infer<typeof AuthorizeUserActionInputSchema>
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { email } = AuthorizeUserActionInputSchema.parse(data);
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check if user already exists in Firebase Auth
+    try {
+        await admin.auth().getUserByEmail(normalizedEmail);
+        // If the above line doesn't throw, a user with this email already exists in Auth.
+        return { success: false, message: `A user with the email ${normalizedEmail} is already registered.` };
+    } catch (error: any) {
+        if (error.code !== 'auth/user-not-found') {
+            // An error other than "user not found" occurred, so we should re-throw it.
+            console.error("Error checking for existing user in Auth:", error);
+            throw new Error('An unexpected error occurred while checking for an existing user.');
+        }
+        // If the error code is 'auth/user-not-found', it means the email is available to be invited, which is what we want.
+    }
+
+    // Check for existing pending invite in Firestore
+    const invitesRef = admin.firestore().collection('invites');
+    const inviteQuery = invitesRef
+      .where('email', '==', normalizedEmail)
+      .where('status', '==', 'pending');
+    const inviteSnapshot = await inviteQuery.get();
+    
+    if (!inviteSnapshot.empty) {
+      return { success: false, message: `A pending invite for ${normalizedEmail} already exists.` };
+    }
+
+    // Create the invite document
+    await invitesRef.add({
+      email: normalizedEmail,
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return { success: true, message: `User with email ${normalizedEmail} has been authorized. They can now register.` };
+
+  } catch (error: any) {
+    console.error('Error in authorizeUserAction:', error);
+    let errorMessage = 'An unexpected error occurred during authorization.';
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for authorizing user: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, message: errorMessage };
+  }
+}
+
+
 // Action for deleting an invite - NOW USES FIREBASE ADMIN SDK
 const DeleteInviteActionInputSchema = z.object({
   inviteId: z.string().min(1, 'Invite ID is required.'),

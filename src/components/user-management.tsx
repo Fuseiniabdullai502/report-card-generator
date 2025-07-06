@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { deleteInviteAction, updateUserStatusAction, updateUserRoleAndScopeAction } from '@/app/actions';
+import { deleteInviteAction, updateUserStatusAction, updateUserRoleAndScopeAction, authorizeUserAction } from '@/app/actions';
 import { ghanaRegionsAndDistricts } from '@/lib/ghana-regions-districts';
 
 interface UserData {
@@ -144,52 +144,32 @@ export default function UserManagement() {
     setIsSendingInvite(true);
 
     const email = inviteEmail.trim().toLowerCase();
+    
+    // Basic client-side check for better UX
     if (!email || !email.includes('@')) {
       toast({ title: 'Invalid Email', description: 'Please enter a valid email address.', variant: 'destructive' });
       setIsSendingInvite(false);
       return;
     }
 
-    try {
-      const usersRef = collection(db, 'users');
-      const userQuery = query(usersRef, where('email', '==', email));
-      const userSnapshot = await getDocs(userQuery);
-      if (!userSnapshot.empty) {
-        toast({ title: 'User Exists', description: `A user with the email ${email} is already registered.`, variant: 'destructive' });
-        setIsSendingInvite(false);
-        return;
-      }
-      
-      const invitesRef = collection(db, 'invites');
-      const inviteQuery = query(invitesRef, where('email', '==', email), where('status', '==', 'pending'));
-      const inviteSnapshot = await getDocs(inviteQuery);
-      if (!inviteSnapshot.empty) {
-        toast({ title: 'Invite Exists', description: `A pending invite for ${email} already exists.`, variant: 'destructive' });
-        setIsSendingInvite(false);
-        return;
-      }
-      
-      await addDoc(collection(db, 'invites'), {
-        email,
-        status: 'pending',
-        createdAt: serverTimestamp(),
-      });
+    // Call the secure server action
+    const result = await authorizeUserAction({ email });
 
+    if (result.success) {
       toast({
         title: 'User Authorized',
-        description: `User with email ${email} has been authorized. You can now ask them to register.`,
+        description: result.message,
       });
       setInviteEmail('');
-    } catch (error) {
-      console.error('Error sending invite:', error);
+    } else {
       toast({
         title: 'Authorization Failed',
-        description: 'Failed to authorize the user. Please check your Firestore security rules and internet connection.',
+        description: result.message,
         variant: 'destructive',
       });
-    } finally {
-      setIsSendingInvite(false);
     }
+
+    setIsSendingInvite(false);
   };
 
   const handleDeleteInvite = async () => {
