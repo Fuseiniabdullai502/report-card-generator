@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useMemo, useState, useTransition, useCallback } from 'react';
@@ -29,7 +28,7 @@ interface SchoolPerformanceDashboardProps {
   allReports: ReportData[];
   schoolNameProp: string;
   academicYearProp: string;
-  userRole: 'admin' | 'user' | null;
+  userRole: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
 }
 
 interface HistoricalSchoolTermData {
@@ -185,8 +184,8 @@ export default function SchoolPerformanceDashboard({
     });
     setHistoricalData(newHistoricalData);
 
-    // School Ranking Logic for Admin
-    if (userRole === 'admin') {
+    // School Ranking Logic for Super Admin
+    if (userRole === 'super-admin') {
         const reportsBySchool = new Map<string, ReportData[]>();
         allReports.forEach(report => {
             const schoolName = report.schoolName?.trim();
@@ -529,7 +528,7 @@ export default function SchoolPerformanceDashboard({
                     </Card>
                 )}
 
-                {userRole === 'admin' && rankedSchools.length > 1 && (
+                {userRole === 'super-admin' && rankedSchools.length > 1 && (
                     <Card className="shadow-md">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
@@ -537,7 +536,7 @@ export default function SchoolPerformanceDashboard({
                                 School Performance Ranking
                             </CardTitle>
                             <CardDescription className="text-xs text-muted-foreground pt-1">
-                                Ranking of all schools in the system based on their overall student average.
+                                Ranking of all schools in the system based on their overall student average for the most recent term.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-4">

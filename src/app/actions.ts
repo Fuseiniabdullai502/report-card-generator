@@ -225,11 +225,11 @@ export async function registerUserAction(data: {
   const trimmedEmail = email.trim().toLowerCase();
 
   try {
-    const isAdminRegistering =
+    const isSuperAdminRegistering =
       trimmedEmail === process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
 
-    // For non-admins, check for a pending invite first.
-    if (!isAdminRegistering) {
+    // For non-super-admins, check for a pending invite first.
+    if (!isSuperAdminRegistering) {
       const invitesRef = collection(db, 'invites');
       const inviteQuery = query(
         invitesRef,
@@ -253,18 +253,20 @@ export async function registerUserAction(data: {
       password
     );
     const newUser = userCredential.user;
-    const role = isAdminRegistering ? 'admin' : 'user';
+    const role = isSuperAdminRegistering ? 'super-admin' : 'user';
 
     // Create user document in Firestore
     await setDoc(doc(db, 'users', newUser.uid), {
       email: trimmedEmail,
       role: role,
-      createdAt: serverTimestamp(),
       status: 'active',
+      district: null,
+      schoolName: null,
+      createdAt: serverTimestamp(),
     });
 
     // If it was a regular user, update their invite to 'completed'
-    if (!isAdminRegistering) {
+    if (!isSuperAdminRegistering) {
         const invitesRef = collection(db, 'invites');
         const q = query(invitesRef, where('email', '==', trimmedEmail), where('status', '==', 'pending'));
         const querySnapshot = await getDocs(q);
@@ -353,6 +355,53 @@ export async function updateUserStatusAction(
     let errorMessage = 'An unexpected error occurred.';
     if (error instanceof z.ZodError) {
       errorMessage = "Invalid input: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, message: errorMessage };
+  }
+}
+
+
+// Action for updating a user's role and scope
+const UpdateUserRoleAndScopeActionSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  role: z.enum(['big-admin', 'admin', 'user']),
+  district: z.string().optional().nullable(),
+  schoolName: z.string().optional().nullable(),
+});
+
+export async function updateUserRoleAndScopeAction(
+  data: z.infer<typeof UpdateUserRoleAndScopeActionSchema>
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { userId, role, district, schoolName } = UpdateUserRoleAndScopeActionSchema.parse(data);
+    
+    const userDocRef = admin.firestore().collection('users').doc(userId);
+    
+    const updateData: any = { role };
+
+    if (role === 'big-admin') {
+      if (!district?.trim()) throw new Error("A district must be specified for a 'big-admin'.");
+      updateData.district = district;
+      updateData.schoolName = null;
+    } else if (role === 'admin') {
+      if (!schoolName?.trim()) throw new Error("A school name must be specified for an 'admin'.");
+      updateData.district = null; // Clear district if they become a school admin
+      updateData.schoolName = schoolName;
+    } else { // 'user' role
+      updateData.district = null;
+      updateData.schoolName = null;
+    }
+    
+    await userDocRef.update(updateData);
+    
+    return { success: true, message: "User role and scope updated successfully." };
+  } catch (error: any) {
+    console.error('Error updating user role:', error);
+    let errorMessage = 'An unexpected error occurred while updating the user role.';
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for updating role: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
     } else if (error.message) {
       errorMessage = error.message;
     }

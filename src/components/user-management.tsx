@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -35,13 +35,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { deleteInviteAction, updateUserStatusAction } from '@/app/actions';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { deleteInviteAction, updateUserStatusAction, updateUserRoleAndScopeAction } from '@/app/actions';
+import { ghanaRegionsAndDistricts } from '@/lib/ghana-regions-districts';
 
 interface UserData {
   id: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
   status: 'active' | 'inactive';
+  district?: string | null;
+  schoolName?: string | null;
   createdAt: any;
 }
 
@@ -52,6 +57,8 @@ interface InviteData {
   createdAt: any;
 }
 
+const allDistricts = [...new Set(Object.values(ghanaRegionsAndDistricts).flat())].sort();
+
 export default function UserManagement() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [invites, setInvites] = useState<InviteData[]>([]);
@@ -60,8 +67,12 @@ export default function UserManagement() {
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [isSendingInvite, setIsSendingInvite] = useState(false);
+  
   const [inviteToDelete, setInviteToDelete] = useState<InviteData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -84,6 +95,8 @@ export default function UserManagement() {
           email: d.data().email ?? 'unknown',
           role: d.data().role ?? 'user',
           status: d.data().status ?? 'active',
+          district: d.data().district,
+          schoolName: d.data().schoolName,
           createdAt: d.data().createdAt ?? null,
         }))
       );
@@ -117,6 +130,14 @@ export default function UserManagement() {
       unsubInv();
     };
   }, []);
+  
+  useEffect(() => {
+    if (editingUser) {
+      setIsEditUserDialogOpen(true);
+    } else {
+      setIsEditUserDialogOpen(false);
+    }
+  }, [editingUser]);
 
   const handleSendInvite = async (e: FormEvent) => {
     e.preventDefault();
@@ -124,17 +145,12 @@ export default function UserManagement() {
 
     const email = inviteEmail.trim().toLowerCase();
     if (!email || !email.includes('@')) {
-      toast({
-        title: 'Invalid Email',
-        description: 'Please enter a valid email address.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Invalid Email', description: 'Please enter a valid email address.', variant: 'destructive' });
       setIsSendingInvite(false);
       return;
     }
 
     try {
-      // Check if user already exists in the 'users' collection
       const usersRef = collection(db, 'users');
       const userQuery = query(usersRef, where('email', '==', email));
       const userSnapshot = await getDocs(userQuery);
@@ -144,7 +160,6 @@ export default function UserManagement() {
         return;
       }
       
-      // Check if a pending invite already exists for this email
       const invitesRef = collection(db, 'invites');
       const inviteQuery = query(invitesRef, where('email', '==', email), where('status', '==', 'pending'));
       const inviteSnapshot = await getDocs(inviteQuery);
@@ -179,47 +194,27 @@ export default function UserManagement() {
 
   const handleDeleteInvite = async () => {
     if (!inviteToDelete) return;
-
     setIsDeleting(true);
     const result = await deleteInviteAction({ inviteId: inviteToDelete.id });
-
     if (result.success) {
-      toast({
-        title: 'Invite Deleted',
-        description: `The invite for ${inviteToDelete.email} has been removed.`,
-      });
+      toast({ title: 'Invite Deleted', description: `The invite for ${inviteToDelete.email} has been removed.` });
     } else {
-      toast({
-        title: 'Deletion Failed',
-        description: result.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Deletion Failed', description: result.message, variant: 'destructive' });
     }
     setIsDeleting(false);
-    setInviteToDelete(null); // This will also close the dialog
+    setInviteToDelete(null);
   };
   
   const handleStatusChange = async (userId: string, currentStatus: 'active' | 'inactive') => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    
-    // Optimistic UI update
+    const originalUsers = [...users];
     setUsers(users => users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
-
     const result = await updateUserStatusAction({ userId, status: newStatus });
-
     if (!result.success) {
-      toast({
-        title: 'Update Failed',
-        description: result.message,
-        variant: 'destructive',
-      });
-      // Revert UI on failure
-      setUsers(users => users.map(u => u.id === userId ? { ...u, status: currentStatus } : u));
+      toast({ title: 'Update Failed', description: result.message, variant: 'destructive' });
+      setUsers(originalUsers);
     } else {
-        toast({
-            title: 'Status Updated',
-            description: `User has been set to ${newStatus}.`,
-        });
+        toast({ title: 'Status Updated', description: `User has been set to ${newStatus}.` });
     }
   };
 
@@ -236,9 +231,7 @@ export default function UserManagement() {
             </CardHeader>
             <CardContent>
             <div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : totalUsers}</div>
-            <p className="text-xs text-muted-foreground">
-                All users with access to the system.
-            </p>
+            <p className="text-xs text-muted-foreground">All users with access to the system.</p>
             </CardContent>
         </Card>
         <Card className="border-amber-500/50 shadow-lg hover:shadow-amber-500/20 transition-shadow duration-300">
@@ -248,9 +241,7 @@ export default function UserManagement() {
             </CardHeader>
             <CardContent>
             <div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : pendingInvitesCount}</div>
-            <p className="text-xs text-muted-foreground">
-                Users authorized but not yet registered.
-            </p>
+            <p className="text-xs text-muted-foreground">Users authorized but not yet registered.</p>
             </CardContent>
         </Card>
       </div>
@@ -258,51 +249,27 @@ export default function UserManagement() {
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus /> Authorize New User
-            </CardTitle>
-            <CardDescription>
-              Enter an email address to authorize a new user. You must then notify them yourself so they can visit the registration page to create an account. No email is sent from this system.
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2"><UserPlus /> Authorize New User</CardTitle>
+            <CardDescription>Authorize a user, then assign them a role in the management table.</CardDescription>
           </CardHeader>
           <form onSubmit={handleSendInvite}>
-            <CardContent>
-              <Input
-                name="email"
-                type="email"
-                placeholder="teacher@school.com"
-                required
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-              />
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" disabled={isSendingInvite}>
-                {isSendingInvite ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2" />}
-                Authorize User
-              </Button>
-            </CardFooter>
+            <CardContent><Input name="email" type="email" placeholder="teacher@school.com" required value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} /></CardContent>
+            <CardFooter><Button type="submit" disabled={isSendingInvite}>{isSendingInvite ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2" />}Authorize User</Button></CardFooter>
           </form>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>User & Invite Status</CardTitle>
-            <CardDescription>List of all registered users and pending authorizations.</CardDescription>
+            <CardTitle>User & Invite Management</CardTitle>
+            <CardDescription>Manage roles, status, and pending invites.</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
+              <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Details</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
+                  <TableRow><TableHead>Email</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.map((u) => (
@@ -310,55 +277,27 @@ export default function UserManagement() {
                       <TableCell className="font-medium">{u.email}</TableCell>
                       <TableCell>
                         <div className="flex flex-col text-xs">
-                          <span className={`capitalize font-semibold ${u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>
-                            Role: {u.role}
-                          </span>
-                          <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>
-                            Status: {u.status}
-                          </span>
+                          <span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span>
+                          <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
+                          {u.role === 'big-admin' && <span className="text-xs text-muted-foreground">District: {u.district}</span>}
+                          {u.role === 'admin' && <span className="text-xs text-muted-foreground">School: {u.schoolName}</span>}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
-                        {u.role !== 'admin' ? (
-                          <div className="flex items-center justify-end gap-2">
-                            <Label htmlFor={`switch-${u.id}`} className="text-xs">
-                              {u.status === 'active' ? 'Active' : 'Inactive'}
-                            </Label>
-                            <Switch
-                              id={`switch-${u.id}`}
-                              checked={u.status === 'active'}
-                              onCheckedChange={() => handleStatusChange(u.id, u.status)}
-                              aria-label={`Toggle status for ${u.email}`}
-                            />
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">Cannot modify</span>
-                        )}
+                      <TableCell className="text-right space-x-2">
+                        {u.role !== 'super-admin' && <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingUser(u)}><Edit className="h-4 w-4" /></Button>}
+                        {u.role !== 'super-admin' && <Switch id={`switch-${u.id}`} checked={u.status === 'active'} onCheckedChange={() => handleStatusChange(u.id, u.status)} aria-label={`Toggle status for ${u.email}`} />}
                       </TableCell>
                     </TableRow>
                   ))}
-                  {invites
-                    .filter((i) => i.status === 'pending')
-                    .map((invite) => (
+                  {invites.filter((i) => i.status === 'pending').map((invite) => (
                       <TableRow key={invite.id}>
                         <TableCell className="font-medium">{invite.email}</TableCell>
-                        <TableCell className="italic text-yellow-600 text-sm">
-                          Pending Invite
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </Button>
-                        </TableCell>
+                        <TableCell className="italic text-yellow-600 text-sm">Pending Invite</TableCell>
+                        <TableCell className="text-right"><Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button></TableCell>
                       </TableRow>
-                    ))}
+                  ))}
                   {(users.length === 0 && invites.filter((i) => i.status === 'pending').length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center text-muted-foreground">
-                        No users or pending authorizations found.
-                      </TableCell>
-                    </TableRow>
+                    <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No users or pending authorizations found.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -371,20 +310,87 @@ export default function UserManagement() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the invite
-              for <strong>{inviteToDelete?.email}</strong> and they will not be able to register.
-            </AlertDialogDescription>
+            <AlertDialogDescription>This action cannot be undone. This will permanently delete the invite for <strong>{inviteToDelete?.email}</strong> and they will not be able to register.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setInviteToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteInvite} disabled={isDeleting}>
-              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Continue
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDeleteInvite} disabled={isDeleting}>{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Continue</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {editingUser && <EditUserDialog user={editingUser} onOpenChange={() => setEditingUser(null)} allDistricts={allDistricts} />}
     </>
   );
+}
+
+function EditUserDialog({ user, onOpenChange, allDistricts }: { user: UserData, onOpenChange: (open: boolean) => void, allDistricts: string[] }) {
+    const [role, setRole] = useState(user.role);
+    const [district, setDistrict] = useState(user.district || '');
+    const [schoolName, setSchoolName] = useState(user.schoolName || '');
+    const [isSaving, setIsSaving] = useState(false);
+    const { toast } = useToast();
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        const result = await updateUserRoleAndScopeAction({
+            userId: user.id,
+            role: role as 'big-admin' | 'admin' | 'user',
+            district: role === 'big-admin' ? district : null,
+            schoolName: role === 'admin' ? schoolName : null,
+        });
+
+        if(result.success) {
+            toast({ title: "User Updated", description: result.message });
+            onOpenChange(false);
+        } else {
+            toast({ title: "Update Failed", description: result.message, variant: 'destructive' });
+        }
+        setIsSaving(false);
+    };
+
+    return (
+        <Dialog open={!!user} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Edit User: {user.email}</DialogTitle>
+                    <DialogDescription>Update the role and permissions for this user.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="role">Role</Label>
+                        <Select value={role} onValueChange={(value) => setRole(value as UserData['role'])}>
+                            <SelectTrigger id="role"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="user">User (Instructor, limited to own classroom)</SelectItem>
+                                <SelectItem value="admin">Admin (Limited to one school)</SelectItem>
+                                <SelectItem value="big-admin">Big Admin (Limited to one district)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {role === 'big-admin' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="district">District</Label>
+                            <Select value={district || ''} onValueChange={setDistrict}>
+                                <SelectTrigger id="district"><SelectValue placeholder="Select a district" /></SelectTrigger>
+                                <SelectContent>
+                                    {allDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                    {role === 'admin' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="schoolName">School Name</Label>
+                            <Input id="schoolName" value={schoolName || ''} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" />
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button onClick={handleSave} disabled={isSaving}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Changes</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }

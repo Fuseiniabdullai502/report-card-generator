@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -94,9 +93,6 @@ function AppContent({ user }: { user: CustomUser }) {
     academicYear: 'all',
     academicTerm: 'all',
   });
-  const [userClassFilter, setUserClassFilter] = useState<string>('all');
-  
-  const [originalUserSchoolName, setOriginalUserSchoolName] = useState<string | null>(null);
   
   const router = useRouter();
 
@@ -146,25 +142,25 @@ function AppContent({ user }: { user: CustomUser }) {
   // Apply filters based on user role
   const filteredReports = useMemo(() => {
     let reports = allRankedReports;
-    if (user.role === 'admin') {
+    if (user.role === 'super-admin' || user.role === 'big-admin' || user.role === 'admin') {
       reports = reports.filter(report => 
         (adminFilters.schoolName === 'all' || report.schoolName === adminFilters.schoolName) &&
         (adminFilters.className === 'all' || report.className === adminFilters.className) &&
         (adminFilters.academicYear === 'all' || report.academicYear === adminFilters.academicYear) &&
         (adminFilters.academicTerm === 'all' || report.academicTerm === adminFilters.academicTerm)
       );
-    } else {
-      if (userClassFilter !== 'all') {
-        reports = reports.filter(report => report.className === userClassFilter);
+    } else { // user role
+      if (adminFilters.className !== 'all') { // Let 'user' also filter by class
+        reports = reports.filter(report => report.className === adminFilters.className);
       }
     }
     return reports;
-  }, [allRankedReports, user.role, adminFilters, userClassFilter]);
+  }, [allRankedReports, user.role, adminFilters]);
 
   // Reset preview index when filters change
   useEffect(() => {
     setCurrentPreviewIndex(0);
-  }, [adminFilters, userClassFilter]);
+  }, [adminFilters]);
 
   const handleAdminFilterChange = (filterName: keyof typeof adminFilters, value: string) => {
     setAdminFilters(prev => ({ ...prev, [filterName]: value }));
@@ -238,19 +234,33 @@ function AppContent({ user }: { user: CustomUser }) {
     setIsLoadingReports(true);
     const reportsCollectionRef = collection(db, 'reports');
     
-    // Conditionally build the query based on user role
     let q;
-    if (user.role === 'admin') {
-      // Admin can see all reports. This requires Firestore rules to allow this.
-      q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
-    } else {
-      // Regular user sees only their own reports. This is more secure and performant.
-      q = query(
-        reportsCollectionRef, 
-        where('teacherId', '==', user.uid),
-        orderBy('createdAt', 'asc')
-      );
+    switch(user.role) {
+        case 'super-admin':
+            q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
+            break;
+        case 'big-admin':
+            if (!user.district) {
+                toast({ title: "Configuration Error", description: "Your 'big-admin' account is not associated with a district.", variant: "destructive" });
+                setIsLoadingReports(false);
+                return;
+            }
+            q = query(reportsCollectionRef, where('district', '==', user.district), orderBy('createdAt', 'asc'));
+            break;
+        case 'admin':
+            if (!user.schoolName) {
+                toast({ title: "Configuration Error", description: "Your 'admin' account is not associated with a school.", variant: "destructive" });
+                setIsLoadingReports(false);
+                return;
+            }
+            q = query(reportsCollectionRef, where('schoolName', '==', user.schoolName), orderBy('createdAt', 'asc'));
+            break;
+        case 'user':
+        default:
+            q = query(reportsCollectionRef, where('teacherId', '==', user.uid), orderBy('createdAt', 'asc'));
+            break;
     }
+
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedReports: ReportData[] = [];
@@ -274,13 +284,26 @@ function AppContent({ user }: { user: CustomUser }) {
         }
       });
       
-      if (user.role !== 'admin') {
-          const firstSchool = fetchedReports.find(r => r.schoolName?.trim())?.schoolName || null;
-          setOriginalUserSchoolName(firstSchool);
-          if (firstSchool && !sessionDefaults.schoolName) {
-              setSessionDefaults(prev => ({...prev, schoolName: firstSchool}));
+      // Set session defaults based on user role and fetched data
+      const newSessionDefaults: Partial<ReportData> = {};
+      if (user.role === 'admin' && user.schoolName) {
+          newSessionDefaults.schoolName = user.schoolName;
+          const firstReportFromSchool = fetchedReports.find(r => r.schoolName === user.schoolName);
+          if(firstReportFromSchool) {
+            newSessionDefaults.region = firstReportFromSchool.region;
+            newSessionDefaults.district = firstReportFromSchool.district;
           }
+      } else if (user.role === 'big-admin' && user.district) {
+          newSessionDefaults.district = user.district;
+           const firstReportFromDistrict = fetchedReports.find(r => r.district === user.district);
+           if(firstReportFromDistrict) {
+            newSessionDefaults.region = firstReportFromDistrict.region;
+           }
+      } else if (user.role === 'user') {
+          const firstSchool = fetchedReports.find(r => r.schoolName?.trim())?.schoolName || null;
+          if (firstSchool) newSessionDefaults.schoolName = firstSchool;
       }
+      setSessionDefaults(prev => ({...prev, ...newSessionDefaults}));
       
       setCustomClassNames(prev => [...new Set([...prev, ...Array.from(classNamesFromDB)])]);
       calculateAndSetRanks(fetchedReports);
@@ -292,6 +315,7 @@ function AppContent({ user }: { user: CustomUser }) {
         setCurrentEditingReport(prev => ({
           ...baseReset,
           ...sessionDefaults,
+          ...newSessionDefaults,
           studentEntryNumber: maxEntryNum + 1,
           id: `unsaved-${Date.now()}`,
           createdAt: undefined,
@@ -301,12 +325,15 @@ function AppContent({ user }: { user: CustomUser }) {
           teacherId: user.uid,
         }));
       }
-    }, (error: any) => { // Use 'any' to access the 'code' property
+    }, (error: any) => { 
       console.error("Error fetching reports from Firestore:", error);
       if (error.code === 'failed-precondition') {
+        let indexField = 'teacherId';
+        if (user.role === 'big-admin') indexField = 'district';
+        if (user.role === 'admin') indexField = 'schoolName';
         toast({ 
           title: "Firestore Index Required", 
-          description: "A database index is needed to filter reports. Please check your browser's developer console for a link to create it. This is a one-time setup.",
+          description: `A database index is needed to filter reports by '${indexField}'. Please check your browser's developer console for a link to create it. This is a one-time setup.`,
           variant: "destructive",
           duration: 20000 
         });
@@ -317,7 +344,7 @@ function AppContent({ user }: { user: CustomUser }) {
     });
 
     return () => unsubscribe();
-  }, [user.uid, user.role, calculateAndSetRanks, toast]);
+  }, [user.uid, user.role, user.district, user.schoolName, calculateAndSetRanks, toast]);
 
 
   const handleFormUpdate = useCallback((data: ReportData) => {
@@ -328,7 +355,6 @@ function AppContent({ user }: { user: CustomUser }) {
     const newNextStudentEntryNumber = nextStudentEntryNumber;
     const newStudentBase = JSON.parse(JSON.stringify(defaultReportData));
     
-    // Use the explicitly passed defaults if they exist, otherwise fall back to the state.
     const defaultsToApply = newDefaults || sessionDefaults;
 
     const newStudentDataForForm: ReportData = {
@@ -344,7 +370,6 @@ function AppContent({ user }: { user: CustomUser }) {
     };
     
     setCurrentEditingReport(newStudentDataForForm);
-    // setCurrentVisibleSubjectIndex(0); // Reset subject pager
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     toast({
@@ -354,8 +379,6 @@ function AppContent({ user }: { user: CustomUser }) {
   }, [nextStudentEntryNumber, sessionDefaults, toast, user.uid]);
 
   const handleClearAndReset = useCallback(() => {
-    // First, update sessionDefaults with the latest info from the current form
-    // This ensures that when we reset, we use the most recent session-like settings
     const newDefaults: Partial<ReportData> = {
       schoolName: currentEditingReport.schoolName,
       region: currentEditingReport.region,
@@ -372,50 +395,11 @@ function AppContent({ user }: { user: CustomUser }) {
     };
     setSessionDefaults(newDefaults);
     
-    // Now, call the reset function, passing the new defaults to avoid stale state issues
     handleResetToBlankForm(newDefaults);
   }, [currentEditingReport, handleResetToBlankForm]);
 
   const handleSaveOrUpdateReport = async (formDataFromForm: ReportData) => {
     const isEditing = !formDataFromForm.id.startsWith('unsaved-');
-
-    // --- BATCH UPDATE LOGIC FOR SCHOOL NAME CHANGE (NON-ADMINS) ---
-    const newSchoolName = formDataFromForm.schoolName?.trim() || null;
-    if (
-        user.role !== 'admin' &&
-        originalUserSchoolName &&
-        newSchoolName &&
-        newSchoolName !== originalUserSchoolName
-    ) {
-        try {
-            const reportsRef = collection(db, 'reports');
-            const q = query(reportsRef, where('teacherId', '==', user.uid));
-            const querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                const batch = writeBatch(db);
-                querySnapshot.forEach((docToUpdate) => {
-                    const reportRef = doc(db, 'reports', docToUpdate.id);
-                    batch.update(reportRef, { schoolName: newSchoolName });
-                });
-                await batch.commit();
-                toast({
-                    title: "School Name Updated",
-                    description: `Your school has been renamed to "${newSchoolName}" across all your reports.`,
-                });
-                setOriginalUserSchoolName(newSchoolName); // Update state to prevent re-triggering
-            }
-        } catch (batchError) {
-            console.error("Error updating school name across reports:", batchError);
-            toast({
-                title: "School Rename Failed",
-                description: "Could not update the school name on your existing reports. Please try again.",
-                variant: "destructive",
-            });
-            return; // Stop the save process if batch fails
-        }
-    }
-    // --- END BATCH UPDATE LOGIC ---
 
     if (!isEditing) {
         const isDuplicate = allRankedReports.some(report =>
@@ -490,10 +474,6 @@ function AppContent({ user }: { user: CustomUser }) {
                 title: "Report Submitted",
                 description: `${reportToSaveForFirestore.studentName}'s report submitted to Firestore. List will update.`,
             });
-        }
-        
-        if (user.role !== 'admin' && newSchoolName && !originalUserSchoolName) {
-            setOriginalUserSchoolName(newSchoolName);
         }
 
     } catch (error) {
@@ -684,18 +664,10 @@ function AppContent({ user }: { user: CustomUser }) {
 
 
   const schoolNameForDashboard = useMemo(() => {
+    if (user.role === 'admin' && user.schoolName) return user.schoolName;
     return sessionDefaults.schoolName || currentEditingReport.schoolName || "School";
-  }, [sessionDefaults.schoolName, currentEditingReport.schoolName]);
-
-  const academicTermForSchoolDashboard = useMemo(() => {
-    if (reportsCount > 0) {
-      const uniqueTerms = new Set(filteredReports.map(r => r.academicTerm).filter(Boolean));
-      if (uniqueTerms.size === 1) return uniqueTerms.values().next().value;
-      return "Multiple Terms Summary";
-    }
-    return currentEditingReport.academicTerm || "Term Summary";
-  }, [filteredReports, currentEditingReport.academicTerm, reportsCount]);
-
+  }, [user.role, user.schoolName, sessionDefaults.schoolName, currentEditingReport.schoolName]);
+  
   const academicYearForDashboard = useMemo(() => {
     if (reportsCount > 0) {
       const uniqueYears = new Set(filteredReports.map(r => r.academicYear).filter(Boolean));
@@ -813,13 +785,13 @@ function AppContent({ user }: { user: CustomUser }) {
   };
   
     const initialClassForDashboard = useMemo(() => {
-        const currentClassFilter = user.role === 'admin' ? adminFilters.className : userClassFilter;
+        const currentClassFilter = adminFilters.className;
         if (currentClassFilter !== 'all') {
             return currentClassFilter;
         }
         const available = allFilterOptions.classes.filter(c => c !== 'all');
         return available.length > 0 ? available[0] : '';
-    }, [user.role, adminFilters.className, userClassFilter, allFilterOptions.classes]);
+    }, [adminFilters.className, allFilterOptions.classes]);
 
     const prettyFilterKey = (key: string) => {
         switch (key) {
@@ -832,25 +804,29 @@ function AppContent({ user }: { user: CustomUser }) {
     };
     
     const filterDescription = useMemo(() => {
-        if (user.role === 'admin') {
-            const activeFilters = Object.entries(adminFilters)
-                .filter(([, value]) => value !== 'all')
-                .map(([key, value]) => `${prettyFilterKey(key)}: ${value}`)
-                .join(', ');
+        const activeFilters = Object.entries(adminFilters)
+            .filter(([, value]) => value !== 'all')
+            .map(([key, value]) => `${prettyFilterKey(key)}: ${value}`)
+            .join(', ');
+            
+        if (user.role === 'super-admin') {
             return activeFilters ? `Filtering by: ${activeFilters}` : 'Showing all reports in the system.';
         }
-        return `Showing reports for: ${userClassFilter === 'all' ? 'All Classes' : userClassFilter}.`;
-    }, [user.role, adminFilters, userClassFilter]);
+        if (user.role === 'big-admin') {
+             return `Viewing District: ${user.district}. ${activeFilters ? `Filtering by: ${activeFilters}` : 'Showing all reports in your district.'}`;
+        }
+        if (user.role === 'admin') {
+             return `Viewing School: ${user.schoolName}. ${activeFilters ? `Filtering by: ${activeFilters}` : 'Showing all reports in your school.'}`;
+        }
+        return `Showing reports for: ${adminFilters.className === 'all' ? 'All My Classes' : adminFilters.className}.`;
+    }, [user.role, user.district, user.schoolName, adminFilters]);
 
     const noReportsFoundMessage = useMemo(() => {
         if (reportsCount === 0 && allRankedReports.length > 0) {
-            if (user.role === 'admin') {
-                return 'No reports match the selected admin filters. Try broadening your criteria.';
-            }
-            return `No reports match the filter "${userClassFilter}". Select "All Classes" or add reports.`;
+            return 'No reports match the selected filters. Try broadening your criteria.';
         }
         return `The report card preview will appear here as you fill out the form.`;
-    }, [reportsCount, allRankedReports.length, user.role, userClassFilter]);
+    }, [reportsCount, allRankedReports.length]);
 
 
   return (
@@ -858,7 +834,7 @@ function AppContent({ user }: { user: CustomUser }) {
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground main-app-container">
       <header className="mb-8 text-center no-print relative">
         <div className="absolute top-0 left-0 flex items-center gap-2">
-            {user.role === 'admin' && (
+            {user.role === 'super-admin' && (
                 <Link href="/admin" passHref>
                     <Button variant="outline" size="sm">
                         <Shield className="mr-2 h-4 w-4" />
@@ -872,7 +848,7 @@ function AppContent({ user }: { user: CustomUser }) {
          <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
          <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
         </div>
-        <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.email}</p>
+        <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.email} ({user.role})</p>
          
         <div className="absolute top-0 right-0 flex items-center gap-2">
           <ThemeToggleButton />
@@ -889,7 +865,7 @@ function AppContent({ user }: { user: CustomUser }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                     <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
-                    <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)}>
+                    <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)} disabled={user.role === 'big-admin' || user.role === 'admin'}>
                         <SelectTrigger id="sessionRegion"><SelectValue placeholder="Select region" /></SelectTrigger>
                         <SelectContent>
                             {ghanaRegions.map(region => <SelectItem key={region} value={region}>{region}</SelectItem>)}
@@ -901,7 +877,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     <Select 
                         value={sessionDefaults.district || ''} 
                         onValueChange={value => handleSessionDefaultChange('district', value)}
-                        disabled={!sessionDefaults.region || availableDistricts.length === 0}
+                        disabled={user.role === 'big-admin' || user.role === 'admin' || !sessionDefaults.region || availableDistricts.length === 0}
                     >
                         <SelectTrigger id="sessionDistrict">
                             <SelectValue placeholder="Select district" />
@@ -935,7 +911,7 @@ function AppContent({ user }: { user: CustomUser }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
                 <div className="space-y-1 md:col-span-2">
                     <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
-                    <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" />
+                    <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={user.role === 'admin'}/>
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
@@ -1035,48 +1011,32 @@ function AppContent({ user }: { user: CustomUser }) {
 
                 <div className="flex flex-col gap-2 items-stretch">
                   <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-                    {user.role === 'admin' ? (
-                        <>
-                            <Select value={adminFilters.schoolName} onValueChange={value => handleAdminFilterChange('schoolName', value)}>
-                                <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by school">
-                                    <div className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by school..." /></div>
-                                </SelectTrigger>
-                                <SelectContent>{allFilterOptions.schools.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Schools' : s}</SelectItem>)}</SelectContent>
-                            </Select>
-                            <Select value={adminFilters.className} onValueChange={value => handleAdminFilterChange('className', value)}>
-                                <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by class">
-                                    <div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by class..." /></div>
-                                </SelectTrigger>
-                                <SelectContent>{allFilterOptions.classes.map(c => <SelectItem key={c} value={c}>{c === 'all' ? 'All Classes' : c}</SelectItem>)}</SelectContent>
-                            </Select>
-                            <Select value={adminFilters.academicYear} onValueChange={value => handleAdminFilterChange('academicYear', value)}>
-                                <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by year">
-                                    <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by year..." /></div>
-                                </SelectTrigger>
-                                <SelectContent>{allFilterOptions.years.map(y => <SelectItem key={y} value={y}>{y === 'all' ? 'All Years' : y}</SelectItem>)}</SelectContent>
-                            </Select>
-                            <Select value={adminFilters.academicTerm} onValueChange={value => handleAdminFilterChange('academicTerm', value)}>
-                                <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by term">
-                                    <div className="flex items-center gap-2"><BookMarked className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by term..." /></div>
-                                </SelectTrigger>
-                                <SelectContent>{allFilterOptions.terms.map(t => <SelectItem key={t} value={t}>{t === 'all' ? 'All Terms' : t}</SelectItem>)}</SelectContent>
-                            </Select>
-                        </>
-                    ) : (
-                         <Select value={userClassFilter} onValueChange={setUserClassFilter}>
-                           <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter reports by class">
-                             <div className="flex items-center gap-2">
-                               <FolderDown className="h-4 w-4 text-primary" />
-                               <SelectValue placeholder="Filter by class..." />
-                             </div>
-                           </SelectTrigger>
-                           <SelectContent>
-                             {allFilterOptions.classes.map(cls => (
-                               <SelectItem key={cls} value={cls}>{cls === 'all' ? 'All Classes' : cls}</SelectItem>
-                             ))}
-                           </SelectContent>
-                         </Select>
+                    {(user.role === 'super-admin' || user.role === 'big-admin') && (
+                        <Select value={adminFilters.schoolName} onValueChange={value => handleAdminFilterChange('schoolName', value)} disabled={user.role === 'admin'}>
+                            <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by school">
+                                <div className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by school..." /></div>
+                            </SelectTrigger>
+                            <SelectContent>{allFilterOptions.schools.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Schools' : s}</SelectItem>)}</SelectContent>
+                        </Select>
                     )}
+                     <Select value={adminFilters.className} onValueChange={value => handleAdminFilterChange('className', value)}>
+                        <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by class">
+                            <div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by class..." /></div>
+                        </SelectTrigger>
+                        <SelectContent>{allFilterOptions.classes.map(c => <SelectItem key={c} value={c}>{c === 'all' ? 'All Classes' : c}</SelectItem>)}</SelectContent>
+                    </Select>
+                     <Select value={adminFilters.academicYear} onValueChange={value => handleAdminFilterChange('academicYear', value)}>
+                        <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by year">
+                            <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by year..." /></div>
+                        </SelectTrigger>
+                        <SelectContent>{allFilterOptions.years.map(y => <SelectItem key={y} value={y}>{y === 'all' ? 'All Years' : y}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={adminFilters.academicTerm} onValueChange={value => handleAdminFilterChange('academicTerm', value)}>
+                        <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by term">
+                            <div className="flex items-center gap-2"><BookMarked className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by term..." /></div>
+                        </SelectTrigger>
+                        <SelectContent>{allFilterOptions.terms.map(t => <SelectItem key={t} value={t}>{t === 'all' ? 'All Terms' : t}</SelectItem>)}</SelectContent>
+                    </Select>
                      <Button
                         onClick={() => setIsClassDashboardOpen(true)}
                         disabled={reportsCount === 0 || isLoadingReports}
@@ -1202,7 +1162,7 @@ function AppContent({ user }: { user: CustomUser }) {
         <SchoolPerformanceDashboard
             isOpen={isSchoolDashboardOpen}
             onOpenChange={setIsSchoolDashboardOpen}
-            allReports={filteredReports}
+            allReports={filteredReports} // Pass filtered reports to the dashboard
             schoolNameProp={schoolNameForDashboard}
             academicYearProp={academicYearForDashboard}
             userRole={user.role}

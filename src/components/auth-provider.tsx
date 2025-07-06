@@ -7,8 +7,10 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 export interface CustomUser extends User {
-  role: 'admin' | 'user' | null;
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
   status: 'active' | 'inactive' | null;
+  district?: string | null;
+  schoolName?: string | null;
 }
 
 interface AuthContextType {
@@ -31,22 +33,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDocSnap = await getDoc(userDocRef);
           
-          const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
+          const superAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
           const userEmail = firebaseUser.email?.toLowerCase();
           
-          let role: 'admin' | 'user' | null = 'user'; // Default role
-          let status: 'active' | 'inactive' | null = 'active'; // Default status
+          let role: CustomUser['role'] = 'user';
+          let status: CustomUser['status'] = 'active';
+          let district: CustomUser['district'] = null;
+          let schoolName: CustomUser['schoolName'] = null;
 
-          if (adminEmail && userEmail === adminEmail) {
-            // This is the designated admin user.
-            role = 'admin';
-            status = 'active'; // Admins are always active
+          if (superAdminEmail && userEmail === superAdminEmail) {
+            // This is the designated super admin user.
+            role = 'super-admin';
+            status = 'active';
             // Self-heal: Ensure their Firestore document exists and has the correct role and status.
-            if (!userDocSnap.exists() || userDocSnap.data().role !== 'admin' || userDocSnap.data().status !== 'active') {
+            if (!userDocSnap.exists() || userDocSnap.data().role !== 'super-admin') {
               await setDoc(userDocRef, {
                 email: firebaseUser.email,
-                role: 'admin',
+                role: 'super-admin',
                 status: 'active',
+                district: null,
+                schoolName: null,
                 createdAt: userDocSnap.exists() ? userDocSnap.data().createdAt : serverTimestamp(),
               }, { merge: true });
             }
@@ -56,6 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const userData = userDocSnap.data();
               role = userData.role ?? 'user';
               status = userData.status ?? 'active';
+              district = userData.district ?? null;
+              schoolName = userData.schoolName ?? null;
             } else {
               // This can happen if a user was created in Auth but not in Firestore.
               console.warn(`User document for ${userEmail} not found. Creating one with 'user' role and 'active' status.`);
@@ -63,6 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   email: firebaseUser.email,
                   role: 'user',
                   status: 'active',
+                  district: null,
+                  schoolName: null,
                   createdAt: serverTimestamp(),
               }, { merge: true });
               role = 'user';
@@ -70,12 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
           
-          console.log('📄 Firestore role:', role, 'Status:', status);
-          setUser({ ...firebaseUser, role, status });
+          console.log(`📄 Firestore role: ${role}, Status: ${status}, District: ${district}, School: ${schoolName}`);
+          setUser({ ...firebaseUser, role, status, district, schoolName });
 
         } catch (error) {
           console.error('Error in AuthProvider while fetching/setting user role:', error);
-          setUser({ ...firebaseUser, role: null, status: null }); // Fallback on error
+          setUser({ ...firebaseUser, role: null, status: null, district: null, schoolName: null }); // Fallback on error
         }
       } else {
         // User is not logged in.

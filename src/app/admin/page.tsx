@@ -5,13 +5,11 @@ import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { Loader2, Shield } from 'lucide-react';
 import UserManagement from '@/components/user-management';
-import SchoolRanking from '@/components/school-ranking';
 
 export default function AdminPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Debugging: log user object to check if role is loaded
   useEffect(() => {
     if (user) {
       console.log("AdminPanel loaded user:", user);
@@ -24,13 +22,13 @@ export default function AdminPage() {
 
     if (!user) {
       router.replace('/login');
-    } else if (user.role !== 'admin') {
+    } else if (user.role !== 'super-admin') { // Only super-admin can access this page
       router.replace('/');
     }
   }, [user, loading, router]);
 
   // Show loader while waiting or blocking unauthorized access
-  if (loading || !user || user.role !== 'admin') {
+  if (loading || !user || user.role !== 'super-admin') {
     return (
       <div className="flex justify-center items-center h-screen w-screen bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -44,16 +42,15 @@ export default function AdminPage() {
       <header className="mb-8 no-print">
         <h1 className="text-3xl font-bold text-primary flex items-center gap-3">
           <Shield className="h-8 w-8" />
-          Admin Panel
+          Super Admin Panel
         </h1>
         <p className="text-muted-foreground mt-2">
-          Manage user access and review application data.
+          Manage user access, roles, and invite new users to the system.
         </p>
       </header>
       <div className="no-print">
         <UserManagement />
       </div>
-      <SchoolRanking />
     </main>
   );
 }

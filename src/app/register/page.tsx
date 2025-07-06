@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -80,7 +79,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-sm shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline text-primary">Create Your Account</CardTitle>
-          <CardDescription>Enter your details to register. You must be invited by an admin.</CardDescription>
+          <CardDescription>Enter your details to register. You must be invited by a super-admin.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
