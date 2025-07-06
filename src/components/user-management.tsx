@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, FormEvent, useCallback, useMemo } from 'react';
@@ -42,7 +41,7 @@ import {
     deleteInviteAction, 
     updateUserStatusAction, 
     updateUserRoleAndScopeAction, 
-    authorizeUserAction,
+    createInviteAction,
     getUsersAction,
     getInvitesAction
 } from '@/app/actions';
@@ -66,6 +65,12 @@ interface InviteData {
   id: string;
   email: string;
   status: 'pending' | 'completed';
+  role?: 'big-admin' | 'admin' | 'user';
+  region?: string | null;
+  district?: string | null;
+  circuit?: string | null;
+  schoolName?: string | null;
+  classNames?: string[] | null;
   createdAt: Date | null;
 }
 
@@ -74,9 +79,8 @@ export default function UserManagement({ user }: { user: CustomUser }) {
   const [invites, setInvites] = useState<InviteData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  
+  const [isCreateInviteDialogOpen, setIsCreateInviteDialogOpen] = useState(false);
   
   const [inviteToDelete, setInviteToDelete] = useState<InviteData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -93,7 +97,7 @@ export default function UserManagement({ user }: { user: CustomUser }) {
           district: user.district,
           schoolName: user.schoolName,
         }),
-        getInvitesAction(),
+        getInvitesAction({ role: user.role }),
       ]);
 
       if (usersResult.success && usersResult.users) {
@@ -103,7 +107,7 @@ export default function UserManagement({ user }: { user: CustomUser }) {
       }
 
       if (invitesResult.success && invitesResult.invites) {
-        setInvites(invitesResult.invites.map(i => ({...i, createdAt: i.createdAt ? new Date(i.createdAt) : null })));
+        setInvites(invitesResult.invites.map(i => ({...i, role: i.role, region: i.region, district: i.district, circuit: i.circuit, schoolName: i.schoolName, classNames: i.classNames, createdAt: i.createdAt ? new Date(i.createdAt) : null })));
       } else {
         toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
       }
@@ -118,53 +122,20 @@ export default function UserManagement({ user }: { user: CustomUser }) {
     fetchData();
   }, [fetchData]);
 
-  // Calculate role counts for super-admin dashboard
   const roleCounts = useMemo(() => {
     if (user.role !== 'super-admin') return null;
-
     const counts = {
       bigAdmin: { active: 0, inactive: 0 },
       admin: { active: 0, inactive: 0 },
       user: { active: 0, inactive: 0 },
     };
-
     users.forEach(u => {
-      if (u.role === 'big-admin') {
-        u.status === 'active' ? counts.bigAdmin.active++ : counts.bigAdmin.inactive++;
-      } else if (u.role === 'admin') {
-        u.status === 'active' ? counts.admin.active++ : counts.admin.inactive++;
-      } else if (u.role === 'user') {
-        u.status === 'active' ? counts.user.active++ : counts.user.inactive++;
-      }
+      if (u.role === 'big-admin') u.status === 'active' ? counts.bigAdmin.active++ : counts.bigAdmin.inactive++;
+      else if (u.role === 'admin') u.status === 'active' ? counts.admin.active++ : counts.admin.inactive++;
+      else if (u.role === 'user') u.status === 'active' ? counts.user.active++ : counts.user.inactive++;
     });
-
     return counts;
   }, [users, user.role]);
-
-  const handleSendInvite = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsSendingInvite(true);
-
-    const email = inviteEmail.trim().toLowerCase();
-    
-    if (!email || !email.includes('@')) {
-      toast({ title: 'Invalid Email', description: 'Please enter a valid email address.', variant: 'destructive' });
-      setIsSendingInvite(false);
-      return;
-    }
-
-    const result = await authorizeUserAction({ email });
-
-    if (result.success) {
-      toast({ title: 'User Authorized', description: result.message });
-      setInviteEmail('');
-      fetchData(); // Refetch data to show the new invite
-    } else {
-      toast({ title: 'Authorization Failed', description: result.message, variant: 'destructive' });
-    }
-
-    setIsSendingInvite(false);
-  };
 
   const handleDeleteInvite = async () => {
     if (!inviteToDelete) return;
@@ -172,7 +143,7 @@ export default function UserManagement({ user }: { user: CustomUser }) {
     const result = await deleteInviteAction({ inviteId: inviteToDelete.id });
     if (result.success) {
       toast({ title: 'Invite Deleted', description: `The invite for ${inviteToDelete.email} has been removed.` });
-      fetchData(); // Refetch to update the list
+      fetchData();
     } else {
       toast({ title: 'Deletion Failed', description: result.message, variant: 'destructive' });
     }
@@ -185,7 +156,7 @@ export default function UserManagement({ user }: { user: CustomUser }) {
     const result = await updateUserStatusAction({ userId, status: newStatus });
     if (result.success) {
         toast({ title: 'Status Updated', description: `User has been set to ${newStatus}.` });
-        fetchData(); // Refetch to update the list
+        fetchData();
     } else {
       toast({ title: 'Update Failed', description: result.message, variant: 'destructive' });
     }
@@ -197,139 +168,47 @@ export default function UserManagement({ user }: { user: CustomUser }) {
   return (
     <>
       <div className="space-y-8">
-        {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-2">
           <Card className="border-primary/50 shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-primary">Total Managed Users</CardTitle>
-              <Users className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-              <div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : totalUsers}</div>
-              <p className="text-xs text-muted-foreground">All users within your management scope.</p>
-              </CardContent>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-primary">Total Managed Users</CardTitle><Users className="h-5 w-5 text-primary" /></CardHeader>
+              <CardContent><div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : totalUsers}</div><p className="text-xs text-muted-foreground">All users within your management scope.</p></CardContent>
           </Card>
           <Card className="border-amber-500/50 shadow-lg hover:shadow-amber-500/20 transition-shadow duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-amber-600">Pending Invites</CardTitle>
-              <Hourglass className="h-5 w-5 text-amber-600" />
-              </CardHeader>
-              <CardContent>
-              <div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : pendingInvitesCount}</div>
-              <p className="text-xs text-muted-foreground">Users authorized but not yet registered.</p>
-              </CardContent>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-amber-600">Pending Invites</CardTitle><Hourglass className="h-5 w-5 text-amber-600" /></CardHeader>
+              <CardContent><div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : pendingInvitesCount}</div><p className="text-xs text-muted-foreground">Users authorized but not yet registered.</p></CardContent>
           </Card>
         </div>
         
-        {/* Super Admin Role Counter Cards */}
         {user.role === 'super-admin' && roleCounts && !isLoading && (
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-4">System Role Overview</h3>
             <div className="grid gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium">Big Admins (District)</CardTitle>
-                </CardHeader>
-                <CardContent className="flex items-center justify-around">
-                  <div className="text-center">
-                    <p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts.bigAdmin.active}</p>
-                    <p className="text-xs text-muted-foreground">Active</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts.bigAdmin.inactive}</p>
-                    <p className="text-xs text-muted-foreground">Inactive</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium">Admins (School)</CardTitle>
-                </CardHeader>
-                <CardContent className="flex items-center justify-around">
-                  <div className="text-center">
-                    <p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts.admin.active}</p>
-                    <p className="text-xs text-muted-foreground">Active</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts.admin.inactive}</p>
-                    <p className="text-xs text-muted-foreground">Inactive</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium">Users (Instructors)</CardTitle>
-                </CardHeader>
-                <CardContent className="flex items-center justify-around">
-                  <div className="text-center">
-                    <p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {roleCounts.user.active}</p>
-                    <p className="text-xs text-muted-foreground">Active</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {roleCounts.user.inactive}</p>
-                    <p className="text-xs text-muted-foreground">Inactive</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Big Admins (District)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts.bigAdmin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts.bigAdmin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+              <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+              <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {roleCounts.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {roleCounts.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
             </div>
           </div>
         )}
         
-        {/* Authorize User Card */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><UserPlus /> Authorize New User</CardTitle>
-            <CardDescription>Authorize a user by email. You can then assign them a specific role and scope in the management table below.</CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSendInvite}>
-            <CardContent><Input name="email" type="email" placeholder="teacher@school.com" required value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} /></CardContent>
-            <CardFooter><Button type="submit" disabled={isSendingInvite}>{isSendingInvite ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2" />}Authorize User</Button></CardFooter>
-          </form>
+          <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus /> Authorize New User</CardTitle><CardDescription>Create an invite with a pre-assigned role and scope. The user will receive these permissions upon registration.</CardDescription></CardHeader>
+          <CardContent><Button onClick={() => setIsCreateInviteDialogOpen(true)}><CheckCircle className="mr-2" />Create New Invite</Button></CardContent>
         </Card>
 
-        {/* User & Invite Management Card */}
         <Card>
-          <CardHeader>
-            <CardTitle>User & Invite Management</CardTitle>
-            <CardDescription>Manage roles, status, and pending invites for all system users.</CardDescription>
-          </CardHeader>
+          <CardHeader><CardTitle>User & Invite Management</CardTitle><CardDescription>Manage roles, status, and pending invites for all system users.</CardDescription></CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
-            ) : (
+            {isLoading ? <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div> : (
               <Table>
-                <TableHeader>
-                  <TableRow><TableHead>Email</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
-                </TableHeader>
+                <TableHeader><TableRow><TableHead>Email</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {users.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.email}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col text-xs">
-                          <span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span>
-                          <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
-                          {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}
-                          {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}
-                          {u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        {u.role !== 'super-admin' && <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingUser(u)}><Edit className="h-4 w-4" /></Button>}
-                        {u.role !== 'super-admin' && <Switch id={`switch-${u.id}`} checked={u.status === 'active'} onCheckedChange={() => handleStatusChange(u.id, u.status)} aria-label={`Toggle status for ${u.email}`} />}
-                      </TableCell>
-                    </TableRow>
+                    <TableRow key={u.id}><TableCell className="font-medium">{u.email}</TableCell><TableCell><div className="flex flex-col text-xs"><span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span><span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>{u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}{u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}{u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}</div></TableCell><TableCell className="text-right space-x-2">{u.role !== 'super-admin' && <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingUser(u)}><Edit className="h-4 w-4" /></Button>}{u.role !== 'super-admin' && <Switch id={`switch-${u.id}`} checked={u.status === 'active'} onCheckedChange={() => handleStatusChange(u.id, u.status)} aria-label={`Toggle status for ${u.email}`} />}</TableCell></TableRow>
                   ))}
                   {invites.filter((i) => i.status === 'pending').map((invite) => (
-                      <TableRow key={invite.id}>
-                        <TableCell className="font-medium">{invite.email}</TableCell>
-                        <TableCell className="italic text-yellow-600 text-sm">Pending Invite</TableCell>
-                        <TableCell className="text-right"><Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button></TableCell>
-                      </TableRow>
+                      <TableRow key={invite.id}><TableCell className="font-medium">{invite.email}</TableCell><TableCell><div className="flex flex-col text-xs"><span className="italic text-yellow-600">Pending Invite</span>{invite.role && <span className={`capitalize font-semibold ${invite.role === 'big-admin' ? 'text-purple-600' : invite.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {invite.role}</span>}</div></TableCell><TableCell className="text-right"><Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button></TableCell></TableRow>
                   ))}
-                  {(users.length === 0 && invites.filter((i) => i.status === 'pending').length === 0) && (
-                    <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No users or pending authorizations found.</TableCell></TableRow>
-                  )}
+                  {(users.length === 0 && pendingInvitesCount === 0) && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No users or pending authorizations found.</TableCell></TableRow>}
                 </TableBody>
               </Table>
             )}
@@ -338,24 +217,95 @@ export default function UserManagement({ user }: { user: CustomUser }) {
       </div>
       
       <AlertDialog open={!!inviteToDelete} onOpenChange={(open) => !open && setInviteToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone. This will permanently delete the invite for <strong>{inviteToDelete?.email}</strong> and they will not be able to register.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setInviteToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteInvite} disabled={isDeleting}>{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the invite for <strong>{inviteToDelete?.email}</strong> and they will not be able to register.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setInviteToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteInvite} disabled={isDeleting}>{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Continue</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
 
+      {isCreateInviteDialogOpen && <CreateInviteDialog currentUser={user} onOpenChange={setIsCreateInviteDialogOpen} onInviteCreated={fetchData} />}
       {editingUser && <EditUserDialog currentUser={user} user={editingUser} onOpenChange={() => setEditingUser(null)} onUserUpdated={fetchData} />}
     </>
   );
 }
 
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
+
+function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { currentUser: CustomUser, onOpenChange: (open: boolean) => void, onInviteCreated: () => void }) {
+    const [email, setEmail] = useState('');
+    const [role, setRole] = useState<'big-admin' | 'admin' | 'user' | ''>('');
+    const [region, setRegion] = useState('');
+    const [district, setDistrict] = useState('');
+    const [circuit, setCircuit] = useState('');
+    const [schoolName, setSchoolName] = useState('');
+    const [classNames, setClassNames] = useState<string[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
+    const { toast } = useToast();
+
+    const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+    const [availableCircuits, setAvailableCircuits] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (region) setAvailableDistricts(ghanaRegionsAndDistricts[region]?.sort() || []);
+        else setAvailableDistricts([]);
+    }, [region]);
+
+    useEffect(() => {
+        if (district) setAvailableCircuits(ghanaDistrictsAndCircuits[district]?.sort() || []);
+        else setAvailableCircuits([]);
+    }, [district]);
+
+    useEffect(() => {
+        if (role === 'big-admin') { setSchoolName(''); setCircuit(''); setClassNames([]); }
+        else if (role === 'admin') { setClassNames([]); }
+    }, [role]);
+    
+    const handleClassNamesChange = (className: string, checked: boolean) => {
+        setClassNames(prev => checked ? [...prev, className] : prev.filter(c => c !== className));
+    };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        const result = await createInviteAction({
+            email,
+            role: role as 'big-admin' | 'admin' | 'user',
+            region: (role === 'big-admin' || role === 'admin' || role === 'user') ? region : null,
+            district: (role === 'big-admin' || role === 'admin' || role === 'user') ? district : null,
+            circuit: (role === 'admin' || role === 'user') ? circuit : null,
+            schoolName: (role === 'admin' || role === 'user') ? schoolName : null,
+            classNames: role === 'user' ? classNames : null,
+        }, { role: currentUser.role });
+
+        if(result.success) {
+            toast({ title: "Invite Created", description: result.message });
+            onInviteCreated();
+            onOpenChange(false);
+        } else {
+            toast({ title: "Creation Failed", description: result.message, variant: 'destructive' });
+        }
+        setIsSaving(false);
+    };
+    
+    const availableRoles = useMemo(() => {
+      if (currentUser.role === 'super-admin') return [{ value: 'user', label: 'User (Instructor)'}, { value: 'admin', label: 'Admin (School-level)'}, { value: 'big-admin', label: 'Big Admin (District-level)'}];
+      if (currentUser.role === 'big-admin') return [{ value: 'user', label: 'User (Instructor)'}, { value: 'admin', label: 'Admin (School-level)'}];
+      if (currentUser.role === 'admin') return [{ value: 'user', label: 'User (Instructor)'}];
+      return [];
+    }, [currentUser.role]);
+
+    return (
+        <Dialog open={true} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader><DialogTitle>Create New Invite</DialogTitle><DialogDescription>Invite a new user by email and pre-assign their role and permissions.</DialogDescription></DialogHeader>
+                <div className="space-y-4 py-4"><div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="new.user@example.com"/></div><div className="space-y-2"><Label htmlFor="role">Role</Label><Select value={role} onValueChange={(value) => setRole(value as any)}><SelectTrigger id="role"><SelectValue placeholder="Select a role"/></SelectTrigger><SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent></Select></div>
+                    {(role === 'big-admin' || role === 'admin' || role === 'user') && (<><div className="space-y-2"><Label htmlFor="region">Region</Label><Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); setCircuit(''); }}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="district">District/Municipal</Label><Select value={district} onValueChange={(val) => { setDistrict(val); setCircuit(''); }} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select></div></>)}
+                    {(role === 'admin' || role === 'user') && (<div className="space-y-2"><Label htmlFor="circuit">Circuit</Label>{district === 'Ejura Sekyedumase Municipal' ? <Select value={circuit} onValueChange={setCircuit}><SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger><SelectContent>{availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select> : <Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter circuit name" />}</div>)}
+                    {(role === 'admin' || role === 'user') && (<div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>)}
+                    {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
+                </div>
+                <DialogFooter><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button onClick={handleSave} disabled={isSaving || !email || !role}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button></DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 
 function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { currentUser: CustomUser, user: UserData, onOpenChange: (open: boolean) => void, onUserUpdated: () => void }) {
     const [role, setRole] = useState(user.role);
@@ -371,30 +321,18 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
     const [availableCircuits, setAvailableCircuits] = useState<string[]>([]);
 
     useEffect(() => {
-        if (region) {
-            setAvailableDistricts(ghanaRegionsAndDistricts[region]?.sort() || []);
-        } else {
-            setAvailableDistricts([]);
-        }
+        if (region) setAvailableDistricts(ghanaRegionsAndDistricts[region]?.sort() || []);
+        else setAvailableDistricts([]);
     }, [region]);
 
     useEffect(() => {
-        if (district) {
-            setAvailableCircuits(ghanaDistrictsAndCircuits[district]?.sort() || []);
-        } else {
-            setAvailableCircuits([]);
-        }
+        if (district) setAvailableCircuits(ghanaDistrictsAndCircuits[district]?.sort() || []);
+        else setAvailableCircuits([]);
     }, [district]);
 
-    // When role changes, reset fields that are not applicable to avoid sending stale data
     useEffect(() => {
-        if (role === 'big-admin') {
-            setSchoolName('');
-            setCircuit('');
-            setClassNames([]);
-        } else if (role === 'admin') {
-             setClassNames([]);
-        }
+        if (role === 'big-admin') { setSchoolName(''); setCircuit(''); setClassNames([]); }
+        else if (role === 'admin') { setClassNames([]); }
     }, [role]);
     
     const handleClassNamesChange = (className: string, checked: boolean) => {
@@ -415,7 +353,7 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
 
         if(result.success) {
             toast({ title: "User Updated", description: result.message });
-            onUserUpdated(); // Refetch data in the parent component
+            onUserUpdated();
             onOpenChange(false);
         } else {
             toast({ title: "Update Failed", description: result.message, variant: 'destructive' });
@@ -424,126 +362,24 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
     };
     
     const availableRoles = useMemo(() => {
-      if (currentUser.role === 'super-admin') {
-        return [
-          { value: 'user', label: 'User (Instructor)'},
-          { value: 'admin', label: 'Admin (School-level)'},
-          { value: 'big-admin', label: 'Big Admin (District-level)'},
-        ];
-      }
-      if (currentUser.role === 'big-admin') {
-        return [
-          { value: 'user', label: 'User (Instructor)'},
-          { value: 'admin', label: 'Admin (School-level)'},
-        ];
-      }
-      if (currentUser.role === 'admin') {
-        return [
-          { value: 'user', label: 'User (Instructor)'}
-        ];
-      }
+      if (currentUser.role === 'super-admin') return [{ value: 'user', label: 'User (Instructor)'}, { value: 'admin', label: 'Admin (School-level)'}, { value: 'big-admin', label: 'Big Admin (District-level)'}];
+      if (currentUser.role === 'big-admin') return [{ value: 'user', label: 'User (Instructor)'}, { value: 'admin', label: 'Admin (School-level)'}];
+      if (currentUser.role === 'admin') return [{ value: 'user', label: 'User (Instructor)'}];
       return [];
     }, [currentUser.role]);
-
 
     return (
         <Dialog open={!!user} onOpenChange={onOpenChange}>
             <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Edit User: {user.email}</DialogTitle>
-                    <DialogDescription>Update the role and permissions for this user.</DialogDescription>
-                </DialogHeader>
+                <DialogHeader><DialogTitle>Edit User: {user.email}</DialogTitle><DialogDescription>Update the role and permissions for this user.</DialogDescription></DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="role">Role</Label>
-                        <Select value={role} onValueChange={(value) => setRole(value as UserData['role'])}>
-                            <SelectTrigger id="role"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {(role === 'big-admin' || role === 'admin' || role === 'user') && (
-                        <>
-                            <div className="space-y-2">
-                                <Label htmlFor="region">Region</Label>
-                                <Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); setCircuit(''); }}>
-                                    <SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger>
-                                    <SelectContent>
-                                        {ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="district">District/Municipal</Label>
-                                <Select value={district} onValueChange={(val) => { setDistrict(val); setCircuit(''); }} disabled={!region}>
-                                    <SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger>
-                                    <SelectContent>
-                                        {availableDistricts.length > 0 ? (
-                                            availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)
-                                        ) : (
-                                            <SelectItem value="-" disabled>Select a region first</SelectItem>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </>
-                    )}
-
-                    {(role === 'admin' || role === 'user') && (
-                         <div className="space-y-2">
-                            <Label htmlFor="circuit">Circuit</Label>
-                            {district === 'Ejura Sekyedumase Municipal' ? (
-                                <Select value={circuit} onValueChange={setCircuit}>
-                                    <SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger>
-                                    <SelectContent>
-                                        {availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            ) : (
-                                <Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter circuit name" />
-                            )}
-                        </div>
-                    )}
-
-                     {(role === 'admin' || role === 'user') && (
-                        <div className="space-y-2">
-                            <Label htmlFor="schoolName">School Name</Label>
-                            <Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" />
-                        </div>
-                     )}
-
-                    {role === 'user' && (
-                        <div className="space-y-2">
-                            <Label htmlFor="user-classNames">Class Names</Label>
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-between">
-                                        <span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                                    <ScrollArea className="h-[200px]">
-                                    {classLevels.map(c => (
-                                        <DropdownMenuCheckboxItem
-                                            key={c}
-                                            checked={classNames.includes(c)}
-                                            onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}
-                                        >
-                                            {c}
-                                        </DropdownMenuCheckboxItem>
-                                    ))}
-                                    </ScrollArea>
-                                </DropdownMenuContent>
-                             </DropdownMenu>
-                        </div>
-                    )}
+                    <div className="space-y-2"><Label htmlFor="role">Role</Label><Select value={role} onValueChange={(value) => setRole(value as UserData['role'])}><SelectTrigger id="role"><SelectValue /></SelectTrigger><SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent></Select></div>
+                    {(role === 'big-admin' || role === 'admin' || role === 'user') && (<><div className="space-y-2"><Label htmlFor="region">Region</Label><Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); setCircuit(''); }}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="district">District/Municipal</Label><Select value={district} onValueChange={(val) => { setDistrict(val); setCircuit(''); }} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select></div></>)}
+                    {(role === 'admin' || role === 'user') && (<div className="space-y-2"><Label htmlFor="circuit">Circuit</Label>{district === 'Ejura Sekyedumase Municipal' ? <Select value={circuit} onValueChange={setCircuit}><SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger><SelectContent>{availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select> : <Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter circuit name" />}</div>)}
+                    {(role === 'admin' || role === 'user') && (<div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>)}
+                    {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
                 </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                    <Button onClick={handleSave} disabled={isSaving}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Changes</Button>
-                </DialogFooter>
+                <DialogFooter><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button onClick={handleSave} disabled={isSaving}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Changes</Button></DialogFooter>
             </DialogContent>
         </Dialog>
     );

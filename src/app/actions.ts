@@ -22,6 +22,7 @@ import { auth, db } from '@/lib/firebase';
 import admin from '@/lib/firebase-admin'; // Import the default admin instance
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import type { CustomUser } from '@/components/auth-provider';
 
 
 // Schema for student feedback generation
@@ -216,7 +217,7 @@ export async function getAiSchoolInsightsAction(
   }
 }
 
-// New single action for user registration
+// Updated registerUserAction: now reads role and scope from the invite
 export async function registerUserAction(data: {
   email: string;
   password: string;
@@ -228,7 +229,16 @@ export async function registerUserAction(data: {
     const isSuperAdminRegistering =
       trimmedEmail === process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
 
-    // For non-super-admins, check for a pending invite first.
+    let role: CustomUser['role'] = 'user';
+    let userScopeData: any = {
+      region: null,
+      district: null,
+      circuit: null,
+      schoolName: null,
+      classNames: null,
+    };
+    let inviteDocId: string | null = null;
+
     if (!isSuperAdminRegistering) {
       const invitesRef = collection(db, 'invites');
       const inviteQuery = query(
@@ -244,6 +254,22 @@ export async function registerUserAction(data: {
           message: 'Registration failed. You must be invited by an administrator.',
         };
       }
+      
+      const inviteDoc = inviteSnapshot.docs[0];
+      inviteDocId = inviteDoc.id;
+      const inviteData = inviteDoc.data();
+      
+      role = inviteData.role || 'user'; // Fallback to 'user' if not set
+      userScopeData = {
+        region: inviteData.region ?? null,
+        district: inviteData.district ?? null,
+        circuit: inviteData.circuit ?? null,
+        schoolName: inviteData.schoolName ?? null,
+        classNames: inviteData.classNames ?? null,
+      };
+
+    } else {
+      role = 'super-admin';
     }
 
     // Create user in Firebase Auth
@@ -253,38 +279,25 @@ export async function registerUserAction(data: {
       password
     );
     const newUser = userCredential.user;
-    const role = isSuperAdminRegistering ? 'super-admin' : 'user';
 
-    // Create user document in Firestore
+    // Create user document in Firestore with role and scope from the invite
     await setDoc(doc(db, 'users', newUser.uid), {
       email: trimmedEmail,
       role: role,
       status: 'active',
-      region: null,
-      district: null,
-      circuit: null,
-      schoolName: null,
-      className: null,
+      ...userScopeData,
       createdAt: serverTimestamp(),
     });
 
     // If it was a regular user, update their invite to 'completed'
-    if (!isSuperAdminRegistering) {
-        const invitesRef = collection(db, 'invites');
-        const q = query(invitesRef, where('email', '==', trimmedEmail), where('status', '==', 'pending'));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            const inviteDoc = querySnapshot.docs[0];
-            await setDoc(doc(db, 'invites', inviteDoc.id), { status: 'completed', completedAt: serverTimestamp() }, { merge: true });
-        }
+    if (inviteDocId) {
+      await setDoc(doc(db, 'invites', inviteDocId), { status: 'completed', completedAt: serverTimestamp() }, { merge: true });
     }
 
     return { success: true, message: 'Successfully registered! You will now be redirected.' };
 
   } catch (error: any) {
     console.error('Registration Error:', error);
-
     let errorMessage = 'An unexpected error occurred during registration.';
     if (error.code) {
       switch (error.code) {
@@ -306,35 +319,52 @@ export async function registerUserAction(data: {
     } else if (error.message) {
       errorMessage = error.message;
     }
-    
     return { success: false, message: errorMessage };
   }
 }
 
-// Action for authorizing a user (creating an invite) - NOW USES FIREBASE ADMIN SDK
-const AuthorizeUserActionInputSchema = z.object({
+
+// NEW Action for creating a detailed invite
+const CreateInviteActionInputSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
+  role: z.enum(['big-admin', 'admin', 'user']),
+  region: z.string().optional().nullable(),
+  district: z.string().optional().nullable(),
+  circuit: z.string().optional().nullable(),
+  schoolName: z.string().optional().nullable(),
+  classNames: z.array(z.string()).optional().nullable(),
 });
 
-export async function authorizeUserAction(
-  data: z.infer<typeof AuthorizeUserActionInputSchema>
+export async function createInviteAction(
+  data: z.infer<typeof CreateInviteActionInputSchema>,
+  currentUser: { role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null }
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const { email } = AuthorizeUserActionInputSchema.parse(data);
+     if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
+      throw new Error("You do not have permission to perform this action.");
+    }
+    
+    const validatedData = CreateInviteActionInputSchema.parse(data);
+    const { email, role, ...scopes } = validatedData;
     const normalizedEmail = email.trim().toLowerCase();
+
+    // Permission checks for who can invite whom
+    if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) {
+      throw new Error("A 'big-admin' cannot invite other 'big-admin' or 'super-admin' roles.");
+    }
+    if (currentUser.role === 'admin' && role !== 'user') {
+      throw new Error("An 'admin' can only invite users with the 'user' role.");
+    }
 
     // Check if user already exists in Firebase Auth
     try {
         await admin.auth().getUserByEmail(normalizedEmail);
-        // If the above line doesn't throw, a user with this email already exists in Auth.
         return { success: false, message: `A user with the email ${normalizedEmail} is already registered.` };
     } catch (error: any) {
         if (error.code !== 'auth/user-not-found') {
-            // An error other than "user not found" occurred, so we should re-throw it.
             console.error("Error checking for existing user in Auth:", error);
             throw new Error('An unexpected error occurred while checking for an existing user.');
         }
-        // If the error code is 'auth/user-not-found', it means the email is available to be invited, which is what we want.
     }
 
     // Check for existing pending invite in Firestore
@@ -348,20 +378,22 @@ export async function authorizeUserAction(
       return { success: false, message: `A pending invite for ${normalizedEmail} already exists.` };
     }
 
-    // Create the invite document
+    // Create the invite document with role and scope
     await invitesRef.add({
       email: normalizedEmail,
       status: 'pending',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      role,
+      ...scopes,
     });
 
-    return { success: true, message: `User with email ${normalizedEmail} has been authorized. They can now register.` };
+    return { success: true, message: `User with email ${normalizedEmail} has been invited as a '${role}'. They can now register.` };
 
   } catch (error: any) {
-    console.error('Error in authorizeUserAction:', error);
+    console.error('Error in createInviteAction:', error);
     let errorMessage = 'An unexpected error occurred during authorization.';
     if (error instanceof z.ZodError) {
-      errorMessage = "Invalid input for authorizing user: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+      errorMessage = "Invalid input for inviting user: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
     } else if (error.message) {
       errorMessage = error.message;
     }
@@ -370,7 +402,7 @@ export async function authorizeUserAction(
 }
 
 
-// Action for deleting an invite - NOW USES FIREBASE ADMIN SDK
+// Action for deleting an invite
 const DeleteInviteActionInputSchema = z.object({
   inviteId: z.string().min(1, 'Invite ID is required.'),
 });
@@ -396,7 +428,7 @@ export async function deleteInviteAction(
   }
 }
 
-// Action for updating user status - NOW USES FIREBASE ADMIN SDK
+// Action for updating user status
 const UpdateUserStatusActionInputSchema = z.object({
   userId: z.string().min(1, 'User ID is required.'),
   status: z.enum(['active', 'inactive']),
@@ -433,7 +465,7 @@ const UpdateUserRoleAndScopeActionSchema = z.object({
   district: z.string().optional().nullable(),
   circuit: z.string().optional().nullable(),
   schoolName: z.string().optional().nullable(),
-  classNames: z.array(z.string()).optional().nullable(), // Changed from className to classNames
+  classNames: z.array(z.string()).optional().nullable(),
 });
 
 export async function updateUserRoleAndScopeAction(
@@ -482,7 +514,7 @@ export async function updateUserRoleAndScopeAction(
       updateData.district = scopes.district;
       updateData.circuit = scopes.circuit;
       updateData.schoolName = scopes.schoolName;
-      updateData.classNames = scopes.classNames; // Array of class names
+      updateData.classNames = scopes.classNames;
     }
     
     await userDocRef.update(updateData);
@@ -511,19 +543,24 @@ interface UserForAdmin {
   district?: string | null;
   circuit?: string | null;
   schoolName?: string | null;
-  classNames?: string[] | null; // Changed from className to classNames
-  createdAt: string | null; // Dates are serialized to strings
+  classNames?: string[] | null;
+  createdAt: string | null;
 }
 
 interface InviteForAdmin {
   id: string;
   email: string;
   status: 'pending' | 'completed';
-  createdAt: string | null; // Dates are serialized to strings
+  role?: 'big-admin' | 'admin' | 'user'; // role is now included
+  region?: string | null;
+  district?: string | null;
+  circuit?: string | null;
+  schoolName?: string | null;
+  classNames?: string[] | null;
+  createdAt: string | null;
 }
 
 
-// NEW: Securely fetch users list from the server
 export async function getUsersAction(currentUser: {
   id: string;
   role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
@@ -544,12 +581,11 @@ export async function getUsersAction(currentUser: {
       if (!currentUser.schoolName) throw new Error("Admin scope error: schoolName not defined for your account.");
       usersQuery = usersQuery.where('schoolName', '==', currentUser.schoolName).where('role', '==', 'user');
     }
-    // 'super-admin' gets all users, no filter needed.
 
     const usersSnapshot = await usersQuery.orderBy('createdAt', 'desc').get();
     
     const users = usersSnapshot.docs
-      .filter(doc => doc.id !== currentUser.id) // Do not show the current user in their own management list
+      .filter(doc => doc.id !== currentUser.id)
       .map(doc => {
         const data = doc.data();
         return {
@@ -561,7 +597,7 @@ export async function getUsersAction(currentUser: {
           district: data.district,
           circuit: data.circuit,
           schoolName: data.schoolName,
-          classNames: data.classNames, // Ensure this is fetched
+          classNames: data.classNames,
           createdAt: data.createdAt?.toDate().toISOString() ?? null,
         };
       });
@@ -574,9 +610,15 @@ export async function getUsersAction(currentUser: {
 }
 
 
-// NEW: Securely fetch invites list from the server
-export async function getInvitesAction(): Promise<{ success: boolean; invites?: InviteForAdmin[]; error?: string }> {
+export async function getInvitesAction(currentUser: {
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
+}): Promise<{ success: boolean; invites?: InviteForAdmin[]; error?: string }> {
+   if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
+      throw new Error("You do not have permission to view this data.");
+    }
+
   try {
+    // For now, admins see all invites. This could be scoped down later if needed.
     const invitesSnapshot = await admin.firestore().collection('invites').orderBy('createdAt', 'desc').get();
     const invites = invitesSnapshot.docs.map(doc => {
       const data = doc.data();
@@ -584,6 +626,12 @@ export async function getInvitesAction(): Promise<{ success: boolean; invites?: 
         id: doc.id,
         email: data.email,
         status: data.status,
+        role: data.role,
+        region: data.region,
+        district: data.district,
+        circuit: data.circuit,
+        schoolName: data.schoolName,
+        classNames: data.classNames,
         createdAt: data.createdAt?.toDate().toISOString() ?? null,
       };
     });
