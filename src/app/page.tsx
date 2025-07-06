@@ -240,7 +240,7 @@ function AppContent({ user }: { user: CustomUser }) {
     let q;
     switch(user.role) {
         case 'super-admin':
-            q = query(reportsCollectionRef, orderBy('createdAt', 'asc'));
+            q = query(reportsCollectionRef); // Removed order by to avoid composite index need
             break;
         case 'big-admin':
             if (!user.district) {
@@ -288,9 +288,8 @@ function AppContent({ user }: { user: CustomUser }) {
         }
       });
       
-      if (user.role !== 'super-admin') {
-        fetchedReports.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
-      }
+      // Sort reports on the client side to avoid needing composite indexes in Firestore
+      fetchedReports.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
 
       // Set session defaults based on user role and fetched data
       const newSessionDefaults: Partial<ReportData> = {};
@@ -342,7 +341,7 @@ function AppContent({ user }: { user: CustomUser }) {
         const errorMessage = `A database index is needed to filter reports by '${indexField}'. Please check your browser's developer console for a link to create it. This is a one-time setup.`;
         setIndexError(errorMessage);
         toast({ 
-          title: "Firestore Index Required", 
+          title: "Action Required: Firestore Index Needed", 
           description: errorMessage,
           variant: "destructive",
           duration: 20000 
@@ -844,7 +843,7 @@ function AppContent({ user }: { user: CustomUser }) {
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground main-app-container">
       <header className="mb-8 text-center no-print relative">
         <div className="absolute top-0 left-0 flex items-center gap-2">
-            {user.role === 'super-admin' && (
+            {user.role && ['super-admin', 'big-admin', 'admin'].includes(user.role) && (
                 <Link href="/admin" passHref>
                     <Button variant="outline" size="sm">
                         <Shield className="mr-2 h-4 w-4" />
