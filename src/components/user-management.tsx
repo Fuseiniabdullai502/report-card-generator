@@ -163,34 +163,36 @@ export default function UserManagement() {
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 mb-8">
-        <Card className="border-primary/50 shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-primary">Total Registered Users</CardTitle>
-            <Users className="h-5 w-5 text-primary" />
-            </CardHeader>
-            <CardContent>
-            <div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : totalUsers}</div>
-            <p className="text-xs text-muted-foreground">All users with access to the system.</p>
-            </CardContent>
-        </Card>
-        <Card className="border-amber-500/50 shadow-lg hover:shadow-amber-500/20 transition-shadow duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-amber-600">Pending Invites</CardTitle>
-            <Hourglass className="h-5 w-5 text-amber-600" />
-            </CardHeader>
-            <CardContent>
-            <div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : pendingInvitesCount}</div>
-            <p className="text-xs text-muted-foreground">Users authorized but not yet registered.</p>
-            </CardContent>
-        </Card>
-      </div>
-      
-      <div className="grid gap-8 md:grid-cols-2">
+      <div className="space-y-8">
+        {/* Summary Cards */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className="border-primary/50 shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-primary">Total Registered Users</CardTitle>
+              <Users className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+              <div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : totalUsers}</div>
+              <p className="text-xs text-muted-foreground">All users with access to the system.</p>
+              </CardContent>
+          </Card>
+          <Card className="border-amber-500/50 shadow-lg hover:shadow-amber-500/20 transition-shadow duration-300">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-amber-600">Pending Invites</CardTitle>
+              <Hourglass className="h-5 w-5 text-amber-600" />
+              </CardHeader>
+              <CardContent>
+              <div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : pendingInvitesCount}</div>
+              <p className="text-xs text-muted-foreground">Users authorized but not yet registered.</p>
+              </CardContent>
+          </Card>
+        </div>
+        
+        {/* Authorize User Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><UserPlus /> Authorize New User</CardTitle>
-            <CardDescription>Authorize a user, then assign them a role in the management table.</CardDescription>
+            <CardDescription>Authorize a user by email. You can then assign them a specific role and scope in the management table below.</CardDescription>
           </CardHeader>
           <form onSubmit={handleSendInvite}>
             <CardContent><Input name="email" type="email" placeholder="teacher@school.com" required value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} /></CardContent>
@@ -198,10 +200,11 @@ export default function UserManagement() {
           </form>
         </Card>
 
+        {/* User & Invite Management Card */}
         <Card>
           <CardHeader>
             <CardTitle>User & Invite Management</CardTitle>
-            <CardDescription>Manage roles, status, and pending invites.</CardDescription>
+            <CardDescription>Manage roles, status, and pending invites for all system users.</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -358,7 +361,7 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
                                         {availableDistricts.length > 0 ? (
                                             availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)
                                         ) : (
-                                            <SelectItem value="" disabled>Select a region first</SelectItem>
+                                            <SelectItem value="-" disabled>Select a region first</SelectItem>
                                         )}
                                     </SelectContent>
                                 </Select>
