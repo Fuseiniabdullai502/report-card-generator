@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -247,7 +248,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 setIsLoadingReports(false);
                 return;
             }
-            q = query(reportsCollectionRef, where('district', '==', user.district), orderBy('createdAt', 'asc'));
+            q = query(reportsCollectionRef, where('district', '==', user.district));
             break;
         case 'admin':
             if (!user.schoolName) {
@@ -255,11 +256,11 @@ function AppContent({ user }: { user: CustomUser }) {
                 setIsLoadingReports(false);
                 return;
             }
-            q = query(reportsCollectionRef, where('schoolName', '==', user.schoolName), orderBy('createdAt', 'asc'));
+            q = query(reportsCollectionRef, where('schoolName', '==', user.schoolName));
             break;
         case 'user':
         default:
-            q = query(reportsCollectionRef, where('teacherId', '==', user.uid), orderBy('createdAt', 'asc'));
+            q = query(reportsCollectionRef, where('teacherId', '==', user.uid));
             break;
     }
 
@@ -287,6 +288,10 @@ function AppContent({ user }: { user: CustomUser }) {
         }
       });
       
+      if (user.role !== 'super-admin') {
+        fetchedReports.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
+      }
+
       // Set session defaults based on user role and fetched data
       const newSessionDefaults: Partial<ReportData> = {};
       if (user.role === 'admin' && user.schoolName) {
