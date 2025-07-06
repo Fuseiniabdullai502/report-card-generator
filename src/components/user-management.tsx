@@ -107,12 +107,6 @@ export default function UserManagement() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-  
-  useEffect(() => {
-    if (!editingUser) {
-        setIsEditUserDialogOpen(false);
-    }
-  }, [editingUser]);
 
   const handleSendInvite = async (e: FormEvent) => {
     e.preventDefault();
