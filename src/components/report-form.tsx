@@ -40,6 +40,25 @@ const promotionStatusOptions = ["Promoted", "Repeated", "Graduated", "Under Revi
 const predefinedSubjectsList = ["Mathematics", "English Language", "Science", "Computing", "Religious and Moral Education", "Creative Arts", "Geography", "Economics", "Biology", "Elective Mathematics"];
 const predefinedHobbiesList = ["Reading", "Sports (General)", "Music", "Art & Craft", "Debating", "Coding/Programming", "Gardening", "Volunteering", "Cooking/Baking", "Drama/Theater"];
 
+const AiErrorDescription = ({ errorMessage }: { errorMessage: string }) => {
+  return (
+    <div className="text-xs">
+      <p className="mb-2 font-mono bg-destructive/20 p-2 rounded">{errorMessage}</p>
+      <p className="font-semibold">Common Troubleshooting Steps:</p>
+      <ul className="list-disc list-inside space-y-1 mt-1">
+        <li>Ensure your `GOOGLE_API_KEY` in the `.env` file is correct and that you've restarted your server.</li>
+        <li>Your API key may need to be linked to a Google Cloud project with billing enabled (a free tier is available).</li>
+        <li>In your Google Cloud project, ensure the "Vertex AI API" is enabled.</li>
+        <li>
+          For a detailed guide, check the Genkit setup in the{' '}
+          <code className="bg-destructive/20 p-1 rounded">README.md</code> file.
+        </li>
+      </ul>
+    </div>
+  );
+};
+
+
 export default function ReportForm({ onFormUpdate, initialData, isEditing = false, reportPrintListForHistory, onSaveReport, onResetForm }: ReportFormProps) {
   const formData = initialData; // This component is now fully controlled by the parent.
 
@@ -253,7 +272,12 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
           onFormUpdate({ ...formData, ...result.insights });
           toast({ title: "AI Insights Generated", description: "Performance summary updated with term-over-term comparison." });
        } else {
-          toast({ title: "Error Generating Insights", description: result.error || "Unknown error.", variant: "destructive" });
+          toast({ 
+            title: "AI Insights Generation Failed", 
+            description: <AiErrorDescription errorMessage={result.error || "An unknown error occurred."} />,
+            variant: "destructive",
+            duration: 30000 
+          });
        }
     });
   };
@@ -281,7 +305,12 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
           onFormUpdate({ ...formData, teacherFeedback: result.feedback });
           toast({ title: "AI Feedback Generated" });
        } else {
-          toast({ title: "Error Generating Feedback", description: result.error || "Unknown error.", variant: "destructive" });
+          toast({
+            title: "AI Feedback Generation Failed",
+            description: <AiErrorDescription errorMessage={result.error || "An unknown error occurred."} />,
+            variant: "destructive",
+            duration: 30000
+          });
        }
     });
   };
@@ -294,7 +323,12 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
           onFormUpdate({ ...formData, studentPhotoDataUri: result.editedPhotoDataUri });
           toast({ title: "AI Image Edit Successful" });
        } else {
-          toast({ title: "AI Image Edit Failed", description: result.error || "Unknown error.", variant: "destructive" });
+          toast({
+            title: "AI Image Edit Failed",
+            description: <AiErrorDescription errorMessage={result.error || "An unknown error occurred."} />,
+            variant: "destructive",
+            duration: 30000
+          });
        }
     });
   };
