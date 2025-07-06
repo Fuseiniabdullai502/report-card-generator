@@ -98,6 +98,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const [availableCircuits, setAvailableCircuits] = useState<string[]>([]);
+  const [indexError, setIndexError] = useState<string | null>(null);
 
   useEffect(() => {
     if (sessionDefaults.region && typeof sessionDefaults.region === 'string') {
@@ -232,6 +233,7 @@ function AppContent({ user }: { user: CustomUser }) {
     }
     
     setIsLoadingReports(true);
+    setIndexError(null);
     const reportsCollectionRef = collection(db, 'reports');
     
     let q;
@@ -263,6 +265,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      setIndexError(null);
       const fetchedReports: ReportData[] = [];
       let maxEntryNum = 0;
       const classNamesFromDB = new Set<string>();
@@ -331,9 +334,11 @@ function AppContent({ user }: { user: CustomUser }) {
         let indexField = 'teacherId';
         if (user.role === 'big-admin') indexField = 'district';
         if (user.role === 'admin') indexField = 'schoolName';
+        const errorMessage = `A database index is needed to filter reports by '${indexField}'. Please check your browser's developer console for a link to create it. This is a one-time setup.`;
+        setIndexError(errorMessage);
         toast({ 
           title: "Firestore Index Required", 
-          description: `A database index is needed to filter reports by '${indexField}'. Please check your browser's developer console for a link to create it. This is a one-time setup.`,
+          description: errorMessage,
           variant: "destructive",
           duration: 20000 
         });
@@ -856,6 +861,16 @@ function AppContent({ user }: { user: CustomUser }) {
         </div>
       </header>
       
+      {indexError && (
+        <Alert variant="destructive" className="mb-8 no-print">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Action Required: Firestore Index Needed</AlertTitle>
+            <AlertDescription>
+                {indexError} Your data cannot be loaded until this is fixed in your Firebase project.
+            </AlertDescription>
+        </Alert>
+      )}
+
       <Card className="mb-8 p-4 no-print">
         <CardHeader className="p-2">
             <CardTitle className="text-lg flex items-center"><Users className="mr-2 h-5 w-5 text-primary"/>Session Controls</CardTitle>
