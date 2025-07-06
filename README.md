@@ -32,18 +32,18 @@ The AI features in this application are powered by Google's Gemini models throug
 
 #### Firebase Setup
 
-The application uses Firebase for authentication and Firestore. You need to connect it to a Firebase project. This requires two types of configuration: client-side (for the browser) and server-side (for secure admin actions).
+The application uses Firebase for authentication and Firestore. You need to connect it to a Firebase project and provide two sets of credentials: one for the client-side app (browser) and one for the Admin SDK (server).
 
 ##### Step 1: Client SDK Credentials (for the browser)
 
 1.  If you don't have one, [**create a Firebase project**](https://firebase.google.com/docs/web/setup#create-project).
 2.  In your project's dashboard, go to **Project Settings** (the gear icon) > **General** tab.
 3.  Scroll down to the "Your apps" section and click on the **Web** icon (`</>`) to register a new web app. If you already have a web app, you can use its configuration.
-4.  After registering, Firebase will show you a configuration object. Copy the values from this object into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file. The keys you need from this object are `apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`, and `measurementId`.
+4.  After registering, Firebase will show you a configuration object. Copy the values from this object into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file.
 
 ##### Step 2: Admin SDK Credentials (for the server)
 
-The Admin SDK is required for secure server actions like deactivating users and deleting invites. This setup supports a local file for development. For production, you would typically set the `GOOGLE_APPLICATION_CREDENTIALS` content as a single environment variable in your hosting provider's settings.
+The Admin SDK is required for secure server actions like deactivating users and deleting invites. This setup supports two methods: a local file for development and an environment variable for production.
 
 **For Local Development:**
 
@@ -52,9 +52,19 @@ The Admin SDK is required for secure server actions like deactivating users and 
 3.  **Rename this file to `firebase-service-account.json` and place it in the root directory of your project.**
 4.  In your `.env` file, uncomment the following line:
     ```
+    # GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json
+    ```
+    becomes:
+    ```
     GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json
     ```
 5.  The `.gitignore` file is already configured to prevent this sensitive file from being committed to your repository.
+
+**For Production (Vercel, Firebase App Hosting, etc.):**
+
+1.  In your hosting provider's settings, create a new environment variable named `FIREBASE_SERVICE_ACCOUNT`.
+2.  Open the service account JSON file you downloaded.
+3.  Copy the **entire content** of the JSON file and paste it as the value for the `FIREBASE_SERVICE_ACCOUNT` variable. The value should be a single-line JSON string. Most hosting providers handle this automatically, but if you're pasting it into a text file, ensure any newlines within the private key are escaped (e.g., `\\n`).
 
 ### Troubleshooting
 
