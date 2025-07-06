@@ -43,14 +43,16 @@ import {
     getUsersAction,
     getInvitesAction
 } from '@/app/actions';
-import { ghanaRegionsAndDistricts } from '@/lib/ghana-regions-districts';
+import { ghanaRegions, ghanaRegionsAndDistricts } from '@/lib/ghana-regions-districts';
 
 interface UserData {
   id: string;
   email: string;
   role: 'super-admin' | 'big-admin' | 'admin' | 'user';
   status: 'active' | 'inactive';
+  region?: string | null;
   district?: string | null;
+  circuit?: string | null;
   schoolName?: string | null;
   createdAt: Date | null;
 }
@@ -61,8 +63,6 @@ interface InviteData {
   status: 'pending' | 'completed';
   createdAt: Date | null;
 }
-
-const allDistricts = [...new Set(Object.values(ghanaRegionsAndDistricts).flat())].sort();
 
 export default function UserManagement() {
   const [users, setUsers] = useState<UserData[]>([]);
@@ -219,8 +219,9 @@ export default function UserManagement() {
                         <div className="flex flex-col text-xs">
                           <span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span>
                           <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
-                          {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district}</span>}
-                          {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName}</span>}
+                          {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}
+                          {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.district} / {u.circuit})</span>}
+                          {u.role === 'user' && u.circuit && <span className="text-xs text-muted-foreground">Circuit: {u.circuit}</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
@@ -259,24 +260,52 @@ export default function UserManagement() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {editingUser && <EditUserDialog user={editingUser} onOpenChange={() => setEditingUser(null)} allDistricts={allDistricts} onUserUpdated={fetchData} />}
+      {editingUser && <EditUserDialog user={editingUser} onOpenChange={() => setEditingUser(null)} onUserUpdated={fetchData} />}
     </>
   );
 }
 
-function EditUserDialog({ user, onOpenChange, allDistricts, onUserUpdated }: { user: UserData, onOpenChange: (open: boolean) => void, allDistricts: string[], onUserUpdated: () => void }) {
+function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData, onOpenChange: (open: boolean) => void, onUserUpdated: () => void }) {
     const [role, setRole] = useState(user.role);
+    const [region, setRegion] = useState(user.region || '');
     const [district, setDistrict] = useState(user.district || '');
+    const [circuit, setCircuit] = useState(user.circuit || '');
     const [schoolName, setSchoolName] = useState(user.schoolName || '');
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
+
+    const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (region) {
+            setAvailableDistricts(ghanaRegionsAndDistricts[region]?.sort() || []);
+        } else {
+            setAvailableDistricts([]);
+        }
+    }, [region]);
+
+    // When role changes, reset fields that are not applicable to avoid sending stale data
+    useEffect(() => {
+        if (role === 'big-admin') {
+            setSchoolName('');
+            setCircuit('');
+        } else if (role === 'admin') {
+            setRegion('');
+        } else if (role === 'user') {
+            setRegion('');
+            setDistrict('');
+            setSchoolName('');
+        }
+    }, [role]);
 
     const handleSave = async () => {
         setIsSaving(true);
         const result = await updateUserRoleAndScopeAction({
             userId: user.id,
             role: role as 'big-admin' | 'admin' | 'user',
-            district: role === 'big-admin' ? district : null,
+            region: role === 'big-admin' ? region : null,
+            district: (role === 'big-admin' || role === 'admin') ? district : null,
+            circuit: (role === 'admin' || role === 'user') ? circuit : null,
             schoolName: role === 'admin' ? schoolName : null,
         });
 
@@ -309,21 +338,55 @@ function EditUserDialog({ user, onOpenChange, allDistricts, onUserUpdated }: { u
                             </SelectContent>
                         </Select>
                     </div>
+
                     {role === 'big-admin' && (
-                        <div className="space-y-2">
-                            <Label htmlFor="district">District</Label>
-                            <Select value={district || ''} onValueChange={setDistrict}>
-                                <SelectTrigger id="district"><SelectValue placeholder="Select a district" /></SelectTrigger>
-                                <SelectContent>
-                                    {allDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="region">Region</Label>
+                                <Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); }}>
+                                    <SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger>
+                                    <SelectContent>
+                                        {ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="district">District/Municipal</Label>
+                                <Select value={district} onValueChange={setDistrict} disabled={!region}>
+                                    <SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger>
+                                    <SelectContent>
+                                        {availableDistricts.length > 0 ? (
+                                            availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)
+                                        ) : (
+                                            <SelectItem value="" disabled>Select a region first</SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </>
                     )}
+
                     {role === 'admin' && (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="admin-district">District/Municipal</Label>
+                                <Input id="admin-district" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="e.g., Tamale Metropolitan" />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="admin-circuit">Circuit</Label>
+                                <Input id="admin-circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="e.g., Kalpohin" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="schoolName">School Name</Label>
+                                <Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" />
+                            </div>
+                        </>
+                    )}
+
+                    {role === 'user' && (
                         <div className="space-y-2">
-                            <Label htmlFor="schoolName">School Name</Label>
-                            <Input id="schoolName" value={schoolName || ''} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" />
+                            <Label htmlFor="user-circuit">Circuit</Label>
+                            <Input id="user-circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter user's circuit" />
                         </div>
                     )}
                 </div>

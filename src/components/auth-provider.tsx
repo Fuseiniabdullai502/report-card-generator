@@ -9,7 +9,9 @@ import { Loader2 } from 'lucide-react';
 export interface CustomUser extends User {
   role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
   status: 'active' | 'inactive' | null;
+  region?: string | null;
   district?: string | null;
+  circuit?: string | null;
   schoolName?: string | null;
 }
 
@@ -38,7 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           let role: CustomUser['role'] = 'user';
           let status: CustomUser['status'] = 'active';
+          let region: CustomUser['region'] = null;
           let district: CustomUser['district'] = null;
+          let circuit: CustomUser['circuit'] = null;
           let schoolName: CustomUser['schoolName'] = null;
 
           if (superAdminEmail && userEmail === superAdminEmail) {
@@ -51,7 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 email: firebaseUser.email,
                 role: 'super-admin',
                 status: 'active',
+                region: null,
                 district: null,
+                circuit: null,
                 schoolName: null,
                 createdAt: userDocSnap.exists() ? userDocSnap.data().createdAt : serverTimestamp(),
               }, { merge: true });
@@ -62,7 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const userData = userDocSnap.data();
               role = userData.role ?? 'user';
               status = userData.status ?? 'active';
+              region = userData.region ?? null;
               district = userData.district ?? null;
+              circuit = userData.circuit ?? null;
               schoolName = userData.schoolName ?? null;
             } else {
               // This can happen if a user was created in Auth but not in Firestore.
@@ -71,7 +79,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   email: firebaseUser.email,
                   role: 'user',
                   status: 'active',
+                  region: null,
                   district: null,
+                  circuit: null,
                   schoolName: null,
                   createdAt: serverTimestamp(),
               }, { merge: true });
@@ -80,12 +90,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
           
-          console.log(`📄 Firestore role: ${role}, Status: ${status}, District: ${district}, School: ${schoolName}`);
-          setUser({ ...firebaseUser, role, status, district, schoolName });
+          console.log(`📄 Firestore role: ${role}, Status: ${status}, Region: ${region}, District: ${district}, Circuit: ${circuit}, School: ${schoolName}`);
+          setUser({ ...firebaseUser, role, status, region, district, circuit, schoolName });
 
         } catch (error) {
           console.error('Error in AuthProvider while fetching/setting user role:', error);
-          setUser({ ...firebaseUser, role: null, status: null, district: null, schoolName: null }); // Fallback on error
+          setUser({ ...firebaseUser, role: null, status: null, region: null, district: null, circuit: null, schoolName: null }); // Fallback on error
         }
       } else {
         // User is not logged in.

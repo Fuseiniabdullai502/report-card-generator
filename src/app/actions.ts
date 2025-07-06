@@ -260,7 +260,9 @@ export async function registerUserAction(data: {
       email: trimmedEmail,
       role: role,
       status: 'active',
+      region: null,
       district: null,
+      circuit: null,
       schoolName: null,
       createdAt: serverTimestamp(),
     });
@@ -426,7 +428,9 @@ export async function updateUserStatusAction(
 const UpdateUserRoleAndScopeActionSchema = z.object({
   userId: z.string().min(1, "User ID is required"),
   role: z.enum(['big-admin', 'admin', 'user']),
+  region: z.string().optional().nullable(),
   district: z.string().optional().nullable(),
+  circuit: z.string().optional().nullable(),
   schoolName: z.string().optional().nullable(),
 });
 
@@ -434,7 +438,7 @@ export async function updateUserRoleAndScopeAction(
   data: z.infer<typeof UpdateUserRoleAndScopeActionSchema>
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const { userId, role, district, schoolName } = UpdateUserRoleAndScopeActionSchema.parse(data);
+    const { userId, role, region, district, circuit, schoolName } = UpdateUserRoleAndScopeActionSchema.parse(data);
     
     const userDocRef = admin.firestore().collection('users').doc(userId);
     
@@ -442,13 +446,19 @@ export async function updateUserRoleAndScopeAction(
 
     if (role === 'big-admin') {
       if (!district?.trim()) throw new Error("A district must be specified for a 'big-admin'.");
+      updateData.region = region;
       updateData.district = district;
       updateData.schoolName = null;
+      updateData.circuit = null;
     } else if (role === 'admin') {
       if (!schoolName?.trim()) throw new Error("A school name must be specified for an 'admin'.");
-      updateData.district = null; // Clear district if they become a school admin
       updateData.schoolName = schoolName;
+      updateData.district = district;
+      updateData.circuit = circuit;
+      updateData.region = null; 
     } else { // 'user' role
+      updateData.circuit = circuit;
+      updateData.region = null;
       updateData.district = null;
       updateData.schoolName = null;
     }
@@ -475,7 +485,9 @@ interface UserForAdmin {
   email: string;
   role: 'super-admin' | 'big-admin' | 'admin' | 'user';
   status: 'active' | 'inactive';
+  region?: string | null;
   district?: string | null;
+  circuit?: string | null;
   schoolName?: string | null;
   createdAt: string | null; // Dates are serialized to strings
 }
@@ -499,7 +511,9 @@ export async function getUsersAction(): Promise<{ success: boolean; users?: User
         email: data.email,
         role: data.role,
         status: data.status,
+        region: data.region,
         district: data.district,
+        circuit: data.circuit,
         schoolName: data.schoolName,
         createdAt: data.createdAt?.toDate().toISOString() ?? null,
       };
