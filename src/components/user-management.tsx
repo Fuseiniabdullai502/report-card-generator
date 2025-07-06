@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, FormEvent, useCallback } from 'react';
@@ -43,7 +44,7 @@ import {
     getUsersAction,
     getInvitesAction
 } from '@/app/actions';
-import { ghanaRegions, ghanaRegionsAndDistricts } from '@/lib/ghana-regions-districts';
+import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 
 interface UserData {
   id: string;
@@ -269,6 +270,8 @@ export default function UserManagement() {
   );
 }
 
+const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
+
 function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData, onOpenChange: (open: boolean) => void, onUserUpdated: () => void }) {
     const [role, setRole] = useState(user.role);
     const [region, setRegion] = useState(user.region || '');
@@ -280,6 +283,7 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
     const { toast } = useToast();
 
     const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+    const [availableCircuits, setAvailableCircuits] = useState<string[]>([]);
 
     useEffect(() => {
         if (region) {
@@ -288,6 +292,14 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
             setAvailableDistricts([]);
         }
     }, [region]);
+
+    useEffect(() => {
+        if (district) {
+            setAvailableCircuits(ghanaDistrictsAndCircuits[district]?.sort() || []);
+        } else {
+            setAvailableCircuits([]);
+        }
+    }, [district]);
 
     // When role changes, reset fields that are not applicable to avoid sending stale data
     useEffect(() => {
@@ -344,11 +356,11 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
                         </Select>
                     </div>
 
-                    {role === 'big-admin' && (
+                    {(role === 'big-admin' || role === 'admin' || role === 'user') && (
                         <>
                             <div className="space-y-2">
                                 <Label htmlFor="region">Region</Label>
-                                <Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); }}>
+                                <Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); setCircuit(''); }}>
                                     <SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger>
                                     <SelectContent>
                                         {ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
@@ -357,7 +369,7 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="district">District/Municipal</Label>
-                                <Select value={district} onValueChange={setDistrict} disabled={!region}>
+                                <Select value={district} onValueChange={(val) => { setDistrict(val); setCircuit(''); }} disabled={!region}>
                                     <SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger>
                                     <SelectContent>
                                         {availableDistricts.length > 0 ? (
@@ -371,78 +383,39 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
                         </>
                     )}
 
-                    {role === 'admin' && (
-                        <>
-                            <div className="space-y-2">
-                                <Label htmlFor="admin-region">Region</Label>
-                                <Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); }}>
-                                    <SelectTrigger id="admin-region"><SelectValue placeholder="Select a region"/></SelectTrigger>
+                    {(role === 'admin' || role === 'user') && (
+                         <div className="space-y-2">
+                            <Label htmlFor="circuit">Circuit</Label>
+                            {availableCircuits.length > 0 ? (
+                                <Select value={circuit} onValueChange={setCircuit}>
+                                    <SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger>
                                     <SelectContent>
-                                        {ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                                        {availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="admin-district">District/Municipal</Label>
-                                <Select value={district} onValueChange={setDistrict} disabled={!region}>
-                                    <SelectTrigger id="admin-district"><SelectValue placeholder="Select a district"/></SelectTrigger>
-                                    <SelectContent>
-                                        {availableDistricts.length > 0 ? (
-                                            availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)
-                                        ) : (
-                                            <SelectItem value="-" disabled>Select a region first</SelectItem>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="admin-circuit">Circuit</Label>
-                                <Input id="admin-circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="e.g., Kalpohin" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="schoolName">School Name</Label>
-                                <Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" />
-                            </div>
-                        </>
+                            ) : (
+                                <Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter circuit name" />
+                            )}
+                        </div>
                     )}
 
+                     {(role === 'admin' || role === 'user') && (
+                        <div className="space-y-2">
+                            <Label htmlFor="schoolName">School Name</Label>
+                            <Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" />
+                        </div>
+                     )}
+
                     {role === 'user' && (
-                       <>
-                            <div className="space-y-2">
-                                <Label htmlFor="user-region">Region</Label>
-                                <Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); }}>
-                                    <SelectTrigger id="user-region"><SelectValue placeholder="Select a region"/></SelectTrigger>
-                                    <SelectContent>
-                                        {ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="user-district">District/Municipal</Label>
-                                <Select value={district} onValueChange={setDistrict} disabled={!region}>
-                                    <SelectTrigger id="user-district"><SelectValue placeholder="Select a district"/></SelectTrigger>
-                                    <SelectContent>
-                                        {availableDistricts.length > 0 ? (
-                                            availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)
-                                        ) : (
-                                            <SelectItem value="-" disabled>Select a region first</SelectItem>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="user-circuit">Circuit</Label>
-                                <Input id="user-circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter user's circuit" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="user-schoolName">School Name</Label>
-                                <Input id="user-schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter user's school" />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="user-className">Class Name</Label>
-                                <Input id="user-className" value={className} onChange={(e) => setClassName(e.target.value)} placeholder="Enter user's class" />
-                            </div>
-                        </>
+                         <div className="space-y-2">
+                            <Label htmlFor="user-className">Class Name</Label>
+                            <Select value={className} onValueChange={setClassName}>
+                                <SelectTrigger id="user-className"><SelectValue placeholder="Select a class" /></SelectTrigger>
+                                <SelectContent>
+                                    {classLevels.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     )}
                 </div>
                 <DialogFooter>
