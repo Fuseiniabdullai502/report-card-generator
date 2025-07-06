@@ -460,9 +460,9 @@ export async function updateUserRoleAndScopeAction(
       updateData.circuit = circuit;
       updateData.schoolName = schoolName;
     } else { // 'user' role
+      updateData.region = region;
+      updateData.district = district;
       updateData.circuit = circuit;
-      updateData.region = null;
-      updateData.district = null;
       updateData.schoolName = null;
     }
     
