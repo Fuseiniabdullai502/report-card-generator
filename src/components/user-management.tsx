@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useState, useEffect, FormEvent, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -37,7 +35,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { deleteInviteAction, updateUserStatusAction, updateUserRoleAndScopeAction, authorizeUserAction } from '@/app/actions';
+import {
+    deleteInviteAction, 
+    updateUserStatusAction, 
+    updateUserRoleAndScopeAction, 
+    authorizeUserAction,
+    getUsersAction,
+    getInvitesAction
+} from '@/app/actions';
 import { ghanaRegionsAndDistricts } from '@/lib/ghana-regions-districts';
 
 interface UserData {
@@ -47,14 +52,14 @@ interface UserData {
   status: 'active' | 'inactive';
   district?: string | null;
   schoolName?: string | null;
-  createdAt: any;
+  createdAt: Date | null;
 }
 
 interface InviteData {
   id: string;
   email: string;
   status: 'pending' | 'completed';
-  createdAt: any;
+  createdAt: Date | null;
 }
 
 const allDistricts = [...new Set(Object.values(ghanaRegionsAndDistricts).flat())].sort();
@@ -72,70 +77,40 @@ export default function UserManagement() {
   const [isDeleting, setIsDeleting] = useState(false);
   
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
-  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [usersResult, invitesResult] = await Promise.all([
+        getUsersAction(),
+        getInvitesAction(),
+      ]);
+
+      if (usersResult.success && usersResult.users) {
+        setUsers(usersResult.users.map(u => ({...u, createdAt: u.createdAt ? new Date(u.createdAt) : null })));
+      } else {
+        toast({ title: 'Error Fetching Users', description: usersResult.error, variant: 'destructive' });
+      }
+
+      if (invitesResult.success && invitesResult.invites) {
+        setInvites(invitesResult.invites.map(i => ({...i, createdAt: i.createdAt ? new Date(i.createdAt) : null })));
+      } else {
+        toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
+      }
+    } catch (error: any) {
+      toast({ title: 'Failed to load management data', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    setIsLoading(true);
-    const usersQ = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    const invitesQ = query(collection(db, 'invites'), orderBy('createdAt', 'desc'));
-
-    let usersLoaded = false;
-    let invitesLoaded = false;
-
-    const checkLoadingDone = () => {
-      if (usersLoaded && invitesLoaded) {
-        setIsLoading(false);
-      }
-    };
-
-    const unsubUsers = onSnapshot(usersQ, (snap) => {
-      setUsers(
-        snap.docs.map((d) => ({
-          id: d.id,
-          email: d.data().email ?? 'unknown',
-          role: d.data().role ?? 'user',
-          status: d.data().status ?? 'active',
-          district: d.data().district,
-          schoolName: d.data().schoolName,
-          createdAt: d.data().createdAt ?? null,
-        }))
-      );
-      usersLoaded = true;
-      checkLoadingDone();
-    }, (error) => {
-      console.error("Error fetching users:", error);
-      usersLoaded = true;
-      checkLoadingDone();
-    });
-
-    const unsubInv = onSnapshot(invitesQ, (snap) => {
-      setInvites(
-        snap.docs.map((d) => ({
-          id: d.id,
-          email: d.data().email ?? 'unknown',
-          status: d.data().status ?? 'pending',
-          createdAt: d.data().createdAt ?? null,
-        }))
-      );
-      invitesLoaded = true;
-      checkLoadingDone();
-    }, (error) => {
-      console.error("Error fetching invites:", error);
-      invitesLoaded = true;
-      checkLoadingDone();
-    });
-
-    return () => {
-      unsubUsers();
-      unsubInv();
-    };
-  }, []);
+    fetchData();
+  }, [fetchData]);
   
   useEffect(() => {
-    if (editingUser) {
-      setIsEditUserDialogOpen(true);
-    } else {
-      setIsEditUserDialogOpen(false);
+    if (!editingUser) {
+        setIsEditUserDialogOpen(false);
     }
   }, [editingUser]);
 
@@ -145,28 +120,20 @@ export default function UserManagement() {
 
     const email = inviteEmail.trim().toLowerCase();
     
-    // Basic client-side check for better UX
     if (!email || !email.includes('@')) {
       toast({ title: 'Invalid Email', description: 'Please enter a valid email address.', variant: 'destructive' });
       setIsSendingInvite(false);
       return;
     }
 
-    // Call the secure server action
     const result = await authorizeUserAction({ email });
 
     if (result.success) {
-      toast({
-        title: 'User Authorized',
-        description: result.message,
-      });
+      toast({ title: 'User Authorized', description: result.message });
       setInviteEmail('');
+      fetchData(); // Refetch data to show the new invite
     } else {
-      toast({
-        title: 'Authorization Failed',
-        description: result.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Authorization Failed', description: result.message, variant: 'destructive' });
     }
 
     setIsSendingInvite(false);
@@ -178,6 +145,7 @@ export default function UserManagement() {
     const result = await deleteInviteAction({ inviteId: inviteToDelete.id });
     if (result.success) {
       toast({ title: 'Invite Deleted', description: `The invite for ${inviteToDelete.email} has been removed.` });
+      fetchData(); // Refetch to update the list
     } else {
       toast({ title: 'Deletion Failed', description: result.message, variant: 'destructive' });
     }
@@ -187,14 +155,12 @@ export default function UserManagement() {
   
   const handleStatusChange = async (userId: string, currentStatus: 'active' | 'inactive') => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    const originalUsers = [...users];
-    setUsers(users => users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
     const result = await updateUserStatusAction({ userId, status: newStatus });
-    if (!result.success) {
-      toast({ title: 'Update Failed', description: result.message, variant: 'destructive' });
-      setUsers(originalUsers);
-    } else {
+    if (result.success) {
         toast({ title: 'Status Updated', description: `User has been set to ${newStatus}.` });
+        fetchData(); // Refetch to update the list
+    } else {
+      toast({ title: 'Update Failed', description: result.message, variant: 'destructive' });
     }
   };
 
@@ -259,8 +225,8 @@ export default function UserManagement() {
                         <div className="flex flex-col text-xs">
                           <span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span>
                           <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
-                          {u.role === 'big-admin' && <span className="text-xs text-muted-foreground">District: {u.district}</span>}
-                          {u.role === 'admin' && <span className="text-xs text-muted-foreground">School: {u.schoolName}</span>}
+                          {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district}</span>}
+                          {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName}</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
@@ -299,12 +265,12 @@ export default function UserManagement() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {editingUser && <EditUserDialog user={editingUser} onOpenChange={() => setEditingUser(null)} allDistricts={allDistricts} />}
+      {editingUser && <EditUserDialog user={editingUser} onOpenChange={() => setEditingUser(null)} allDistricts={allDistricts} onUserUpdated={fetchData} />}
     </>
   );
 }
 
-function EditUserDialog({ user, onOpenChange, allDistricts }: { user: UserData, onOpenChange: (open: boolean) => void, allDistricts: string[] }) {
+function EditUserDialog({ user, onOpenChange, allDistricts, onUserUpdated }: { user: UserData, onOpenChange: (open: boolean) => void, allDistricts: string[], onUserUpdated: () => void }) {
     const [role, setRole] = useState(user.role);
     const [district, setDistrict] = useState(user.district || '');
     const [schoolName, setSchoolName] = useState(user.schoolName || '');
@@ -322,6 +288,7 @@ function EditUserDialog({ user, onOpenChange, allDistricts }: { user: UserData, 
 
         if(result.success) {
             toast({ title: "User Updated", description: result.message });
+            onUserUpdated(); // Refetch data in the parent component
             onOpenChange(false);
         } else {
             toast({ title: "Update Failed", description: result.message, variant: 'destructive' });

@@ -467,3 +467,66 @@ export async function updateUserRoleAndScopeAction(
     return { success: false, message: errorMessage };
   }
 }
+
+
+// Define types for server-side data fetching
+interface UserForAdmin {
+  id: string;
+  email: string;
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  status: 'active' | 'inactive';
+  district?: string | null;
+  schoolName?: string | null;
+  createdAt: string | null; // Dates are serialized to strings
+}
+
+interface InviteForAdmin {
+  id: string;
+  email: string;
+  status: 'pending' | 'completed';
+  createdAt: string | null; // Dates are serialized to strings
+}
+
+
+// NEW: Securely fetch users list from the server
+export async function getUsersAction(): Promise<{ success: boolean; users?: UserForAdmin[]; error?: string }> {
+  try {
+    const usersSnapshot = await admin.firestore().collection('users').orderBy('createdAt', 'desc').get();
+    const users = usersSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email,
+        role: data.role,
+        status: data.status,
+        district: data.district,
+        schoolName: data.schoolName,
+        createdAt: data.createdAt?.toDate().toISOString() ?? null,
+      };
+    });
+    return { success: true, users: users as UserForAdmin[] };
+  } catch (error: any) {
+    console.error('Error fetching users via server action:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// NEW: Securely fetch invites list from the server
+export async function getInvitesAction(): Promise<{ success: boolean; invites?: InviteForAdmin[]; error?: string }> {
+  try {
+    const invitesSnapshot = await admin.firestore().collection('invites').orderBy('createdAt', 'desc').get();
+    const invites = invitesSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email,
+        status: data.status,
+        createdAt: data.createdAt?.toDate().toISOString() ?? null,
+      };
+    });
+    return { success: true, invites: invites as InviteForAdmin[] };
+  } catch (error: any) {
+    console.error('Error fetching invites via server action:', error);
+    return { success: false, error: error.message };
+  }
+}
