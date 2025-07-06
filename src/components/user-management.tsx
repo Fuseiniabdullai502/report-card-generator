@@ -223,7 +223,7 @@ export default function UserManagement() {
                           <span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span>
                           <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
                           {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}
-                          {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.district} / {u.circuit})</span>}
+                          {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}
                           {u.role === 'user' && u.circuit && <span className="text-xs text-muted-foreground">Circuit: {u.circuit}</span>}
                         </div>
                       </TableCell>
@@ -292,8 +292,6 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
         if (role === 'big-admin') {
             setSchoolName('');
             setCircuit('');
-        } else if (role === 'admin') {
-            setRegion('');
         } else if (role === 'user') {
             setRegion('');
             setDistrict('');
@@ -306,7 +304,7 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
         const result = await updateUserRoleAndScopeAction({
             userId: user.id,
             role: role as 'big-admin' | 'admin' | 'user',
-            region: role === 'big-admin' ? region : null,
+            region: (role === 'big-admin' || role === 'admin') ? region : null,
             district: (role === 'big-admin' || role === 'admin') ? district : null,
             circuit: (role === 'admin' || role === 'user') ? circuit : null,
             schoolName: role === 'admin' ? schoolName : null,
@@ -372,8 +370,26 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
                     {role === 'admin' && (
                         <>
                             <div className="space-y-2">
+                                <Label htmlFor="admin-region">Region</Label>
+                                <Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); }}>
+                                    <SelectTrigger id="admin-region"><SelectValue placeholder="Select a region"/></SelectTrigger>
+                                    <SelectContent>
+                                        {ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="admin-district">District/Municipal</Label>
-                                <Input id="admin-district" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="e.g., Tamale Metropolitan" />
+                                <Select value={district} onValueChange={setDistrict} disabled={!region}>
+                                    <SelectTrigger id="admin-district"><SelectValue placeholder="Select a district"/></SelectTrigger>
+                                    <SelectContent>
+                                        {availableDistricts.length > 0 ? (
+                                            availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)
+                                        ) : (
+                                            <SelectItem value="-" disabled>Select a region first</SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="admin-circuit">Circuit</Label>

@@ -445,17 +445,20 @@ export async function updateUserRoleAndScopeAction(
     const updateData: any = { role };
 
     if (role === 'big-admin') {
+      if (!region?.trim()) throw new Error("A region must be specified for a 'big-admin'.");
       if (!district?.trim()) throw new Error("A district must be specified for a 'big-admin'.");
       updateData.region = region;
       updateData.district = district;
       updateData.schoolName = null;
       updateData.circuit = null;
     } else if (role === 'admin') {
+      if (!region?.trim()) throw new Error("A region must be specified for an 'admin'.");
+      if (!district?.trim()) throw new Error("A district must be specified for an 'admin'.");
       if (!schoolName?.trim()) throw new Error("A school name must be specified for an 'admin'.");
-      updateData.schoolName = schoolName;
+      updateData.region = region;
       updateData.district = district;
       updateData.circuit = circuit;
-      updateData.region = null; 
+      updateData.schoolName = schoolName;
     } else { // 'user' role
       updateData.circuit = circuit;
       updateData.region = null;
