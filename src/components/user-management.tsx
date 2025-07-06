@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, FormEvent, useCallback } from 'react';
+import { useState, useEffect, FormEvent, useCallback, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -36,6 +36,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     deleteInviteAction, 
     updateUserStatusAction, 
@@ -45,6 +47,7 @@ import {
     getInvitesAction
 } from '@/app/actions';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
+import type { CustomUser } from './auth-provider';
 
 interface UserData {
   id: string;
@@ -55,7 +58,7 @@ interface UserData {
   district?: string | null;
   circuit?: string | null;
   schoolName?: string | null;
-  className?: string | null;
+  classNames?: string[] | null;
   createdAt: Date | null;
 }
 
@@ -66,7 +69,7 @@ interface InviteData {
   createdAt: Date | null;
 }
 
-export default function UserManagement() {
+export default function UserManagement({ user }: { user: CustomUser }) {
   const [users, setUsers] = useState<UserData[]>([]);
   const [invites, setInvites] = useState<InviteData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,12 +87,17 @@ export default function UserManagement() {
     setIsLoading(true);
     try {
       const [usersResult, invitesResult] = await Promise.all([
-        getUsersAction(),
+        getUsersAction({
+          id: user.uid,
+          role: user.role,
+          district: user.district,
+          schoolName: user.schoolName,
+        }),
         getInvitesAction(),
       ]);
 
       if (usersResult.success && usersResult.users) {
-        setUsers(usersResult.users.map(u => ({...u, className: u.className, createdAt: u.createdAt ? new Date(u.createdAt) : null })));
+        setUsers(usersResult.users.map(u => ({...u, classNames: u.classNames, createdAt: u.createdAt ? new Date(u.createdAt) : null })));
       } else {
         toast({ title: 'Error Fetching Users', description: usersResult.error, variant: 'destructive' });
       }
@@ -104,7 +112,7 @@ export default function UserManagement() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, user]);
 
   useEffect(() => {
     fetchData();
@@ -170,12 +178,12 @@ export default function UserManagement() {
         <div className="grid gap-4 md:grid-cols-2">
           <Card className="border-primary/50 shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-primary">Total Registered Users</CardTitle>
+              <CardTitle className="text-sm font-medium text-primary">Total Managed Users</CardTitle>
               <Users className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
               <div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : totalUsers}</div>
-              <p className="text-xs text-muted-foreground">All users with access to the system.</p>
+              <p className="text-xs text-muted-foreground">All users within your management scope.</p>
               </CardContent>
           </Card>
           <Card className="border-amber-500/50 shadow-lg hover:shadow-amber-500/20 transition-shadow duration-300">
@@ -226,7 +234,7 @@ export default function UserManagement() {
                           <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
                           {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}
                           {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}
-                          {u.role === 'user' && (u.region || u.district || u.circuit || u.schoolName || u.className) && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.className].filter(Boolean).join(' / ')}</span>}
+                          {u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
@@ -265,20 +273,20 @@ export default function UserManagement() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {editingUser && <EditUserDialog user={editingUser} onOpenChange={() => setEditingUser(null)} onUserUpdated={fetchData} />}
+      {editingUser && <EditUserDialog currentUser={user} user={editingUser} onOpenChange={() => setEditingUser(null)} onUserUpdated={fetchData} />}
     </>
   );
 }
 
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 
-function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData, onOpenChange: (open: boolean) => void, onUserUpdated: () => void }) {
+function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { currentUser: CustomUser, user: UserData, onOpenChange: (open: boolean) => void, onUserUpdated: () => void }) {
     const [role, setRole] = useState(user.role);
     const [region, setRegion] = useState(user.region || '');
     const [district, setDistrict] = useState(user.district || '');
     const [circuit, setCircuit] = useState(user.circuit || '');
     const [schoolName, setSchoolName] = useState(user.schoolName || '');
-    const [className, setClassName] = useState(user.className || '');
+    const [classNames, setClassNames] = useState<string[]>(user.classNames || []);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
@@ -306,13 +314,15 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
         if (role === 'big-admin') {
             setSchoolName('');
             setCircuit('');
-            setClassName('');
+            setClassNames([]);
         } else if (role === 'admin') {
-             setClassName('');
-        } else if (role === 'user') {
-            // Keep all fields as they are now relevant
+             setClassNames([]);
         }
     }, [role]);
+    
+    const handleClassNamesChange = (className: string, checked: boolean) => {
+        setClassNames(prev => checked ? [...prev, className] : prev.filter(c => c !== className));
+    };
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -323,8 +333,8 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
             district: (role === 'big-admin' || role === 'admin' || role === 'user') ? district : null,
             circuit: (role === 'admin' || role === 'user') ? circuit : null,
             schoolName: (role === 'admin' || role === 'user') ? schoolName : null,
-            className: role === 'user' ? className : null,
-        });
+            classNames: role === 'user' ? classNames : null,
+        }, { role: currentUser.role });
 
         if(result.success) {
             toast({ title: "User Updated", description: result.message });
@@ -335,6 +345,29 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
         }
         setIsSaving(false);
     };
+    
+    const availableRoles = useMemo(() => {
+      if (currentUser.role === 'super-admin') {
+        return [
+          { value: 'user', label: 'User (Instructor)'},
+          { value: 'admin', label: 'Admin (School-level)'},
+          { value: 'big-admin', label: 'Big Admin (District-level)'},
+        ];
+      }
+      if (currentUser.role === 'big-admin') {
+        return [
+          { value: 'user', label: 'User (Instructor)'},
+          { value: 'admin', label: 'Admin (School-level)'},
+        ];
+      }
+      if (currentUser.role === 'admin') {
+        return [
+          { value: 'user', label: 'User (Instructor)'}
+        ];
+      }
+      return [];
+    }, [currentUser.role]);
+
 
     return (
         <Dialog open={!!user} onOpenChange={onOpenChange}>
@@ -349,9 +382,7 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
                         <Select value={role} onValueChange={(value) => setRole(value as UserData['role'])}>
                             <SelectTrigger id="role"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="user">User (Instructor, limited to own classroom)</SelectItem>
-                                <SelectItem value="admin">Admin (Limited to one school)</SelectItem>
-                                <SelectItem value="big-admin">Big Admin (Limited to one district)</SelectItem>
+                                {availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -386,7 +417,7 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
                     {(role === 'admin' || role === 'user') && (
                          <div className="space-y-2">
                             <Label htmlFor="circuit">Circuit</Label>
-                            {availableCircuits.length > 0 ? (
+                            {district === 'Ejura Sekyedumase Municipal' ? (
                                 <Select value={circuit} onValueChange={setCircuit}>
                                     <SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger>
                                     <SelectContent>
@@ -407,14 +438,28 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
                      )}
 
                     {role === 'user' && (
-                         <div className="space-y-2">
-                            <Label htmlFor="user-className">Class Name</Label>
-                            <Select value={className} onValueChange={setClassName}>
-                                <SelectTrigger id="user-className"><SelectValue placeholder="Select a class" /></SelectTrigger>
-                                <SelectContent>
-                                    {classLevels.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                        <div className="space-y-2">
+                            <Label htmlFor="user-classNames">Class Names</Label>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-between">
+                                        <span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                                    <ScrollArea className="h-[200px]">
+                                    {classLevels.map(c => (
+                                        <DropdownMenuCheckboxItem
+                                            key={c}
+                                            checked={classNames.includes(c)}
+                                            onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}
+                                        >
+                                            {c}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                    </ScrollArea>
+                                </DropdownMenuContent>
+                             </DropdownMenu>
                         </div>
                     )}
                 </div>

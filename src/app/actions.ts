@@ -433,42 +433,56 @@ const UpdateUserRoleAndScopeActionSchema = z.object({
   district: z.string().optional().nullable(),
   circuit: z.string().optional().nullable(),
   schoolName: z.string().optional().nullable(),
-  className: z.string().optional().nullable(),
+  classNames: z.array(z.string()).optional().nullable(), // Changed from className to classNames
 });
 
 export async function updateUserRoleAndScopeAction(
-  data: z.infer<typeof UpdateUserRoleAndScopeActionSchema>
+  data: z.infer<typeof UpdateUserRoleAndScopeActionSchema>,
+  currentUser: { role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null }
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const { userId, role, region, district, circuit, schoolName, className } = UpdateUserRoleAndScopeActionSchema.parse(data);
+    if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
+      throw new Error("You do not have permission to perform this action.");
+    }
+    
+    const validatedData = UpdateUserRoleAndScopeActionSchema.parse(data);
+    const { userId, role, ...scopes } = validatedData;
+    
+    // Permission checks
+    if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) {
+      throw new Error("A 'big-admin' cannot assign 'big-admin' or 'super-admin' roles.");
+    }
+    if (currentUser.role === 'admin' && role !== 'user') {
+      throw new Error("An 'admin' can only assign the 'user' role.");
+    }
     
     const userDocRef = admin.firestore().collection('users').doc(userId);
     
     const updateData: any = { role };
 
     if (role === 'big-admin') {
-      if (!region?.trim()) throw new Error("A region must be specified for a 'big-admin'.");
-      if (!district?.trim()) throw new Error("A district must be specified for a 'big-admin'.");
-      updateData.region = region;
-      updateData.district = district;
+      if (!scopes.region?.trim()) throw new Error("A region must be specified for a 'big-admin'.");
+      if (!scopes.district?.trim()) throw new Error("A district must be specified for a 'big-admin'.");
+      updateData.region = scopes.region;
+      updateData.district = scopes.district;
       updateData.schoolName = null;
       updateData.circuit = null;
-      updateData.className = null;
+      updateData.classNames = null;
     } else if (role === 'admin') {
-      if (!region?.trim()) throw new Error("A region must be specified for an 'admin'.");
-      if (!district?.trim()) throw new Error("A district must be specified for an 'admin'.");
-      if (!schoolName?.trim()) throw new Error("A school name must be specified for an 'admin'.");
-      updateData.region = region;
-      updateData.district = district;
-      updateData.circuit = circuit;
-      updateData.schoolName = schoolName;
-      updateData.className = null;
+      if (!scopes.region?.trim()) throw new Error("A region must be specified for an 'admin'.");
+      if (!scopes.district?.trim()) throw new Error("A district must be specified for an 'admin'.");
+      if (!scopes.schoolName?.trim()) throw new Error("A school name must be specified for an 'admin'.");
+      updateData.region = scopes.region;
+      updateData.district = scopes.district;
+      updateData.circuit = scopes.circuit;
+      updateData.schoolName = scopes.schoolName;
+      updateData.classNames = null;
     } else { // 'user' role
-      updateData.region = region;
-      updateData.district = district;
-      updateData.circuit = circuit;
-      updateData.schoolName = schoolName;
-      updateData.className = className;
+      updateData.region = scopes.region;
+      updateData.district = scopes.district;
+      updateData.circuit = scopes.circuit;
+      updateData.schoolName = scopes.schoolName;
+      updateData.classNames = scopes.classNames; // Array of class names
     }
     
     await userDocRef.update(updateData);
@@ -497,7 +511,7 @@ interface UserForAdmin {
   district?: string | null;
   circuit?: string | null;
   schoolName?: string | null;
-  className?: string | null;
+  classNames?: string[] | null; // Changed from className to classNames
   createdAt: string | null; // Dates are serialized to strings
 }
 
@@ -510,30 +524,55 @@ interface InviteForAdmin {
 
 
 // NEW: Securely fetch users list from the server
-export async function getUsersAction(): Promise<{ success: boolean; users?: UserForAdmin[]; error?: string }> {
+export async function getUsersAction(currentUser: {
+  id: string;
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
+  district?: string | null;
+  schoolName?: string | null;
+}): Promise<{ success: boolean; users?: UserForAdmin[]; error?: string }> {
   try {
-    const usersSnapshot = await admin.firestore().collection('users').orderBy('createdAt', 'desc').get();
-    const users = usersSnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        email: data.email,
-        role: data.role,
-        status: data.status,
-        region: data.region,
-        district: data.district,
-        circuit: data.circuit,
-        schoolName: data.schoolName,
-        className: data.className,
-        createdAt: data.createdAt?.toDate().toISOString() ?? null,
-      };
-    });
+    if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
+      throw new Error("You do not have permission to view this data.");
+    }
+    
+    let usersQuery: admin.firestore.Query = admin.firestore().collection('users');
+
+    if (currentUser.role === 'big-admin') {
+      if (!currentUser.district) throw new Error("Big-admin scope error: district not defined for your account.");
+      usersQuery = usersQuery.where('district', '==', currentUser.district).where('role', 'in', ['admin', 'user']);
+    } else if (currentUser.role === 'admin') {
+      if (!currentUser.schoolName) throw new Error("Admin scope error: schoolName not defined for your account.");
+      usersQuery = usersQuery.where('schoolName', '==', currentUser.schoolName).where('role', '==', 'user');
+    }
+    // 'super-admin' gets all users, no filter needed.
+
+    const usersSnapshot = await usersQuery.orderBy('createdAt', 'desc').get();
+    
+    const users = usersSnapshot.docs
+      .filter(doc => doc.id !== currentUser.id) // Do not show the current user in their own management list
+      .map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          email: data.email,
+          role: data.role,
+          status: data.status,
+          region: data.region,
+          district: data.district,
+          circuit: data.circuit,
+          schoolName: data.schoolName,
+          classNames: data.classNames, // Ensure this is fetched
+          createdAt: data.createdAt?.toDate().toISOString() ?? null,
+        };
+      });
+      
     return { success: true, users: users as UserForAdmin[] };
   } catch (error: any) {
     console.error('Error fetching users via server action:', error);
     return { success: false, error: error.message };
   }
 }
+
 
 // NEW: Securely fetch invites list from the server
 export async function getInvitesAction(): Promise<{ success: boolean; invites?: InviteForAdmin[]; error?: string }> {

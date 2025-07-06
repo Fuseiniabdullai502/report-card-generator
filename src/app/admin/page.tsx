@@ -22,13 +22,39 @@ export default function AdminPage() {
 
     if (!user) {
       router.replace('/login');
-    } else if (user.role !== 'super-admin') { // Only super-admin can access this page
+    } else if (!user.role || !['super-admin', 'big-admin', 'admin'].includes(user.role)) {
       router.replace('/');
     }
   }, [user, loading, router]);
 
+  const getPageTitle = () => {
+    switch (user?.role) {
+      case 'super-admin':
+        return 'Super Admin Panel';
+      case 'big-admin':
+        return 'District Admin Panel';
+      case 'admin':
+        return 'School Admin Panel';
+      default:
+        return 'Admin Panel';
+    }
+  };
+
+  const getPageDescription = () => {
+    switch (user?.role) {
+      case 'super-admin':
+        return 'Manage all users, roles, and system-wide settings.';
+      case 'big-admin':
+        return `Manage users and invites for the ${user.district || 'district'}.`;
+      case 'admin':
+        return `Manage users and invites for ${user.schoolName || 'your school'}.`;
+      default:
+        return 'Manage users and invites.';
+    }
+  }
+
   // Show loader while waiting or blocking unauthorized access
-  if (loading || !user || user.role !== 'super-admin') {
+  if (loading || !user || !user.role || !['super-admin', 'big-admin', 'admin'].includes(user.role)) {
     return (
       <div className="flex justify-center items-center h-screen w-screen bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -42,14 +68,14 @@ export default function AdminPage() {
       <header className="mb-8 no-print">
         <h1 className="text-3xl font-bold text-primary flex items-center gap-3">
           <Shield className="h-8 w-8" />
-          Super Admin Panel
+          {getPageTitle()}
         </h1>
         <p className="text-muted-foreground mt-2">
-          Manage user access, roles, and invite new users to the system.
+          {getPageDescription()}
         </p>
       </header>
       <div className="no-print">
-        <UserManagement />
+        <UserManagement user={user} />
       </div>
     </main>
   );
