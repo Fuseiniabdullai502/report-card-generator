@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -118,6 +118,29 @@ export default function UserManagement({ user }: { user: CustomUser }) {
     fetchData();
   }, [fetchData]);
 
+  // Calculate role counts for super-admin dashboard
+  const roleCounts = useMemo(() => {
+    if (user.role !== 'super-admin') return null;
+
+    const counts = {
+      bigAdmin: { active: 0, inactive: 0 },
+      admin: { active: 0, inactive: 0 },
+      user: { active: 0, inactive: 0 },
+    };
+
+    users.forEach(u => {
+      if (u.role === 'big-admin') {
+        u.status === 'active' ? counts.bigAdmin.active++ : counts.bigAdmin.inactive++;
+      } else if (u.role === 'admin') {
+        u.status === 'active' ? counts.admin.active++ : counts.admin.inactive++;
+      } else if (u.role === 'user') {
+        u.status === 'active' ? counts.user.active++ : counts.user.inactive++;
+      }
+    });
+
+    return counts;
+  }, [users, user.role]);
+
   const handleSendInvite = async (e: FormEvent) => {
     e.preventDefault();
     setIsSendingInvite(true);
@@ -197,6 +220,60 @@ export default function UserManagement({ user }: { user: CustomUser }) {
               </CardContent>
           </Card>
         </div>
+        
+        {/* Super Admin Role Counter Cards */}
+        {user.role === 'super-admin' && roleCounts && !isLoading && (
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-4">System Role Overview</h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-medium">Big Admins (District)</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-around">
+                  <div className="text-center">
+                    <p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts.bigAdmin.active}</p>
+                    <p className="text-xs text-muted-foreground">Active</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts.bigAdmin.inactive}</p>
+                    <p className="text-xs text-muted-foreground">Inactive</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-medium">Admins (School)</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-around">
+                  <div className="text-center">
+                    <p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts.admin.active}</p>
+                    <p className="text-xs text-muted-foreground">Active</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts.admin.inactive}</p>
+                    <p className="text-xs text-muted-foreground">Inactive</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-medium">Users (Instructors)</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-around">
+                  <div className="text-center">
+                    <p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {roleCounts.user.active}</p>
+                    <p className="text-xs text-muted-foreground">Active</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {roleCounts.user.inactive}</p>
+                    <p className="text-xs text-muted-foreground">Inactive</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
         
         {/* Authorize User Card */}
         <Card>
