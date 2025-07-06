@@ -1,7 +1,13 @@
 // src/lib/firebase.ts
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, setLogLevel } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
+
+// Enable Firestore debug logging. This will output detailed information
+// to your browser's developer console, which is useful for debugging.
+if (typeof window !== 'undefined') {
+  setLogLevel('debug');
+}
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
