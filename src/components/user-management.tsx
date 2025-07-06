@@ -137,6 +137,19 @@ export default function UserManagement({ user }: { user: CustomUser }) {
     return counts;
   }, [users, user.role]);
 
+  const bigAdminRoleCounts = useMemo(() => {
+    if (user.role !== 'big-admin') return null;
+    const counts = {
+      admin: { active: 0, inactive: 0 },
+      user: { active: 0, inactive: 0 },
+    };
+    users.forEach(u => {
+      if (u.role === 'admin') u.status === 'active' ? counts.admin.active++ : counts.admin.inactive++;
+      else if (u.role === 'user') u.status === 'active' ? counts.user.active++ : counts.user.inactive++;
+    });
+    return counts;
+  }, [users, user.role]);
+
   const handleDeleteInvite = async () => {
     if (!inviteToDelete) return;
     setIsDeleting(true);
@@ -186,6 +199,16 @@ export default function UserManagement({ user }: { user: CustomUser }) {
               <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Big Admins (District)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts.bigAdmin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts.bigAdmin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
               <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
               <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {roleCounts.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {roleCounts.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+            </div>
+          </div>
+        )}
+
+        {user.role === 'big-admin' && bigAdminRoleCounts && !isLoading && (
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-4">District Role Overview</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {bigAdminRoleCounts.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {bigAdminRoleCounts.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+              <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {bigAdminRoleCounts.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {bigAdminRoleCounts.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
             </div>
           </div>
         )}
