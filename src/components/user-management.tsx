@@ -54,6 +54,7 @@ interface UserData {
   district?: string | null;
   circuit?: string | null;
   schoolName?: string | null;
+  className?: string | null;
   createdAt: Date | null;
 }
 
@@ -87,7 +88,7 @@ export default function UserManagement() {
       ]);
 
       if (usersResult.success && usersResult.users) {
-        setUsers(usersResult.users.map(u => ({...u, createdAt: u.createdAt ? new Date(u.createdAt) : null })));
+        setUsers(usersResult.users.map(u => ({...u, className: u.className, createdAt: u.createdAt ? new Date(u.createdAt) : null })));
       } else {
         toast({ title: 'Error Fetching Users', description: usersResult.error, variant: 'destructive' });
       }
@@ -224,7 +225,7 @@ export default function UserManagement() {
                           <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
                           {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}
                           {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}
-                          {u.role === 'user' && (u.region || u.district || u.circuit) && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit].filter(Boolean).join(' / ')}</span>}
+                          {u.role === 'user' && (u.region || u.district || u.circuit || u.schoolName || u.className) && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.className].filter(Boolean).join(' / ')}</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
@@ -274,6 +275,7 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
     const [district, setDistrict] = useState(user.district || '');
     const [circuit, setCircuit] = useState(user.circuit || '');
     const [schoolName, setSchoolName] = useState(user.schoolName || '');
+    const [className, setClassName] = useState(user.className || '');
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
@@ -292,8 +294,11 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
         if (role === 'big-admin') {
             setSchoolName('');
             setCircuit('');
+            setClassName('');
+        } else if (role === 'admin') {
+             setClassName('');
         } else if (role === 'user') {
-            setSchoolName('');
+            // Keep all fields as they are now relevant
         }
     }, [role]);
 
@@ -305,7 +310,8 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
             region: (role === 'big-admin' || role === 'admin' || role === 'user') ? region : null,
             district: (role === 'big-admin' || role === 'admin' || role === 'user') ? district : null,
             circuit: (role === 'admin' || role === 'user') ? circuit : null,
-            schoolName: role === 'admin' ? schoolName : null,
+            schoolName: (role === 'admin' || role === 'user') ? schoolName : null,
+            className: role === 'user' ? className : null,
         });
 
         if(result.success) {
@@ -427,6 +433,14 @@ function EditUserDialog({ user, onOpenChange, onUserUpdated }: { user: UserData,
                             <div className="space-y-2">
                                 <Label htmlFor="user-circuit">Circuit</Label>
                                 <Input id="user-circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter user's circuit" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="user-schoolName">School Name</Label>
+                                <Input id="user-schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter user's school" />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="user-className">Class Name</Label>
+                                <Input id="user-className" value={className} onChange={(e) => setClassName(e.target.value)} placeholder="Enter user's class" />
                             </div>
                         </>
                     )}

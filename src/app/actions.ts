@@ -264,6 +264,7 @@ export async function registerUserAction(data: {
       district: null,
       circuit: null,
       schoolName: null,
+      className: null,
       createdAt: serverTimestamp(),
     });
 
@@ -432,13 +433,14 @@ const UpdateUserRoleAndScopeActionSchema = z.object({
   district: z.string().optional().nullable(),
   circuit: z.string().optional().nullable(),
   schoolName: z.string().optional().nullable(),
+  className: z.string().optional().nullable(),
 });
 
 export async function updateUserRoleAndScopeAction(
   data: z.infer<typeof UpdateUserRoleAndScopeActionSchema>
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const { userId, role, region, district, circuit, schoolName } = UpdateUserRoleAndScopeActionSchema.parse(data);
+    const { userId, role, region, district, circuit, schoolName, className } = UpdateUserRoleAndScopeActionSchema.parse(data);
     
     const userDocRef = admin.firestore().collection('users').doc(userId);
     
@@ -451,6 +453,7 @@ export async function updateUserRoleAndScopeAction(
       updateData.district = district;
       updateData.schoolName = null;
       updateData.circuit = null;
+      updateData.className = null;
     } else if (role === 'admin') {
       if (!region?.trim()) throw new Error("A region must be specified for an 'admin'.");
       if (!district?.trim()) throw new Error("A district must be specified for an 'admin'.");
@@ -459,11 +462,13 @@ export async function updateUserRoleAndScopeAction(
       updateData.district = district;
       updateData.circuit = circuit;
       updateData.schoolName = schoolName;
+      updateData.className = null;
     } else { // 'user' role
       updateData.region = region;
       updateData.district = district;
       updateData.circuit = circuit;
-      updateData.schoolName = null;
+      updateData.schoolName = schoolName;
+      updateData.className = className;
     }
     
     await userDocRef.update(updateData);
@@ -492,6 +497,7 @@ interface UserForAdmin {
   district?: string | null;
   circuit?: string | null;
   schoolName?: string | null;
+  className?: string | null;
   createdAt: string | null; // Dates are serialized to strings
 }
 
@@ -518,6 +524,7 @@ export async function getUsersAction(): Promise<{ success: boolean; users?: User
         district: data.district,
         circuit: data.circuit,
         schoolName: data.schoolName,
+        className: data.className,
         createdAt: data.createdAt?.toDate().toISOString() ?? null,
       };
     });
