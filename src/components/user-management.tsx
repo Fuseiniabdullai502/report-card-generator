@@ -45,7 +45,8 @@ import {
     createInviteAction,
     getUsersAction,
     getInvitesAction,
-    getDistrictStatsAction
+    getDistrictStatsAction,
+    getSchoolStatsAction
 } from '@/app/actions';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import type { CustomUser } from './auth-provider';
@@ -83,10 +84,18 @@ interface DistrictStats {
   totalStudents: number;
 }
 
+interface SchoolStats {
+  classCount: number;
+  maleCount: number;
+  femaleCount: number;
+  totalStudents: number;
+}
+
 export default function UserManagement({ user }: { user: CustomUser }) {
   const [users, setUsers] = useState<UserData[]>([]);
   const [invites, setInvites] = useState<InviteData[]>([]);
   const [districtStats, setDistrictStats] = useState<DistrictStats | null>(null);
+  const [schoolStats, setSchoolStats] = useState<SchoolStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
@@ -103,22 +112,17 @@ export default function UserManagement({ user }: { user: CustomUser }) {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setDistrictStats(null);
+    setSchoolStats(null);
     try {
-      const promises: any[] = [
-        getUsersAction({
-          id: user.uid,
-          role: user.role,
-          district: user.district,
-          schoolName: user.schoolName,
-        }),
-        getInvitesAction({ role: user.role }),
-      ];
+      const usersPromise = getUsersAction({
+        id: user.uid,
+        role: user.role,
+        district: user.district,
+        schoolName: user.schoolName,
+      });
+      const invitesPromise = getInvitesAction({ role: user.role });
 
-      if (user.role === 'big-admin' && user.district) {
-          promises.push(getDistrictStatsAction(user.district));
-      }
-
-      const [usersResult, invitesResult, districtStatsResult] = await Promise.all(promises);
+      const [usersResult, invitesResult] = await Promise.all([usersPromise, invitesPromise]);
 
       if (usersResult.success && usersResult.users) {
         setUsers(usersResult.users.map(u => ({...u, classNames: u.classNames, createdAt: u.createdAt ? new Date(u.createdAt) : null })));
@@ -132,11 +136,19 @@ export default function UserManagement({ user }: { user: CustomUser }) {
         toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
       }
 
-      if (user.role === 'big-admin' && districtStatsResult) {
+      if (user.role === 'big-admin' && user.district) {
+          const districtStatsResult = await getDistrictStatsAction(user.district);
           if (districtStatsResult.success && districtStatsResult.stats) {
               setDistrictStats(districtStatsResult.stats);
           } else {
               toast({ title: 'Error Fetching District Stats', description: districtStatsResult.error, variant: 'destructive' });
+          }
+      } else if (user.role === 'admin' && user.schoolName) {
+          const schoolStatsResult = await getSchoolStatsAction(user.schoolName);
+          if (schoolStatsResult.success && schoolStatsResult.stats) {
+              setSchoolStats(schoolStatsResult.stats);
+          } else {
+              toast({ title: 'Error Fetching School Stats', description: schoolStatsResult.error, variant: 'destructive' });
           }
       }
 
@@ -271,6 +283,54 @@ export default function UserManagement({ user }: { user: CustomUser }) {
                   </div>
               )}
           </div>
+        )}
+
+        {user.role === 'admin' && schoolStats && !isLoading && (
+            <div>
+                <h3 className="text-lg font-semibold text-foreground mb-4">School Data Overview</h3>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Classes</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{schoolStats.classCount}</div>
+                            <p className="text-xs text-muted-foreground">Classes with student reports</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{schoolStats.totalStudents}</div>
+                            <p className="text-xs text-muted-foreground">Overall student population</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Male Students</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{schoolStats.maleCount}</div>
+                            <p className="text-xs text-muted-foreground">Male population</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Female Students</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{schoolStats.femaleCount}</div>
+                            <p className="text-xs text-muted-foreground">Female population</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
         )}
         
         <Card>

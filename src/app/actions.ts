@@ -749,3 +749,65 @@ export async function getDistrictStatsAction(district: string): Promise<{
     return { success: false, error: errorMessage };
   }
 }
+
+
+// Action for fetching school-level statistics
+export async function getSchoolStatsAction(schoolName: string): Promise<{
+  success: boolean;
+  stats?: {
+    classCount: number;
+    maleCount: number;
+    femaleCount: number;
+    totalStudents: number;
+  };
+  error?: string;
+}> {
+  try {
+    if (!schoolName) {
+      throw new Error("School name is required to fetch stats.");
+    }
+    
+    const reportsRef = admin.firestore().collection('reports');
+    const reportsQuery = reportsRef.where('schoolName', '==', schoolName);
+    const reportsSnapshot = await reportsQuery.get();
+    
+    if (reportsSnapshot.empty) {
+        return { success: true, stats: { classCount: 0, maleCount: 0, femaleCount: 0, totalStudents: 0 } };
+    }
+
+    const classNames = new Set<string>();
+    let maleCount = 0;
+    let femaleCount = 0;
+    
+    reportsSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.className) {
+        classNames.add(data.className);
+      }
+      if (data.gender === 'Male') {
+        maleCount++;
+      } else if (data.gender === 'Female') {
+        femaleCount++;
+      }
+    });
+    
+    const stats = {
+      classCount: classNames.size,
+      maleCount,
+      femaleCount,
+      totalStudents: reportsSnapshot.size,
+    };
+    
+    return { success: true, stats };
+
+  } catch (error: any) {
+    console.error('Error fetching school stats:', error);
+    let errorMessage = "An unexpected error occurred while fetching school statistics.";
+    if (error.code === 'failed-precondition' && error.message.includes('index')) {
+        errorMessage = `A database index is needed to query reports by 'schoolName'. Please check the browser's developer console for a link to create it. This is a one-time setup.`;
+    } else if (error.message) {
+        errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
