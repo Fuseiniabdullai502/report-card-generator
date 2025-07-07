@@ -272,14 +272,22 @@ export default function UserManagement({ user }: { user: CustomUser }) {
               {districtStats && (
                   <div>
                       <h3 className="text-lg font-semibold text-foreground mb-4">District Educational Data</h3>
-                      <div className="grid gap-4 md:grid-cols-3">
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                           <Card>
                               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Schools in District</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader>
                               <CardContent><div className="text-2xl font-bold">{districtStats.schoolCount}</div><p className="text-xs text-muted-foreground">Total schools with reports</p></CardContent>
                           </Card>
                           <Card>
-                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Student Population</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader>
-                              <CardContent><div className="text-2xl font-bold">{districtStats.totalStudents}</div><p className="text-xs text-muted-foreground">{districtStats.maleCount} Male / {districtStats.femaleCount} Female</p></CardContent>
+                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader>
+                              <CardContent><div className="text-2xl font-bold">{districtStats.totalStudents}</div><p className="text-xs text-muted-foreground">Overall student population</p></CardContent>
+                          </Card>
+                           <Card>
+                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader>
+                              <CardContent><div className="text-2xl font-bold">{districtStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</p></CardContent>
+                          </Card>
+                           <Card>
+                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader>
+                              <CardContent><div className="text-2xl font-bold">{districtStats.femaleCount}</div><p className="text-xs text-muted-foreground">Female population</p></CardContent>
                           </Card>
                       </div>
                   </div>
