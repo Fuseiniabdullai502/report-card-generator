@@ -474,15 +474,80 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
 
     return (
         <Dialog open={true} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader><DialogTitle>Create New Invite</DialogTitle><DialogDescription>Invite a new user by email and pre-assign their role and permissions.</DialogDescription></DialogHeader>
-                <div className="space-y-4 py-4"><div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="new.user@example.com"/></div><div className="space-y-2"><Label htmlFor="role">Role</Label><Select value={role} onValueChange={(value) => setRole(value as any)}><SelectTrigger id="role"><SelectValue placeholder="Select a role"/></SelectTrigger><SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent></Select></div>
-                    {(role === 'big-admin' || role === 'admin' || role === 'user') && (<><div className="space-y-2"><Label htmlFor="region">Region</Label><Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); setCircuit(''); }}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="district">District/Municipal</Label><Select value={district} onValueChange={(val) => { setDistrict(val); setCircuit(''); }} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select></div></>)}
-                    {(role === 'admin' || role === 'user') && (<div className="space-y-2"><Label htmlFor="circuit">Circuit</Label>{district === 'Ejura Sekyedumase Municipal' ? <Select value={circuit} onValueChange={setCircuit}><SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger><SelectContent>{availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select> : <Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter circuit name" />}</div>)}
-                    {(role === 'admin' || role === 'user') && (<div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>)}
-                    {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
+            <DialogContent className="flex flex-col max-h-[90dvh]">
+                <DialogHeader className="shrink-0">
+                  <DialogTitle>Create New Invite</DialogTitle>
+                  <DialogDescription>Invite a new user by email and pre-assign their role and permissions.</DialogDescription>
+                </DialogHeader>
+                <div className="flex-grow overflow-y-auto -mx-6 px-6">
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="new.user@example.com"/>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Role</Label>
+                      <Select value={role} onValueChange={(value) => setRole(value as any)}>
+                        <SelectTrigger id="role"><SelectValue placeholder="Select a role"/></SelectTrigger>
+                        <SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    {(role === 'big-admin' || role === 'admin' || role === 'user') && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="region">Region</Label>
+                          <Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); setCircuit(''); }}>
+                            <SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger>
+                            <SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="district">District/Municipal</Label>
+                          <Select value={district} onValueChange={(val) => { setDistrict(val); setCircuit(''); }} disabled={!region}>
+                            <SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger>
+                            <SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    )}
+                    {(role === 'admin' || role === 'user') && (
+                      <div className="space-y-2">
+                        <Label htmlFor="circuit">Circuit</Label>
+                        {district === 'Ejura Sekyedumase Municipal' ? 
+                          <Select value={circuit} onValueChange={setCircuit}><SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger><SelectContent>{availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select> : 
+                          <Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter circuit name" />}
+                      </div>
+                    )}
+                    {(role === 'admin' || role === 'user') && (
+                      <div className="space-y-2">
+                        <Label htmlFor="schoolName">School Name</Label>
+                        <Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" />
+                      </div>
+                    )}
+                    {role === 'user' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="user-classNames">Class Names</Label>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full justify-between">
+                              <span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span>
+                              <ChevronDown/>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                            <ScrollArea className="h-[200px]">
+                              {classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}
+                            </ScrollArea>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <DialogFooter><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button onClick={handleSave} disabled={isSaving || !email || !role}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button></DialogFooter>
+                <DialogFooter className="shrink-0 pt-4 border-t">
+                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                  <Button onClick={handleSave} disabled={isSaving || !email || !role}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
@@ -552,16 +617,24 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
 
     return (
         <Dialog open={!!user} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader><DialogTitle>Edit User: {user.email}</DialogTitle><DialogDescription>Update the role and permissions for this user.</DialogDescription></DialogHeader>
-                <div className="space-y-4 py-4">
+            <DialogContent className="flex flex-col max-h-[90dvh]">
+                <DialogHeader className="shrink-0">
+                  <DialogTitle>Edit User: {user.email}</DialogTitle>
+                  <DialogDescription>Update the role and permissions for this user.</DialogDescription>
+                </DialogHeader>
+                <div className="flex-grow overflow-y-auto -mx-6 px-6">
+                  <div className="space-y-4 py-4">
                     <div className="space-y-2"><Label htmlFor="role">Role</Label><Select value={role} onValueChange={(value) => setRole(value as UserData['role'])}><SelectTrigger id="role"><SelectValue /></SelectTrigger><SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent></Select></div>
                     {(role === 'big-admin' || role === 'admin' || role === 'user') && (<><div className="space-y-2"><Label htmlFor="region">Region</Label><Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); setCircuit(''); }}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="district">District/Municipal</Label><Select value={district} onValueChange={(val) => { setDistrict(val); setCircuit(''); }} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select></div></>)}
                     {(role === 'admin' || role === 'user') && (<div className="space-y-2"><Label htmlFor="circuit">Circuit</Label>{district === 'Ejura Sekyedumase Municipal' ? <Select value={circuit} onValueChange={setCircuit}><SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger><SelectContent>{availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select> : <Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter circuit name" />}</div>)}
                     {(role === 'admin' || role === 'user') && (<div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>)}
                     {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
+                  </div>
                 </div>
-                <DialogFooter><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button onClick={handleSave} disabled={isSaving}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Changes</Button></DialogFooter>
+                <DialogFooter className="shrink-0 pt-4 border-t">
+                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                  <Button onClick={handleSave} disabled={isSaving}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Changes</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
