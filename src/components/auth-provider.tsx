@@ -7,6 +7,8 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 export interface CustomUser extends User {
+  name?: string | null;
+  telephone?: string | null;
   role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
   status: 'active' | 'inactive' | null;
   region?: string | null;
@@ -39,6 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const superAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
           const userEmail = firebaseUser.email?.toLowerCase();
           
+          let name: CustomUser['name'] = null;
+          let telephone: CustomUser['telephone'] = null;
           let role: CustomUser['role'] = 'user';
           let status: CustomUser['status'] = 'active';
           let region: CustomUser['region'] = null;
@@ -55,6 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (!userDocSnap.exists() || userDocSnap.data().role !== 'super-admin') {
               await setDoc(userDocRef, {
                 email: firebaseUser.email,
+                name: firebaseUser.displayName || 'Super Admin',
+                telephone: null,
                 role: 'super-admin',
                 status: 'active',
                 region: null,
@@ -69,6 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // This is a regular user.
             if (userDocSnap.exists()) {
               const userData = userDocSnap.data();
+              name = userData.name ?? null;
+              telephone = userData.telephone ?? null;
               role = userData.role ?? 'user';
               status = userData.status ?? 'active';
               region = userData.region ?? null;
@@ -81,9 +89,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             } else {
               // This can happen if a user was created in Auth but not in Firestore.
-              console.warn(`User document for ${userEmail} not found. Creating one with 'user' role and 'active' status.`);
+              // This case is now less likely because registration action creates the doc.
+              // But as a fallback, we can create a default document.
+              console.warn(`User document for ${userEmail} not found. A document should have been created on registration. Creating a fallback document now.`);
               await setDoc(userDocRef, {
                   email: firebaseUser.email,
+                  name: firebaseUser.displayName || 'New User',
+                  telephone: firebaseUser.phoneNumber || null,
                   role: 'user',
                   status: 'active',
                   region: null,
@@ -98,12 +110,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
           
-          console.log(`📄 Firestore role: ${role}, Status: ${status}, Region: ${region}, District: ${district}, Circuit: ${circuit}, School: ${schoolName}, Classes: ${classNames?.join(', ')}`);
-          setUser({ ...firebaseUser, role, status, region, district, circuit, schoolName, classNames });
+          console.log(`📄 Firestore data: Name: ${name}, Tel: ${telephone}, Role: ${role}, Status: ${status}, Region: ${region}, District: ${district}, Circuit: ${circuit}, School: ${schoolName}, Classes: ${classNames?.join(', ')}`);
+          setUser({ ...firebaseUser, name, telephone, role, status, region, district, circuit, schoolName, classNames });
 
         } catch (error) {
           console.error('Error in AuthProvider while fetching/setting user role:', error);
-          setUser({ ...firebaseUser, role: null, status: null, region: null, district: null, circuit: null, schoolName: null, classNames: null }); // Fallback on error
+          setUser({ ...firebaseUser, role: null, status: null, name: null, telephone: null, region: null, district: null, circuit: null, schoolName: null, classNames: null }); // Fallback on error
         }
       } else {
         // User is not logged in.

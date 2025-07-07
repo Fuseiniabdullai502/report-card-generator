@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { Loader2, UserPlus, Eye, EyeOff, User, Phone } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { registerUserAction } from '@/app/actions';
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
+  const [telephone, setTelephone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,10 +56,15 @@ export default function RegisterPage() {
         setError("Password must be at least 6 characters long.");
         return;
     }
+    
+    if (!name.trim()) {
+        setError("Full name is required.");
+        return;
+    }
 
     setIsLoading(true);
 
-    const result = await registerUserAction({ email: email.trim().toLowerCase(), password });
+    const result = await registerUserAction({ email: email.trim().toLowerCase(), password, name, telephone });
 
     if (result.success) {
       toast({
@@ -79,10 +86,31 @@ export default function RegisterPage() {
       <Card className="w-full max-w-sm shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline text-primary">Create Your Account</CardTitle>
-          <CardDescription>Enter your details to register. You must be invited by a super-admin.</CardDescription>
+          <CardDescription>Enter your details to register. You must be invited by an administrator.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="flex items-center gap-2"><User />Full Name</Label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Doe"
+                required
+              />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="telephone" className="flex items-center gap-2"><Phone />Telephone Number</Label>
+              <Input
+                id="telephone"
+                type="tel"
+                value={telephone}
+                onChange={(e) => setTelephone(e.target.value)}
+                placeholder="e.g., 0241234567"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

@@ -54,6 +54,8 @@ import type { CustomUser } from './auth-provider';
 interface UserData {
   id: string;
   email: string;
+  name?: string | null;
+  telephone?: string | null;
   role: 'super-admin' | 'big-admin' | 'admin' | 'user';
   status: 'active' | 'inactive';
   region?: string | null;
@@ -125,7 +127,7 @@ export default function UserManagement({ user }: { user: CustomUser }) {
       const [usersResult, invitesResult] = await Promise.all([usersPromise, invitesPromise]);
 
       if (usersResult.success && usersResult.users) {
-        setUsers(usersResult.users.map(u => ({...u, classNames: u.classNames, createdAt: u.createdAt ? new Date(u.createdAt) : null })));
+        setUsers(usersResult.users.map(u => ({...u, name: u.name, telephone: u.telephone, classNames: u.classNames, createdAt: u.createdAt ? new Date(u.createdAt) : null })));
       } else {
         toast({ title: 'Error Fetching Users', description: usersResult.error, variant: 'destructive' });
       }
@@ -343,13 +345,46 @@ export default function UserManagement({ user }: { user: CustomUser }) {
           <CardContent>
             {isLoading ? <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div> : (
               <Table>
-                <TableHeader><TableRow><TableHead>Email</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {users.map((u) => (
-                    <TableRow key={u.id}><TableCell className="font-medium">{u.email}</TableCell><TableCell><div className="flex flex-col text-xs"><span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span><span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>{u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}{u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}{u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}</div></TableCell><TableCell className="text-right space-x-2">{u.role !== 'super-admin' && <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingUser(u)}><Edit className="h-4 w-4" /></Button>}{u.role !== 'super-admin' && <Switch id={`switch-${u.id}`} checked={u.status === 'active'} onCheckedChange={() => handleStatusChange(u.id, u.status)} aria-label={`Toggle status for ${u.email}`} />}{user.role === 'super-admin' && u.role !== 'super-admin' && u.status === 'inactive' && (<Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setUserToDelete(u)} title={`Delete user ${u.email}`}><Trash2 className="h-4 w-4" /></Button>)}</TableCell></TableRow>
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <div className="font-medium">{u.name || u.email}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {u.name && <div>{u.email}</div>}
+                          {u.telephone && <div>{u.telephone}</div>}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col text-xs">
+                          <span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span>
+                          <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
+                          {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}
+                          {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}
+                          {u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        {u.role !== 'super-admin' && <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingUser(u)}><Edit className="h-4 w-4" /></Button>}
+                        {u.role !== 'super-admin' && <Switch id={`switch-${u.id}`} checked={u.status === 'active'} onCheckedChange={() => handleStatusChange(u.id, u.status)} aria-label={`Toggle status for ${u.email}`} />}
+                        {user.role === 'super-admin' && u.role !== 'super-admin' && u.status === 'inactive' && (<Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setUserToDelete(u)} title={`Delete user ${u.email}`}><Trash2 className="h-4 w-4" /></Button>)}
+                      </TableCell>
+                    </TableRow>
                   ))}
                   {invites.filter((i) => i.status === 'pending').map((invite) => (
-                      <TableRow key={invite.id}><TableCell className="font-medium">{invite.email}</TableCell><TableCell><div className="flex flex-col text-xs"><span className="italic text-yellow-600">Pending Invite</span>{invite.role && <span className={`capitalize font-semibold ${invite.role === 'big-admin' ? 'text-purple-600' : invite.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {invite.role}</span>}</div></TableCell><TableCell className="text-right"><Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button></TableCell></TableRow>
+                      <TableRow key={invite.id}>
+                        <TableCell className="font-medium">{invite.email}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col text-xs">
+                            <span className="italic text-yellow-600">Pending Invite</span>
+                            {invite.role && <span className={`capitalize font-semibold ${invite.role === 'big-admin' ? 'text-purple-600' : invite.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {invite.role}</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
+                        </TableCell>
+                      </TableRow>
                   ))}
                   {(users.length === 0 && pendingInvitesCount === 0) && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No users or pending authorizations found.</TableCell></TableRow>}
                 </TableBody>

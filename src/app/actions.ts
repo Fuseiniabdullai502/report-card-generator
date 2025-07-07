@@ -221,8 +221,10 @@ export async function getAiSchoolInsightsAction(
 export async function registerUserAction(data: {
   email: string;
   password: string;
+  name: string;
+  telephone: string;
 }): Promise<{ success: boolean; message: string }> {
-  const { email, password } = data;
+  const { email, password, name, telephone } = data;
   const trimmedEmail = email.trim().toLowerCase();
 
   try {
@@ -283,6 +285,8 @@ export async function registerUserAction(data: {
     // Create user document in Firestore with role and scope from the invite
     await setDoc(doc(db, 'users', newUser.uid), {
       email: trimmedEmail,
+      name: name,
+      telephone: telephone,
       role: role,
       status: 'active',
       ...userScopeData,
@@ -572,6 +576,8 @@ export async function updateUserRoleAndScopeAction(
 interface UserForAdmin {
   id: string;
   email: string;
+  name: string;
+  telephone: string;
   role: 'super-admin' | 'big-admin' | 'admin' | 'user';
   status: 'active' | 'inactive';
   region?: string | null;
@@ -626,6 +632,8 @@ export async function getUsersAction(currentUser: {
         return {
           id: doc.id,
           email: data.email,
+          name: data.name,
+          telephone: data.telephone,
           role: data.role,
           status: data.status,
           region: data.region,
