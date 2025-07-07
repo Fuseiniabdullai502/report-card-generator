@@ -20,7 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -39,6 +39,7 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     deleteInviteAction, 
+    deleteUserAction,
     updateUserStatusAction, 
     updateUserRoleAndScopeAction, 
     createInviteAction,
@@ -94,6 +95,9 @@ export default function UserManagement({ user }: { user: CustomUser }) {
   const [inviteToDelete, setInviteToDelete] = useState<InviteData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
+  const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -189,6 +193,20 @@ export default function UserManagement({ user }: { user: CustomUser }) {
     setInviteToDelete(null);
   };
   
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    setIsDeletingUser(true);
+    const result = await deleteUserAction({ userId: userToDelete.id }, { role: user.role });
+    if (result.success) {
+      toast({ title: 'User Deleted', description: `The user ${userToDelete.email} has been permanently removed.` });
+      fetchData();
+    } else {
+      toast({ title: 'Deletion Failed', description: result.message, variant: 'destructive' });
+    }
+    setIsDeletingUser(false);
+    setUserToDelete(null);
+  };
+
   const handleStatusChange = async (userId: string, currentStatus: 'active' | 'inactive') => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     const result = await updateUserStatusAction({ userId, status: newStatus });
@@ -268,7 +286,7 @@ export default function UserManagement({ user }: { user: CustomUser }) {
                 <TableHeader><TableRow><TableHead>Email</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {users.map((u) => (
-                    <TableRow key={u.id}><TableCell className="font-medium">{u.email}</TableCell><TableCell><div className="flex flex-col text-xs"><span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span><span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>{u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}{u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}{u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}</div></TableCell><TableCell className="text-right space-x-2">{u.role !== 'super-admin' && <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingUser(u)}><Edit className="h-4 w-4" /></Button>}{u.role !== 'super-admin' && <Switch id={`switch-${u.id}`} checked={u.status === 'active'} onCheckedChange={() => handleStatusChange(u.id, u.status)} aria-label={`Toggle status for ${u.email}`} />}</TableCell></TableRow>
+                    <TableRow key={u.id}><TableCell className="font-medium">{u.email}</TableCell><TableCell><div className="flex flex-col text-xs"><span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span><span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>{u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}{u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}{u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}</div></TableCell><TableCell className="text-right space-x-2">{u.role !== 'super-admin' && <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingUser(u)}><Edit className="h-4 w-4" /></Button>}{u.role !== 'super-admin' && <Switch id={`switch-${u.id}`} checked={u.status === 'active'} onCheckedChange={() => handleStatusChange(u.id, u.status)} aria-label={`Toggle status for ${u.email}`} />}{user.role === 'super-admin' && u.role !== 'super-admin' && u.status === 'inactive' && (<Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setUserToDelete(u)} title={`Delete user ${u.email}`}><Trash2 className="h-4 w-4" /></Button>)}</TableCell></TableRow>
                   ))}
                   {invites.filter((i) => i.status === 'pending').map((invite) => (
                       <TableRow key={invite.id}><TableCell className="font-medium">{invite.email}</TableCell><TableCell><div className="flex flex-col text-xs"><span className="italic text-yellow-600">Pending Invite</span>{invite.role && <span className={`capitalize font-semibold ${invite.role === 'big-admin' ? 'text-purple-600' : invite.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {invite.role}</span>}</div></TableCell><TableCell className="text-right"><Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button></TableCell></TableRow>
@@ -283,6 +301,10 @@ export default function UserManagement({ user }: { user: CustomUser }) {
       
       <AlertDialog open={!!inviteToDelete} onOpenChange={(open) => !open && setInviteToDelete(null)}>
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the invite for <strong>{inviteToDelete?.email}</strong> and they will not be able to register.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setInviteToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteInvite} disabled={isDeleting}>{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Continue</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete User Permanently?</AlertDialogTitle><AlertDialogDescription>This action is irreversible and will permanently delete the user <strong>{userToDelete?.email}</strong> from both authentication and the database. Any data associated with this user might be orphaned.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setUserToDelete(null)} disabled={isDeletingUser}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteUser} disabled={isDeletingUser} className={buttonVariants({ variant: "destructive" })}>{isDeletingUser && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Delete User</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
 
       {isCreateInviteDialogOpen && <CreateInviteDialog currentUser={user} onOpenChange={setIsCreateInviteDialogOpen} onInviteCreated={fetchData} />}

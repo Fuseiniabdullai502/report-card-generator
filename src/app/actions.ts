@@ -428,6 +428,41 @@ export async function deleteInviteAction(
   }
 }
 
+// Action for deleting a user (super-admin only)
+const DeleteUserActionInputSchema = z.object({
+  userId: z.string().min(1, 'User ID is required.'),
+});
+
+export async function deleteUserAction(
+  data: { userId: string },
+  currentUser: { role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null }
+): Promise<{ success: boolean; message: string }> {
+  try {
+    if (currentUser.role !== 'super-admin') {
+      throw new Error("You do not have permission to perform this action.");
+    }
+    const { userId } = DeleteUserActionInputSchema.parse(data);
+
+    // Delete from Firestore first
+    await admin.firestore().collection('users').doc(userId).delete();
+
+    // Then delete from Firebase Auth
+    await admin.auth().deleteUser(userId);
+
+    return { success: true, message: 'User successfully deleted.' };
+  } catch (error: any) {
+    console.error('Error deleting user:', error);
+    let errorMessage = 'An unexpected error occurred while deleting the user.';
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for deleting user: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, message: errorMessage };
+  }
+}
+
+
 // Action for updating user status
 const UpdateUserStatusActionInputSchema = z.object({
   userId: z.string().min(1, 'User ID is required.'),
