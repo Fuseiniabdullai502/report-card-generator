@@ -487,7 +487,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
                   <DialogTitle>Create New Invite</DialogTitle>
                   <DialogDescription>Invite a new user by email and pre-assign their role and permissions.</DialogDescription>
                 </DialogHeader>
-                <div className="flex-grow overflow-y-auto -mx-6 px-6">
+                <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
@@ -630,7 +630,7 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
                   <DialogTitle>Edit User: {user.email}</DialogTitle>
                   <DialogDescription>Update the role and permissions for this user.</DialogDescription>
                 </DialogHeader>
-                <div className="flex-grow overflow-y-auto -mx-6 px-6">
+                <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
                   <div className="space-y-4 py-4">
                     <div className="space-y-2"><Label htmlFor="role">Role</Label><Select value={role} onValueChange={(value) => setRole(value as UserData['role'])}><SelectTrigger id="role"><SelectValue /></SelectTrigger><SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent></Select></div>
                     {(role === 'big-admin' || role === 'admin' || role === 'user') && (<><div className="space-y-2"><Label htmlFor="region">Region</Label><Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); setCircuit(''); }}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="district">District/Municipal</Label><Select value={district} onValueChange={(val) => { setDistrict(val); setCircuit(''); }} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select></div></>)}
