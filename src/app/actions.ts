@@ -341,7 +341,7 @@ const CreateInviteActionInputSchema = z.object({
 
 export async function createInviteAction(
   data: z.infer<typeof CreateInviteActionInputSchema>,
-  currentUser: { role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null }
+  currentUser: CustomUser
 ): Promise<{ success: boolean; message: string }> {
   try {
      if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
@@ -349,7 +349,7 @@ export async function createInviteAction(
     }
     
     const validatedData = CreateInviteActionInputSchema.parse(data);
-    const { email, role, ...scopes } = validatedData;
+    const { email, role, ...scopesFromClient } = validatedData;
     const normalizedEmail = email.trim().toLowerCase();
 
     // Permission checks for who can invite whom
@@ -381,14 +381,43 @@ export async function createInviteAction(
     if (!inviteSnapshot.empty) {
       return { success: false, message: `A pending invite for ${normalizedEmail} already exists.` };
     }
+    
+    // SERVER-SIDE SCOPE ENFORCEMENT
+    let finalScope: any = {};
+    if (currentUser.role === 'big-admin') {
+      if (!currentUser.region || !currentUser.district) {
+        throw new Error("Your account ('big-admin') is not configured with a region and district.");
+      }
+      finalScope = {
+        region: currentUser.region,
+        district: currentUser.district,
+        circuit: scopesFromClient.circuit,
+        schoolName: scopesFromClient.schoolName,
+        classNames: role === 'user' ? scopesFromClient.classNames : null
+      };
+    } else if (currentUser.role === 'admin') {
+      if (!currentUser.schoolName) {
+        throw new Error("Your account ('admin') is not configured with a school name.");
+      }
+      finalScope = {
+        region: currentUser.region,
+        district: currentUser.district,
+        circuit: currentUser.circuit,
+        schoolName: currentUser.schoolName,
+        classNames: role === 'user' ? scopesFromClient.classNames : null
+      };
+    } else { // super-admin
+      finalScope = scopesFromClient;
+    }
 
-    // Create the invite document with role and scope
+
+    // Create the invite document with the enforced role and scope
     await invitesRef.add({
       email: normalizedEmail,
       status: 'pending',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       role,
-      ...scopes,
+      ...finalScope,
     });
 
     return { success: true, message: `User with email ${normalizedEmail} has been invited as a '${role}'. They can now register.` };
@@ -509,7 +538,7 @@ const UpdateUserRoleAndScopeActionSchema = z.object({
 
 export async function updateUserRoleAndScopeAction(
   data: z.infer<typeof UpdateUserRoleAndScopeActionSchema>,
-  currentUser: { role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null }
+  currentUser: CustomUser
 ): Promise<{ success: boolean; message: string }> {
   try {
     if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
@@ -529,31 +558,48 @@ export async function updateUserRoleAndScopeAction(
     
     const userDocRef = admin.firestore().collection('users').doc(userId);
     
+    // SERVER-SIDE SCOPE ENFORCEMENT
     const updateData: any = { role };
 
-    if (role === 'big-admin') {
-      if (!scopes.region?.trim()) throw new Error("A region must be specified for a 'big-admin'.");
-      if (!scopes.district?.trim()) throw new Error("A district must be specified for a 'big-admin'.");
-      updateData.region = scopes.region;
-      updateData.district = scopes.district;
-      updateData.schoolName = null;
-      updateData.circuit = null;
-      updateData.classNames = null;
-    } else if (role === 'admin') {
-      if (!scopes.region?.trim()) throw new Error("A region must be specified for an 'admin'.");
-      if (!scopes.district?.trim()) throw new Error("A district must be specified for an 'admin'.");
-      if (!scopes.schoolName?.trim()) throw new Error("A school name must be specified for an 'admin'.");
-      updateData.region = scopes.region;
-      updateData.district = scopes.district;
-      updateData.circuit = scopes.circuit;
-      updateData.schoolName = scopes.schoolName;
-      updateData.classNames = null;
-    } else { // 'user' role
-      updateData.region = scopes.region;
-      updateData.district = scopes.district;
-      updateData.circuit = scopes.circuit;
-      updateData.schoolName = scopes.schoolName;
-      updateData.classNames = scopes.classNames;
+    if (currentUser.role === 'big-admin') {
+      if (!currentUser.region || !currentUser.district) throw new Error("Current user ('big-admin') has an incomplete scope.");
+      updateData.region = currentUser.region;
+      updateData.district = currentUser.district;
+      updateData.schoolName = (role === 'admin' || role === 'user') ? scopes.schoolName : null;
+      updateData.circuit = (role === 'admin' || role === 'user') ? scopes.circuit : null;
+      updateData.classNames = role === 'user' ? scopes.classNames : null;
+
+    } else if (currentUser.role === 'admin') {
+      if (!currentUser.schoolName) throw new Error("Current user ('admin') has an incomplete scope.");
+      updateData.region = currentUser.region;
+      updateData.district = currentUser.district;
+      updateData.circuit = currentUser.circuit;
+      updateData.schoolName = currentUser.schoolName;
+      updateData.classNames = role === 'user' ? scopes.classNames : null;
+
+    } else { // super-admin
+      if (role === 'big-admin') {
+        if (!scopes.region?.trim()) throw new Error("A region must be specified for a 'big-admin'.");
+        if (!scopes.district?.trim()) throw new Error("A district must be specified for a 'big-admin'.");
+        updateData.region = scopes.region;
+        updateData.district = scopes.district;
+        updateData.schoolName = null;
+        updateData.circuit = null;
+        updateData.classNames = null;
+      } else if (role === 'admin') {
+        if (!scopes.schoolName?.trim()) throw new Error("A school name must be specified for an 'admin'.");
+        updateData.region = scopes.region;
+        updateData.district = scopes.district;
+        updateData.circuit = scopes.circuit;
+        updateData.schoolName = scopes.schoolName;
+        updateData.classNames = null;
+      } else { // 'user' role
+        updateData.region = scopes.region;
+        updateData.district = scopes.district;
+        updateData.circuit = scopes.circuit;
+        updateData.schoolName = scopes.schoolName;
+        updateData.classNames = scopes.classNames;
+      }
     }
     
     await userDocRef.update(updateData);
