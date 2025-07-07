@@ -651,3 +651,66 @@ export async function getInvitesAction(currentUser: {
     return { success: false, error: error.message };
   }
 }
+
+
+// Action for fetching district-level statistics
+export async function getDistrictStatsAction(district: string): Promise<{
+  success: boolean;
+  stats?: {
+    schoolCount: number;
+    maleCount: number;
+    femaleCount: number;
+    totalStudents: number;
+  };
+  error?: string;
+}> {
+  try {
+    if (!district) {
+      throw new Error("District is required to fetch stats.");
+    }
+    
+    const reportsRef = admin.firestore().collection('reports');
+    const reportsQuery = reportsRef.where('district', '==', district);
+    const reportsSnapshot = await reportsQuery.get();
+    
+    if (reportsSnapshot.empty) {
+        return { success: true, stats: { schoolCount: 0, maleCount: 0, femaleCount: 0, totalStudents: 0 } };
+    }
+
+    const schoolNames = new Set<string>();
+    let maleCount = 0;
+    let femaleCount = 0;
+    
+    reportsSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.schoolName) {
+        schoolNames.add(data.schoolName);
+      }
+      if (data.gender === 'Male') {
+        maleCount++;
+      } else if (data.gender === 'Female') {
+        femaleCount++;
+      }
+    });
+    
+    const stats = {
+      schoolCount: schoolNames.size,
+      maleCount,
+      femaleCount,
+      totalStudents: reportsSnapshot.size,
+    };
+    
+    return { success: true, stats };
+
+  } catch (error: any) {
+    console.error('Error fetching district stats:', error);
+    // Provide a more user-friendly error
+    let errorMessage = "An unexpected error occurred while fetching district statistics.";
+    if (error.code === 'failed-precondition' && error.message.includes('index')) {
+        errorMessage = `A database index is needed to query reports by 'district'. Please check the browser's developer console for a link to create it. This is a one-time setup.`;
+    } else if (error.message) {
+        errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}

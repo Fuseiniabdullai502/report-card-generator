@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -43,7 +43,8 @@ import {
     updateUserRoleAndScopeAction, 
     createInviteAction,
     getUsersAction,
-    getInvitesAction
+    getInvitesAction,
+    getDistrictStatsAction
 } from '@/app/actions';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import type { CustomUser } from './auth-provider';
@@ -74,9 +75,17 @@ interface InviteData {
   createdAt: Date | null;
 }
 
+interface DistrictStats {
+  schoolCount: number;
+  maleCount: number;
+  femaleCount: number;
+  totalStudents: number;
+}
+
 export default function UserManagement({ user }: { user: CustomUser }) {
   const [users, setUsers] = useState<UserData[]>([]);
   const [invites, setInvites] = useState<InviteData[]>([]);
+  const [districtStats, setDistrictStats] = useState<DistrictStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
@@ -89,8 +98,9 @@ export default function UserManagement({ user }: { user: CustomUser }) {
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
+    setDistrictStats(null);
     try {
-      const [usersResult, invitesResult] = await Promise.all([
+      const promises: any[] = [
         getUsersAction({
           id: user.uid,
           role: user.role,
@@ -98,7 +108,13 @@ export default function UserManagement({ user }: { user: CustomUser }) {
           schoolName: user.schoolName,
         }),
         getInvitesAction({ role: user.role }),
-      ]);
+      ];
+
+      if (user.role === 'big-admin' && user.district) {
+          promises.push(getDistrictStatsAction(user.district));
+      }
+
+      const [usersResult, invitesResult, districtStatsResult] = await Promise.all(promises);
 
       if (usersResult.success && usersResult.users) {
         setUsers(usersResult.users.map(u => ({...u, classNames: u.classNames, createdAt: u.createdAt ? new Date(u.createdAt) : null })));
@@ -111,6 +127,15 @@ export default function UserManagement({ user }: { user: CustomUser }) {
       } else {
         toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
       }
+
+      if (user.role === 'big-admin' && districtStatsResult) {
+          if (districtStatsResult.success && districtStatsResult.stats) {
+              setDistrictStats(districtStatsResult.stats);
+          } else {
+              toast({ title: 'Error Fetching District Stats', description: districtStatsResult.error, variant: 'destructive' });
+          }
+      }
+
     } catch (error: any) {
       toast({ title: 'Failed to load management data', description: error.message, variant: 'destructive' });
     } finally {
@@ -203,13 +228,30 @@ export default function UserManagement({ user }: { user: CustomUser }) {
           </div>
         )}
 
-        {user.role === 'big-admin' && bigAdminRoleCounts && !isLoading && (
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4">District Role Overview</h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {bigAdminRoleCounts.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {bigAdminRoleCounts.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
-              <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {bigAdminRoleCounts.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {bigAdminRoleCounts.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
-            </div>
+        {user.role === 'big-admin' && !isLoading && (
+          <div className="space-y-8">
+              <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">District Role Overview</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {bigAdminRoleCounts?.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {bigAdminRoleCounts?.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {bigAdminRoleCounts?.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {bigAdminRoleCounts?.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+                  </div>
+              </div>
+              {districtStats && (
+                  <div>
+                      <h3 className="text-lg font-semibold text-foreground mb-4">District Educational Data</h3>
+                      <div className="grid gap-4 md:grid-cols-3">
+                          <Card>
+                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Schools in District</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader>
+                              <CardContent><div className="text-2xl font-bold">{districtStats.schoolCount}</div><p className="text-xs text-muted-foreground">Total schools with reports</p></CardContent>
+                          </Card>
+                          <Card>
+                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Student Population</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader>
+                              <CardContent><div className="text-2xl font-bold">{districtStats.totalStudents}</div><p className="text-xs text-muted-foreground">{districtStats.maleCount} Male / {districtStats.femaleCount} Female</p></CardContent>
+                          </Card>
+                      </div>
+                  </div>
+              )}
           </div>
         )}
         
