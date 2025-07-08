@@ -425,7 +425,9 @@ export async function createInviteAction(
   } catch (error: any) {
     console.error('Error in createInviteAction:', error);
     let errorMessage = 'An unexpected error occurred during authorization.';
-    if (error instanceof z.ZodError) {
+    if (error.code === 'failed-precondition' && error.message.includes('index')) {
+        errorMessage = `A database index is needed to check for existing invites. Please go to your Firebase console to create it. The developer console in your browser should have a direct link. The required index is on the "invites" collection for the fields "email" (ascending) and "status" (ascending).`;
+    } else if (error instanceof z.ZodError) {
       errorMessage = "Invalid input for inviting user: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
     } else if (error.message) {
       errorMessage = error.message;
