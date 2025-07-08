@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -43,10 +43,6 @@ import {
     updateUserStatusAction, 
     updateUserRoleAndScopeAction, 
     createInviteAction,
-    getUsersAction,
-    getInvitesAction,
-    getDistrictStatsAction,
-    getSchoolStatsAction
 } from '@/app/actions';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import type { CustomUser } from './auth-provider';
@@ -93,12 +89,17 @@ interface SchoolStats {
   totalStudents: number;
 }
 
-export default function UserManagement({ user }: { user: CustomUser }) {
-  const [users, setUsers] = useState<UserData[]>([]);
-  const [invites, setInvites] = useState<InviteData[]>([]);
-  const [districtStats, setDistrictStats] = useState<DistrictStats | null>(null);
-  const [schoolStats, setSchoolStats] = useState<SchoolStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface UserManagementProps {
+    user: CustomUser;
+    users: UserData[];
+    invites: InviteData[];
+    districtStats: DistrictStats | null;
+    schoolStats: SchoolStats | null;
+    isLoading: boolean;
+    onDataRefresh: () => void;
+}
+
+export default function UserManagement({ user, users, invites, districtStats, schoolStats, isLoading, onDataRefresh }: UserManagementProps) {
   const { toast } = useToast();
   
   const [isCreateInviteDialogOpen, setIsCreateInviteDialogOpen] = useState(false);
@@ -110,60 +111,6 @@ export default function UserManagement({ user }: { user: CustomUser }) {
   const [isDeletingUser, setIsDeletingUser] = useState(false);
 
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
-
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    setDistrictStats(null);
-    setSchoolStats(null);
-    try {
-      const usersPromise = getUsersAction({
-        id: user.uid,
-        role: user.role,
-        district: user.district,
-        schoolName: user.schoolName,
-      });
-      const invitesPromise = getInvitesAction({ role: user.role });
-
-      const [usersResult, invitesResult] = await Promise.all([usersPromise, invitesPromise]);
-
-      if (usersResult.success && usersResult.users) {
-        setUsers(usersResult.users.map(u => ({...u, name: u.name, telephone: u.telephone, classNames: u.classNames, createdAt: u.createdAt ? new Date(u.createdAt) : null })));
-      } else {
-        toast({ title: 'Error Fetching Users', description: usersResult.error, variant: 'destructive' });
-      }
-
-      if (invitesResult.success && invitesResult.invites) {
-        setInvites(invitesResult.invites.map(i => ({...i, role: i.role, region: i.region, district: i.district, circuit: i.circuit, schoolName: i.schoolName, classNames: i.classNames, createdAt: i.createdAt ? new Date(i.createdAt) : null })));
-      } else {
-        toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
-      }
-
-      if (user.role === 'big-admin' && user.district) {
-          const districtStatsResult = await getDistrictStatsAction(user.district);
-          if (districtStatsResult.success && districtStatsResult.stats) {
-              setDistrictStats(districtStatsResult.stats);
-          } else {
-              toast({ title: 'Error Fetching District Stats', description: districtStatsResult.error, variant: 'destructive' });
-          }
-      } else if (user.role === 'admin' && user.schoolName) {
-          const schoolStatsResult = await getSchoolStatsAction(user.schoolName);
-          if (schoolStatsResult.success && schoolStatsResult.stats) {
-              setSchoolStats(schoolStatsResult.stats);
-          } else {
-              toast({ title: 'Error Fetching School Stats', description: schoolStatsResult.error, variant: 'destructive' });
-          }
-      }
-
-    } catch (error: any) {
-      toast({ title: 'Failed to load management data', description: error.message, variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast, user]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const roleCounts = useMemo(() => {
     if (user.role !== 'super-admin') return null;
@@ -199,7 +146,7 @@ export default function UserManagement({ user }: { user: CustomUser }) {
     const result = await deleteInviteAction({ inviteId: inviteToDelete.id });
     if (result.success) {
       toast({ title: 'Invite Deleted', description: `The invite for ${inviteToDelete.email} has been removed.` });
-      fetchData();
+      onDataRefresh();
     } else {
       toast({ title: 'Deletion Failed', description: result.message, variant: 'destructive' });
     }
@@ -213,7 +160,7 @@ export default function UserManagement({ user }: { user: CustomUser }) {
     const result = await deleteUserAction({ userId: userToDelete.id }, { role: user.role });
     if (result.success) {
       toast({ title: 'User Deleted', description: `The user ${userToDelete.email} has been permanently removed.` });
-      fetchData();
+      onDataRefresh();
     } else {
       toast({ title: 'Deletion Failed', description: result.message, variant: 'destructive' });
     }
@@ -226,7 +173,7 @@ export default function UserManagement({ user }: { user: CustomUser }) {
     const result = await updateUserStatusAction({ userId, status: newStatus });
     if (result.success) {
         toast({ title: 'Status Updated', description: `User has been set to ${newStatus}.` });
-        fetchData();
+        onDataRefresh();
     } else {
       toast({ title: 'Update Failed', description: result.message, variant: 'destructive' });
     }
@@ -352,51 +299,53 @@ export default function UserManagement({ user }: { user: CustomUser }) {
           <CardHeader><CardTitle>User & Invite Management</CardTitle><CardDescription>Manage roles, status, and pending invites for all system users.</CardDescription></CardHeader>
           <CardContent>
             {isLoading ? <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div> : (
-              <Table>
-                <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {users.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell>
-                        <div className="font-medium">{u.name || u.email}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {u.name && <div>{u.email}</div>}
-                          {u.telephone && <div>{u.telephone}</div>}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col text-xs">
-                          <span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span>
-                          <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
-                          {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}
-                          {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}
-                          {u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        {u.role !== 'super-admin' && <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingUser(u)}><Edit className="h-4 w-4" /></Button>}
-                        {u.role !== 'super-admin' && <Switch id={`switch-${u.id}`} checked={u.status === 'active'} onCheckedChange={() => handleStatusChange(u.id, u.status)} aria-label={`Toggle status for ${u.email}`} />}
-                        {user.role === 'super-admin' && u.role !== 'super-admin' && u.status === 'inactive' && (<Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setUserToDelete(u)} title={`Delete user ${u.email}`}><Trash2 className="h-4 w-4" /></Button>)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {invites.filter((i) => i.status === 'pending').map((invite) => (
-                      <TableRow key={invite.id}>
-                        <TableCell className="font-medium">{invite.email}</TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {users.map((u) => (
+                      <TableRow key={u.id}>
                         <TableCell>
-                          <div className="flex flex-col text-xs">
-                            <span className="italic text-yellow-600">Pending Invite</span>
-                            {invite.role && <span className={`capitalize font-semibold ${invite.role === 'big-admin' ? 'text-purple-600' : invite.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {invite.role}</span>}
+                          <div className="font-medium">{u.name || u.email}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {u.name && <div>{u.email}</div>}
+                            {u.telephone && <div>{u.telephone}</div>}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
+                        <TableCell>
+                          <div className="flex flex-col text-xs">
+                            <span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span>
+                            <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
+                            {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}
+                            {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}
+                            {u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                          {u.role !== 'super-admin' && <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingUser(u)}><Edit className="h-4 w-4" /></Button>}
+                          {u.role !== 'super-admin' && <Switch id={`switch-${u.id}`} checked={u.status === 'active'} onCheckedChange={() => handleStatusChange(u.id, u.status)} aria-label={`Toggle status for ${u.email}`} />}
+                          {user.role === 'super-admin' && u.role !== 'super-admin' && u.status === 'inactive' && (<Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setUserToDelete(u)} title={`Delete user ${u.email}`}><Trash2 className="h-4 w-4" /></Button>)}
                         </TableCell>
                       </TableRow>
-                  ))}
-                  {(users.length === 0 && pendingInvitesCount === 0) && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No users or pending authorizations found.</TableCell></TableRow>}
-                </TableBody>
-              </Table>
+                    ))}
+                    {invites.filter((i) => i.status === 'pending').map((invite) => (
+                        <TableRow key={invite.id}>
+                          <TableCell className="font-medium">{invite.email}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col text-xs">
+                              <span className="italic text-yellow-600">Pending Invite</span>
+                              {invite.role && <span className={`capitalize font-semibold ${invite.role === 'big-admin' ? 'text-purple-600' : invite.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {invite.role}</span>}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
+                          </TableCell>
+                        </TableRow>
+                    ))}
+                    {(users.length === 0 && pendingInvitesCount === 0) && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No users or pending authorizations found.</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -410,8 +359,8 @@ export default function UserManagement({ user }: { user: CustomUser }) {
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete User Permanently?</AlertDialogTitle><AlertDialogDescription>This action is irreversible and will permanently delete the user <strong>{userToDelete?.email}</strong> from both authentication and the database. Any data associated with this user might be orphaned.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setUserToDelete(null)} disabled={isDeletingUser}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteUser} disabled={isDeletingUser} className={buttonVariants({ variant: "destructive" })}>{isDeletingUser && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Delete User</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
 
-      {isCreateInviteDialogOpen && <CreateInviteDialog currentUser={user} onOpenChange={setIsCreateInviteDialogOpen} onInviteCreated={fetchData} />}
-      {editingUser && <EditUserDialog currentUser={user} user={editingUser} onOpenChange={() => setEditingUser(null)} onUserUpdated={fetchData} />}
+      {isCreateInviteDialogOpen && <CreateInviteDialog currentUser={user} onOpenChange={setIsCreateInviteDialogOpen} onInviteCreated={onDataRefresh} />}
+      {editingUser && <EditUserDialog currentUser={user} user={editingUser} onOpenChange={() => setEditingUser(null)} onUserUpdated={onDataRefresh} />}
     </>
   );
 }

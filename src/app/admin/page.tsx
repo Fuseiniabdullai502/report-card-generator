@@ -1,31 +1,135 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useAuth } from '@/components/auth-provider';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useAuth, type CustomUser } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { Loader2, Shield } from 'lucide-react';
 import UserManagement from '@/components/user-management';
+import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
+
+// Define types locally for state
+interface UserData {
+  id: string;
+  email: string;
+  name?: string | null;
+  telephone?: string | null;
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  status: 'active' | 'inactive';
+  region?: string | null;
+  district?: string | null;
+  circuit?: string | null;
+  schoolName?: string | null;
+  classNames?: string[] | null;
+  createdAt: Date | null;
+}
+
+interface InviteData {
+  id: string;
+  email: string;
+  status: 'pending' | 'completed';
+  role?: 'big-admin' | 'admin' | 'user';
+  region?: string | null;
+  district?: string | null;
+  circuit?: string | null;
+  schoolName?: string | null;
+  classNames?: string[] | null;
+  createdAt: Date | null;
+}
+
+interface DistrictStats {
+  schoolCount: number;
+  maleCount: number;
+  femaleCount: number;
+  totalStudents: number;
+}
+
+interface SchoolStats {
+  classCount: number;
+  maleCount: number;
+  femaleCount: number;
+  totalStudents: number;
+}
 
 export default function AdminPage() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
+
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [invites, setInvites] = useState<InviteData[]>([]);
+  const [districtStats, setDistrictStats] = useState<DistrictStats | null>(null);
+  const [schoolStats, setSchoolStats] = useState<SchoolStats | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    if (!user) return; // Wait for user object
+    setIsLoadingData(true);
+    setDistrictStats(null);
+    setSchoolStats(null);
+    try {
+      const usersPromise = getUsersAction({
+        id: user.uid,
+        role: user.role,
+        district: user.district,
+        schoolName: user.schoolName,
+      });
+      const invitesPromise = getInvitesAction({ role: user.role });
+
+      const [usersResult, invitesResult] = await Promise.all([usersPromise, invitesPromise]);
+
+      if (usersResult.success && usersResult.users) {
+        setUsers(usersResult.users.map(u => ({...u, name: u.name, telephone: u.telephone, classNames: u.classNames, createdAt: u.createdAt ? new Date(u.createdAt) : null } as UserData)));
+      } else {
+        toast({ title: 'Error Fetching Users', description: usersResult.error, variant: 'destructive' });
+      }
+
+      if (invitesResult.success && invitesResult.invites) {
+        setInvites(invitesResult.invites.map(i => ({...i, role: i.role, region: i.region, district: i.district, circuit: i.circuit, schoolName: i.schoolName, classNames: i.classNames, createdAt: i.createdAt ? new Date(i.createdAt) : null } as InviteData)));
+      } else {
+        toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
+      }
+
+      if (user.role === 'big-admin' && user.district) {
+          const districtStatsResult = await getDistrictStatsAction(user.district);
+          if (districtStatsResult.success && districtStatsResult.stats) {
+              setDistrictStats(districtStatsResult.stats);
+          } else {
+              toast({ title: 'Error Fetching District Stats', description: districtStatsResult.error, variant: 'destructive' });
+          }
+      } else if (user.role === 'admin' && user.schoolName) {
+          const schoolStatsResult = await getSchoolStatsAction(user.schoolName);
+          if (schoolStatsResult.success && schoolStatsResult.stats) {
+              setSchoolStats(schoolStatsResult.stats);
+          } else {
+              toast({ title: 'Error Fetching School Stats', description: schoolStatsResult.error, variant: 'destructive' });
+          }
+      }
+
+    } catch (error: any) {
+      toast({ title: 'Failed to load management data', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, [toast, user]);
 
   useEffect(() => {
     if (user) {
-      console.log("AdminPanel loaded user:", user);
+        fetchData();
     }
-  }, [user]);
+  }, [user, fetchData]);
+
 
   // Redirect logic
   useEffect(() => {
-    if (loading) return;
+    if (authLoading) return;
 
     if (!user) {
       router.replace('/login');
     } else if (!user.role || !['super-admin', 'big-admin', 'admin'].includes(user.role)) {
       router.replace('/');
     }
-  }, [user, loading, router]);
+  }, [user, authLoading, router]);
 
   const getPageTitle = () => {
     switch (user?.role) {
@@ -53,8 +157,8 @@ export default function AdminPage() {
     }
   }
 
-  // Show loader while waiting or blocking unauthorized access
-  if (loading || !user || !user.role || !['super-admin', 'big-admin', 'admin'].includes(user.role)) {
+  // Show loader while waiting for auth or data, or while redirecting unauthorized access
+  if (authLoading || isLoadingData || !user || !user.role || !['super-admin', 'big-admin', 'admin'].includes(user.role)) {
     return (
       <div className="flex justify-center items-center h-screen w-screen bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -75,7 +179,15 @@ export default function AdminPage() {
         </p>
       </header>
       <div className="no-print">
-        <UserManagement user={user} />
+        <UserManagement 
+            user={user} 
+            users={users}
+            invites={invites}
+            districtStats={districtStats}
+            schoolStats={schoolStats}
+            isLoading={isLoadingData}
+            onDataRefresh={fetchData}
+        />
       </div>
     </main>
   );
