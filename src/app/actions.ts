@@ -315,7 +315,7 @@ export async function registerUserAction(data: {
           errorMessage = 'Password is too weak. It must be at least 6 characters.';
           break;
         case 'failed-precondition':
-             errorMessage = 'This is likely due to a missing Firestore index. Please check your browser\'s developer console for a link to create the required index for the "invites" collection on the "email" and "status" fields.';
+             errorMessage = 'A database index is needed to find your invite. Please ask an administrator to check the browser\'s developer console for a link to create the required index for the "invites" collection on the "email" and "status" fields. This is a one-time setup.';
              break;
         default:
           errorMessage = error.message;
@@ -427,12 +427,19 @@ export async function createInviteAction(
     let errorMessage = 'An unexpected error occurred during authorization.';
 
     // Check for specific Firebase Admin SDK initialization error.
-    if (error.message && error.message.includes('Firebase Admin SDK failed to initialize')) {
-        errorMessage = `The server is not configured correctly for admin actions. This is usually due to missing or incorrect Firebase Admin credentials. Please double-check your .env file and follow the Admin SDK setup instructions in the README.md file.`;
+    if (error.message && error.message.toLowerCase().includes('firebase admin sdk') && error.message.toLowerCase().includes('initialize')) {
+        errorMessage = `SERVER CONFIGURATION ERROR: The Firebase Admin SDK failed to initialize. This is a critical server setup issue.
+
+To fix this for local development:
+1. Ensure you have a 'firebase-service-account.json' file in the root of your project.
+2. Ensure your '.env' file has the line 'GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json' uncommented.
+3. Restart your development server after making changes to '.env'.
+
+For production, ensure the 'FIREBASE_SERVICE_ACCOUNT' environment variable is correctly set with the JSON content. Please see the README.md for detailed instructions.`;
     }
     // Check for specific Firestore index error code
     else if (error.code === 'failed-precondition' && error.message && error.message.includes('index')) {
-        errorMessage = `A database index is needed to check for existing invites. Please go to your Firebase console to create it. The developer console in your browser should have a direct link. The required index is on the "invites" collection for the fields "email" (ascending) and "status" (ascending).`;
+        errorMessage = `ACTION REQUIRED: A database index is needed to check for existing invites. Please go to your Firebase console to create it. The developer console in your browser should have a direct link. The required index is on the "invites" collection for the fields "email" (ascending) and "status" (ascending). This is a one-time setup.`;
     } 
     // Check for Zod validation errors
     else if (error instanceof z.ZodError) {
