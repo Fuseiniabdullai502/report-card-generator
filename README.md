@@ -18,7 +18,7 @@ In your `.env` file, set the `NEXT_PUBLIC_ADMIN_EMAIL` variable:
 ```
 NEXT_PUBLIC_ADMIN_EMAIL="your-admin-email@example.com"
 ```
-**Important:** The first time you log in with this email, the application will automatically assign you the 'admin' role.
+**Important:** The first time you log in with this email, the application will automatically assign you the 'super-admin' role.
 
 #### Google AI (Genkit) Setup
 

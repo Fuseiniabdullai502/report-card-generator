@@ -425,13 +425,24 @@ export async function createInviteAction(
   } catch (error: any) {
     console.error('Error in createInviteAction:', error);
     let errorMessage = 'An unexpected error occurred during authorization.';
-    if (error.code === 'failed-precondition' && error.message.includes('index')) {
+
+    // Check for specific Firebase Admin SDK initialization error.
+    if (error.message && error.message.includes('Firebase Admin SDK failed to initialize')) {
+        errorMessage = `The server is not configured correctly for admin actions. This is usually due to missing or incorrect Firebase Admin credentials. Please double-check your .env file and follow the Admin SDK setup instructions in the README.md file.`;
+    }
+    // Check for specific Firestore index error code
+    else if (error.code === 'failed-precondition' && error.message && error.message.includes('index')) {
         errorMessage = `A database index is needed to check for existing invites. Please go to your Firebase console to create it. The developer console in your browser should have a direct link. The required index is on the "invites" collection for the fields "email" (ascending) and "status" (ascending).`;
-    } else if (error instanceof z.ZodError) {
+    } 
+    // Check for Zod validation errors
+    else if (error instanceof z.ZodError) {
       errorMessage = "Invalid input for inviting user: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
-    } else if (error.message) {
+    } 
+    // Check for any other error with a message property
+    else if (error.message) {
       errorMessage = error.message;
     }
+    
     return { success: false, message: errorMessage };
   }
 }
