@@ -6,9 +6,6 @@ import NextImage from 'next/image';
 import ReportForm from '@/components/report-form';
 import ReportPreview from '@/components/report-preview';
 import ReportActions from '@/components/report-actions';
-import ClassPerformanceDashboard from '@/components/class-dashboard';
-import SchoolPerformanceDashboard from '@/components/school-dashboard';
-import ImportStudentsDialog from '@/components/import-students-dialog';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -29,7 +26,23 @@ import { useRouter } from 'next/navigation';
 import type { CustomUser } from '@/components/auth-provider';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
+
+// Dynamically import heavy components
+const ClassPerformanceDashboard = dynamic(() => import('@/components/class-dashboard'), { 
+    ssr: false,
+    loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> 
+});
+const SchoolPerformanceDashboard = dynamic(() => import('@/components/school-dashboard'), { 
+    ssr: false,
+    loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> 
+});
+const ImportStudentsDialog = dynamic(() => import('@/components/import-students-dialog'), { 
+    ssr: false,
+    loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> 
+});
+
 
 export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
