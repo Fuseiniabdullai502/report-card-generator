@@ -4,9 +4,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth, type CustomUser } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { Loader2, Shield } from 'lucide-react';
-import UserManagement from '@/components/user-management';
 import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
+import dynamic from 'next/dynamic';
 
 // Define types locally for state
 interface UserData {
@@ -50,6 +50,12 @@ interface SchoolStats {
   femaleCount: number;
   totalStudents: number;
 }
+
+const UserManagement = dynamic(() => import('@/components/user-management'), {
+  ssr: false,
+  loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>,
+});
+
 
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
