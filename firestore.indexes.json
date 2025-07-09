@@ -37,13 +37,7 @@
       "fields": [
         { "fieldPath": "schoolName", "order": "ASCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "reports",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "teacherId", "order": "ASCENDING" }
-      ]
     }
-  ]
+  ],
+  "fieldOverrides": []
 }
