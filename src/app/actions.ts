@@ -384,7 +384,27 @@ export async function createInviteAction(
     
     // SERVER-SIDE SCOPE ENFORCEMENT
     let finalScope: any = {};
-    if (currentUser.role === 'big-admin') {
+    if (currentUser.role === 'super-admin') {
+      if (role === 'big-admin') {
+        finalScope = {
+          region: scopesFromClient.region,
+          district: scopesFromClient.district,
+          schoolName: null,
+          circuit: null,
+          classNames: null,
+        };
+      } else if (role === 'admin') {
+        finalScope = {
+          region: scopesFromClient.region,
+          district: scopesFromClient.district,
+          circuit: scopesFromClient.circuit,
+          schoolName: scopesFromClient.schoolName,
+          classNames: null,
+        };
+      } else { // 'user' role
+        finalScope = scopesFromClient;
+      }
+    } else if (currentUser.role === 'big-admin') {
       if (!currentUser.region || !currentUser.district) {
         throw new Error("Your account ('big-admin') is not configured with a region and district.");
       }
@@ -393,7 +413,7 @@ export async function createInviteAction(
         district: currentUser.district,
         circuit: scopesFromClient.circuit,
         schoolName: scopesFromClient.schoolName,
-        classNames: role === 'user' ? scopesFromClient.classNames : null
+        classNames: role === 'user' ? scopesFromClient.classNames : null,
       };
     } else if (currentUser.role === 'admin') {
       if (!currentUser.schoolName) {
@@ -404,10 +424,8 @@ export async function createInviteAction(
         district: currentUser.district,
         circuit: currentUser.circuit,
         schoolName: currentUser.schoolName,
-        classNames: role === 'user' ? scopesFromClient.classNames : null
+        classNames: role === 'user' ? scopesFromClient.classNames : null,
       };
-    } else { // super-admin
-      finalScope = scopesFromClient;
     }
 
 
