@@ -412,10 +412,10 @@ export async function createInviteAction(
 
 
     // Create the invite document with the enforced role and scope
-    await invitesRef.add({
+    await addDoc(collection(db, 'invites'), {
       email: normalizedEmail,
       status: 'pending',
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: serverTimestamp(),
       role,
       ...finalScope,
     });
