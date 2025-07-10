@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -44,6 +44,7 @@ import {
     updateUserStatusAction, 
     updateUserRoleAndScopeAction, 
     createInviteAction,
+    updateInviteAction,
 } from '@/app/actions';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import type { CustomUser } from './auth-provider';
@@ -67,7 +68,7 @@ interface InviteData {
   id: string;
   email: string;
   status: 'pending' | 'completed';
-  role?: 'big-admin' | 'admin' | 'user';
+  role?: 'big-admin' | 'admin' | 'user' | null;
   region?: string | null;
   district?: string | null;
   circuit?: string | null;
@@ -112,6 +113,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [isDeletingUser, setIsDeletingUser] = useState(false);
 
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [editingInvite, setEditingInvite] = useState<InviteData | null>(null);
 
   const roleCounts = useMemo(() => {
     if (user.role !== 'super-admin') return null;
@@ -293,7 +295,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
         )}
         
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus /> Authorize New User</CardTitle><CardDescription>Create an invite with a pre-assigned role and scope. The user will receive these permissions upon registration.</CardDescription></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus /> Authorize New User</CardTitle><CardDescription>Create an invite by email. You can optionally pre-assign a role and scope, or assign them later by editing the pending invite.</CardDescription></CardHeader>
           <CardContent><Button onClick={() => setIsCreateInviteDialogOpen(true)}><CheckCircle className="mr-2" />Create New Invite</Button></CardContent>
         </Card>
 
@@ -335,11 +337,16 @@ export default function UserManagement({ user, users, invites, populationStats, 
                           <TableCell className="font-medium">{invite.email}</TableCell>
                           <TableCell>
                             <div className="flex flex-col text-xs">
-                              <span className="italic text-yellow-600">Pending Invite</span>
-                              {invite.role && <span className={`capitalize font-semibold ${invite.role === 'big-admin' ? 'text-purple-600' : invite.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {invite.role}</span>}
+                              <span className="italic font-semibold text-yellow-600">Status: Pending Invite</span>
+                               {invite.role ? (
+                                <span className={`capitalize font-semibold ${invite.role === 'big-admin' ? 'text-purple-600' : invite.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {invite.role}</span>
+                               ) : (
+                                <span className="flex items-center gap-1 font-semibold text-destructive"><AlertCircle className="h-3 w-3" />Role Not Assigned</span>
+                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => setEditingInvite(invite)}><Edit className="mr-2 h-4 w-4" />Edit</Button>
                             <Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
                           </TableCell>
                         </TableRow>
@@ -363,6 +370,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
 
       {isCreateInviteDialogOpen && <CreateInviteDialog currentUser={user} onOpenChange={setIsCreateInviteDialogOpen} onInviteCreated={onDataRefresh} />}
       {editingUser && <EditUserDialog currentUser={user} user={editingUser} onOpenChange={() => setEditingUser(null)} onUserUpdated={onDataRefresh} />}
+      {editingInvite && <EditInviteDialog currentUser={user} invite={editingInvite} onOpenChange={() => setEditingInvite(null)} onInviteUpdated={onDataRefresh} />}
     </>
   );
 }
@@ -427,7 +435,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
         setIsSaving(true);
         const result = await createInviteAction({
             email,
-            role: role as 'big-admin' | 'admin' | 'user',
+            role: role || null,
             region,
             district,
             circuit,
@@ -457,7 +465,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
             <DialogContent className="flex flex-col max-h-[90dvh]">
                 <DialogHeader className="shrink-0">
                   <DialogTitle>Create New Invite</DialogTitle>
-                  <DialogDescription>Invite a new user by email and pre-assign their role and permissions.</DialogDescription>
+                  <DialogDescription>Invite a new user by email. Role and permissions can be assigned now or later.</DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
                   <div className="space-y-4 py-4">
@@ -470,7 +478,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
                       <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="new.user@example.com"/>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="role">Role</Label>
+                      <Label htmlFor="role">Role (Optional)</Label>
                       <Select value={role} onValueChange={(value) => setRole(value as any)}>
                         <SelectTrigger id="role"><SelectValue placeholder="Select a role"/></SelectTrigger>
                         <SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
@@ -510,14 +518,14 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
                 </div>
                 <DialogFooter className="shrink-0 pt-4 border-t">
                   <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                  <Button onClick={handleSave} disabled={isSaving || !email || !role}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button>
+                  <Button onClick={handleSave} disabled={isSaving || !email}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
 
-
+// Dialog for editing existing USERS
 function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { currentUser: CustomUser, user: UserData, onOpenChange: (open: boolean) => void, onUserUpdated: () => void }) {
     const [role, setRole] = useState(user.role);
     const [region, setRegion] = useState(user.region || '');
@@ -626,6 +634,109 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
                 <DialogFooter className="shrink-0 pt-4 border-t">
                   <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
                   <Button onClick={handleSave} disabled={isSaving}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Changes</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// Dialog for editing pending INVITES
+function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }: { currentUser: CustomUser, invite: InviteData, onOpenChange: (open: boolean) => void, onInviteUpdated: () => void }) {
+    const [role, setRole] = useState(invite.role || '');
+    const [region, setRegion] = useState(invite.region || '');
+    const [district, setDistrict] = useState(invite.district || '');
+    const [circuit, setCircuit] = useState(invite.circuit || '');
+    const [schoolName, setSchoolName] = useState(invite.schoolName || '');
+    const [classNames, setClassNames] = useState<string[]>(invite.classNames || []);
+    const [isSaving, setIsSaving] = useState(false);
+    const { toast } = useToast();
+
+    const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+    const [availableCircuits, setAvailableCircuits] = useState<string[]>([]);
+    
+    const isSuperAdmin = currentUser.role === 'super-admin';
+    const isBigAdmin = currentUser.role === 'big-admin';
+
+    useEffect(() => {
+        if (region) setAvailableDistricts(ghanaRegionsAndDistricts[region]?.sort() || []);
+        else setAvailableDistricts([]);
+    }, [region]);
+
+    useEffect(() => {
+        if (district) setAvailableCircuits(ghanaDistrictsAndCircuits[district]?.sort() || []);
+        else setAvailableCircuits([]);
+    }, [district]);
+
+    useEffect(() => {
+        if (role === 'big-admin') { setSchoolName(''); setCircuit(''); setClassNames([]); }
+        else if (role === 'admin') { setClassNames([]); }
+    }, [role]);
+
+    const handleClassNamesChange = (className: string, checked: boolean) => {
+        setClassNames(prev => checked ? [...prev, className] : prev.filter(c => c !== className));
+    };
+
+    const handleSave = async () => {
+        if (!role) {
+            toast({ title: "Role Required", description: "You must assign a role to the invite.", variant: 'destructive' });
+            return;
+        }
+        setIsSaving(true);
+        const result = await updateInviteAction({
+            inviteId: invite.id,
+            role: role as 'big-admin' | 'admin' | 'user',
+            region,
+            district,
+            circuit,
+            schoolName,
+            classNames,
+        }, currentUser);
+
+        if(result.success) {
+            toast({ title: "Invite Updated", description: result.message });
+            onInviteUpdated();
+            onOpenChange(false);
+        } else {
+            toast({ title: "Update Failed", description: result.message, variant: 'destructive' });
+        }
+        setIsSaving(false);
+    };
+    
+    const availableRoles = useMemo(() => {
+      if (currentUser.role === 'super-admin') return [{ value: 'user', label: 'User (Instructor)'}, { value: 'admin', label: 'Admin (School-level)'}, { value: 'big-admin', label: 'Big Admin (District-level)'}];
+      if (currentUser.role === 'big-admin') return [{ value: 'user', label: 'User (Instructor)'}, { value: 'admin', label: 'Admin (School-level)'}];
+      if (currentUser.role === 'admin') return [{ value: 'user', label: 'User (Instructor)'}];
+      return [];
+    }, [currentUser.role]);
+
+    return (
+        <Dialog open={!!invite} onOpenChange={onOpenChange}>
+            <DialogContent className="flex flex-col max-h-[90dvh]">
+                <DialogHeader className="shrink-0">
+                  <DialogTitle>Edit Invite: {invite.email}</DialogTitle>
+                  <DialogDescription>Assign or update the role and permissions for this pending invite.</DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
+                  <div className="space-y-4 py-4">
+                    {isBigAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Editing within your scope:</p><p>Region: {currentUser.region}, District: {currentUser.district}</p></div>)}
+                    
+                    <div className="space-y-2"><Label htmlFor="role">Role</Label><Select value={role} onValueChange={(value) => setRole(value as any)}><SelectTrigger id="role"><SelectValue placeholder="Select a role" /></SelectTrigger><SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent></Select></div>
+                    
+                    {isSuperAdmin && (role === 'big-admin' || role === 'admin' || role === 'user') && (<><div className="space-y-2"><Label htmlFor="region">Region</Label><Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); setCircuit(''); }}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="district">District/Municipal</Label><Select value={district} onValueChange={(val) => { setDistrict(val); setCircuit(''); }} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select></div></>)}
+                    
+                    {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (
+                        <>
+                            <div className="space-y-2"><Label htmlFor="circuit">Circuit</Label><Select value={circuit} onValueChange={setCircuit} disabled={availableCircuits.length === 0}><SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger><SelectContent>{availableCircuits.length > 0 ? (availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)) : (<SelectItem value="-" disabled>No circuits for this district</SelectItem>)}</SelectContent></Select></div>
+                            <div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>
+                        </>
+                    )}
+                    
+                    {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
+                  </div>
+                </div>
+                <DialogFooter className="shrink-0 pt-4 border-t">
+                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                  <Button onClick={handleSave} disabled={isSaving || !role}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Changes</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

@@ -261,7 +261,15 @@ export async function registerUserAction(data: {
       inviteDocId = inviteDoc.id;
       const inviteData = inviteDoc.data();
       
-      role = inviteData.role || 'user'; // Fallback to 'user' if not set
+      // Prevent registration if role is not assigned
+      if (!inviteData.role) {
+          return {
+              success: false,
+              message: 'Your invitation is pending role assignment. Please contact an administrator.',
+          };
+      }
+
+      role = inviteData.role;
       userScopeData = {
         region: inviteData.region ?? null,
         district: inviteData.district ?? null,
@@ -328,10 +336,10 @@ export async function registerUserAction(data: {
 }
 
 
-// NEW Action for creating a detailed invite
+// Action for creating a detailed invite with optional role
 const CreateInviteActionInputSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
-  role: z.enum(['big-admin', 'admin', 'user']),
+  role: z.enum(['big-admin', 'admin', 'user']).optional().nullable(),
   region: z.string().optional().nullable(),
   district: z.string().optional().nullable(),
   circuit: z.string().optional().nullable(),
@@ -353,21 +361,20 @@ export async function createInviteAction(
     const normalizedEmail = email.trim().toLowerCase();
 
     // Permission checks for who can invite whom
-    if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) {
-      throw new Error("A 'big-admin' cannot invite other 'big-admin' or 'super-admin' roles.");
+    if (role) { // Only check if a role is being assigned
+      if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) {
+        throw new Error("A 'big-admin' cannot invite other 'big-admin' or 'super-admin' roles.");
+      }
+      if (currentUser.role === 'admin' && role !== 'user') {
+        throw new Error("An 'admin' can only invite users with the 'user' role.");
+      }
     }
-    if (currentUser.role === 'admin' && role !== 'user') {
-      throw new Error("An 'admin' can only invite users with the 'user' role.");
-    }
-
+    
     // Check if user already exists in Firebase Auth
     try {
         await admin.auth().getUserByEmail(normalizedEmail);
-        // If the above line doesn't throw, it means the user exists.
         return { success: false, message: `A user with the email ${normalizedEmail} is already registered.` };
     } catch (error: any) {
-        // If user is not found, it's a good thing, we can proceed.
-        // For any other error, we should stop and report it.
         if (error.code !== 'auth/user-not-found') {
             console.error("Error checking for existing user in Auth:", error);
             throw new Error('An unexpected error occurred while checking for an existing user.');
@@ -385,96 +392,104 @@ export async function createInviteAction(
       return { success: false, message: `A pending invite for ${normalizedEmail} already exists.` };
     }
     
-    // SERVER-SIDE SCOPE ENFORCEMENT
     let finalScope: any = {};
-    if (currentUser.role === 'super-admin') {
-      if (role === 'big-admin') {
-        finalScope = {
-          region: scopesFromClient.region || null,
-          district: scopesFromClient.district || null,
-          circuit: null, schoolName: null, classNames: null,
-        };
-      } else if (role === 'admin') {
-        finalScope = {
-          region: scopesFromClient.region || null,
-          district: scopesFromClient.district || null,
-          circuit: scopesFromClient.circuit || null,
-          schoolName: scopesFromClient.schoolName || null,
-          classNames: null,
-        };
-      } else { // 'user' role
-        finalScope = {
-          region: scopesFromClient.region || null,
-          district: scopesFromClient.district || null,
-          circuit: scopesFromClient.circuit || null,
-          schoolName: scopesFromClient.schoolName || null,
-          classNames: scopesFromClient.classNames || null,
-        };
-      }
-    } else if (currentUser.role === 'big-admin') {
-        if (!currentUser.region || !currentUser.district) {
-            throw new Error("Your account ('big-admin') is not configured with a region and district. Cannot create invites.");
+    if (role) { // Only calculate scope if a role is being assigned
+        if (currentUser.role === 'super-admin') {
+            if (role === 'big-admin') { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: null, schoolName: null, classNames: null }; } 
+            else if (role === 'admin') { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: null }; } 
+            else { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: scopesFromClient.classNames || null }; }
+        } else if (currentUser.role === 'big-admin') {
+            if (!currentUser.region || !currentUser.district) throw new Error("Your account ('big-admin') is not configured with a region and district.");
+            finalScope = { region: currentUser.region, district: currentUser.district, circuit: (role === 'admin' || role === 'user') ? (scopesFromClient.circuit || null) : null, schoolName: (role === 'admin' || role === 'user') ? (scopesFromClient.schoolName || null) : null, classNames: role === 'user' ? (scopesFromClient.classNames || null) : null };
+        } else if (currentUser.role === 'admin') {
+            if (!currentUser.schoolName) throw new Error("Your account ('admin') is not configured with a school name.");
+            finalScope = { region: currentUser.region, district: currentUser.district, circuit: currentUser.circuit, schoolName: currentUser.schoolName, classNames: role === 'user' ? (scopesFromClient.classNames || null) : null };
         }
-        finalScope = {
-            region: currentUser.region,
-            district: currentUser.district,
-            circuit: (role === 'admin' || role === 'user') ? (scopesFromClient.circuit || null) : null,
-            schoolName: (role === 'admin' || role === 'user') ? (scopesFromClient.schoolName || null) : null,
-            classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
-        };
-    } else if (currentUser.role === 'admin') {
-        if (!currentUser.schoolName) {
-            throw new Error("Your account ('admin') is not configured with a school name. Cannot create invites.");
-        }
-        finalScope = {
-            region: currentUser.region,
-            district: currentUser.district,
-            circuit: currentUser.circuit,
-            schoolName: currentUser.schoolName,
-            classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
-        };
     }
 
-
-    // Create the invite document with the enforced role and scope
     await addDoc(collection(db, 'invites'), {
       email: normalizedEmail,
       status: 'pending',
       createdAt: serverTimestamp(),
-      role,
+      role: role || null,
       ...finalScope,
     });
 
-    return { success: true, message: `User with email ${normalizedEmail} has been invited as a '${role}'. They can now register.` };
+    return { success: true, message: `User with email ${normalizedEmail} has been invited${role ? ` as a '${role}'` : ''}. They can now register once a role is assigned.` };
 
   } catch (error: any) {
     console.error('Error in createInviteAction:', error);
     let errorMessage = 'An unexpected error occurred during authorization.';
-
-    // Check for specific Firebase Admin SDK initialization error.
     if (error.message && error.message.toLowerCase().includes('firebase admin sdk') && error.message.toLowerCase().includes('initialize')) {
-        errorMessage = `SERVER CONFIGURATION ERROR: The Firebase Admin SDK failed to initialize. This is a critical server setup issue.
-
-To fix this for local development:
-1. Ensure you have a 'firebase-service-account.json' file in the root of your project.
-2. Ensure your '.env' file has the line 'GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json' uncommented.
-3. Restart your development server after making changes to '.env'.
-
-For production, ensure the 'FIREBASE_SERVICE_ACCOUNT' environment variable is correctly set with the JSON content. Please see the README.md for detailed instructions.`;
+        errorMessage = `SERVER CONFIGURATION ERROR: The Firebase Admin SDK failed to initialize. See README.md for instructions.`;
     }
-    // Check for specific Firestore index error code
     else if (error.code === 'failed-precondition' && error.message && error.message.includes('index')) {
-        errorMessage = `ACTION REQUIRED: A database index is needed to check for existing invites. Please go to your Firebase console to create it. The developer console in your browser should have a direct link. The required index is on the "invites" collection for the fields "email" (ascending) and "status" (ascending). This is a one-time setup.`;
+        errorMessage = `A database index is needed. Please check the browser's developer console for a link to create it.`;
     } 
-    // Check for Zod validation errors
     else if (error instanceof z.ZodError) {
-      errorMessage = "Invalid input for inviting user: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+      errorMessage = "Invalid input: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
     } 
-    // Check for any other error with a message property
     else if (error.message) {
       errorMessage = error.message;
     }
+    return { success: false, message: errorMessage };
+  }
+}
+
+// Action for updating a pending invite's role and scope
+const UpdateInviteActionSchema = z.object({
+  inviteId: z.string().min(1, "Invite ID is required"),
+  role: z.enum(['big-admin', 'admin', 'user']),
+  region: z.string().optional().nullable(),
+  district: z.string().optional().nullable(),
+  circuit: z.string().optional().nullable(),
+  schoolName: z.string().optional().nullable(),
+  classNames: z.array(z.string()).optional().nullable(),
+});
+
+export async function updateInviteAction(
+  data: z.infer<typeof UpdateInviteActionSchema>,
+  currentUser: CustomUser
+): Promise<{ success: boolean; message: string }> {
+  try {
+    if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
+      throw new Error("You do not have permission to perform this action.");
+    }
     
+    const validatedData = UpdateInviteActionSchema.parse(data);
+    const { inviteId, role, ...scopes } = validatedData;
+    
+    if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) { throw new Error("A 'big-admin' cannot assign 'big-admin' or 'super-admin' roles."); }
+    if (currentUser.role === 'admin' && role !== 'user') { throw new Error("An 'admin' can only assign the 'user' role."); }
+    
+    const inviteDocRef = admin.firestore().collection('invites').doc(inviteId);
+    
+    const updateData: any = { role };
+    // Scope enforcement logic (same as create/update user actions)
+    if (currentUser.role === 'super-admin') {
+      if (role === 'big-admin') { updateData.region = scopes.region; updateData.district = scopes.district; updateData.schoolName = null; updateData.circuit = null; updateData.classNames = null; }
+      else if (role === 'admin') { updateData.region = scopes.region; updateData.district = scopes.district; updateData.circuit = scopes.circuit; updateData.schoolName = scopes.schoolName; updateData.classNames = null; }
+      else { updateData.region = scopes.region; updateData.district = scopes.district; updateData.circuit = scopes.circuit; updateData.schoolName = scopes.schoolName; updateData.classNames = scopes.classNames; }
+    } else if (currentUser.role === 'big-admin') {
+      if (!currentUser.region || !currentUser.district) throw new Error("Current user ('big-admin') has an incomplete scope.");
+      updateData.region = currentUser.region; updateData.district = currentUser.district;
+      updateData.schoolName = (role === 'admin' || role === 'user') ? scopes.schoolName : null;
+      updateData.circuit = (role === 'admin' || role === 'user') ? scopes.circuit : null;
+      updateData.classNames = role === 'user' ? scopes.classNames : null;
+    } else if (currentUser.role === 'admin') {
+      if (!currentUser.schoolName) throw new Error("Current user ('admin') has an incomplete scope.");
+      updateData.region = currentUser.region; updateData.district = currentUser.district; updateData.circuit = currentUser.circuit; updateData.schoolName = currentUser.schoolName;
+      updateData.classNames = role === 'user' ? scopes.classNames : null;
+    }
+    
+    await inviteDocRef.update(updateData);
+    
+    return { success: true, message: "Invite details updated successfully." };
+  } catch (error: any) {
+    console.error('Error updating invite:', error);
+    let errorMessage = 'An unexpected error occurred while updating the invite.';
+    if (error instanceof z.ZodError) { errorMessage = "Invalid input for updating invite: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', '); } 
+    else if (error.message) { errorMessage = error.message; }
     return { success: false, message: errorMessage };
   }
 }
@@ -683,7 +698,7 @@ interface InviteForAdmin {
   id: string;
   email: string;
   status: 'pending' | 'completed';
-  role?: 'big-admin' | 'admin' | 'user'; // role is now included
+  role?: 'big-admin' | 'admin' | 'user' | null; // role is now optional
   region?: string | null;
   district?: string | null;
   circuit?: string | null;
