@@ -24,20 +24,6 @@
         { "fieldPath": "schoolName", "order": "ASCENDING" },
         { "fieldPath": "role", "order": "ASCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "reports",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "district", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "reports",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "schoolName", "order": "ASCENDING" }
-      ]
     }
   ],
   "fieldOverrides": []
