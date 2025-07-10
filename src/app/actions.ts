@@ -390,50 +390,48 @@ export async function createInviteAction(
     if (currentUser.role === 'super-admin') {
       if (role === 'big-admin') {
         finalScope = {
-          region: scopesFromClient.region,
-          district: scopesFromClient.district,
-          schoolName: null,
-          circuit: null,
-          classNames: null,
+          region: scopesFromClient.region || null,
+          district: scopesFromClient.district || null,
+          circuit: null, schoolName: null, classNames: null,
         };
       } else if (role === 'admin') {
         finalScope = {
-          region: scopesFromClient.region,
-          district: scopesFromClient.district,
-          circuit: scopesFromClient.circuit,
-          schoolName: scopesFromClient.schoolName,
+          region: scopesFromClient.region || null,
+          district: scopesFromClient.district || null,
+          circuit: scopesFromClient.circuit || null,
+          schoolName: scopesFromClient.schoolName || null,
           classNames: null,
         };
       } else { // 'user' role
         finalScope = {
-          region: scopesFromClient.region,
-          district: scopesFromClient.district,
-          circuit: scopesFromClient.circuit,
-          schoolName: scopesFromClient.schoolName,
-          classNames: scopesFromClient.classNames,
+          region: scopesFromClient.region || null,
+          district: scopesFromClient.district || null,
+          circuit: scopesFromClient.circuit || null,
+          schoolName: scopesFromClient.schoolName || null,
+          classNames: scopesFromClient.classNames || null,
         };
       }
     } else if (currentUser.role === 'big-admin') {
       if (!currentUser.region || !currentUser.district) {
-        throw new Error("Your account ('big-admin') is not configured with a region and district.");
+        throw new Error("Your account ('big-admin') is not configured with a region and district. Cannot create invites.");
       }
       finalScope = {
         region: currentUser.region,
         district: currentUser.district,
-        circuit: scopesFromClient.circuit,
-        schoolName: scopesFromClient.schoolName,
-        classNames: role === 'user' ? scopesFromClient.classNames : null,
+        circuit: scopesFromClient.circuit || null,
+        schoolName: (role === 'admin' || role === 'user') ? (scopesFromClient.schoolName || null) : null,
+        classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
       };
     } else if (currentUser.role === 'admin') {
       if (!currentUser.schoolName) {
-        throw new Error("Your account ('admin') is not configured with a school name.");
+        throw new Error("Your account ('admin') is not configured with a school name. Cannot create invites.");
       }
       finalScope = {
         region: currentUser.region,
         district: currentUser.district,
         circuit: currentUser.circuit,
         schoolName: currentUser.schoolName,
-        classNames: role === 'user' ? scopesFromClient.classNames : null,
+        classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
       };
     }
 
