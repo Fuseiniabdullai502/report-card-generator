@@ -1,0 +1,41 @@
+[debug] [2025-07-10T02:09:37.988Z] ----------------------------------------------------------------------
+[debug] [2025-07-10T02:09:37.991Z] Command:       /nix/store/rbdrkcs5kkwpalxcd7c6bnm33lk2955n-nodejs-20.19.0/bin/node /home/user/.global_modules/bin/firebase deploy --only firestore:indexes
+[debug] [2025-07-10T02:09:37.991Z] CLI Version:   14.9.0
+[debug] [2025-07-10T02:09:37.991Z] Platform:      linux
+[debug] [2025-07-10T02:09:37.992Z] Node Version:  v20.19.0
+[debug] [2025-07-10T02:09:37.992Z] Time:          Thu Jul 10 2025 02:09:37 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-07-10T02:09:37.992Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-07-10T02:09:38.541Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-07-10T02:09:38.542Z] > authorizing via signed-in user (fabdullai502@gmail.com)
+[debug] [2025-07-10T02:09:38.542Z] [iam] checking project report-card-generator-e3zkv for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2025-07-10T02:09:38.549Z] Checked if tokens are valid: true, expires at: 1752115265644
+[debug] [2025-07-10T02:09:38.550Z] Checked if tokens are valid: true, expires at: 1752115265644
+[debug] [2025-07-10T02:09:38.552Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions [none]
+[debug] [2025-07-10T02:09:38.552Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions x-goog-quota-user=projects/report-card-generator-e3zkv
+[debug] [2025-07-10T02:09:38.553Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[debug] [2025-07-10T02:09:39.268Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions 200
+[debug] [2025-07-10T02:09:39.269Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[info] 
+[info] === Deploying to 'report-card-generator-e3zkv'...
+[info] 
+[info] i  deploying firestore 
+[info] i  firestore: reading indexes from firestore.indexes.json... 
+[debug] [2025-07-10T02:09:39.282Z] Checked if tokens are valid: true, expires at: 1752115265644
+[debug] [2025-07-10T02:09:39.282Z] Checked if tokens are valid: true, expires at: 1752115265644
+[debug] [2025-07-10T02:09:39.282Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/report-card-generator-e3zkv/databases/(default) [none]
+[debug] [2025-07-10T02:09:40.728Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/report-card-generator-e3zkv/databases/(default) 200
+[debug] [2025-07-10T02:09:40.730Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/report-card-generator-e3zkv/databases/(default) {"name":"projects/report-card-generator-e3zkv/databases/(default)","uid":"a36066f0-cb09-4f1b-86e4-650f60b9c263","createTime":"2025-07-01T23:36:05.795837Z","updateTime":"2025-07-01T23:36:05.795837Z","locationId":"africa-south1","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2025-07-10T01:09:40.640842Z","appEngineIntegrationMode":"DISABLED","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"etag":"IMGLo/2asY4DMO2hzo2VnY4D"}
+[info] i  firestore: deploying indexes... 
+[debug] [2025-07-10T02:09:40.736Z] Checked if tokens are valid: true, expires at: 1752115265644
+[debug] [2025-07-10T02:09:40.736Z] Checked if tokens are valid: true, expires at: 1752115265644
+[debug] [2025-07-10T02:09:40.738Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/report-card-generator-e3zkv/databases/(default)/collectionGroups/-/indexes [none]
+[debug] [2025-07-10T02:09:41.443Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/report-card-generator-e3zkv/databases/(default)/collectionGroups/-/indexes 200
+[debug] [2025-07-10T02:09:41.445Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/report-card-generator-e3zkv/databases/(default)/collectionGroups/-/indexes {"indexes":[{"name":"projects/report-card-generator-e3zkv/databases/(default)/collectionGroups/invitees/indexes/CICAgJjFqZMJ","queryScope":"COLLECTION","fields":[{"fieldPath":"email","order":"ASCENDING"},{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"__name__","order":"ASCENDING"}],"state":"READY","density":"SPARSE_ALL"},{"name":"projects/report-card-generator-e3zkv/databases/(default)/collectionGroups/invites/indexes/CICAgNiav4AK","queryScope":"COLLECTION","fields":[{"fieldPath":"email","order":"ASCENDING"},{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"__name__","order":"ASCENDING"}],"state":"READY","density":"SPARSE_ALL"},{"name":"projects/report-card-generator-e3zkv/databases/(default)/collectionGroups/users/indexes/CICAgJj7z4EK","queryScope":"COLLECTION","fields":[{"fieldPath":"district","order":"ASCENDING"},{"fieldPath":"role","order":"ASCENDING"},{"fieldPath":"__name__","order":"ASCENDING"}],"state":"READY","density":"SPARSE_ALL"},{"name":"projects/report-card-generator-e3zkv/databases/(default)/collectionGroups/users/indexes/CICAgNi47oMK","queryScope":"COLLECTION","fields":[{"fieldPath":"schoolName","order":"ASCENDING"},{"fieldPath":"role","order":"ASCENDING"},{"fieldPath":"__name__","order":"ASCENDING"}],"state":"READY","density":"SPARSE_ALL"}]}
+[debug] [2025-07-10T02:09:41.446Z] Checked if tokens are valid: true, expires at: 1752115265644
+[debug] [2025-07-10T02:09:41.446Z] Checked if tokens are valid: true, expires at: 1752115265644
+[debug] [2025-07-10T02:09:41.447Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/report-card-generator-e3zkv/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* [none]
+[debug] [2025-07-10T02:09:41.652Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/report-card-generator-e3zkv/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* 200
+[debug] [2025-07-10T02:09:41.654Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/report-card-generator-e3zkv/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* {"fields":[{"name":"projects/report-card-generator-e3zkv/databases/(default)/collectionGroups/__default__/fields/*","indexConfig":{"indexes":[{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","order":"ASCENDING"}],"state":"READY"},{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","order":"DESCENDING"}],"state":"READY"},{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","arrayConfig":"CONTAINS"}],"state":"READY"}]}}]}
+[info] i  firestore: The following indexes are defined in your project but are not present in your firestore indexes file:
+	(invitees) -- (email,ASCENDING) (status,ASCENDING)  
