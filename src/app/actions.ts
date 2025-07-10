@@ -363,8 +363,11 @@ export async function createInviteAction(
     // Check if user already exists in Firebase Auth
     try {
         await admin.auth().getUserByEmail(normalizedEmail);
+        // If the above line doesn't throw, it means the user exists.
         return { success: false, message: `A user with the email ${normalizedEmail} is already registered.` };
     } catch (error: any) {
+        // If user is not found, it's a good thing, we can proceed.
+        // For any other error, we should stop and report it.
         if (error.code !== 'auth/user-not-found') {
             console.error("Error checking for existing user in Auth:", error);
             throw new Error('An unexpected error occurred while checking for an existing user.');
@@ -402,7 +405,13 @@ export async function createInviteAction(
           classNames: null,
         };
       } else { // 'user' role
-        finalScope = scopesFromClient;
+        finalScope = {
+          region: scopesFromClient.region,
+          district: scopesFromClient.district,
+          circuit: scopesFromClient.circuit,
+          schoolName: scopesFromClient.schoolName,
+          classNames: scopesFromClient.classNames,
+        };
       }
     } else if (currentUser.role === 'big-admin') {
       if (!currentUser.region || !currentUser.district) {
