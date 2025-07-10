@@ -412,27 +412,27 @@ export async function createInviteAction(
         };
       }
     } else if (currentUser.role === 'big-admin') {
-      if (!currentUser.region || !currentUser.district) {
-        throw new Error("Your account ('big-admin') is not configured with a region and district. Cannot create invites.");
-      }
-      finalScope = {
-        region: currentUser.region,
-        district: currentUser.district,
-        circuit: scopesFromClient.circuit || null,
-        schoolName: (role === 'admin' || role === 'user') ? (scopesFromClient.schoolName || null) : null,
-        classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
-      };
+        if (!currentUser.region || !currentUser.district) {
+            throw new Error("Your account ('big-admin') is not configured with a region and district. Cannot create invites.");
+        }
+        finalScope = {
+            region: currentUser.region,
+            district: currentUser.district,
+            circuit: (role === 'admin' || role === 'user') ? (scopesFromClient.circuit || null) : null,
+            schoolName: (role === 'admin' || role === 'user') ? (scopesFromClient.schoolName || null) : null,
+            classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
+        };
     } else if (currentUser.role === 'admin') {
-      if (!currentUser.schoolName) {
-        throw new Error("Your account ('admin') is not configured with a school name. Cannot create invites.");
-      }
-      finalScope = {
-        region: currentUser.region,
-        district: currentUser.district,
-        circuit: currentUser.circuit,
-        schoolName: currentUser.schoolName,
-        classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
-      };
+        if (!currentUser.schoolName) {
+            throw new Error("Your account ('admin') is not configured with a school name. Cannot create invites.");
+        }
+        finalScope = {
+            region: currentUser.region,
+            district: currentUser.district,
+            circuit: currentUser.circuit,
+            schoolName: currentUser.schoolName,
+            classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
+        };
     }
 
 
@@ -905,6 +905,60 @@ export async function getSchoolStatsAction(schoolName: string): Promise<{
     if (error.code === 'failed-precondition' && error.message.includes('index')) {
         errorMessage = `A database index is needed to query reports by 'schoolName'. Please check the browser's developer console for a link to create it. This is a one-time setup.`;
     } else if (error.message) {
+        errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Action for fetching system-wide statistics (super-admin only)
+export async function getSystemWideStatsAction(): Promise<{
+  success: boolean;
+  stats?: {
+    schoolCount: number;
+    maleCount: number;
+    femaleCount: number;
+    totalStudents: number;
+  };
+  error?: string;
+}> {
+  try {
+    const reportsRef = admin.firestore().collection('reports');
+    const reportsSnapshot = await reportsRef.get();
+    
+    if (reportsSnapshot.empty) {
+        return { success: true, stats: { schoolCount: 0, maleCount: 0, femaleCount: 0, totalStudents: 0 } };
+    }
+
+    const schoolNames = new Set<string>();
+    let maleCount = 0;
+    let femaleCount = 0;
+    
+    reportsSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.schoolName) {
+        schoolNames.add(data.schoolName);
+      }
+      if (data.gender === 'Male') {
+        maleCount++;
+      } else if (data.gender === 'Female') {
+        femaleCount++;
+      }
+    });
+    
+    const stats = {
+      schoolCount: schoolNames.size,
+      maleCount,
+      femaleCount,
+      totalStudents: reportsSnapshot.size,
+    };
+    
+    return { success: true, stats };
+
+  } catch (error: any) {
+    console.error('Error fetching system-wide stats:', error);
+    let errorMessage = "An unexpected error occurred while fetching system-wide statistics.";
+    if (error.message) {
         errorMessage = error.message;
     }
     return { success: false, error: errorMessage };

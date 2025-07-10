@@ -75,7 +75,7 @@ interface InviteData {
   createdAt: Date | null;
 }
 
-interface DistrictStats {
+interface PopulationStats {
   schoolCount: number;
   maleCount: number;
   femaleCount: number;
@@ -93,13 +93,13 @@ interface UserManagementProps {
     user: CustomUser;
     users: UserData[];
     invites: InviteData[];
-    districtStats: DistrictStats | null;
+    populationStats: PopulationStats | null;
     schoolStats: SchoolStats | null;
     isLoading: boolean;
     onDataRefresh: () => void;
 }
 
-export default function UserManagement({ user, users, invites, districtStats, schoolStats, isLoading, onDataRefresh }: UserManagementProps) {
+export default function UserManagement({ user, users, invites, populationStats, schoolStats, isLoading, onDataRefresh }: UserManagementProps) {
   const { toast } = useToast();
   
   const [isCreateInviteDialogOpen, setIsCreateInviteDialogOpen] = useState(false);
@@ -196,14 +196,27 @@ export default function UserManagement({ user, users, invites, districtStats, sc
           </Card>
         </div>
         
-        {user.role === 'super-admin' && roleCounts && !isLoading && (
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4">System Role Overview</h3>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Big Admins (District)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts.bigAdmin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts.bigAdmin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
-              <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
-              <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {roleCounts.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {roleCounts.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+        {user.role === 'super-admin' && !isLoading && (
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4">System Role Overview</h3>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Big Admins (District)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts?.bigAdmin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts?.bigAdmin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+                <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts?.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts?.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+                <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {roleCounts?.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {roleCounts?.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+              </div>
             </div>
+             {populationStats && (
+                  <div>
+                      <h3 className="text-lg font-semibold text-foreground mb-4">System-Wide Educational Data</h3>
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                          <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Schools</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div><p className="text-xs text-muted-foreground">Schools with student reports</p></CardContent></Card>
+                          <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.totalStudents}</div><p className="text-xs text-muted-foreground">Across all schools</p></CardContent></Card>
+                          <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</p></CardContent></Card>
+                          <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.femaleCount}</div><p className="text-xs text-muted-foreground">Female population</p></CardContent></Card>
+                      </div>
+                  </div>
+              )}
           </div>
         )}
 
@@ -216,26 +229,14 @@ export default function UserManagement({ user, users, invites, districtStats, sc
                     <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {bigAdminRoleCounts?.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {bigAdminRoleCounts?.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
                   </div>
               </div>
-              {districtStats && (
+              {populationStats && (
                   <div>
                       <h3 className="text-lg font-semibold text-foreground mb-4">District Educational Data</h3>
                       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                          <Card>
-                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Schools in District</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader>
-                              <CardContent><div className="text-2xl font-bold">{districtStats.schoolCount}</div><p className="text-xs text-muted-foreground">Total schools with reports</p></CardContent>
-                          </Card>
-                          <Card>
-                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader>
-                              <CardContent><div className="text-2xl font-bold">{districtStats.totalStudents}</div><p className="text-xs text-muted-foreground">Overall student population</p></CardContent>
-                          </Card>
-                           <Card>
-                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader>
-                              <CardContent><div className="text-2xl font-bold">{districtStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</p></CardContent>
-                          </Card>
-                           <Card>
-                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader>
-                              <CardContent><div className="text-2xl font-bold">{districtStats.femaleCount}</div><p className="text-xs text-muted-foreground">Female population</p></CardContent>
-                          </Card>
+                          <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Schools in District</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div><p className="text-xs text-muted-foreground">Total schools with reports</p></CardContent></Card>
+                          <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.totalStudents}</div><p className="text-xs text-muted-foreground">Overall student population</p></CardContent></Card>
+                          <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</p></CardContent></Card>
+                          <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.femaleCount}</div><p className="text-xs text-muted-foreground">Female population</p></CardContent></Card>
                       </div>
                   </div>
               )}

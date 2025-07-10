@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth, type CustomUser } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { Loader2, Shield } from 'lucide-react';
-import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction } from '@/app/actions';
+import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction, getSystemWideStatsAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 
@@ -37,7 +37,7 @@ interface InviteData {
   createdAt: Date | null;
 }
 
-interface DistrictStats {
+interface PopulationStats {
   schoolCount: number;
   maleCount: number;
   femaleCount: number;
@@ -64,14 +64,14 @@ export default function AdminPage() {
 
   const [users, setUsers] = useState<UserData[]>([]);
   const [invites, setInvites] = useState<InviteData[]>([]);
-  const [districtStats, setDistrictStats] = useState<DistrictStats | null>(null);
+  const [populationStats, setPopulationStats] = useState<PopulationStats | null>(null);
   const [schoolStats, setSchoolStats] = useState<SchoolStats | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   const fetchData = useCallback(async () => {
     if (!user) return; // Wait for user object
     setIsLoadingData(true);
-    setDistrictStats(null);
+    setPopulationStats(null);
     setSchoolStats(null);
     try {
       const usersPromise = getUsersAction({
@@ -96,10 +96,17 @@ export default function AdminPage() {
         toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
       }
 
-      if (user.role === 'big-admin' && user.district) {
+      if (user.role === 'super-admin') {
+          const systemStatsResult = await getSystemWideStatsAction();
+          if (systemStatsResult.success && systemStatsResult.stats) {
+              setPopulationStats(systemStatsResult.stats);
+          } else {
+              toast({ title: 'Error Fetching System Stats', description: systemStatsResult.error, variant: 'destructive' });
+          }
+      } else if (user.role === 'big-admin' && user.district) {
           const districtStatsResult = await getDistrictStatsAction(user.district);
           if (districtStatsResult.success && districtStatsResult.stats) {
-              setDistrictStats(districtStatsResult.stats);
+              setPopulationStats(districtStatsResult.stats);
           } else {
               toast({ title: 'Error Fetching District Stats', description: districtStatsResult.error, variant: 'destructive' });
           }
@@ -189,7 +196,7 @@ export default function AdminPage() {
             user={user} 
             users={users}
             invites={invites}
-            districtStats={districtStats}
+            populationStats={populationStats}
             schoolStats={schoolStats}
             isLoading={isLoadingData}
             onDataRefresh={fetchData}
