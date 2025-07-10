@@ -22,5 +22,8 @@ export const ghanaRegions = Object.keys(ghanaRegionsAndDistricts).sort();
 
 export const ghanaDistrictsAndCircuits: Record<string, string[]> = {
     "Ejura Sekyedumase Municipal": ["Ejura South", "Ejura East", "Ejura North", "Ejura West", "Ejura Central"],
-    // Other districts and their circuits can be added here in the future
+    "Sagnarigu Municipal": ["Kalpohin", "Tiyumba", "Sagnarigu", "Katariga"],
+    "Tamale Metropolitan": ["Vittin", "Choggu", "Tishegu"],
+    "Savelugu Municipal": ["Savelugu East", "Savelugu West"],
+    "Asante Akim Central Municipal": ["Konongo", "Odumasi", "Dwease"],
 };

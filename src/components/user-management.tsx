@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -405,9 +406,13 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
     }, [region]);
 
     useEffect(() => {
-        if (district) setAvailableCircuits(ghanaDistrictsAndCircuits[district]?.sort() || []);
-        else setAvailableCircuits([]);
-    }, [district]);
+        const currentDistrict = isBigAdmin ? currentUser.district : district;
+        if (currentDistrict) {
+            setAvailableCircuits(ghanaDistrictsAndCircuits[currentDistrict]?.sort() || []);
+        } else {
+            setAvailableCircuits([]);
+        }
+    }, [district, isBigAdmin, currentUser.district]);
 
     useEffect(() => {
         if (role === 'big-admin') { setSchoolName(''); setCircuit(''); setClassNames([]); }
@@ -480,10 +485,22 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
                     )}
                     
                     {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (
-                      <>
-                        <div className="space-y-2"><Label htmlFor="circuit">Circuit</Label><Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter circuit name" /></div>
-                        <div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>
-                      </>
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="circuit">Circuit</Label>
+                                <Select value={circuit} onValueChange={setCircuit} disabled={availableCircuits.length === 0 && !isSuperAdmin}>
+                                    <SelectTrigger id="circuit"><SelectValue placeholder="Select circuit" /></SelectTrigger>
+                                    <SelectContent>
+                                        {availableCircuits.length > 0 ? (
+                                            availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
+                                        ) : (
+                                            <SelectItem value="-" disabled>No circuits for this district</SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>
+                        </>
                     )}
 
                     {role === 'user' && (
@@ -512,6 +529,7 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
     const { toast } = useToast();
 
     const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+    const [availableCircuits, setAvailableCircuits] = useState<string[]>([]);
     
     const isSuperAdmin = currentUser.role === 'super-admin';
     const isBigAdmin = currentUser.role === 'big-admin';
@@ -520,6 +538,14 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
         if (region) setAvailableDistricts(ghanaRegionsAndDistricts[region]?.sort() || []);
         else setAvailableDistricts([]);
     }, [region]);
+
+    useEffect(() => {
+        if (district) {
+            setAvailableCircuits(ghanaDistrictsAndCircuits[district]?.sort() || []);
+        } else {
+            setAvailableCircuits([]);
+        }
+    }, [district]);
 
     useEffect(() => {
         if (role === 'big-admin') { setSchoolName(''); setCircuit(''); setClassNames([]); }
@@ -575,9 +601,24 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
                     
                     {isSuperAdmin && (role === 'big-admin' || role === 'admin' || role === 'user') && (<><div className="space-y-2"><Label htmlFor="region">Region</Label><Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); setCircuit(''); }}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="district">District/Municipal</Label><Select value={district} onValueChange={(val) => { setDistrict(val); setCircuit(''); }} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select></div></>)}
                     
-                    {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (<div className="space-y-2"><Label htmlFor="circuit">Circuit</Label><Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Enter circuit name" /></div>)}
-                    
-                    {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (<div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>)}
+                    {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="circuit">Circuit</Label>
+                                <Select value={circuit} onValueChange={setCircuit} disabled={availableCircuits.length === 0}>
+                                    <SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger>
+                                    <SelectContent>
+                                        {availableCircuits.length > 0 ? (
+                                            availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
+                                        ) : (
+                                            <SelectItem value="-" disabled>No circuits for this district</SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>
+                        </>
+                    )}
                     
                     {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
                   </div>
