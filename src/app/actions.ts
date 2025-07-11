@@ -398,17 +398,17 @@ export async function createInviteAction(
     
     let finalScope: any = {};
     if (role) { // Only calculate scope if a role is being assigned
-      if (currentUser.role === 'super-admin') {
-        if (role === 'big-admin') { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: null, schoolName: null, classNames: null }; } 
-        else if (role === 'admin') { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: null }; } 
-        else { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: scopesFromClient.classNames || null }; }
-      } else if (currentUser.role === 'big-admin') {
-        if (!currentUser.region || !currentUser.district) throw new Error("Your account ('big-admin') is not configured with a region and district.");
-        finalScope = { region: currentUser.region, district: currentUser.district, circuit: (role === 'admin' || role === 'user') ? (scopesFromClient.circuit || null) : null, schoolName: (role === 'admin' || role === 'user') ? (scopesFromClient.schoolName || null) : null, classNames: role === 'user' ? (scopesFromClient.classNames || null) : null };
-      } else if (currentUser.role === 'admin') {
-        if (!currentUser.schoolName) throw new Error("Your account ('admin') is not configured with a school name.");
-        finalScope = { region: currentUser.region, district: currentUser.district, circuit: currentUser.circuit, schoolName: currentUser.schoolName, classNames: role === 'user' ? (scopesFromClient.classNames || null) : null };
-      }
+        if (currentUser.role === 'super-admin') {
+            if (role === 'big-admin') { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: null, schoolName: null, classNames: null }; } 
+            else if (role === 'admin') { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: null }; } 
+            else { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: scopesFromClient.classNames || null }; }
+        } else if (currentUser.role === 'big-admin') {
+            if (!currentUser.region || !currentUser.district) throw new Error("Your account ('big-admin') is not configured with a region and district.");
+            finalScope = { region: currentUser.region, district: currentUser.district, circuit: (role === 'admin' || role === 'user') ? (scopesFromClient.circuit || null) : null, schoolName: (role === 'admin' || role === 'user') ? (scopesFromClient.schoolName || null) : null, classNames: role === 'user' ? (scopesFromClient.classNames || null) : null };
+        } else if (currentUser.role === 'admin') {
+            if (!currentUser.schoolName) throw new Error("Your account ('admin') is not configured with a school name.");
+            finalScope = { region: currentUser.region, district: currentUser.district, circuit: currentUser.circuit, schoolName: currentUser.schoolName, classNames: role === 'user' ? (scopesFromClient.classNames || null) : null };
+        }
     }
 
     await addDoc(collection(db, 'invites'), {
@@ -712,12 +712,7 @@ interface InviteForAdmin {
 }
 
 
-export async function getUsersAction(currentUser: {
-  id: string;
-  role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
-  district?: string | null;
-  schoolName?: string | null;
-}): Promise<{ success: boolean; users?: UserForAdmin[]; error?: string }> {
+export async function getUsersAction(currentUser: CustomUser): Promise<{ success: boolean; users?: UserForAdmin[]; error?: string }> {
   try {
     if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
       throw new Error("You do not have permission to view this data.");
