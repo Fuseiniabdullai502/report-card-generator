@@ -2,6 +2,9 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
   Card,
   CardContent,
@@ -377,36 +380,55 @@ export default function UserManagement({ user, users, invites, populationStats, 
 
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 
-function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { currentUser: CustomUser, onOpenChange: (open: boolean) => void, onInviteCreated: () => void }) {
-    const [email, setEmail] = useState('');
-    const [role, setRole] = useState<'big-admin' | 'admin' | 'user' | ''>('');
-    const [region, setRegion] = useState('');
-    const [district, setDistrict] = useState('');
-    const [circuit, setCircuit] = useState('');
-    const [schoolName, setSchoolName] = useState('');
-    const [classNames, setClassNames] = useState<string[]>([]);
-    const [isSaving, setIsSaving] = useState(false);
-    const { toast } = useToast();
+const inviteFormSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  role: z.enum(['big-admin', 'admin', 'user', '']).optional(),
+  region: z.string().optional(),
+  district: z.string().optional(),
+  circuit: z.string().optional(),
+  schoolName: z.string().optional(),
+  classNames: z.array(z.string()).optional(),
+});
+type InviteFormValues = z.infer<typeof inviteFormSchema>;
 
-    const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
-    const [availableCircuits, setAvailableCircuits] = useState<string[]>([]);
-    
+
+function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { currentUser: CustomUser, onOpenChange: (open: boolean) => void, onInviteCreated: () => void }) {
+    const { toast } = useToast();
+    const { register, handleSubmit, control, watch, setValue, formState: { isSubmitting, errors } } = useForm<InviteFormValues>({
+        resolver: zodResolver(inviteFormSchema),
+        defaultValues: {
+            email: '',
+            role: '',
+            region: '',
+            district: '',
+            circuit: '',
+            schoolName: '',
+            classNames: [],
+        }
+    });
+
     const isSuperAdmin = currentUser.role === 'super-admin';
     const isBigAdmin = currentUser.role === 'big-admin';
     const isAdmin = currentUser.role === 'admin';
 
+    const role = watch('role');
+    const region = watch('region');
+    const district = watch('district');
+
+    const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+    const [availableCircuits, setAvailableCircuits] = useState<string[]>([]);
+    
     useEffect(() => {
         if (isBigAdmin) {
-            setRegion(currentUser.region || '');
-            setDistrict(currentUser.district || '');
+            setValue('region', currentUser.region || '');
+            setValue('district', currentUser.district || '');
         } else if (isAdmin) {
-            setRegion(currentUser.region || '');
-            setDistrict(currentUser.district || '');
-            setCircuit(currentUser.circuit || '');
-            setSchoolName(currentUser.schoolName || '');
+            setValue('region', currentUser.region || '');
+            setValue('district', currentUser.district || '');
+            setValue('circuit', currentUser.circuit || '');
+            setValue('schoolName', currentUser.schoolName || '');
         }
-    }, [isBigAdmin, isAdmin, currentUser]);
-
+    }, [isBigAdmin, isAdmin, currentUser, setValue]);
 
     useEffect(() => {
         if (region) setAvailableDistricts(ghanaRegionsAndDistricts[region]?.sort() || []);
@@ -414,33 +436,24 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
     }, [region]);
 
     useEffect(() => {
-        const currentDistrict = isBigAdmin ? currentUser.district : district;
-        if (currentDistrict) {
-            setAvailableCircuits(ghanaDistrictsAndCircuits[currentDistrict]?.sort() || []);
-        } else {
-            setAvailableCircuits([]);
-        }
-    }, [district, isBigAdmin, currentUser.district]);
+        if (district) setAvailableCircuits(ghanaDistrictsAndCircuits[district]?.sort() || []);
+        else setAvailableCircuits([]);
+    }, [district]);
 
     useEffect(() => {
-        if (role === 'big-admin') { setSchoolName(''); setCircuit(''); setClassNames([]); }
-        else if (role === 'admin') { setClassNames([]); }
-    }, [role]);
-    
-    const handleClassNamesChange = (className: string, checked: boolean) => {
-        setClassNames(prev => checked ? [...prev, className] : prev.filter(c => c !== className));
+        if (role === 'big-admin') { setValue('schoolName', ''); setValue('circuit', ''); setValue('classNames', []); }
+        else if (role === 'admin') { setValue('classNames', []); }
+    }, [role, setValue]);
+
+    const handleClassNamesChange = (className: string, checked: boolean, currentClassNames: string[] = []) => {
+        const newClassNames = checked ? [...currentClassNames, className] : currentClassNames.filter(c => c !== className);
+        setValue('classNames', newClassNames, { shouldValidate: true });
     };
 
-    const handleSave = async () => {
-        setIsSaving(true);
+    const onSubmit = async (data: InviteFormValues) => {
         const result = await createInviteAction({
-            email,
-            role: role || null,
-            region,
-            district,
-            circuit,
-            schoolName,
-            classNames,
+            ...data,
+            role: data.role || null,
         }, currentUser);
 
         if(result.success) {
@@ -450,7 +463,6 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
         } else {
             toast({ title: "Creation Failed", description: result.message, variant: 'destructive' });
         }
-        setIsSaving(false);
     };
     
     const availableRoles = useMemo(() => {
@@ -463,63 +475,41 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
     return (
         <Dialog open={true} onOpenChange={onOpenChange}>
             <DialogContent className="flex flex-col max-h-[90dvh]">
-                <DialogHeader className="shrink-0">
+              <DialogHeader className="shrink-0">
                   <DialogTitle>Create New Invite</DialogTitle>
                   <DialogDescription>Invite a new user by email. Role and permissions can be assigned now or later.</DialogDescription>
-                </DialogHeader>
-                <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
-                  <div className="space-y-4 py-4">
-                    {/* Inherited Scope Display */}
-                    {isBigAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Inherited Scope:</p><p>Region: {currentUser.region}, District: {currentUser.district}</p></div>)}
-                    {isAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Inherited Scope:</p><p>School: {currentUser.schoolName}</p></div>)}
+              </DialogHeader>
+              <form onSubmit={handleSubmit(onSubmit)} className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
+                <div className="space-y-4 py-4">
+                  {isBigAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Inherited Scope:</p><p>Region: {currentUser.region}, District: {currentUser.district}</p></div>)}
+                  {isAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Inherited Scope:</p><p>School: {currentUser.schoolName}</p></div>)}
                   
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="new.user@example.com"/>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="role">Role (Optional)</Label>
-                      <Select value={role} onValueChange={(value) => setRole(value as any)}>
-                        <SelectTrigger id="role"><SelectValue placeholder="Select a role"/></SelectTrigger>
-                        <SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" {...register('email')} placeholder="new.user@example.com"/><p className="text-xs text-destructive">{errors.email?.message}</p></div>
+                  <div className="space-y-1"><Label htmlFor="role">Role (Optional)</Label><Controller name="role" control={control} render={({ field }) => (<Select onValueChange={field.onChange} defaultValue={field.value}><SelectTrigger id="role"><SelectValue placeholder="Select a role"/></SelectTrigger><SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent></Select>)} /></div>
 
-                    {isSuperAdmin && (role === 'big-admin' || role === 'admin' || role === 'user') && (
+                  {isSuperAdmin && (role === 'big-admin' || role === 'admin' || role === 'user') && (
+                    <>
+                      <div className="space-y-1"><Label htmlFor="region">Region</Label><Controller name="region" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('district', ''); setValue('circuit', ''); }} value={field.value}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>)} /></div>
+                      <div className="space-y-1"><Label htmlFor="district">District/Municipal</Label><Controller name="district" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('circuit', ''); }} value={field.value} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select>)} /></div>
+                    </>
+                  )}
+                  
+                  {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (
                       <>
-                        <div className="space-y-2"><Label htmlFor="region">Region</Label><Select value={region} onValueChange={(val) => { setRegion(val); setDistrict(''); setCircuit(''); }}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
-                        <div className="space-y-2"><Label htmlFor="district">District/Municipal</Label><Select value={district} onValueChange={(val) => { setDistrict(val); setCircuit(''); }} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select></div>
+                        <div className="space-y-1"><Label htmlFor="circuit">Circuit</Label><Controller name="circuit" control={control} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value} disabled={availableCircuits.length === 0 && !isSuperAdmin}><SelectTrigger id="circuit"><SelectValue placeholder="Select circuit" /></SelectTrigger><SelectContent>{availableCircuits.length > 0 ? availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>) : <SelectItem value="-" disabled>No circuits for this district</SelectItem>}</SelectContent></Select>)} /></div>
+                        <div className="space-y-1"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" {...register('schoolName')} placeholder="Enter school name" /></div>
                       </>
-                    )}
-                    
-                    {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (
-                        <>
-                            <div className="space-y-2">
-                                <Label htmlFor="circuit">Circuit</Label>
-                                <Select value={circuit} onValueChange={setCircuit} disabled={availableCircuits.length === 0 && !isSuperAdmin}>
-                                    <SelectTrigger id="circuit"><SelectValue placeholder="Select circuit" /></SelectTrigger>
-                                    <SelectContent>
-                                        {availableCircuits.length > 0 ? (
-                                            availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
-                                        ) : (
-                                            <SelectItem value="-" disabled>No circuits for this district</SelectItem>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>
-                        </>
-                    )}
+                  )}
 
-                    {role === 'user' && (
-                      <div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>
-                    )}
-                  </div>
+                  {role === 'user' && (
+                    <div className="space-y-1"><Label>Class Names</Label><Controller name="classNames" control={control} render={({ field }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{field.value && field.value.length > 0 ? field.value.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={field.value?.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked), field.value)}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu>)} /></div>
+                  )}
                 </div>
-                <DialogFooter className="shrink-0 pt-4 border-t">
-                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                  <Button onClick={handleSave} disabled={isSaving || !email}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button>
-                </DialogFooter>
+              </form>
+              <DialogFooter className="shrink-0 pt-4 border-t">
+                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                <Button type="submit" form="invite-form" onClick={handleSubmit(onSubmit)} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button>
+              </DialogFooter>
             </DialogContent>
         </Dialog>
     );
