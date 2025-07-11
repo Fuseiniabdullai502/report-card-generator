@@ -479,7 +479,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
                   <DialogTitle>Create New Invite</DialogTitle>
                   <DialogDescription>Invite a new user by email. Role and permissions can be assigned now or later.</DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit(onSubmit)} className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
+              <form id="invite-form" onSubmit={handleSubmit(onSubmit)} className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
                 <div className="space-y-4 py-4">
                   {isBigAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Inherited Scope:</p><p>Region: {currentUser.region}, District: {currentUser.district}</p></div>)}
                   {isAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Inherited Scope:</p><p>School: {currentUser.schoolName}</p></div>)}
@@ -508,7 +508,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
               </form>
               <DialogFooter className="shrink-0 pt-4 border-t">
                 <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                <Button type="submit" form="invite-form" onClick={handleSubmit(onSubmit)} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button>
+                <Button type="submit" form="invite-form" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button>
               </DialogFooter>
             </DialogContent>
         </Dialog>
