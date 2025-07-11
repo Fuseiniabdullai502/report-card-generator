@@ -370,7 +370,7 @@ export async function createInviteAction(
         throw new Error("An 'admin' can only invite users with the 'user' role.");
       }
     }
-
+    
     // Check if user already exists in Firebase Auth
     try {
         await admin.auth().getUserByEmail(normalizedEmail);
@@ -396,18 +396,35 @@ export async function createInviteAction(
       return { success: false, message: `A pending invite for ${normalizedEmail} already exists.` };
     }
     
+    // SERVER-SIDE SCOPE ENFORCEMENT
     let finalScope: any = {};
-    if (role) { // Only calculate scope if a role is being assigned
+    if (role) { 
         if (currentUser.role === 'super-admin') {
-            if (role === 'big-admin') { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: null, schoolName: null, classNames: null }; } 
-            else if (role === 'admin') { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: null }; } 
-            else { finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: scopesFromClient.classNames || null }; }
+            if (role === 'big-admin') {
+                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: null, schoolName: null, classNames: null };
+            } else if (role === 'admin') {
+                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: null };
+            } else { // user
+                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: scopesFromClient.classNames || null };
+            }
         } else if (currentUser.role === 'big-admin') {
             if (!currentUser.region || !currentUser.district) throw new Error("Your account ('big-admin') is not configured with a region and district.");
-            finalScope = { region: currentUser.region, district: currentUser.district, circuit: (role === 'admin' || role === 'user') ? (scopesFromClient.circuit || null) : null, schoolName: (role === 'admin' || role === 'user') ? (scopesFromClient.schoolName || null) : null, classNames: role === 'user' ? (scopesFromClient.classNames || null) : null };
+            finalScope = {
+                region: currentUser.region,
+                district: currentUser.district,
+                circuit: (role === 'admin' || role === 'user') ? (scopesFromClient.circuit || null) : null,
+                schoolName: (role === 'admin' || role === 'user') ? (scopesFromClient.schoolName || null) : null,
+                classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
+            };
         } else if (currentUser.role === 'admin') {
             if (!currentUser.schoolName) throw new Error("Your account ('admin') is not configured with a school name.");
-            finalScope = { region: currentUser.region, district: currentUser.district, circuit: currentUser.circuit, schoolName: currentUser.schoolName, classNames: role === 'user' ? (scopesFromClient.classNames || null) : null };
+            finalScope = {
+                region: currentUser.region,
+                district: currentUser.district,
+                circuit: currentUser.circuit,
+                schoolName: currentUser.schoolName,
+                classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
+            };
         }
     }
 
