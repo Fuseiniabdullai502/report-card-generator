@@ -475,41 +475,43 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
     return (
         <Dialog open={true} onOpenChange={onOpenChange}>
             <DialogContent className="flex flex-col max-h-[90dvh]">
-              <DialogHeader className="shrink-0">
-                  <DialogTitle>Create New Invite</DialogTitle>
-                  <DialogDescription>Invite a new user by email. Role and permissions can be assigned now or later.</DialogDescription>
-              </DialogHeader>
-              <form id="invite-form" onSubmit={handleSubmit(onSubmit)} className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
-                <div className="space-y-4 py-4">
-                  {isBigAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Inherited Scope:</p><p>Region: {currentUser.region}, District: {currentUser.district}</p></div>)}
-                  {isAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Inherited Scope:</p><p>School: {currentUser.schoolName}</p></div>)}
-                  
-                  <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" {...register('email')} placeholder="new.user@example.com"/><p className="text-xs text-destructive">{errors.email?.message}</p></div>
-                  <div className="space-y-1"><Label htmlFor="role">Role (Optional)</Label><Controller name="role" control={control} render={({ field }) => (<Select onValueChange={field.onChange} defaultValue={field.value}><SelectTrigger id="role"><SelectValue placeholder="Select a role"/></SelectTrigger><SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent></Select>)} /></div>
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <DialogHeader className="shrink-0">
+                    <DialogTitle>Create New Invite</DialogTitle>
+                    <DialogDescription>Invite a new user by email. Role and permissions can be assigned now or later.</DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
+                  <div className="space-y-4 py-4">
+                    {isBigAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Inherited Scope:</p><p>Region: {currentUser.region}, District: {currentUser.district}</p></div>)}
+                    {isAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Inherited Scope:</p><p>School: {currentUser.schoolName}</p></div>)}
+                    
+                    <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" {...register('email')} placeholder="new.user@example.com"/><p className="text-xs text-destructive">{errors.email?.message}</p></div>
+                    <div className="space-y-1"><Label htmlFor="role">Role (Optional)</Label><Controller name="role" control={control} render={({ field }) => (<Select onValueChange={field.onChange} defaultValue={field.value}><SelectTrigger id="role"><SelectValue placeholder="Select a role"/></SelectTrigger><SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent></Select>)} /></div>
 
-                  {isSuperAdmin && (role === 'big-admin' || role === 'admin' || role === 'user') && (
-                    <>
-                      <div className="space-y-1"><Label htmlFor="region">Region</Label><Controller name="region" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('district', ''); setValue('circuit', ''); }} value={field.value}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>)} /></div>
-                      <div className="space-y-1"><Label htmlFor="district">District/Municipal</Label><Controller name="district" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('circuit', ''); }} value={field.value} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select>)} /></div>
-                    </>
-                  )}
-                  
-                  {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (
+                    {isSuperAdmin && (role === 'big-admin' || role === 'admin' || role === 'user') && (
                       <>
-                        <div className="space-y-1"><Label htmlFor="circuit">Circuit</Label><Controller name="circuit" control={control} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value} disabled={availableCircuits.length === 0 && !isSuperAdmin}><SelectTrigger id="circuit"><SelectValue placeholder="Select circuit" /></SelectTrigger><SelectContent>{availableCircuits.length > 0 ? availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>) : <SelectItem value="-" disabled>No circuits for this district</SelectItem>}</SelectContent></Select>)} /></div>
-                        <div className="space-y-1"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" {...register('schoolName')} placeholder="Enter school name" /></div>
+                        <div className="space-y-1"><Label htmlFor="region">Region</Label><Controller name="region" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('district', ''); setValue('circuit', ''); }} value={field.value}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>)} /></div>
+                        <div className="space-y-1"><Label htmlFor="district">District/Municipal</Label><Controller name="district" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('circuit', ''); }} value={field.value} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select>)} /></div>
                       </>
-                  )}
+                    )}
+                    
+                    {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (
+                        <>
+                          <div className="space-y-1"><Label htmlFor="circuit">Circuit</Label><Controller name="circuit" control={control} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value} disabled={availableCircuits.length === 0 && !isSuperAdmin}><SelectTrigger id="circuit"><SelectValue placeholder="Select circuit" /></SelectTrigger><SelectContent>{availableCircuits.length > 0 ? availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>) : <SelectItem value="-" disabled>No circuits for this district</SelectItem>}</SelectContent></Select>)} /></div>
+                          <div className="space-y-1"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" {...register('schoolName')} placeholder="Enter school name" /></div>
+                        </>
+                    )}
 
-                  {role === 'user' && (
-                    <div className="space-y-1"><Label>Class Names</Label><Controller name="classNames" control={control} render={({ field }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{field.value && field.value.length > 0 ? field.value.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={field.value?.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked), field.value)}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu>)} /></div>
-                  )}
+                    {role === 'user' && (
+                      <div className="space-y-1"><Label>Class Names</Label><Controller name="classNames" control={control} render={({ field }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{field.value && field.value.length > 0 ? field.value.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={field.value?.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked), field.value)}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu>)} /></div>
+                    )}
+                  </div>
                 </div>
+                <DialogFooter className="shrink-0 pt-4 border-t">
+                  <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                  <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button>
+                </DialogFooter>
               </form>
-              <DialogFooter className="shrink-0 pt-4 border-t">
-                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                <Button type="submit" form="invite-form" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button>
-              </DialogFooter>
             </DialogContent>
         </Dialog>
     );
