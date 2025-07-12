@@ -302,9 +302,13 @@ export async function registerUserAction(data: {
       createdAt: serverTimestamp(),
     });
 
-    // If it was a regular user, update their invite to 'completed'
+    // If it was a regular user, update their invite to 'completed' using ADMIN SDK
     if (inviteDocId) {
-      await updateDoc(doc(db, 'invites', inviteDocId), { status: 'completed', completedAt: serverTimestamp() });
+      const inviteDocRef = admin.firestore().collection('invites').doc(inviteDocId);
+      await inviteDocRef.update({ 
+          status: 'completed', 
+          completedAt: admin.firestore.FieldValue.serverTimestamp() 
+      });
     }
 
     return { success: true, message: 'Registration successful! You will now be redirected to the dashboard.' };
@@ -326,6 +330,9 @@ export async function registerUserAction(data: {
         case 'failed-precondition':
              errorMessage = 'A database index is needed to find your invite. Please ask an administrator to check the browser\'s developer console for a link to create the required index for the "invites" collection on the "email" and "status" fields. This is a one-time setup.';
              break;
+        case 'permission-denied':
+            errorMessage = `A permission error occurred. This can happen if security rules are too restrictive or if an operation needs to be moved to a secure backend function. Error: ${error.message}`;
+            break;
         default:
           errorMessage = error.message;
       }
@@ -1006,3 +1013,5 @@ export async function getSystemWideStatsAction(): Promise<{
 }
 
     
+
+      
