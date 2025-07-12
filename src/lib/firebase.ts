@@ -19,13 +19,27 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Basic validation to ensure environment variables are loaded.
-// This will throw a clear error if the .env.local file is not set up.
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+// --- START ENHANCED VALIDATION ---
+const requiredConfigKeys: (keyof typeof firebaseConfig)[] = [
+  'apiKey',
+  'authDomain',
+  'projectId',
+  'storageBucket',
+  'messagingSenderId',
+  'appId',
+];
+
+const missingKeys = requiredConfigKeys.filter(key => !firebaseConfig[key]);
+
+if (missingKeys.length > 0) {
   throw new Error(
-    'Firebase config is missing in environment variables. Make sure you have a .env.local file with your Firebase project configuration. See README.md for more details.'
+    `Firebase config is missing required environment variables. 
+    Please check your .env or .env.local file and ensure the following keys are set:
+    ${missingKeys.map(key => `NEXT_PUBLIC_FIREBASE_${key.replace(/([A-Z])/g, '_$1').toUpperCase()}`).join(', ')}. 
+    See README.md for more details on setting up your Firebase project credentials.`
   );
 }
+// --- END ENHANCED VALIDATION ---
 
 // Initialize Firebase
 let app: FirebaseApp;
