@@ -1,3 +1,4 @@
+
 'use server';
 
 import { generateStudentFeedback, type GenerateStudentFeedbackInput } from '@/ai/flows/generate-student-feedback';
@@ -23,7 +24,7 @@ import admin from '@/lib/firebase-admin'; // Import the default admin instance
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser } from '@/components/auth-provider';
-import { calculateOverallAverage } from '@/lib/calculations';
+import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 
 
 // Schema for student feedback generation
@@ -1022,16 +1023,17 @@ export interface SchoolRankingData {
 const DistrictClassRankingInputSchema = z.object({
   district: z.string().min(1, "District is required."),
   className: z.string().min(1, "Class name is required."),
+  subjectName: z.string().optional().nullable(),
 });
 
 // Action for fetching district-class-level ranking
-export async function getDistrictClassRankingAction(input: { district: string; className: string; }): Promise<{
+export async function getDistrictClassRankingAction(input: { district: string; className: string; subjectName?: string | null; }): Promise<{
   success: boolean;
   ranking?: SchoolRankingData[];
   error?: string;
 }> {
   try {
-    const { district, className } = DistrictClassRankingInputSchema.parse(input);
+    const { district, className, subjectName } = DistrictClassRankingInputSchema.parse(input);
     
     const reportsRef = admin.firestore().collection('reports');
     const reportsQuery = reportsRef
@@ -1058,7 +1060,13 @@ export async function getDistrictClassRankingAction(input: { district: string; c
     
     const schoolPerformances = Array.from(reportsBySchool.entries()).map(([schoolName, schoolReports]) => {
         const allAverages = schoolReports
-          .map(report => calculateOverallAverage(report.subjects))
+          .map(report => {
+              if (subjectName) {
+                  const subject = report.subjects?.find((s: any) => s.subjectName === subjectName);
+                  return subject ? calculateSubjectFinalMark(subject) : null;
+              }
+              return calculateOverallAverage(report.subjects);
+          })
           .filter(avg => avg !== null) as number[];
 
         const average = allAverages.length > 0
@@ -1067,10 +1075,10 @@ export async function getDistrictClassRankingAction(input: { district: string; c
 
         return {
           schoolName,
-          studentCount: schoolReports.length,
+          studentCount: allAverages.length, // Count only students who had a score for the subject/overall
           average,
         };
-    });
+    }).filter(school => school.studentCount > 0); // Only include schools that had students with relevant scores
 
     const sortedSchools = schoolPerformances
         .sort((a, b) => b.average - a.average)

@@ -54,6 +54,7 @@ import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } fro
 import type { CustomUser } from './auth-provider';
 import type { SchoolRankingData } from '@/app/actions';
 import DistrictClassRankingDialog from './district-class-ranking';
+import { ReportData } from '@/lib/schemas';
 
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 
@@ -107,9 +108,10 @@ interface UserManagementProps {
     schoolStats: SchoolStats | null;
     isLoading: boolean;
     onDataRefresh: () => void;
+    allReports: ReportData[];
 }
 
-export default function UserManagement({ user, users, invites, populationStats, schoolStats, isLoading, onDataRefresh }: UserManagementProps) {
+export default function UserManagement({ user, users, invites, populationStats, schoolStats, isLoading, onDataRefresh, allReports }: UserManagementProps) {
   const { toast } = useToast();
   
   const [isCreateInviteDialogOpen, setIsCreateInviteDialogOpen] = useState(false);
@@ -124,9 +126,27 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [editingInvite, setEditingInvite] = useState<InviteData | null>(null);
 
   const [selectedRankingClass, setSelectedRankingClass] = useState<string>('');
+  const [selectedRankingSubject, setSelectedRankingSubject] = useState<string>('');
   const [isFetchingRanking, setIsFetchingRanking] = useState(false);
   const [rankingData, setRankingData] = useState<SchoolRankingData[] | null>(null);
   const [isRankingDialogOpen, setIsRankingDialogOpen] = useState(false);
+
+  const availableSubjectsForClass = useMemo(() => {
+    if (!selectedRankingClass) return [];
+    const subjects = new Set<string>();
+    allReports.forEach(report => {
+      if (report.className === selectedRankingClass) {
+        report.subjects.forEach(subject => {
+          if(subject.subjectName) subjects.add(subject.subjectName);
+        });
+      }
+    });
+    return Array.from(subjects).sort();
+  }, [selectedRankingClass, allReports]);
+
+  useEffect(() => {
+    setSelectedRankingSubject('');
+  }, [selectedRankingClass]);
 
   const handleGenerateRanking = async () => {
     if (!selectedRankingClass || !user.district) {
@@ -135,7 +155,11 @@ export default function UserManagement({ user, users, invites, populationStats, 
     }
     setIsFetchingRanking(true);
     setRankingData(null);
-    const result = await getDistrictClassRankingAction({ district: user.district, className: selectedRankingClass });
+    const result = await getDistrictClassRankingAction({ 
+        district: user.district, 
+        className: selectedRankingClass, 
+        subjectName: selectedRankingSubject || null 
+    });
     if (result.success && result.ranking) {
       setRankingData(result.ranking);
       setIsRankingDialogOpen(true);
@@ -275,8 +299,8 @@ export default function UserManagement({ user, users, invites, populationStats, 
               )}
                <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><BarChart /> District-Wide Class Analysis</CardTitle>
-                  <CardDescription>Compare the performance of a single class level across all schools in your district.</CardDescription>
+                  <CardTitle className="flex items-center gap-2"><BarChart /> District-Wide Class & Subject Analysis</CardTitle>
+                  <CardDescription>Compare the performance of a class (and optionally, a specific subject) across all schools in your district.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row gap-4 items-end">
                   <div className="w-full sm:w-auto flex-grow">
@@ -288,6 +312,20 @@ export default function UserManagement({ user, users, invites, populationStats, 
                       <SelectContent>
                         {classLevels.map(level => (
                           <SelectItem key={level} value={level}>{level}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                   <div className="w-full sm:w-auto flex-grow">
+                    <Label htmlFor="subject-ranking-select">Select Subject (Optional)</Label>
+                    <Select value={selectedRankingSubject} onValueChange={setSelectedRankingSubject} disabled={!selectedRankingClass || availableSubjectsForClass.length === 0}>
+                      <SelectTrigger id="subject-ranking-select">
+                        <SelectValue placeholder="Overall / Select Subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Overall Performance</SelectItem>
+                        {availableSubjectsForClass.map(subject => (
+                          <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -433,6 +471,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
           rankingData={rankingData}
           districtName={user.district || ''}
           className={selectedRankingClass}
+          subjectName={selectedRankingSubject}
         />
       )}
     </>

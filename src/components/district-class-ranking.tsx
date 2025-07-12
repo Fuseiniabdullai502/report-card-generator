@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -28,6 +29,7 @@ interface DistrictClassRankingDialogProps {
   rankingData: SchoolRankingData[];
   districtName: string;
   className: string;
+  subjectName?: string | null;
 }
 
 export default function DistrictClassRankingDialog({
@@ -36,6 +38,7 @@ export default function DistrictClassRankingDialog({
   rankingData,
   districtName,
   className,
+  subjectName,
 }: DistrictClassRankingDialogProps) {
 
   const handlePrint = () => {
@@ -50,6 +53,14 @@ export default function DistrictClassRankingDialog({
       // It's often better to use CSS @media print rules to hide other elements.
     }
   };
+  
+  const reportTitle = subjectName 
+    ? `School Ranking for ${className} - ${subjectName}`
+    : `School Performance Ranking for ${className}`;
+    
+  const reportDescription = subjectName
+    ? `Ranking of schools in ${districtName} based on average performance in '${subjectName}' for students in '${className}'.`
+    : `Ranking of schools in ${districtName} based on the overall average performance of students in '${className}'.`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -57,15 +68,15 @@ export default function DistrictClassRankingDialog({
         <div id="school-ranking-card">
           <DialogHeader>
             <div className="school-ranking-print-header">
-                <h2>{districtName} District - School Ranking</h2>
-                <p>Performance for: {className} | Generated on: {new Date().toLocaleDateString()}</p>
+                <h2>{districtName} District - {reportTitle}</h2>
+                <p>Generated on: {new Date().toLocaleDateString()}</p>
             </div>
             <DialogTitle className="flex items-center text-primary dialog-header-print-hide">
               <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
-              School Performance Ranking
+              {reportTitle}
             </DialogTitle>
             <DialogDescription className="dialog-header-print-hide">
-              Ranking of schools within {districtName} district based on the average performance of students in '{className}'.
+              {reportDescription}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -76,7 +87,7 @@ export default function DistrictClassRankingDialog({
                     <TableHead className="w-[80px]">Rank</TableHead>
                     <TableHead>School Name</TableHead>
                     <TableHead className="text-center"># of Students</TableHead>
-                    <TableHead className="text-right">Class Average (%)</TableHead>
+                    <TableHead className="text-right">{subjectName ? 'Subject' : 'Class'} Average (%)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -95,7 +106,7 @@ export default function DistrictClassRankingDialog({
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold">No Data Found</h3>
                   <p className="text-muted-foreground">
-                      No reports were found for '{className}' in the {districtName} district to generate a ranking.
+                      No reports were found for '{className}' {subjectName ? `with the subject '${subjectName}'` : ''} in the {districtName} district to generate a ranking.
                   </p>
               </div>
             )}

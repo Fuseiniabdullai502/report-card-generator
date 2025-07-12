@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -9,6 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ReportData } from '@/lib/schemas';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // Define types locally for state
 interface UserData {
@@ -69,6 +73,44 @@ export default function AdminPage() {
   const [populationStats, setPopulationStats] = useState<PopulationStats | null>(null);
   const [schoolStats, setSchoolStats] = useState<SchoolStats | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [allReports, setAllReports] = useState<ReportData[]>([]);
+
+  const fetchReportsForAdmin = useCallback(() => {
+    if (!user || !user.role || !['super-admin', 'big-admin'].includes(user.role)) {
+        setAllReports([]);
+        return;
+    }
+    
+    const reportsCollectionRef = collection(db, 'reports');
+    let q;
+
+    if (user.role === 'super-admin') {
+      q = query(reportsCollectionRef);
+    } else if (user.role === 'big-admin' && user.district) {
+      q = query(reportsCollectionRef, where('district', '==', user.district));
+    } else {
+      setAllReports([]);
+      return;
+    }
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedReports = snapshot.docs.map(doc => doc.data() as ReportData);
+      setAllReports(fetchedReports);
+    }, (error) => {
+      console.error("Error fetching reports for admin:", error);
+      toast({ title: 'Error Fetching Reports', description: 'Could not load underlying report data for analytics.', variant: 'destructive' });
+    });
+
+    return unsubscribe;
+  }, [user, toast]);
+  
+  useEffect(() => {
+    if (user) {
+        const unsubscribe = fetchReportsForAdmin();
+        return () => unsubscribe && unsubscribe();
+    }
+  }, [user, fetchReportsForAdmin]);
+
 
   const fetchData = useCallback(async (currentUser: CustomUser) => {
     if (!currentUser) return; // Wait for user object
@@ -208,6 +250,7 @@ export default function AdminPage() {
             schoolStats={schoolStats}
             isLoading={isLoadingData}
             onDataRefresh={() => fetchData(user)}
+            allReports={allReports}
         />
       </div>
     </main>
