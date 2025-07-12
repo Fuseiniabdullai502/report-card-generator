@@ -451,10 +451,17 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
     };
 
     const onSubmit = async (data: InviteFormValues) => {
+        const currentUserData = {
+            role: currentUser.role,
+            region: currentUser.region,
+            district: currentUser.district,
+            circuit: currentUser.circuit,
+            schoolName: currentUser.schoolName,
+        };
         const result = await createInviteAction({
             ...data,
             role: data.role || null,
-        }, currentUser);
+        }, currentUserData);
 
         if(result.success) {
             toast({ title: "Invite Created", description: result.message });

@@ -348,9 +348,17 @@ const CreateInviteActionInputSchema = z.object({
   classNames: z.array(z.string()).optional().nullable(),
 });
 
+type CurrentUserForAction = {
+    role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
+    region?: string | null;
+    district?: string | null;
+    circuit?: string | null;
+    schoolName?: string | null;
+}
+
 export async function createInviteAction(
   data: z.infer<typeof CreateInviteActionInputSchema>,
-  currentUser: CustomUser
+  currentUser: CurrentUserForAction
 ): Promise<{ success: boolean; message: string }> {
   try {
      if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
