@@ -4,10 +4,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth, type CustomUser } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
-import { Loader2, Shield } from 'lucide-react';
+import { Loader2, Shield, ArrowLeft } from 'lucide-react';
 import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction, getSystemWideStatsAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 // Define types locally for state
 interface UserData {
@@ -69,19 +71,19 @@ export default function AdminPage() {
   const [schoolStats, setSchoolStats] = useState<SchoolStats | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    if (!user) return; // Wait for user object
+  const fetchData = useCallback(async (currentUser: CustomUser) => {
+    if (!currentUser) return; // Wait for user object
     setIsLoadingData(true);
     setPopulationStats(null);
     setSchoolStats(null);
     try {
       const usersPromise = getUsersAction({
-        id: user.uid,
-        role: user.role,
-        district: user.district,
-        schoolName: user.schoolName,
+        id: currentUser.uid,
+        role: currentUser.role,
+        district: currentUser.district,
+        schoolName: currentUser.schoolName,
       });
-      const invitesPromise = getInvitesAction({ role: user.role });
+      const invitesPromise = getInvitesAction({ role: currentUser.role });
 
       const [usersResult, invitesResult] = await Promise.all([usersPromise, invitesPromise]);
 
@@ -97,22 +99,22 @@ export default function AdminPage() {
         toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
       }
 
-      if (user.role === 'super-admin') {
+      if (currentUser.role === 'super-admin') {
           const systemStatsResult = await getSystemWideStatsAction();
           if (systemStatsResult.success && systemStatsResult.stats) {
               setPopulationStats(systemStatsResult.stats);
           } else {
               toast({ title: 'Error Fetching System Stats', description: systemStatsResult.error, variant: 'destructive' });
           }
-      } else if (user.role === 'big-admin' && user.district) {
-          const districtStatsResult = await getDistrictStatsAction(user.district);
+      } else if (currentUser.role === 'big-admin' && currentUser.district) {
+          const districtStatsResult = await getDistrictStatsAction(currentUser.district);
           if (districtStatsResult.success && districtStatsResult.stats) {
               setPopulationStats(districtStatsResult.stats);
           } else {
               toast({ title: 'Error Fetching District Stats', description: districtStatsResult.error, variant: 'destructive' });
           }
-      } else if (user.role === 'admin' && user.schoolName) {
-          const schoolStatsResult = await getSchoolStatsAction(user.schoolName);
+      } else if (currentUser.role === 'admin' && currentUser.schoolName) {
+          const schoolStatsResult = await getSchoolStatsAction(currentUser.schoolName);
           if (schoolStatsResult.success && schoolStatsResult.stats) {
               setSchoolStats(schoolStatsResult.stats);
           } else {
@@ -125,11 +127,11 @@ export default function AdminPage() {
     } finally {
       setIsLoadingData(false);
     }
-  }, [toast, user]);
+  }, [toast]);
 
   useEffect(() => {
     if (user) {
-        fetchData();
+        fetchData(user);
     }
   }, [user, fetchData]);
 
@@ -183,8 +185,14 @@ export default function AdminPage() {
   // Render admin dashboard
   return (
     <main className="container mx-auto p-4 md:p-8">
-      <header className="mb-8 no-print">
-        <h1 className="text-3xl font-bold text-primary flex items-center gap-3">
+      <header className="mb-8 no-print relative text-center">
+         <Link href="/" passHref>
+          <Button variant="outline" size="sm" className="absolute top-0 left-0">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to App
+          </Button>
+        </Link>
+        <h1 className="text-3xl font-bold text-primary flex items-center justify-center gap-3">
           <Shield className="h-8 w-8" />
           {getPageTitle()}
         </h1>
@@ -200,7 +208,7 @@ export default function AdminPage() {
             populationStats={populationStats}
             schoolStats={schoolStats}
             isLoading={isLoadingData}
-            onDataRefresh={fetchData}
+            onDataRefresh={() => fetchData(user)}
         />
       </div>
     </main>
