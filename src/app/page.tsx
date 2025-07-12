@@ -145,14 +145,20 @@ function AppContent({ user }: { user: CustomUser }) {
         if (report.academicYear) years.add(report.academicYear);
         if (report.academicTerm) terms.add(report.academicTerm);
     });
+    
+    // For 'user' role, filter class list to only assigned classes
+    let userVisibleClasses = Array.from(classes).sort();
+    if (user.role === 'user' && user.classNames) {
+        userVisibleClasses = user.classNames;
+    }
 
     return {
         schools: ['all', ...Array.from(schools).sort()],
-        classes: ['all', ...Array.from(classes).sort()],
+        classes: ['all', ...userVisibleClasses],
         years: ['all', ...Array.from(years).sort()],
         terms: ['all', ...Array.from(terms).sort()],
     };
-  }, [allRankedReports]);
+  }, [allRankedReports, user.role, user.classNames]);
 
   // Apply filters based on user role
   const filteredReports = useMemo(() => {
@@ -272,6 +278,13 @@ function AppContent({ user }: { user: CustomUser }) {
             q = query(reportsCollectionRef, where('schoolName', '==', user.schoolName));
             break;
         case 'user':
+            if (user.classNames && user.classNames.length > 0) {
+                q = query(reportsCollectionRef, where('teacherId', '==', user.uid), where('className', 'in', user.classNames));
+            } else {
+                // If user has no classes assigned, fetch reports they created, though ideally they shouldn't be able to create any without a class
+                 q = query(reportsCollectionRef, where('teacherId', '==', user.uid));
+            }
+            break;
         default:
             q = query(reportsCollectionRef, where('teacherId', '==', user.uid));
             break;
@@ -320,7 +333,7 @@ function AppContent({ user }: { user: CustomUser }) {
             newSessionDefaults.region = firstReportFromDistrict.region;
            }
       } else if (user.role === 'user') {
-          const firstSchool = fetchedReports.find(r => r.schoolName?.trim())?.schoolName || null;
+          const firstSchool = fetchedReports.find(r => r.schoolName?.trim())?.schoolName || user.schoolName || null;
           if (firstSchool) newSessionDefaults.schoolName = firstSchool;
       }
       setSessionDefaults(prev => ({...prev, ...newSessionDefaults}));
@@ -351,7 +364,7 @@ function AppContent({ user }: { user: CustomUser }) {
         let indexField = 'teacherId';
         if (user.role === 'big-admin') indexField = 'district';
         if (user.role === 'admin') indexField = 'schoolName';
-        const errorMessage = `A database index is needed to filter reports by '${indexField}'. Please check your browser's developer console for a link to create it. This is a one-time setup.`;
+        const errorMessage = `A database index is needed to filter reports. Please check your browser's developer console for a link to create it. This is a one-time setup.`;
         setIndexError(errorMessage);
         toast({ 
           title: "Action Required: Firestore Index Needed", 
@@ -366,7 +379,7 @@ function AppContent({ user }: { user: CustomUser }) {
     });
 
     return () => unsubscribe();
-  }, [user.uid, user.role, user.district, user.schoolName, calculateAndSetRanks, toast]);
+  }, [user, calculateAndSetRanks, toast]);
 
 
   const handleFormUpdate = useCallback((data: ReportData) => {
@@ -840,8 +853,12 @@ function AppContent({ user }: { user: CustomUser }) {
         if (user.role === 'admin') {
              return `Viewing School: ${user.schoolName}. ${activeFilters ? `Filtering by: ${activeFilters}` : 'Showing all reports in your school.'}`;
         }
+        // User role
+        if (!user.classNames || user.classNames.length === 0) {
+            return 'You are not assigned to any classes. Please contact an administrator.';
+        }
         return `Showing reports for: ${adminFilters.className === 'all' ? 'All My Classes' : adminFilters.className}.`;
-    }, [user.role, user.district, user.schoolName, adminFilters]);
+    }, [user, adminFilters]);
 
     const noReportsFoundMessage = useMemo(() => {
         if (reportsCount === 0 && allRankedReports.length > 0) {
@@ -850,13 +867,14 @@ function AppContent({ user }: { user: CustomUser }) {
         return `The report card preview will appear here as you fill out the form.`;
     }, [reportsCount, allRankedReports.length]);
 
+  const isAdminRole = user.role === 'super-admin' || user.role === 'big-admin' || user.role === 'admin';
 
   return (
     <>
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground main-app-container">
       <header className="mb-8 text-center no-print relative">
         <div className="absolute top-0 left-0 flex items-center gap-2">
-            {user.role && ['super-admin', 'big-admin', 'admin'].includes(user.role) && (
+            {isAdminRole && (
                 <Link href="/admin" passHref>
                     <Button variant="outline" size="sm">
                         <Shield className="mr-2 h-4 w-4" />
@@ -897,7 +915,7 @@ function AppContent({ user }: { user: CustomUser }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                     <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
-                    <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)} disabled={user.role === 'big-admin' || user.role === 'admin'}>
+                    <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)} disabled={!isSuperAdmin}>
                         <SelectTrigger id="sessionRegion"><SelectValue placeholder="Select region" /></SelectTrigger>
                         <SelectContent>
                             {ghanaRegions.map(region => <SelectItem key={region} value={region}>{region}</SelectItem>)}
@@ -909,7 +927,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     <Select 
                         value={sessionDefaults.district || ''} 
                         onValueChange={value => handleSessionDefaultChange('district', value)}
-                        disabled={user.role === 'big-admin' || user.role === 'admin' || !sessionDefaults.region || availableDistricts.length === 0}
+                        disabled={!isSuperAdmin && !isBigAdmin}
                     >
                         <SelectTrigger id="sessionDistrict">
                             <SelectValue placeholder="Select district" />
@@ -943,7 +961,7 @@ function AppContent({ user }: { user: CustomUser }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
                 <div className="space-y-1 md:col-span-2">
                     <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
-                    <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={user.role === 'admin'}/>
+                    <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={isAdminRole && user.role !== 'big-admin'}/>
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
@@ -1043,7 +1061,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
                 <div className="flex flex-col gap-2 items-stretch">
                   <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-                    {(user.role === 'super-admin' || user.role === 'big-admin') && (
+                    {isAdminRole && (
                         <Select value={adminFilters.schoolName} onValueChange={value => handleAdminFilterChange('schoolName', value)} disabled={user.role === 'admin'}>
                             <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by school">
                                 <div className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by school..." /></div>
@@ -1055,7 +1073,7 @@ function AppContent({ user }: { user: CustomUser }) {
                         <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by class">
                             <div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by class..." /></div>
                         </SelectTrigger>
-                        <SelectContent>{allFilterOptions.classes.map(c => <SelectItem key={c} value={c}>{c === 'all' ? 'All Classes' : c}</SelectItem>)}</SelectContent>
+                        <SelectContent>{allFilterOptions.classes.map(c => <SelectItem key={c} value={c}>{c === 'all' ? 'All My Classes' : c}</SelectItem>)}</SelectContent>
                     </Select>
                      <Select value={adminFilters.academicYear} onValueChange={value => handleAdminFilterChange('academicYear', value)}>
                         <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by year">
@@ -1079,16 +1097,18 @@ function AppContent({ user }: { user: CustomUser }) {
                        <BarChartHorizontalBig className="mr-2 h-4 w-4" />
                        Class Dashboard
                      </Button>
-                     <Button
-                        onClick={() => setIsSchoolDashboardOpen(true)}
-                        disabled={reportsCount === 0 || isLoadingReports}
-                        variant="outline"
-                        size="sm"
-                        title={reportsCount > 0 ? "View AI-powered school overview dashboard" : "Add reports to list to view dashboard"}
-                      >
-                       <Building className="mr-2 h-4 w-4" />
-                       School Overview
-                     </Button>
+                     {isAdminRole && (
+                        <Button
+                            onClick={() => setIsSchoolDashboardOpen(true)}
+                            disabled={reportsCount === 0 || isLoadingReports}
+                            variant="outline"
+                            size="sm"
+                            title={reportsCount > 0 ? "View AI-powered school overview dashboard" : "Add reports to list to view dashboard"}
+                        >
+                           <Building className="mr-2 h-4 w-4" />
+                           School Overview
+                        </Button>
+                     )}
                     <Button onClick={() => handleInitiatePrint(true)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Download all reports in the list as a single PDF" : "Add or filter reports to the list to enable download"}>
                       <Download className="mr-2 h-4 w-4" />
                       Download as PDF
