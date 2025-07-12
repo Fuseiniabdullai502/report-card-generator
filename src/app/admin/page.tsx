@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -82,7 +81,7 @@ export default function AdminPage() {
         role: currentUser.role,
         district: currentUser.district,
         schoolName: currentUser.schoolName,
-      });
+      } as CustomUser);
       const invitesPromise = getInvitesAction({ role: currentUser.role });
 
       const [usersResult, invitesResult] = await Promise.all([usersPromise, invitesPromise]);

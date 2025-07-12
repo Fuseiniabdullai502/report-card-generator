@@ -1,4 +1,3 @@
-
 'use server';
 
 import { generateStudentFeedback, type GenerateStudentFeedbackInput } from '@/ai/flows/generate-student-feedback';
@@ -24,6 +23,7 @@ import admin from '@/lib/firebase-admin'; // Import the default admin instance
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser } from '@/components/auth-provider';
+import { calculateOverallAverage } from '@/lib/calculations';
 
 
 // Schema for student feedback generation
@@ -1012,6 +1012,103 @@ export async function getSystemWideStatsAction(): Promise<{
   }
 }
 
-    
+export interface SchoolRankingData {
+  schoolName: string;
+  studentCount: number;
+  average: number;
+  rank: string;
+}
 
+const DistrictClassRankingInputSchema = z.object({
+  district: z.string().min(1, "District is required."),
+  className: z.string().min(1, "Class name is required."),
+});
+
+// Action for fetching district-class-level ranking
+export async function getDistrictClassRankingAction(input: { district: string; className: string; }): Promise<{
+  success: boolean;
+  ranking?: SchoolRankingData[];
+  error?: string;
+}> {
+  try {
+    const { district, className } = DistrictClassRankingInputSchema.parse(input);
+    
+    const reportsRef = admin.firestore().collection('reports');
+    const reportsQuery = reportsRef
+      .where('district', '==', district)
+      .where('className', '==', className);
+    
+    const reportsSnapshot = await reportsQuery.get();
+    
+    if (reportsSnapshot.empty) {
+        return { success: true, ranking: [] };
+    }
+
+    const reportsBySchool = new Map<string, any[]>();
+    reportsSnapshot.forEach(doc => {
+      const data = doc.data();
+      const schoolName = data.schoolName?.trim();
+      if (schoolName) {
+        if (!reportsBySchool.has(schoolName)) {
+          reportsBySchool.set(schoolName, []);
+        }
+        reportsBySchool.get(schoolName)!.push(data);
+      }
+    });
+    
+    const schoolPerformances = Array.from(reportsBySchool.entries()).map(([schoolName, schoolReports]) => {
+        const allAverages = schoolReports
+          .map(report => calculateOverallAverage(report.subjects))
+          .filter(avg => avg !== null) as number[];
+
+        const average = allAverages.length > 0
+          ? allAverages.reduce((sum, avg) => sum + avg, 0) / allAverages.length
+          : 0;
+
+        return {
+          schoolName,
+          studentCount: schoolReports.length,
+          average,
+        };
+    });
+
+    const sortedSchools = schoolPerformances
+        .sort((a, b) => b.average - a.average)
+        .map((school, index, arr) => {
+          const rankNumber = (index > 0 && school.average === arr[index - 1].average)
+            ? (arr[index - 1] as any).rankNumber
+            : index + 1;
+          return { ...school, rankNumber };
+        });
+    
+    const getOrdinalSuffix = (n: number): string => {
+        const s = ['th', 'st', 'nd', 'rd'];
+        const v = n % 100;
+        return s[(v - 20) % 10] || s[v] || s[0];
+    };
+
+    const finalRankedSchools = sortedSchools.map((school, index, arr) => {
+        const { rankNumber } = school;
+        const isTiedWithNext = index < arr.length - 1 && arr[index + 1].rankNumber === rankNumber;
+        const isTiedWithPrev = index > 0 && arr[index - 1].rankNumber === rankNumber;
+        const isTie = isTiedWithNext || isTiedWithPrev;
+        const rankString = `${isTie ? 'T-' : ''}${rankNumber}${getOrdinalSuffix(rankNumber)}`;
+        return { ...school, rank: rankString };
+    });
+    
+    return { success: true, ranking: finalRankedSchools };
+
+  } catch (error: any) {
+    console.error('Error fetching district-class ranking:', error);
+    let errorMessage = "An unexpected error occurred while fetching the ranking.";
+    if (error.code === 'failed-precondition' && error.message.includes('index')) {
+        errorMessage = `A database index is needed. Please check the browser's developer console for a link to create the required index on the 'reports' collection for fields 'district' and 'className'.`;
+    } else if (error instanceof z.ZodError) {
+        errorMessage = "Invalid input: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+        errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
       

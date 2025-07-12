@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -25,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -48,9 +47,14 @@ import {
     updateUserRoleAndScopeAction, 
     createInviteAction,
     updateInviteAction,
+    getDistrictClassRankingAction,
 } from '@/app/actions';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import type { CustomUser } from './auth-provider';
+import type { SchoolRankingData } from '@/app/actions';
+import DistrictClassRankingDialog from './district-class-ranking';
+
+const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 
 interface UserData {
   id: string;
@@ -117,6 +121,28 @@ export default function UserManagement({ user, users, invites, populationStats, 
 
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [editingInvite, setEditingInvite] = useState<InviteData | null>(null);
+
+  const [selectedRankingClass, setSelectedRankingClass] = useState<string>('');
+  const [isFetchingRanking, setIsFetchingRanking] = useState(false);
+  const [rankingData, setRankingData] = useState<SchoolRankingData[] | null>(null);
+  const [isRankingDialogOpen, setIsRankingDialogOpen] = useState(false);
+
+  const handleGenerateRanking = async () => {
+    if (!selectedRankingClass || !user.district) {
+      toast({ title: 'Selection Missing', description: 'Please select a class to generate the report.', variant: 'destructive' });
+      return;
+    }
+    setIsFetchingRanking(true);
+    setRankingData(null);
+    const result = await getDistrictClassRankingAction({ district: user.district, className: selectedRankingClass });
+    if (result.success && result.ranking) {
+      setRankingData(result.ranking);
+      setIsRankingDialogOpen(true);
+    } else {
+      toast({ title: 'Error Generating Report', description: result.error, variant: 'destructive' });
+    }
+    setIsFetchingRanking(false);
+  };
 
   const roleCounts = useMemo(() => {
     if (user.role !== 'super-admin') return null;
@@ -241,11 +267,36 @@ export default function UserManagement({ user, users, invites, populationStats, 
                       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                           <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Schools in District</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div><p className="text-xs text-muted-foreground">Total schools with reports</p></CardContent></Card>
                           <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.totalStudents}</div><p className="text-xs text-muted-foreground">Overall student population</p></CardContent></Card>
-                          <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</p></CardContent></Card>
+                          <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</CardContent></Card>
                           <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.femaleCount}</div><p className="text-xs text-muted-foreground">Female population</p></CardContent></Card>
                       </div>
                   </div>
               )}
+               <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><BarChart /> District-Wide Class Analysis</CardTitle>
+                  <CardDescription>Compare the performance of a single class level across all schools in your district.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row gap-4 items-end">
+                  <div className="w-full sm:w-auto flex-grow">
+                    <Label htmlFor="class-ranking-select">Select Class Level</Label>
+                    <Select value={selectedRankingClass} onValueChange={setSelectedRankingClass}>
+                      <SelectTrigger id="class-ranking-select">
+                        <SelectValue placeholder="Select a class..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {classLevels.map(level => (
+                          <SelectItem key={level} value={level}>{level}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={handleGenerateRanking} disabled={isFetchingRanking || !selectedRankingClass}>
+                    {isFetchingRanking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSearch className="mr-2 h-4 w-4" />}
+                    Generate Report
+                  </Button>
+                </CardContent>
+              </Card>
           </div>
         )}
 
@@ -374,11 +425,18 @@ export default function UserManagement({ user, users, invites, populationStats, 
       {isCreateInviteDialogOpen && <CreateInviteDialog currentUser={user} onOpenChange={setIsCreateInviteDialogOpen} onInviteCreated={onDataRefresh} />}
       {editingUser && <EditUserDialog currentUser={user} user={editingUser} onOpenChange={() => setEditingUser(null)} onUserUpdated={onDataRefresh} />}
       {editingInvite && <EditInviteDialog currentUser={user} invite={editingInvite} onOpenChange={() => setEditingInvite(null)} onInviteUpdated={onDataRefresh} />}
+      {isRankingDialogOpen && rankingData && (
+        <DistrictClassRankingDialog
+          isOpen={isRankingDialogOpen}
+          onOpenChange={setIsRankingDialogOpen}
+          rankingData={rankingData}
+          districtName={user.district || ''}
+          className={selectedRankingClass}
+        />
+      )}
     </>
   );
 }
-
-const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 
 const inviteFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
