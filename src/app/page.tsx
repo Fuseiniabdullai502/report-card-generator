@@ -114,6 +114,10 @@ function AppContent({ user }: { user: CustomUser }) {
   const [availableCircuits, setAvailableCircuits] = useState<string[]>([]);
   const [indexError, setIndexError] = useState<string | null>(null);
 
+  const isSuperAdmin = user.role === 'super-admin';
+  const isBigAdmin = user.role === 'big-admin';
+  const isAdminRole = user.role === 'super-admin' || user.role === 'big-admin' || user.role === 'admin';
+
   useEffect(() => {
     if (sessionDefaults.region && typeof sessionDefaults.region === 'string') {
         const districts = ghanaRegionsAndDistricts[sessionDefaults.region] || [];
@@ -867,8 +871,6 @@ function AppContent({ user }: { user: CustomUser }) {
         return `The report card preview will appear here as you fill out the form.`;
     }, [reportsCount, allRankedReports.length]);
 
-  const isAdminRole = user.role === 'super-admin' || user.role === 'big-admin' || user.role === 'admin';
-
   return (
     <>
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground main-app-container">
@@ -1252,3 +1254,5 @@ export default function Home() {
   
   return <AppContent user={user} />;
 }
+
+    
