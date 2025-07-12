@@ -116,7 +116,24 @@ function AppContent({ user }: { user: CustomUser }) {
 
   const isSuperAdmin = user.role === 'super-admin';
   const isBigAdmin = user.role === 'big-admin';
-  const isAdminRole = user.role === 'super-admin' || user.role === 'big-admin' || user.role === 'admin';
+  const isAdmin = user.role === 'admin';
+  const isRegularUser = user.role === 'user';
+  const isAdminRole = isSuperAdmin || isBigAdmin || isAdmin;
+
+  // Effect to set and lock session defaults for regular users
+  useEffect(() => {
+    if (isRegularUser) {
+      const userDefaults: Partial<ReportData> = {
+        region: user.region,
+        district: user.district,
+        circuit: user.circuit,
+        schoolName: user.schoolName,
+        className: user.classNames?.[0] || '', // Default to first assigned class
+      };
+      setSessionDefaults(prev => ({...prev, ...userDefaults}));
+      setCurrentEditingReport(prev => ({...prev, ...userDefaults}));
+    }
+  }, [user, isRegularUser]);
 
   useEffect(() => {
     if (sessionDefaults.region && typeof sessionDefaults.region === 'string') {
@@ -152,7 +169,7 @@ function AppContent({ user }: { user: CustomUser }) {
     
     // For 'user' role, filter class list to only assigned classes
     let userVisibleClasses = Array.from(classes).sort();
-    if (user.role === 'user' && user.classNames) {
+    if (isRegularUser && user.classNames) {
         userVisibleClasses = user.classNames;
     }
 
@@ -162,12 +179,12 @@ function AppContent({ user }: { user: CustomUser }) {
         years: ['all', ...Array.from(years).sort()],
         terms: ['all', ...Array.from(terms).sort()],
     };
-  }, [allRankedReports, user.role, user.classNames]);
+  }, [allRankedReports, isRegularUser, user.classNames]);
 
   // Apply filters based on user role
   const filteredReports = useMemo(() => {
     let reports = allRankedReports;
-    if (user.role === 'super-admin' || user.role === 'big-admin' || user.role === 'admin') {
+    if (isAdminRole) {
       reports = reports.filter(report => 
         (adminFilters.schoolName === 'all' || report.schoolName === adminFilters.schoolName) &&
         (adminFilters.className === 'all' || report.className === adminFilters.className) &&
@@ -180,7 +197,7 @@ function AppContent({ user }: { user: CustomUser }) {
       }
     }
     return reports;
-  }, [allRankedReports, user.role, adminFilters]);
+  }, [allRankedReports, isAdminRole, adminFilters]);
 
   // Reset preview index when filters change
   useEffect(() => {
@@ -337,8 +354,11 @@ function AppContent({ user }: { user: CustomUser }) {
             newSessionDefaults.region = firstReportFromDistrict.region;
            }
       } else if (user.role === 'user') {
-          const firstSchool = fetchedReports.find(r => r.schoolName?.trim())?.schoolName || user.schoolName || null;
-          if (firstSchool) newSessionDefaults.schoolName = firstSchool;
+          // User's scope is now set in a separate useEffect, this is a fallback.
+          newSessionDefaults.schoolName = user.schoolName || fetchedReports.find(r => r.schoolName?.trim())?.schoolName || null;
+          newSessionDefaults.region = user.region || fetchedReports.find(r => r.region?.trim())?.region || null;
+          newSessionDefaults.district = user.district || fetchedReports.find(r => r.district?.trim())?.district || null;
+          newSessionDefaults.circuit = user.circuit || fetchedReports.find(r => r.circuit?.trim())?.circuit || null;
       }
       setSessionDefaults(prev => ({...prev, ...newSessionDefaults}));
       
@@ -951,7 +971,7 @@ function AppContent({ user }: { user: CustomUser }) {
                         onChange={e => handleSessionDefaultChange('circuit', e.target.value)} 
                         placeholder="e.g., Kalpohin"
                         list="circuit-datalist"
-                        disabled={!sessionDefaults.district}
+                        disabled={!isSuperAdmin && !isBigAdmin && !isAdmin}
                     />
                     <datalist id="circuit-datalist">
                         {availableCircuits.map(circuit => (
@@ -963,7 +983,7 @@ function AppContent({ user }: { user: CustomUser }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
                 <div className="space-y-1 md:col-span-2">
                     <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
-                    <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={isAdminRole && user.role !== 'big-admin'}/>
+                    <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={!isSuperAdmin && !isBigAdmin}/>
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
@@ -976,13 +996,14 @@ function AppContent({ user }: { user: CustomUser }) {
                 </div>
                  <div className="space-y-1">
                     <Label htmlFor="sessionClassName" className="text-sm font-medium">Current Class</Label>
-                    <Select value={sessionDefaults.className || ''} onValueChange={value => handleSessionDefaultChange('className', value === ADD_CUSTOM_CLASS_VALUE ? '' : value)}>
+                    <Select value={sessionDefaults.className || ''} onValueChange={value => handleSessionDefaultChange('className', value === ADD_CUSTOM_CLASS_VALUE ? '' : value)} disabled={isRegularUser}>
                         <SelectTrigger id="sessionClassName"><SelectValue placeholder="Select or add class" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value={ADD_CUSTOM_CLASS_VALUE} onSelect={() => setIsCustomClassNameDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
                             <SelectSeparator />
-                            {classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
-                            {customClassNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                             {isRegularUser && user.classNames?.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                             {!isRegularUser && classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
+                             {!isRegularUser && customClassNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -1254,5 +1275,3 @@ export default function Home() {
   
   return <AppContent user={user} />;
 }
-
-    
