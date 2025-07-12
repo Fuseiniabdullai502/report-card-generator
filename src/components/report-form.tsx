@@ -184,6 +184,24 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
       onFormUpdate({ ...formData, hobbies: newHobbies });
   };
 
+  const handleAiEditImage = async (photoDataUri: string, editPrompt: string) => {
+    if (!photoDataUri) return;
+    startImageEditingAiTransition(async () => {
+       const result = await editImageWithAiAction({ photoDataUri, prompt: editPrompt });
+       if (result.success && result.editedPhotoDataUri) {
+          onFormUpdate({ ...formData, studentPhotoDataUri: result.editedPhotoDataUri });
+          toast({ title: "AI Image Enhancement Successful", description: "The student photo has been automatically improved." });
+       } else {
+          toast({
+            title: "AI Image Edit Failed",
+            description: <AiErrorDescription errorMessage={result.error || "An unknown error occurred."} />,
+            variant: "destructive",
+            duration: 30000
+          });
+       }
+    });
+  };
+
   const handleImageUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
     fieldName: keyof Pick<ReportData, 'studentPhotoDataUri'>
@@ -193,11 +211,21 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
       const reader = new FileReader();
       reader.onloadend = () => {
         const originalDataUri = reader.result as string;
+        // Update form immediately to show the original image
         onFormUpdate({...formData, [fieldName]: originalDataUri});
-        toast({ title: "Image Uploaded", description: `Student photo uploaded successfully.` });
+        
+        // If it's the student photo, trigger the AI enhancement
+        if (fieldName === 'studentPhotoDataUri') {
+          toast({ title: "Enhancing Photo with AI...", description: "Please wait a moment." });
+          const editPrompt = "Crop this image to a passport photo with a 3:4 aspect ratio. Apply bright, even studio lighting and remove any distracting background.";
+          handleAiEditImage(originalDataUri, editPrompt);
+        } else {
+          toast({ title: "Image Uploaded", description: `Image uploaded successfully.` });
+        }
       };
       reader.readAsDataURL(file);
     }
+    // Clear the input value to allow re-uploading the same file
     if(event.target) event.target.value = '';
   };
   
@@ -307,24 +335,6 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
        } else {
           toast({
             title: "AI Feedback Generation Failed",
-            description: <AiErrorDescription errorMessage={result.error || "An unknown error occurred."} />,
-            variant: "destructive",
-            duration: 30000
-          });
-       }
-    });
-  };
-  
-  const handleAiEditImage = async (photoDataUri: string, editPrompt: string) => {
-    if (!photoDataUri) return;
-    startImageEditingAiTransition(async () => {
-       const result = await editImageWithAiAction({ photoDataUri, prompt: editPrompt });
-       if (result.success && result.editedPhotoDataUri) {
-          onFormUpdate({ ...formData, studentPhotoDataUri: result.editedPhotoDataUri });
-          toast({ title: "AI Image Edit Successful" });
-       } else {
-          toast({
-            title: "AI Image Edit Failed",
             description: <AiErrorDescription errorMessage={result.error || "An unknown error occurred."} />,
             variant: "destructive",
             duration: 30000
@@ -445,8 +455,20 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
                  <div className="space-y-2">
                     <Label className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />Student Photo</Label>
                     <input type="file" id="studentPhotoUpload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')} />
-                    <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()}><UploadCloud className="mr-2 h-4 w-4" />Upload Photo</Button>
-                    {formData.studentPhotoDataUri && <NextImage src={formData.studentPhotoDataUri} alt="student" width={80} height={100} className="rounded border"/>}
+                    <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()} disabled={isImageEditingAiLoading}>
+                        {isImageEditingAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+                        {isImageEditingAiLoading ? 'Enhancing...' : 'Upload & Enhance'}
+                    </Button>
+                    {formData.studentPhotoDataUri && (
+                      <div className="relative w-20 h-[100px]">
+                        <NextImage src={formData.studentPhotoDataUri} alt="student" layout="fill" className="rounded border object-cover"/>
+                        {isImageEditingAiLoading && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
+                            <Loader2 className="h-6 w-6 animate-spin text-white" />
+                          </div>
+                        )}
+                      </div>
+                    )}
                  </div>
               </div>
             </section>
