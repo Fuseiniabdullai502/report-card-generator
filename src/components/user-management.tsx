@@ -482,11 +482,11 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
     return (
         <Dialog open={true} onOpenChange={onOpenChange}>
             <DialogContent className="flex flex-col max-h-[90dvh]">
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <DialogHeader className="shrink-0">
-                    <DialogTitle>Create New Invite</DialogTitle>
-                    <DialogDescription>Invite a new user by email. Role and permissions can be assigned now or later.</DialogDescription>
-                </DialogHeader>
+              <DialogHeader className="shrink-0">
+                  <DialogTitle>Create New Invite</DialogTitle>
+                  <DialogDescription>Invite a new user by email. Role and permissions can be assigned now or later.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit(onSubmit)} className="flex-1 min-h-0 flex flex-col">
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
                   <div className="space-y-4 py-4">
                     {isBigAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Inherited Scope:</p><p>Region: {currentUser.region}, District: {currentUser.district}</p></div>)}
@@ -514,7 +514,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
                     )}
                   </div>
                 </div>
-                <DialogFooter className="shrink-0 pt-4 border-t">
+                <DialogFooter className="shrink-0 pt-4 border-t mt-4">
                   <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
                   <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Invite</Button>
                 </DialogFooter>
@@ -630,7 +630,7 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
                     {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
                   </div>
                 </div>
-                <DialogFooter className="shrink-0 pt-4 border-t">
+                <DialogFooter className="shrink-0 pt-4 border-t mt-4">
                   <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
                   <Button onClick={handleSave} disabled={isSaving}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Changes</Button>
                 </DialogFooter>
@@ -733,7 +733,7 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
                     {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
                   </div>
                 </div>
-                <DialogFooter className="shrink-0 pt-4 border-t">
+                <DialogFooter className="shrink-0 pt-4 border-t mt-4">
                   <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
                   <Button onClick={handleSave} disabled={isSaving || !role}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Changes</Button>
                 </DialogFooter>
