@@ -304,7 +304,7 @@ export async function registerUserAction(data: {
 
     // If it was a regular user, update their invite to 'completed'
     if (inviteDocId) {
-      await setDoc(doc(db, 'invites', inviteDocId), { status: 'completed', completedAt: serverTimestamp() }, { merge: true });
+      await updateDoc(doc(db, 'invites', inviteDocId), { status: 'completed', completedAt: serverTimestamp() });
     }
 
     return { success: true, message: 'Registration successful! You will now be redirected to the dashboard.' };
