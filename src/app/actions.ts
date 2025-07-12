@@ -307,7 +307,7 @@ export async function registerUserAction(data: {
       await setDoc(doc(db, 'invites', inviteDocId), { status: 'completed', completedAt: serverTimestamp() }, { merge: true });
     }
 
-    return { success: true, message: 'Successfully registered! You will now be redirected.' };
+    return { success: true, message: 'Registration successful! You will now be redirected to the dashboard.' };
 
   } catch (error: any) {
     console.error('Registration Error:', error);
@@ -1004,3 +1004,5 @@ export async function getSystemWideStatsAction(): Promise<{
     return { success: false, error: errorMessage };
   }
 }
+
+    
