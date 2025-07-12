@@ -393,7 +393,7 @@ export async function createInviteAction(
         // If user is not found, we can proceed.
     }
 
-    // Check for existing pending invite in Firestore
+    // Check for existing pending invite in Firestore using ADMIN SDK
     const invitesRef = admin.firestore().collection('invites');
     const inviteQuery = invitesRef
       .where('email', '==', normalizedEmail)
@@ -436,10 +436,11 @@ export async function createInviteAction(
         }
     }
 
-    await addDoc(collection(db, 'invites'), {
+    // Create invite using ADMIN SDK
+    await invitesRef.add({
       email: normalizedEmail,
       status: 'pending',
-      createdAt: serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
       role: role || null,
       ...finalScope,
     });
