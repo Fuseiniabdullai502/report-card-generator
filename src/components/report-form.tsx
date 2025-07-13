@@ -20,7 +20,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { calculateOverallAverage } from '@/lib/calculations';
 import { storage } from '@/lib/firebase';
-import { ref, uploadString, getDownloadURL, uploadBytes } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ReportFormProps {
@@ -188,8 +188,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
       onFormUpdate({ ...formData, hobbies: newHobbies });
   };
 
-  // Function to convert data URI to Blob
-  const dataUriToBlob = (dataUri: string): Blob => {
+  const dataUriToBlob = (dataUri: string): { blob: Blob, mimeType: string } => {
     const byteString = atob(dataUri.split(',')[1]);
     const mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
     const ab = new ArrayBuffer(byteString.length);
@@ -197,14 +196,12 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
     for (let i = 0; i < byteString.length; i++) {
         ia[i] = byteString.charCodeAt(i);
     }
-    return new Blob([ab], { type: mimeString });
+    return { blob: new Blob([ab], { type: mimeString }), mimeType: mimeString };
   };
 
   const handleAiEditImage = async (photoUrl: string, editPrompt: string) => {
     if (!photoUrl) return;
 
-    // The AI flow expects a data URI, so we need to fetch the image and convert it.
-    // This is a temporary step until the AI flow can accept a public URL directly.
     let photoDataUri = photoUrl;
     if (!photoUrl.startsWith('data:')) {
       try {
@@ -222,17 +219,16 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
       }
     }
 
-
     startImageEditingAiTransition(async () => {
        const result = await editImageWithAiAction({ photoDataUri, prompt: editPrompt });
        if (result.success && result.editedPhotoDataUri) {
           try {
-            const blob = dataUriToBlob(result.editedPhotoDataUri);
+            const { blob } = dataUriToBlob(result.editedPhotoDataUri);
             const storageRef = ref(storage, `student_photos/${uuidv4()}`);
             await uploadBytes(storageRef, blob);
             const downloadURL = await getDownloadURL(storageRef);
             onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
-            toast({ title: "AI Image Enhancement Successful", description: "The student photo has been automatically improved and saved." });
+            toast({ title: "AI Image Enhancement Successful", description: "The student photo has been updated and saved." });
           } catch(storageError) {
              toast({ title: "Storage Error", description: "AI editing was successful, but the new image could not be saved to storage.", variant: "destructive" });
           }
@@ -253,7 +249,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
+  
     setIsUploading(true);
     toast({ title: "Uploading Image...", description: "Please wait while the image is being saved." });
     
@@ -261,18 +257,17 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
       const storageRef = ref(storage, `student_photos/${uuidv4()}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
-
-      onFormUpdate({...formData, [fieldName]: downloadURL});
-      toast({ title: "Image Uploaded Successfully", description: "The photo is saved. You can now optionally enhance it with AI." });
-
+  
+      onFormUpdate({ ...formData, [fieldName]: downloadURL });
+      toast({ title: "Image Uploaded Successfully", description: "The photo is now saved." });
+  
     } catch (error) {
       console.error("Error uploading image to Firebase Storage:", error);
       toast({ title: "Upload Failed", description: "Could not save the image to cloud storage.", variant: "destructive" });
     } finally {
        setIsUploading(false);
+       if(event.target) event.target.value = '';
     }
-
-    if(event.target) event.target.value = '';
   };
   
   const handleSubmit = (e: FormEvent) => {
@@ -290,7 +285,6 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
     onSaveReport(validation.data);
   };
 
-  // AI Function Handlers
   const handleGenerateAiReportInsights = async () => {
     const { studentName, className, subjects, daysAttended, totalSchoolDays, academicTerm } = formData;
     
@@ -307,7 +301,6 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
       return;
     }
 
-    // Filter out any subjects that are empty or just whitespace
     const validSubjects = subjects.filter(s => s.subjectName && s.subjectName.trim() !== '');
 
     if (validSubjects.length === 0) {
@@ -389,7 +382,6 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
     });
   };
   
-  // Custom subject/class/hobby handlers
   const handleAddCustomSubjectToListAndForm = () => {
       if (customSubjectInputValue.trim() === '') return;
       if (currentCustomSubjectTargetIndex !== null) {
@@ -501,7 +493,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
                  <div className="space-y-2">
                     <Label className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />Student Photo</Label>
                     <div className="flex items-center gap-2">
-                        <input type="file" id="studentPhotoUpload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')} disabled={isUploading} />
+                        <input type="file" id="studentPhotoUpload" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')} disabled={isUploading} />
                         <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()} disabled={isUploading}>
                             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4" />}
                              {isUploading ? 'Uploading...' : 'Upload'}
