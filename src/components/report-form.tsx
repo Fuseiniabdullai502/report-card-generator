@@ -19,6 +19,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { calculateOverallAverage } from '@/lib/calculations';
+import { storage } from '@/lib/firebase';
+import { ref, uploadString, getDownloadURL, uploadBytes } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ReportFormProps {
   onFormUpdate: (data: ReportData) => void;
@@ -65,6 +68,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
   const [isImageEditingAiLoading, startImageEditingAiTransition] = useTransition();
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   const [customSubjects, setCustomSubjects] = useState<string[]>([]);
@@ -184,13 +188,54 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
       onFormUpdate({ ...formData, hobbies: newHobbies });
   };
 
-  const handleAiEditImage = async (photoDataUri: string, editPrompt: string) => {
-    if (!photoDataUri) return;
+  // Function to convert data URI to Blob
+  const dataUriToBlob = (dataUri: string): Blob => {
+    const byteString = atob(dataUri.split(',')[1]);
+    const mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+  };
+
+  const handleAiEditImage = async (photoUrl: string, editPrompt: string) => {
+    if (!photoUrl) return;
+
+    // The AI flow expects a data URI, so we need to fetch the image and convert it.
+    // This is a temporary step until the AI flow can accept a public URL directly.
+    let photoDataUri = photoUrl;
+    if (!photoUrl.startsWith('data:')) {
+      try {
+        const response = await fetch(photoUrl);
+        const blob = await response.blob();
+        photoDataUri = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (error) {
+        toast({ title: "AI Edit Failed", description: "Could not fetch the image to send to the AI.", variant: "destructive" });
+        return;
+      }
+    }
+
+
     startImageEditingAiTransition(async () => {
        const result = await editImageWithAiAction({ photoDataUri, prompt: editPrompt });
        if (result.success && result.editedPhotoDataUri) {
-          onFormUpdate({ ...formData, studentPhotoDataUri: result.editedPhotoDataUri });
-          toast({ title: "AI Image Enhancement Successful", description: "The student photo has been automatically improved." });
+          try {
+            const blob = dataUriToBlob(result.editedPhotoDataUri);
+            const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+            await uploadBytes(storageRef, blob);
+            const downloadURL = await getDownloadURL(storageRef);
+            onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
+            toast({ title: "AI Image Enhancement Successful", description: "The student photo has been automatically improved and saved." });
+          } catch(storageError) {
+             toast({ title: "Storage Error", description: "AI editing was successful, but the new image could not be saved to storage.", variant: "destructive" });
+          }
        } else {
           toast({
             title: "AI Image Edit Failed",
@@ -202,24 +247,31 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
     });
   };
 
-  const handleImageUpload = (
+  const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
     fieldName: keyof Pick<ReportData, 'studentPhotoDataUri'>
   ) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        // Correctly construct the data URI with the file's MIME type
-        const base64String = (reader.result as string).split(',')[1];
-        const originalDataUri = `data:${file.type};base64,${base64String}`;
-        
-        onFormUpdate({...formData, [fieldName]: originalDataUri});
-        
-        toast({ title: "Image Uploaded", description: `You can optionally enhance the image with AI.` });
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    setIsUploading(true);
+    toast({ title: "Uploading Image...", description: "Please wait while the image is being saved." });
+    
+    try {
+      const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      onFormUpdate({...formData, [fieldName]: downloadURL});
+      toast({ title: "Image Uploaded Successfully", description: "The photo is saved. You can now optionally enhance it with AI." });
+
+    } catch (error) {
+      console.error("Error uploading image to Firebase Storage:", error);
+      toast({ title: "Upload Failed", description: "Could not save the image to cloud storage.", variant: "destructive" });
+    } finally {
+       setIsUploading(false);
     }
+
     if(event.target) event.target.value = '';
   };
   
@@ -449,16 +501,17 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
                  <div className="space-y-2">
                     <Label className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />Student Photo</Label>
                     <div className="flex items-center gap-2">
-                        <input type="file" id="studentPhotoUpload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')} />
-                        <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()}>
-                            <UploadCloud className="mr-2 h-4 w-4" />Upload
+                        <input type="file" id="studentPhotoUpload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')} disabled={isUploading} />
+                        <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()} disabled={isUploading}>
+                            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4" />}
+                             {isUploading ? 'Uploading...' : 'Upload'}
                         </Button>
                         <Button 
                           type="button" 
                           variant="outline" 
                           size="sm" 
                           onClick={() => handleAiEditImage(formData.studentPhotoDataUri!, "Crop this image to a passport photo with a 3:4 aspect ratio. Apply bright, even studio lighting and remove any distracting background.")}
-                          disabled={!formData.studentPhotoDataUri || isImageEditingAiLoading}
+                          disabled={!formData.studentPhotoDataUri || isImageEditingAiLoading || isUploading}
                           title="Enhance with AI"
                         >
                           {isImageEditingAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
@@ -468,7 +521,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
                     {formData.studentPhotoDataUri && (
                       <div className="relative w-20 h-[100px] mt-2">
                         <NextImage src={formData.studentPhotoDataUri} alt="student" layout="fill" className="rounded border object-cover"/>
-                        {isImageEditingAiLoading && (
+                        {(isImageEditingAiLoading || isUploading) && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
                             <Loader2 className="h-6 w-6 animate-spin text-white" />
                           </div>

@@ -2,6 +2,7 @@
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore, setLogLevel } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // Enable Firestore debug logging. This will output detailed information
 // to your browser's developer console, which is useful for debugging.
@@ -51,5 +52,6 @@ if (!getApps().length) {
 
 const db: Firestore = getFirestore(app);
 const auth: Auth = getAuth(app);
+const storage: FirebaseStorage = getStorage(app);
 
-export { app, db, auth };
+export { app, db, auth, storage };
