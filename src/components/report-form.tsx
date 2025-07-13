@@ -210,11 +210,12 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const originalDataUri = reader.result as string;
-        // Update form immediately to show the original image
+        // Correctly construct the data URI with the file's MIME type
+        const base64String = (reader.result as string).split(',')[1];
+        const originalDataUri = `data:${file.type};base64,${base64String}`;
+        
         onFormUpdate({...formData, [fieldName]: originalDataUri});
         
-        // If it's the student photo, trigger the AI enhancement
         if (fieldName === 'studentPhotoDataUri') {
           toast({ title: "Enhancing Photo with AI...", description: "Please wait a moment." });
           const editPrompt = "Crop this image to a passport photo with a 3:4 aspect ratio. Apply bright, even studio lighting and remove any distracting background.";
@@ -225,7 +226,6 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
       };
       reader.readAsDataURL(file);
     }
-    // Clear the input value to allow re-uploading the same file
     if(event.target) event.target.value = '';
   };
   
