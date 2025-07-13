@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch, TrendingUp, Trophy as TrophyIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -54,7 +54,8 @@ import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } fro
 import type { CustomUser } from './auth-provider';
 import type { SchoolRankingData } from '@/app/actions';
 import DistrictClassRankingDialog from './district-class-ranking';
-import { ReportData } from '@/lib/schemas';
+import { ReportData, SubjectEntry } from '@/lib/schemas';
+import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 
@@ -100,6 +101,11 @@ interface SchoolStats {
   totalStudents: number;
 }
 
+interface SubjectPerformanceData {
+  subjectName: string;
+  averageScore: number | null;
+}
+
 interface UserManagementProps {
     user: CustomUser;
     users: UserData[];
@@ -131,6 +137,60 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [rankingData, setRankingData] = useState<SchoolRankingData[] | null>(null);
   const [isRankingDialogOpen, setIsRankingDialogOpen] = useState(false);
 
+  const [subjectAnalysisClass, setSubjectAnalysisClass] = useState<string>('');
+
+  const allAvailableClasses = useMemo(() => {
+    return [...new Set(allReports.map(r => r.className).filter(Boolean))].sort();
+  }, [allReports]);
+
+  const classPerformanceRanking = useMemo(() => {
+    const classAverages = new Map<string, { scores: number[], studentCount: number }>();
+    allReports.forEach(report => {
+      if (report.className && report.overallAverage !== null && report.overallAverage !== undefined) {
+        if (!classAverages.has(report.className)) {
+          classAverages.set(report.className, { scores: [], studentCount: 0 });
+        }
+        const classData = classAverages.get(report.className)!;
+        classData.scores.push(report.overallAverage);
+        classData.studentCount++;
+      }
+    });
+
+    return Array.from(classAverages.entries()).map(([className, data]) => ({
+      className,
+      studentCount: data.studentCount,
+      average: data.scores.reduce((a, b) => a + b, 0) / data.scores.length
+    })).sort((a, b) => b.average - a.average);
+  }, [allReports]);
+
+
+  const subjectPerformanceForClass = useMemo(() => {
+    if (!subjectAnalysisClass) return [];
+
+    const subjectMap = new Map<string, number[]>();
+    allReports.forEach(report => {
+      if (report.className === subjectAnalysisClass) {
+        report.subjects.forEach(subject => {
+          if (subject.subjectName) {
+            const finalMark = calculateSubjectFinalMark(subject);
+            if (finalMark !== null) {
+              if (!subjectMap.has(subject.subjectName)) {
+                subjectMap.set(subject.subjectName, []);
+              }
+              subjectMap.get(subject.subjectName)!.push(finalMark);
+            }
+          }
+        });
+      }
+    });
+
+    return Array.from(subjectMap.entries()).map(([subjectName, scores]) => ({
+      subjectName,
+      averageScore: scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null
+    })).sort((a, b) => (b.averageScore || 0) - (a.averageScore || 0));
+  }, [allReports, subjectAnalysisClass]);
+
+
   const availableSubjectsForClass = useMemo(() => {
     if (!selectedRankingClass) return [];
     const subjects = new Set<string>();
@@ -147,6 +207,13 @@ export default function UserManagement({ user, users, invites, populationStats, 
   useEffect(() => {
     setSelectedRankingSubject('');
   }, [selectedRankingClass]);
+  
+  useEffect(() => {
+    if (allAvailableClasses.length > 0) {
+        setSubjectAnalysisClass(allAvailableClasses[0]);
+    }
+  }, [allAvailableClasses]);
+
 
   const handleGenerateRanking = async () => {
     if (!selectedRankingClass || !user.district) {
@@ -339,51 +406,95 @@ export default function UserManagement({ user, users, invites, populationStats, 
           </div>
         )}
 
-        {user.role === 'admin' && schoolStats && !isLoading && (
-            <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4">School Data Overview</h3>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Classes</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{schoolStats.classCount}</div>
-                            <p className="text-xs text-muted-foreground">Classes with student reports</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{schoolStats.totalStudents}</div>
-                            <p className="text-xs text-muted-foreground">Overall student population</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Male Students</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{schoolStats.maleCount}</div>
-                            <p className="text-xs text-muted-foreground">Male population</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Female Students</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{schoolStats.femaleCount}</div>
-                            <p className="text-xs text-muted-foreground">Female population</p>
-                        </CardContent>
-                    </Card>
-                </div>
+        {user.role === 'admin' && !isLoading && (
+            <div className="space-y-8">
+                {schoolStats && (
+                  <div>
+                      <h3 className="text-lg font-semibold text-foreground mb-4">School Data Overview</h3>
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                          <Card>
+                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                  <CardTitle className="text-sm font-medium">Total Classes</CardTitle>
+                                  <Users className="h-4 w-4 text-muted-foreground" />
+                              </CardHeader>
+                              <CardContent>
+                                  <div className="text-2xl font-bold">{schoolStats.classCount}</div>
+                                  <p className="text-xs text-muted-foreground">Classes with student reports</p>
+                              </CardContent>
+                          </Card>
+                          <Card>
+                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                  <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                                  <Users className="h-4 w-4 text-muted-foreground" />
+                              </CardHeader>
+                              <CardContent>
+                                  <div className="text-2xl font-bold">{schoolStats.totalStudents}</div>
+                                  <p className="text-xs text-muted-foreground">Overall student population</p>
+                              </CardContent>
+                          </Card>
+                          <Card>
+                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                  <CardTitle className="text-sm font-medium">Male Students</CardTitle>
+                                  <Users className="h-4 w-4 text-muted-foreground" />
+                              </CardHeader>
+                              <CardContent>
+                                  <div className="text-2xl font-bold">{schoolStats.maleCount}</div>
+                                  <p className="text-xs text-muted-foreground">Male population</p>
+                              </CardContent>
+                          </Card>
+                          <Card>
+                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                  <CardTitle className="text-sm font-medium">Female Students</CardTitle>
+                                  <Users className="h-4 w-4 text-muted-foreground" />
+                              </CardHeader>
+                              <CardContent>
+                                  <div className="text-2xl font-bold">{schoolStats.femaleCount}</div>
+                                  <p className="text-xs text-muted-foreground">Female population</p>
+                              </CardContent>
+                          </Card>
+                      </div>
+                  </div>
+                )}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><TrophyIcon /> Class Performance Ranking</CardTitle>
+                        <CardDescription>Rank classes in your school by their overall average performance.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {classPerformanceRanking.length > 0 ? (
+                            <Table>
+                                <TableHeader><TableRow><TableHead>Rank</TableHead><TableHead>Class Name</TableHead><TableHead># Students</TableHead><TableHead className="text-right">Average (%)</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {classPerformanceRanking.map((c, index) => (
+                                        <TableRow key={c.className}><TableCell className="font-semibold">{index + 1}</TableCell><TableCell>{c.className}</TableCell><TableCell>{c.studentCount}</TableCell><TableCell className="text-right font-medium">{c.average.toFixed(2)}</TableCell></TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (<p className="text-sm text-muted-foreground">No class data available to generate ranking.</p>)}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><TrendingUp /> Subject Performance Analysis</CardTitle>
+                        <CardDescription>Rank subjects within a selected class to see where students are excelling or struggling.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="mb-4 max-w-xs">
+                          <Label htmlFor="subject-analysis-class">Select a Class</Label>
+                          <Select value={subjectAnalysisClass} onValueChange={setSubjectAnalysisClass}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{allAvailableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                        </div>
+                        {subjectPerformanceForClass.length > 0 ? (
+                             <Table>
+                                <TableHeader><TableRow><TableHead>Rank</TableHead><TableHead>Subject Name</TableHead><TableHead className="text-right">Average Score (%)</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {subjectPerformanceForClass.map((s, index) => (
+                                        <TableRow key={s.subjectName}><TableCell className="font-semibold">{index + 1}</TableCell><TableCell>{s.subjectName}</TableCell><TableCell className="text-right font-medium">{s.averageScore?.toFixed(2) || 'N/A'}</TableCell></TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (<p className="text-sm text-muted-foreground">No subject data available for the selected class.</p>)}
+                    </CardContent>
+                </Card>
             </div>
         )}
         
