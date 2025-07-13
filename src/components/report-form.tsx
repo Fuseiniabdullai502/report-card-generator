@@ -216,13 +216,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
         
         onFormUpdate({...formData, [fieldName]: originalDataUri});
         
-        if (fieldName === 'studentPhotoDataUri') {
-          toast({ title: "Enhancing Photo with AI...", description: "Please wait a moment." });
-          const editPrompt = "Crop this image to a passport photo with a 3:4 aspect ratio. Apply bright, even studio lighting and remove any distracting background.";
-          handleAiEditImage(originalDataUri, editPrompt);
-        } else {
-          toast({ title: "Image Uploaded", description: `Image uploaded successfully.` });
-        }
+        toast({ title: "Image Uploaded", description: `You can optionally enhance the image with AI.` });
       };
       reader.readAsDataURL(file);
     }
@@ -454,13 +448,25 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
                  )}
                  <div className="space-y-2">
                     <Label className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />Student Photo</Label>
-                    <input type="file" id="studentPhotoUpload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')} />
-                    <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()} disabled={isImageEditingAiLoading}>
-                        {isImageEditingAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-                        {isImageEditingAiLoading ? 'Enhancing...' : 'Upload & Enhance'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <input type="file" id="studentPhotoUpload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')} />
+                        <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()}>
+                            <UploadCloud className="mr-2 h-4 w-4" />Upload
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleAiEditImage(formData.studentPhotoDataUri!, "Crop this image to a passport photo with a 3:4 aspect ratio. Apply bright, even studio lighting and remove any distracting background.")}
+                          disabled={!formData.studentPhotoDataUri || isImageEditingAiLoading}
+                          title="Enhance with AI"
+                        >
+                          {isImageEditingAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                          Enhance
+                        </Button>
+                    </div>
                     {formData.studentPhotoDataUri && (
-                      <div className="relative w-20 h-[100px]">
+                      <div className="relative w-20 h-[100px] mt-2">
                         <NextImage src={formData.studentPhotoDataUri} alt="student" layout="fill" className="rounded border object-cover"/>
                         {isImageEditingAiLoading && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
