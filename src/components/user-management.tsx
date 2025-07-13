@@ -132,7 +132,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [editingInvite, setEditingInvite] = useState<InviteData | null>(null);
 
   const [selectedRankingClass, setSelectedRankingClass] = useState<string>('');
-  const [selectedRankingSubject, setSelectedRankingSubject] = useState<string>('');
+  const [selectedRankingSubject, setSelectedRankingSubject] = useState<string>('overall');
   const [isFetchingRanking, setIsFetchingRanking] = useState(false);
   const [rankingData, setRankingData] = useState<SchoolRankingData[] | null>(null);
   const [isRankingDialogOpen, setIsRankingDialogOpen] = useState(false);
@@ -205,7 +205,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
   }, [selectedRankingClass, allReports]);
 
   useEffect(() => {
-    setSelectedRankingSubject('');
+    setSelectedRankingSubject('overall');
   }, [selectedRankingClass]);
   
   useEffect(() => {
@@ -225,7 +225,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
     const result = await getDistrictClassRankingAction({ 
         district: user.district, 
         className: selectedRankingClass, 
-        subjectName: selectedRankingSubject || null 
+        subjectName: selectedRankingSubject === 'overall' ? null : selectedRankingSubject, 
     });
     if (result.success && result.ranking) {
       setRankingData(result.ranking);
@@ -390,7 +390,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                         <SelectValue placeholder="Overall / Select Subject" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Overall Performance</SelectItem>
+                        <SelectItem value="overall">Overall Performance</SelectItem>
                         {availableSubjectsForClass.map(subject => (
                           <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                         ))}
@@ -582,7 +582,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
           rankingData={rankingData}
           districtName={user.district || ''}
           className={selectedRankingClass}
-          subjectName={selectedRankingSubject}
+          subjectName={selectedRankingSubject === 'overall' ? null : selectedRankingSubject}
         />
       )}
     </>
