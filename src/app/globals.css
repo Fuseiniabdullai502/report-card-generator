@@ -220,13 +220,13 @@ body {
     min-height: 0 !important; 
     height: auto !important; 
     margin: 0 !important; 
-    padding: 6mm !important; /* More aggressive padding reduction */
+    padding: 6mm !important; /* MORE AGGRESSIVE PADDING */
     border: none !important; 
     box-shadow: none !important; 
     background-color: white !important;
     box-sizing: border-box !important;
     overflow: visible !important; 
-    font-size: 8pt !important; /* More aggressive font size reduction */
+    font-size: 8pt !important; /* MORE AGGRESSIVE FONT SIZE */
     page-break-inside: avoid !important;
   }
 
@@ -239,15 +239,15 @@ body {
     background-color: transparent !important; 
     border-color: #b0b0b0 !important; 
     box-shadow: none !important;
-    line-height: 1.15 !important; /* More aggressive line height reduction */
+    line-height: 1.1 !important; /* MORE AGGRESSIVE LINE HEIGHT */
   }
   .a4-page-simulation .bg-green-50 { 
      background-color: #f0fff4 !important; 
   }
   
   .a4-page-simulation .report-section-container {
-    padding: 6px !important;
-    margin-bottom: 4px !important;
+    padding: 4px !important; /* REDUCED PADDING */
+    margin-bottom: 3px !important; /* REDUCED MARGIN */
   }
 
   .a4-page-simulation .report-section-title {
@@ -257,21 +257,22 @@ body {
   }
 
   .a4-page-simulation .report-main-header {
-      font-size: 1.5rem !important;
+      font-size: 1.4rem !important; /* REDUCED FONT SIZE */
       margin-top: 0 !important;
   }
 
   .a4-page-simulation .report-student-info-table {
-      font-size: 7.5pt !important;
+      font-size: 7pt !important; /* REDUCED FONT SIZE */
   }
 
   .a4-page-simulation .report-student-info-table td {
-      padding-bottom: 1px !important;
+      padding-bottom: 0px !important; /* REDUCED PADDING */
+      padding-top: 0px !important;
   }
 
 
-  .a4-page-simulation .print\\:mb-1 { margin-bottom: 0.25rem !important; }
-  .a4-page-simulation .print\\:p-1.5 { padding: 0.375rem !important; }
+  .a4-page-simulation .print\\:mb-1 { margin-bottom: 0.1rem !important; }
+  .a4-page-simulation .print\\:p-1.5 { padding: 0.2rem !important; }
 
   .a4-page-simulation img {
     max-width: 100% !important; 
@@ -304,7 +305,7 @@ body {
   }
   .a4-page-simulation section {
      page-break-inside: avoid;
-     margin-bottom: 3px !important; /* Reduce space between sections */
+     margin-bottom: 2px !important; /* REDUCED MARGIN */
   }
 
   .a4-page-simulation table {
@@ -320,25 +321,25 @@ body {
   }
   
   .a4-page-simulation .report-subjects-table th, .a4-page-simulation .report-subjects-table td {
-    padding-top: 1px !important;
-    padding-bottom: 1px !important;
-    padding-left: 4px !important;
-    padding-right: 4px !important;
+    padding-top: 0px !important; /* REDUCED PADDING */
+    padding-bottom: 0px !important;
+    padding-left: 3px !important;
+    padding-right: 3px !important;
   }
 
   .a4-page-simulation .report-footer {
-    padding-top: 4px !important;
-    font-size: 7pt !important;
+    padding-top: 3px !important; /* REDUCED PADDING */
+    font-size: 6.5pt !important; /* REDUCED FONT SIZE */
   }
 
   .a4-page-simulation .report-footer .signature-line {
-      height: 1.5rem !important; /* Smaller signature line */
-      width: 8rem !important;
+      height: 1.2rem !important; /* SMALLER SIGNATURE LINE */
+      width: 7rem !important;
   }
 
   .a4-page-simulation .report-footer .signature-image {
-    max-height: 25px !important;
-    max-width: 80px !important;
+    max-height: 22px !important; /* SMALLER SIGNATURE IMAGE */
+    max-width: 70px !important;
   }
 
   /* Styles for printing Dialogs (Class & School Dashboards) */
