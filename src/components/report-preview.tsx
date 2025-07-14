@@ -29,66 +29,66 @@ const getTemplateSpecificStyles = (templateId?: string): TemplateStyles => {
         headerContainerClass: 'pb-2 border-b border-blue-400 bg-blue-50',
         headerTitleClass: 'text-2xl font-headline font-bold text-blue-700',
         headerSubtitleClass: 'text-blue-600 font-semibold',
-        sectionTitleClass: 'text-base font-headline font-semibold mb-1 text-blue-700 border-b border-blue-300 pb-0.5',
-        sectionContainerClass: 'p-2 print:p-1.5 border border-blue-300 rounded-md shadow-sm',
+        sectionTitleClass: 'report-section-title text-base font-headline font-semibold mb-1 text-blue-700 border-b border-blue-300 pb-0.5',
+        sectionContainerClass: 'report-section-container p-2 print:p-1.5 border border-blue-300 rounded-md shadow-sm',
         tableHeaderClass: 'bg-blue-100',
         overallReportBorderClass: 'border border-blue-400',
-        mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-2 print:mt-1 text-blue-700',
+        mainHeaderTextClass: 'report-main-header text-3xl font-headline font-semibold text-center mt-2 print:mt-1 text-blue-700',
       };
     case 'elegantGreen':
       return {
         headerContainerClass: 'pb-2 border-b border-green-400 bg-green-50',
         headerTitleClass: 'text-2xl font-headline font-bold text-green-700',
         headerSubtitleClass: 'text-green-600 font-semibold',
-        sectionTitleClass: 'text-base font-headline font-semibold mb-1 text-green-700 border-b border-green-300 pb-0.5',
-        sectionContainerClass: 'p-2 print:p-1.5 border border-green-300 rounded-md shadow-sm',
+        sectionTitleClass: 'report-section-title text-base font-headline font-semibold mb-1 text-green-700 border-b border-green-300 pb-0.5',
+        sectionContainerClass: 'report-section-container p-2 print:p-1.5 border border-green-300 rounded-md shadow-sm',
         tableHeaderClass: 'bg-green-100',
         overallReportBorderClass: 'border border-green-400',
-        mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-2 print:mt-1 text-green-700',
+        mainHeaderTextClass: 'report-main-header text-3xl font-headline font-semibold text-center mt-2 print:mt-1 text-green-700',
       };
     case 'minimalistGray':
       return {
         headerContainerClass: 'pb-1 border-b border-gray-200',
         headerTitleClass: 'text-xl font-headline font-semibold text-gray-700',
         headerSubtitleClass: 'text-gray-500 font-normal text-xs',
-        sectionTitleClass: 'text-sm font-headline font-medium mb-1 text-gray-600 border-b border-gray-200 pb-0.5',
-        sectionContainerClass: 'p-2 print:p-1.5 border border-gray-200 rounded shadow-none',
+        sectionTitleClass: 'report-section-title text-sm font-headline font-medium mb-1 text-gray-600 border-b border-gray-200 pb-0.5',
+        sectionContainerClass: 'report-section-container p-2 print:p-1.5 border border-gray-200 rounded shadow-none',
         tableHeaderClass: 'bg-gray-100',
         overallReportBorderClass: 'border border-gray-300 shadow-sm',
-        mainHeaderTextClass: 'text-2xl font-headline font-medium text-center mt-1 text-gray-600',
+        mainHeaderTextClass: 'report-main-header text-2xl font-headline font-medium text-center mt-1 text-gray-600',
       };
     case 'academicRed':
       return {
         headerContainerClass: 'pb-2 border-b-2 border-red-500',
         headerTitleClass: 'text-2xl font-headline font-bold text-red-700',
         headerSubtitleClass: 'text-red-600 font-semibold',
-        sectionTitleClass: 'text-base font-headline font-bold mb-1 text-red-700 border-b border-red-200 pb-0.5',
-        sectionContainerClass: 'p-2 print:p-1.5 border border-red-200 rounded-md',
+        sectionTitleClass: 'report-section-title text-base font-headline font-bold mb-1 text-red-700 border-b border-red-200 pb-0.5',
+        sectionContainerClass: 'report-section-container p-2 print:p-1.5 border border-red-200 rounded-md',
         tableHeaderClass: 'bg-red-50',
         overallReportBorderClass: 'border border-red-300',
-        mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-2 print:mt-1 text-red-700',
+        mainHeaderTextClass: 'report-main-header text-3xl font-headline font-semibold text-center mt-2 print:mt-1 text-red-700',
       };
     case 'creativeTeal':
       return {
         headerContainerClass: 'pb-2 border-b border-teal-400 bg-teal-50',
         headerTitleClass: 'text-2xl font-headline font-bold text-teal-700',
         headerSubtitleClass: 'text-teal-600 font-semibold',
-        sectionTitleClass: 'text-base font-headline font-semibold mb-1 text-teal-700 border-b border-teal-300 pb-0.5 italic',
-        sectionContainerClass: 'p-2 print:p-1.5 border border-teal-300 rounded-lg shadow-sm',
+        sectionTitleClass: 'report-section-title text-base font-headline font-semibold mb-1 text-teal-700 border-b border-teal-300 pb-0.5 italic',
+        sectionContainerClass: 'report-section-container p-2 print:p-1.5 border border-teal-300 rounded-lg shadow-sm',
         tableHeaderClass: 'bg-teal-100',
         overallReportBorderClass: 'border border-teal-400',
-        mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-2 print:mt-1 text-teal-700',
+        mainHeaderTextClass: 'report-main-header text-3xl font-headline font-semibold text-center mt-2 print:mt-1 text-teal-700',
       };
     default: // Default Template
       return {
         headerContainerClass: 'pb-2 border-b border-gray-300',
         headerTitleClass: 'text-2xl font-headline font-bold text-primary',
         headerSubtitleClass: 'text-muted-foreground font-semibold',
-        sectionTitleClass: 'text-base font-headline font-semibold mb-1 text-primary border-b pb-0.5',
-        sectionContainerClass: 'p-2 print:p-1.5 border border-gray-200 rounded-md shadow-sm',
+        sectionTitleClass: 'report-section-title text-base font-headline font-semibold mb-1 text-primary border-b pb-0.5',
+        sectionContainerClass: 'report-section-container p-2 print:p-1.5 border border-gray-200 rounded-md shadow-sm',
         tableHeaderClass: 'bg-gray-50',
         overallReportBorderClass: 'border border-gray-300',
-        mainHeaderTextClass: 'text-3xl font-headline font-semibold text-center mt-2 print:mt-1 text-gray-700',
+        mainHeaderTextClass: 'report-main-header text-3xl font-headline font-semibold text-center mt-2 print:mt-1 text-gray-700',
       };
   }
 };
@@ -171,12 +171,12 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             />
           )}
         </div>
-        <h1 className={cn(templateStyles.mainHeaderTextClass, "print:mt-1 print:text-2xl")}>Student Report Card</h1>
+        <h1 className={cn(templateStyles.mainHeaderTextClass, "report-main-header print:mt-1 print:text-2xl")}>Student Report Card</h1>
       </header>
       
       <section className="mb-2 print:mb-1 flex justify-between items-start gap-4">
           <div className="flex-grow">
-              <table className="w-full text-xs">
+              <table className="w-full text-xs report-student-info-table">
                   <tbody>
                       <tr>
                           <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Student Name:</td>
@@ -231,7 +231,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
       {data.subjects && data.subjects.length > 0 && (
         <section className="mb-1.5 print:mb-1">
           <h3 className={templateStyles.sectionTitleClass}>Subject Performance</h3>
-          <Table className={cn("border rounded-md text-xs", templateStyles.overallReportBorderClass)}>
+          <Table className={cn("border rounded-md text-xs report-subjects-table", templateStyles.overallReportBorderClass)}>
             <TableHeader>
               <TableRow className={templateStyles.tableHeaderClass}>
                 <TableHead className="font-semibold text-gray-600 w-[28%] py-0.5 px-2 print:px-1.5">Subject</TableHead>
@@ -295,7 +295,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         )}
       </div>
 
-      <footer className="mt-auto pt-2 print:pt-1 border-t border-gray-300 text-[10px] print:text-[8pt] text-gray-600">
+      <footer className="mt-auto pt-2 print:pt-1 border-t border-gray-300 text-[10px] print:text-[8pt] text-gray-600 report-footer">
         <div className="flex justify-between items-end">
           <div>
             <p><span className="font-semibold">Date Issued:</span> {currentDate}</p>
@@ -311,17 +311,17 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
                   alt="Head Master's Signature"
                   width={120}
                   height={40}
-                  className="object-contain mx-auto"
+                  className="object-contain mx-auto signature-image"
                   data-ai-hint="signature"
                 />
               </div>
             )}
             <p className="mb-0.5 font-semibold">Head Master's Signature:</p>
-            <div className="h-8 border-b border-gray-400 w-40 mx-auto"></div>
+            <div className="h-8 border-b border-gray-400 w-40 mx-auto signature-line"></div>
           </div>
           <div className="text-center">
             <p className="mb-0.5 font-semibold">Teacher's Signature:</p>
-            <div className="h-8 border-b border-gray-400 w-40"></div>
+            <div className="h-8 border-b border-gray-400 w-40 signature-line"></div>
           </div>
         </div>
          <p className="text-center mt-2 print:mt-1 text-gray-500">&copy; {new Date().getFullYear()} {data.schoolName || 'School Name'}. Confidential Document.</p>
