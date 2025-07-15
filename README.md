@@ -60,11 +60,9 @@ The Admin SDK is required for secure server actions like deactivating users and 
     ```
 5.  The `.gitignore` file is already configured to prevent this sensitive file from being committed to your repository.
 
-**For Production (Vercel, Firebase App Hosting, etc.):**
+**For Production (Firebase App Hosting):**
 
-1.  In your hosting provider's settings, create a new environment variable named `FIREBASE_SERVICE_ACCOUNT`.
-2.  Open the service account JSON file you downloaded.
-3.  Copy the **entire content** of the JSON file and paste it as the value for the `FIREBASE_SERVICE_ACCOUNT` variable. The value should be a single-line JSON string. Most hosting providers handle this automatically, but if you're pasting it into a text file, ensure any newlines within the private key are escaped (e.g., `\\n`).
+You will not use the JSON file directly for App Hosting. Instead, you will copy its contents into a secret environment variable. This is covered in the deployment guide below.
 
 ### Running the Development Server
 
@@ -76,68 +74,78 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Hosting the Application
+## Hosting with Firebase App Hosting
 
-The recommended way to host a Next.js application is with **Vercel**, the creators of Next.js. Here is a step-by-step guide to deploying your app.
+Firebase App Hosting is the recommended way to deploy this Next.js application, as it's designed for full-stack web frameworks and integrates seamlessly with Firebase.
 
-### Step 1: Push Your Code to a Git Repository
+### Step 1: Prerequisites
 
-1.  **Initialize Git:** If you haven't already, open a terminal in your project's root directory and run `git init`.
-2.  **Create a GitHub Repository:** Go to [GitHub](https://github.com/new) and create a new repository. Do not initialize it with a README or .gitignore file, as your project already has these.
-3.  **Commit and Push:** In your terminal, run the following commands, replacing the URL with your new repository's URL:
+1.  **Install Firebase CLI:** If you don't have it, install it globally by running:
     ```bash
-    git add .
-    git commit -m "Initial commit of report card generator"
-    git branch -M main
-    git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
-    git push -u origin main
+    npm install -g firebase-tools
     ```
+2.  **Log in to Firebase:**
+    ```bash
+    firebase login
+    ```
+3.  **Push to GitHub:** Your code must be in a GitHub repository. If you haven't already, create a new repository on GitHub and push your project to it.
 
-### Step 2: Deploy to Vercel
+### Step 2: Initialize App Hosting
 
-1.  **Sign Up for Vercel:** Go to [Vercel](https://vercel.com) and sign up for a free account. It's best to sign up using your GitHub account.
-2.  **Import Your Project:** From your Vercel dashboard, click **"Add New..."** > **"Project"**.
-3.  **Import Git Repository:** Find and import the GitHub repository you just created.
-4.  **Configure Project:** Vercel will automatically detect that you're using Next.js and configure the build settings for you. You do not need to change these defaults.
+1.  **Run the init command** in your project's root directory:
+    ```bash
+    firebase init hosting
+    ```
+2.  **Select a Firebase Project:** Choose the Firebase project you want to use from the list.
+3.  **Configure Hosting:** When prompted, select **"App Hosting: for web frameworks (Next.js, Angular, etc)"**.
+4.  **Set Backend Region:** Choose a region for your backend server (e.g., `us-central1`).
+5.  **Connect to GitHub:** The CLI will guide you to connect to your GitHub account and select the repository for this project. This will set up a GitHub Action to enable automatic deployments whenever you push to your main branch.
 
 ### Step 3: Configure Environment Variables
 
-This is the most important step for the deployed app to work correctly.
+This is the most critical step for your live application to work. You need to provide your API keys to the deployed app.
 
-1.  In your Vercel project's settings, navigate to the **"Environment Variables"** section.
-2.  You will need to add all the variables from your local `.env` file here. Vercel automatically handles the distinction between server-side and client-side (NEXT_PUBLIC_) variables.
-3.  Add the following variables, getting the values as described in the "Environment Setup" section above:
-    *   `NEXT_PUBLIC_ADMIN_EMAIL`: Your designated admin email address.
+1.  **Go to the Firebase Console** and select your project.
+2.  Navigate to the **App Hosting** section in the left-hand menu. You should see your newly created backend. Click on it to open its dashboard.
+3.  Go to the **"Settings"** tab. Here, you will add all the environment variables from your local `.env` file.
+4.  **Add each variable** by clicking "Add variable" and entering the key and value:
     *   `GOOGLE_API_KEY`: Your API key for Google AI Studio.
+    *   `NEXT_PUBLIC_ADMIN_EMAIL`: Your designated admin email address.
     *   `NEXT_PUBLIC_FIREBASE_API_KEY`: From your Firebase project's web app config.
     *   `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`: From your Firebase project's web app config.
     *   `NEXT_PUBLIC_FIREBASE_PROJECT_ID`: From your Firebase project's web app config.
     *   `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`: From your Firebase project's web app config.
     *   `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`: From your Firebase project's web app config.
     *   `NEXT_PUBLIC_FIREBASE_APP_ID`: From your Firebase project's web app config.
-    *   `FIREBASE_SERVICE_ACCOUNT`: This is for the Admin SDK. Follow the "For Production" instructions in **Step 2** of the Firebase setup section above. Open your downloaded service account JSON file, copy the **entire content**, and paste it as the value for this variable.
+5.  **Add the Admin SDK Service Account:**
+    *   Click **"Add secret"** (this is more secure for sensitive credentials).
+    *   For the secret name, enter `FIREBASE_SERVICE_ACCOUNT`.
+    *   For the value, open the `firebase-service-account.json` file you downloaded earlier.
+    *   Copy the **entire JSON content** and paste it into the secret value field.
 
-4.  **Save** the environment variables.
+6.  **Save** all your variables.
 
 ### Step 4: Deploy
 
-1.  Once the environment variables are configured, click the **"Deploy"** button.
-2.  Vercel will build and deploy your application. Once it's finished, you'll be given a public URL where you can access your live app.
+1.  **Trigger a Deployment:** Your first deployment will start automatically after the GitHub connection is made. You can monitor its progress in the App Hosting dashboard in the Firebase Console.
+2.  **Automatic Future Deployments:** From now on, every time you `git push` to your main branch, the GitHub Action will automatically build and deploy the new version of your app.
 
-Congratulations! Your Report Card Generator is now live on the web. Any future pushes to your `main` branch on GitHub will automatically trigger a new deployment on Vercel.
+Congratulations! Your Report Card Generator is now live on the web, fully integrated with Firebase.
 
 ## Troubleshooting
 
 ### "Admin features are disabled..." or "PERMISSION_DENIED" Error
 
-If you see an error message that says **`Admin features are disabled. The Firebase Admin SDK failed to initialize...`** when you try to use an admin feature on your live site, it means your **`FIREBASE_SERVICE_ACCOUNT` environment variable is not set up correctly** on Vercel.
+If you see an error message that says **`Admin features are disabled. The Firebase Admin SDK failed to initialize...`** when you try to use an admin feature on your live site, it means your **`FIREBASE_SERVICE_ACCOUNT` secret variable is not set up correctly** on App Hosting.
 
-**To fix this on Vercel:**
+**To fix this on App Hosting:**
 
 1.  Follow the instructions in **"Step 3: Configure Environment Variables"** above.
-2.  Double-check that you have copied the **entire contents** of the `firebase-service-account.json` file.
-3.  Paste the full JSON content into the **value** field for the `FIREBASE_SERVICE_ACCOUNT` variable in your Vercel project settings.
-4.  After saving the variable, go to the "Deployments" tab in Vercel and **re-deploy** your latest commit to apply the changes.
+2.  Go to your App Hosting backend's **Settings** tab in the Firebase Console.
+3.  Find the `FIREBASE_SERVICE_ACCOUNT` secret and click to edit it.
+4.  Double-check that you have copied the **entire contents** of the `firebase-service-account.json` file.
+5.  Paste the full JSON content into the **value** field for the secret.
+6.  After saving the variable, trigger a new deployment by pushing a small change to your `main` branch on GitHub.
 
 ## How to Use the Invite & User Management System
 
