@@ -1180,23 +1180,23 @@ function AppContent({ user }: { user: CustomUser }) {
                 </div>
               ) : reportsCount > 0 && filteredReports[currentPreviewIndex] ? (
                 filteredReports.map((reportData, index) => (
-                  <React.Fragment key={reportData.id || `report-entry-${reportData.studentEntryNumber}`}>
-                    {index === currentPreviewIndex && (
-                       <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
-                         <ReportActions report={reportData} onEditReport={handleLoadReportForEditing} />
-                       </div>
-                    )}
-                    <div className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>
-                      <ReportPreview data={reportData} />
-                    </div>
-                  </React.Fragment>
+                  <div key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>
+                      {index === currentPreviewIndex && (
+                         <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
+                           <ReportActions report={reportData} onEditReport={handleLoadReportForEditing} />
+                         </div>
+                      )}
+                      <div className="a4-page-simulation">
+                        <ReportPreview data={reportData} />
+                      </div>
+                  </div>
                 ))
               ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
-                <>
                   <div className="report-preview-item active-preview-screen" key={currentEditingReport.id}>
-                    <ReportPreview data={currentEditingReport} />
+                    <div className="a4-page-simulation">
+                      <ReportPreview data={currentEditingReport} />
+                    </div>
                   </div>
-                </>
               ) : (
                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
                   <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
