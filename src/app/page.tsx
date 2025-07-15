@@ -28,6 +28,7 @@ import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
+import { cn } from '@/lib/utils';
 
 // Dynamically import heavy components
 const ClassPerformanceDashboard = dynamic(() => import('@/components/class-dashboard'), { 
@@ -1187,14 +1188,14 @@ function AppContent({ user }: { user: CustomUser }) {
                            <ReportActions report={reportData} onEditReport={handleLoadReportForEditing} />
                          </div>
                       )}
-                      <div className="a4-page-simulation">
+                      <div className={cn("a4-page-simulation break-inside-avoid")}>
                         <ReportPreview data={reportData} />
                       </div>
                   </div>
                 ))
               ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
                   // This is the LIVE preview of the report being edited in the form
-                  <div className="a4-page-simulation">
+                  <div className="a4-page-simulation break-inside-avoid">
                     <ReportPreview data={currentEditingReport} />
                   </div>
               ) : (
