@@ -114,8 +114,11 @@ body {
 
 /* For on-screen A4-like preview */
 @media screen {
-  #report-preview-container {
+  /* Hide the dedicated print-only block on screen */
+  .print-only-reports {
+    display: none;
   }
+
   .a4-page-simulation {
     width: 21cm; 
     min-height: 29.7cm; 
@@ -129,25 +132,13 @@ body {
     overflow: hidden; 
   }
 
-  .hidden-preview-screen {
-    display: none;
-  }
   .active-preview-screen {
     display: block; 
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
   }
-
-  #report-preview-container.p-0 .active-preview-screen {
-  }
   
-  .dashboard-print-header {
-    display: none; 
-  }
-  .school-dashboard-print-header {
-    display: none;
-  }
-  .school-ranking-print-header {
+  .hidden-preview-screen {
     display: none;
   }
 }
@@ -178,52 +169,21 @@ body {
     box-shadow: none !important;
   }
 
-  /* When printing a dashboard, hide the main page's report preview container */
-  body.school-dashboard-is-open #report-preview-container,
-  body.class-dashboard-is-open #report-preview-container {
-    display: none !important;
-  }
-  
-  /* When printing a dashboard, hide the entire main application content */
-  body.class-dashboard-is-open .main-app-container,
-  body.school-dashboard-is-open .main-app-container {
+  /* Hide the main application view when printing */
+  .main-app-container {
     display: none !important;
   }
 
-
-  #report-preview-container { 
-    position: static !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important; 
-    margin: 0 !important;
-    padding: 0 !important; 
-    border: none !important;
-    box-shadow: none !important;
-    background-color: white !important;
-    color: black !important;
-    border-radius: 0 !important;
-    overflow: visible !important; 
-  }
-  
-  #report-preview-container .hidden-preview-screen {
+  /* Ensure the dedicated print block is visible */
+  .print-only-reports {
     display: block !important;
   }
-  #report-preview-container .active-preview-screen {
-    display: block !important; 
-    margin-top: 0 !important; 
-    margin-bottom: 0 !important;
-  }
-  #report-preview-container .report-preview-item { 
-     display: block !important;
-     margin: 0 !important;
-  }
 
-
+  /* The container for each report page */
   .a4-page-simulation { 
     width: 100% !important; 
-    min-height: 0 !important; 
     height: auto !important; 
+    min-height: 0 !important; 
     margin: 0 !important; 
     padding: 6mm !important;
     border: none !important; 
@@ -232,11 +192,17 @@ body {
     box-sizing: border-box !important;
     overflow: visible !important; 
     font-size: 8pt !important;
-    page-break-after: always !important; /* FORCE PAGE BREAK AFTER EACH REPORT */
+    page-break-after: always !important; /* CRITICAL: Force page break after each report */
   }
 
+  /* Prevent an extra blank page at the end of the document */
   .a4-page-simulation:last-child {
-    page-break-after: auto !important; /* Prevent extra blank page at the end */
+    page-break-after: auto !important;
+  }
+  
+  .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   .a4-page-simulation * {
@@ -275,7 +241,6 @@ body {
       padding-top: 0px !important;
   }
 
-
   .a4-page-simulation .print\\:mb-1 { margin-bottom: 0.1rem !important; }
   .a4-page-simulation .print\\:p-1.5 { padding: 0.2rem !important; }
 
@@ -283,11 +248,6 @@ body {
     max-width: 100% !important; 
     height: auto !important;
     page-break-inside: avoid;
-  }
-
-  .a4-page-simulation button,
-  .a4-page-simulation a[href]:not(.printable-link) {
-    display: none !important;
   }
 
    .a4-page-simulation textarea {
@@ -347,18 +307,27 @@ body {
     max-width: 70px !important;
   }
 
-  .break-inside-avoid {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
+  /* Styles for printing Dialogs (Class & School Dashboards) */
+  body.class-dashboard-is-open #report-preview-container,
+  body.school-dashboard-is-open #report-preview-container {
+    display: none !important;
+  }
+  
+  .dashboard-print-header, 
+  .school-dashboard-print-header { 
+    display: none;
   }
 
-  /* Styles for printing Dialogs (Class & School Dashboards) */
-  body > [data-radix-portal] > [data-radix-dialog-overlay],
-  body > [data-radix-portal] > [data-radix-focus-guard] {
-    display: none !important;
+  @page {
+    size: A4;
+    margin: 0;
   }
 
   body.class-dashboard-is-open {
+    overflow: visible !important;
+  }
+  
+  body.school-dashboard-is-open {
     overflow: visible !important;
   }
 
@@ -501,6 +470,7 @@ body {
   .dialog-header-print-hide { 
     display: none !important;
   }
+  
   #class-dashboard-dialog-content > button[aria-label="Close"], 
   #class-dashboard-dialog-content .dialog-footer-print-hide,
   #school-dashboard-dialog-content > button[aria-label="Close"],

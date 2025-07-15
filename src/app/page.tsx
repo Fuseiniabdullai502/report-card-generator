@@ -1179,20 +1179,30 @@ function AppContent({ user }: { user: CustomUser }) {
                   <h3 className="text-lg font-semibold">Loading Reports...</h3>
                   <p>Fetching your report data from the cloud.</p>
                 </div>
-              ) : reportsCount > 0 && filteredReports[currentPreviewIndex] ? (
+              ) : reportsCount > 0 ? (
                 // This is the list of SAVED reports
-                filteredReports.map((reportData, index) => (
-                  <div key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>
-                      {index === currentPreviewIndex && (
-                         <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
-                           <ReportActions report={reportData} onEditReport={handleLoadReportForEditing} />
-                         </div>
-                      )}
-                      <div className={cn("a4-page-simulation break-inside-avoid")}>
-                        <ReportPreview data={reportData} />
-                      </div>
+                <>
+                  {filteredReports.map((reportData, index) => (
+                    <div key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>
+                        {index === currentPreviewIndex && (
+                          <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
+                            <ReportActions report={reportData} onEditReport={handleLoadReportForEditing} />
+                          </div>
+                        )}
+                        <div className="a4-page-simulation break-inside-avoid">
+                          <ReportPreview data={reportData} />
+                        </div>
+                    </div>
+                  ))}
+                  {/* This ensures the individual print styles are applied by mapping over the array */}
+                  <div className="hidden print:block">
+                      {filteredReports.map((reportData, index) => (
+                          <div key={`print-${reportData.id}`} className="a4-page-simulation break-inside-avoid">
+                            <ReportPreview data={reportData} />
+                          </div>
+                      ))}
                   </div>
-                ))
+                </>
               ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
                   // This is the LIVE preview of the report being edited in the form
                   <div className="a4-page-simulation break-inside-avoid">
