@@ -97,7 +97,7 @@ Firebase App Hosting is the recommended way to deploy this Next.js application, 
     firebase init hosting
     ```
 2.  **Select a Firebase Project:** Choose the Firebase project you want to use from the list.
-3.  **Configure Hosting:** When prompted to select a hosting option, use the arrow keys to choose **"App Hosting: for web frameworks (Next.js, Angular, etc)"**. This is the most important step. If you select the other "Hosting" option, it will ask for a public directory, which is not correct for this setup.
+3.  **IMPORTANT: Configure Hosting:** When prompted to select a hosting option, use the arrow keys to choose **"App Hosting: for web frameworks (Next.js, Angular, etc)"**. This is the most important step. If you select the other "Hosting" option, it will ask for a public directory, which is not correct for this setup.
 4.  **Set Backend Region:** Choose a region for your backend server (e.g., `us-central1`).
 5.  **Connect to GitHub:** The CLI will guide you to connect to your GitHub account and select the repository for this project. This will set up a GitHub Action to enable automatic deployments whenever you push to your main branch.
 
@@ -146,6 +146,16 @@ If you see an error message that says **`Admin features are disabled. The Fireba
 4.  Double-check that you have copied the **entire contents** of the `firebase-service-account.json` file.
 5.  Paste the full JSON content into the **value** field for the secret.
 6.  After saving the variable, trigger a new deployment by pushing a small change to your `main` branch on GitHub.
+
+### Why is `firebase init hosting` asking for a "public directory"?
+
+If the CLI asks you "What do you want to use as your public directory?", it means you have selected the wrong hosting option. You must choose **App Hosting** for this project.
+
+**To fix this:**
+1.  Cancel the current command (`Ctrl + C`).
+2.  Run `firebase init hosting` again.
+3.  At the very first prompt, use the arrow keys to highlight and select the option: **`App Hosting: for web frameworks (Next.js, Angular, etc)`**.
+4.  The CLI will then correctly identify your Next.js app and will **not** ask for a public directory.
 
 ## How to Use the Invite & User Management System
 
