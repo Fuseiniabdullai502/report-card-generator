@@ -99,6 +99,11 @@ body {
 }
 
 @layer base {
+  .break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
   * {
     @apply border-border;
   }
@@ -340,6 +345,11 @@ body {
   .a4-page-simulation .report-footer .signature-image {
     max-height: 22px !important;
     max-width: 70px !important;
+  }
+
+  .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   /* Styles for printing Dialogs (Class & School Dashboards) */
