@@ -25,6 +25,7 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
+import type { ReportData } from '@/lib/schemas';
 
 
 // Schema for student feedback generation
@@ -830,6 +831,44 @@ export async function getInvitesAction(currentUser: {
     return { success: true, invites: invites as InviteForAdmin[] };
   } catch (error: any) {
     console.error('Error fetching invites via server action:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+
+export async function getReportsForAdminAction(user: CustomUser): Promise<{ success: boolean; reports?: ReportData[], error?: string }> {
+  try {
+    if (!user || !user.role || !['super-admin', 'big-admin'].includes(user.role)) {
+      throw new Error("You do not have permission to view this data.");
+    }
+
+    const reportsCollectionRef = admin.firestore().collection('reports');
+    let q: admin.firestore.Query;
+
+    if (user.role === 'super-admin') {
+      q = reportsCollectionRef;
+    } else if (user.role === 'big-admin' && user.district) {
+      q = reportsCollectionRef.where('district', '==', user.district);
+    } else {
+      // Should not happen if the initial check passes, but good for safety
+      return { success: true, reports: [] };
+    }
+    
+    const snapshot = await q.get();
+    const fetchedReports = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        // Convert Firestore Timestamps to serializable strings or Dates
+        createdAt: data.createdAt?.toDate() || null, 
+        updatedAt: data.updatedAt?.toDate() || null,
+      } as ReportData;
+    });
+
+    return { success: true, reports: fetchedReports };
+  } catch (error: any) {
+    console.error("Error fetching reports for admin:", error);
     return { success: false, error: error.message };
   }
 }

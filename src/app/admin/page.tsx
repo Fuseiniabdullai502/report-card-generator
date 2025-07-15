@@ -5,14 +5,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth, type CustomUser } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { Loader2, Shield, ArrowLeft } from 'lucide-react';
-import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction, getSystemWideStatsAction } from '@/app/actions';
+import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction, getSystemWideStatsAction, getReportsForAdminAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ReportData } from '@/lib/schemas';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 // Define types locally for state
 interface UserData {
@@ -75,43 +73,6 @@ export default function AdminPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [allReports, setAllReports] = useState<ReportData[]>([]);
 
-  const fetchReportsForAdmin = useCallback(() => {
-    if (!user || !user.role || !['super-admin', 'big-admin'].includes(user.role)) {
-        setAllReports([]);
-        return;
-    }
-    
-    const reportsCollectionRef = collection(db, 'reports');
-    let q;
-
-    if (user.role === 'super-admin') {
-      q = query(reportsCollectionRef);
-    } else if (user.role === 'big-admin' && user.district) {
-      q = query(reportsCollectionRef, where('district', '==', user.district));
-    } else {
-      setAllReports([]);
-      return;
-    }
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedReports = snapshot.docs.map(doc => doc.data() as ReportData);
-      setAllReports(fetchedReports);
-    }, (error) => {
-      console.error("Error fetching reports for admin:", error);
-      toast({ title: 'Error Fetching Reports', description: 'Could not load underlying report data for analytics.', variant: 'destructive' });
-    });
-
-    return unsubscribe;
-  }, [user, toast]);
-  
-  useEffect(() => {
-    if (user) {
-        const unsubscribe = fetchReportsForAdmin();
-        return () => unsubscribe && unsubscribe();
-    }
-  }, [user, fetchReportsForAdmin]);
-
-
   const fetchData = useCallback(async (currentUser: CustomUser) => {
     if (!currentUser) return; // Wait for user object
     setIsLoadingData(true);
@@ -125,8 +86,17 @@ export default function AdminPage() {
         schoolName: currentUser.schoolName,
       } as CustomUser);
       const invitesPromise = getInvitesAction({ role: currentUser.role });
+      
+      let reportsPromise: Promise<{ success: boolean; reports?: ReportData[]; error?: string; }> | null = null;
+      if (currentUser.role === 'super-admin' || currentUser.role === 'big-admin') {
+        reportsPromise = getReportsForAdminAction(currentUser);
+      }
 
-      const [usersResult, invitesResult] = await Promise.all([usersPromise, invitesPromise]);
+      const [usersResult, invitesResult, reportsResult] = await Promise.all([
+        usersPromise, 
+        invitesPromise,
+        reportsPromise
+      ]);
 
       if (usersResult.success && usersResult.users) {
         setUsers(usersResult.users.map(u => ({...u, name: u.name, telephone: u.telephone, classNames: u.classNames, createdAt: u.createdAt ? new Date(u.createdAt) : null } as UserData)));
@@ -138,6 +108,14 @@ export default function AdminPage() {
         setInvites(invitesResult.invites.map(i => ({...i, role: i.role, region: i.region, district: i.district, circuit: i.circuit, schoolName: i.schoolName, classNames: i.classNames, createdAt: i.createdAt ? new Date(i.createdAt) : null } as InviteData)));
       } else {
         toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
+      }
+
+      if (reportsResult) {
+        if (reportsResult.success && reportsResult.reports) {
+          setAllReports(reportsResult.reports);
+        } else {
+          toast({ title: 'Error Fetching Reports', description: reportsResult.error, variant: 'destructive' });
+        }
       }
 
       if (currentUser.role === 'super-admin') {
