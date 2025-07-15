@@ -894,373 +894,383 @@ function AppContent({ user }: { user: CustomUser }) {
 
   return (
     <>
-    <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground main-app-container">
-      <header className="mb-8 text-center no-print relative">
-        <div className="absolute top-0 left-0 flex items-center gap-2">
-            {isAdminRole && (
-                <Link href="/admin" passHref>
-                    <Button variant="outline" size="sm">
-                        <Shield className="mr-2 h-4 w-4" />
-                        Admin Panel
-                    </Button>
-                </Link>
-            )}
-        </div>
-
-        <div className="flex items-center justify-center gap-3">
-         <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-         <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
-        </div>
-        <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.email} ({user.role})</p>
-         
-        <div className="absolute top-0 right-0 flex items-center gap-2">
-          <ThemeToggleButton />
-          <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4"/>Logout</Button>
-        </div>
-      </header>
-      
-      {indexError && (
-        <Alert variant="destructive" className="mb-8 no-print">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Action Required: Firestore Index Needed</AlertTitle>
-            <AlertDescription>
-                {indexError} Your data cannot be loaded until this is fixed in your Firebase project.
-            </AlertDescription>
-        </Alert>
-      )}
-
-      <Card className="mb-8 p-4 no-print">
-        <CardHeader className="p-2">
-            <CardTitle className="text-lg flex items-center"><Users className="mr-2 h-5 w-5 text-primary"/>Session Controls</CardTitle>
-            <CardDescription className="text-xs">These settings apply to the current report and are carried over for new entries.</CardDescription>
-        </CardHeader>
-        <CardContent className="p-2 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1">
-                    <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
-                    <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)} disabled={!isSuperAdmin}>
-                        <SelectTrigger id="sessionRegion"><SelectValue placeholder="Select region" /></SelectTrigger>
-                        <SelectContent>
-                            {ghanaRegions.map(region => <SelectItem key={region} value={region}>{region}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-1">
-                    <Label htmlFor="sessionDistrict" className="text-sm font-medium">District/Municipal</Label>
-                    <Select 
-                        value={sessionDefaults.district || ''} 
-                        onValueChange={value => handleSessionDefaultChange('district', value)}
-                        disabled={!isSuperAdmin && !isBigAdmin}
-                    >
-                        <SelectTrigger id="sessionDistrict">
-                            <SelectValue placeholder="Select district" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availableDistricts.length > 0 ? (
-                                availableDistricts.map(district => <SelectItem key={district} value={district}>{district}</SelectItem>)
-                            ) : (
-                                <SelectItem value="-" disabled>Select a region first</SelectItem>
-                            )}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-1">
-                    <Label htmlFor="sessionCircuit" className="text-sm font-medium">Circuit</Label>
-                    <Input 
-                        id="sessionCircuit" 
-                        value={sessionDefaults.circuit || ''} 
-                        onChange={e => handleSessionDefaultChange('circuit', e.target.value)} 
-                        placeholder="e.g., Kalpohin"
-                        list="circuit-datalist"
-                        disabled={!isSuperAdmin && !isBigAdmin && !isAdmin}
-                    />
-                    <datalist id="circuit-datalist">
-                        {availableCircuits.map(circuit => (
-                            <option key={circuit} value={circuit} />
-                        ))}
-                    </datalist>
-                </div>
+      <div className="main-app-container">
+        <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground">
+          <header className="mb-8 text-center no-print relative">
+            <div className="absolute top-0 left-0 flex items-center gap-2">
+                {isAdminRole && (
+                    <Link href="/admin" passHref>
+                        <Button variant="outline" size="sm">
+                            <Shield className="mr-2 h-4 w-4" />
+                            Admin Panel
+                        </Button>
+                    </Link>
+                )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
-                <div className="space-y-1 md:col-span-2">
-                    <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
-                    <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={!isSuperAdmin && !isBigAdmin}/>
-                </div>
-                <div className="space-y-1">
-                    <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
-                     <Select value={sessionDefaults.academicYear || ''} onValueChange={value => handleSessionDefaultChange('academicYear', value)}>
-                        <SelectTrigger id="sessionAcademicYear"><SelectValue placeholder="Select academic year" /></SelectTrigger>
-                        <SelectContent>
-                            {academicYearOptions.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-                 <div className="space-y-1">
-                    <Label htmlFor="sessionClassName" className="text-sm font-medium">Current Class</Label>
-                    <Select value={sessionDefaults.className || ''} onValueChange={value => handleSessionDefaultChange('className', value === ADD_CUSTOM_CLASS_VALUE ? '' : value)} disabled={isRegularUser}>
-                        <SelectTrigger id="sessionClassName"><SelectValue placeholder="Select or add class" /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={ADD_CUSTOM_CLASS_VALUE} onSelect={() => setIsCustomClassNameDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
-                            <SelectSeparator />
-                             {isRegularUser && user.classNames?.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-                             {!isRegularUser && classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
-                             {!isRegularUser && customClassNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-1">
-                    <Label htmlFor="sessionAcademicTerm" className="text-sm font-medium">Academic Term</Label>
-                     <Select value={sessionDefaults.academicTerm || ''} onValueChange={value => handleSessionDefaultChange('academicTerm', value)}>
-                        <SelectTrigger id="sessionAcademicTerm"><SelectValue placeholder="Select term/semester" /></SelectTrigger>
-                        <SelectContent>
-                            {academicTermOptions.map(term => <SelectItem key={term} value={term}>{term}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-1">
-                    <Label htmlFor="sessionTemplate" className="text-sm font-medium">Report Template</Label>
-                    <Select value={sessionDefaults.selectedTemplateId || 'default'} onValueChange={value => handleSessionDefaultChange('selectedTemplateId', value)}>
-                        <SelectTrigger id="sessionTemplate"><SelectValue placeholder="Select a template" /></SelectTrigger>
-                        <SelectContent>
-                            {reportTemplateOptions.map(option => <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-1">
-                    <Label htmlFor="sessionTotalSchoolDays" className="text-sm font-medium">Total School Days</Label>
-                    <Input id="sessionTotalSchoolDays" type="number" value={sessionDefaults.totalSchoolDays ?? ''} onChange={e => handleSessionDefaultChange('totalSchoolDays', e.target.value === '' ? null : Number(e.target.value))} placeholder="e.g., 90" />
-                </div>
-                <div className="space-y-1">
-                    <Label htmlFor="sessionInstructorContact" className="text-sm font-medium">Instructor's Contact</Label>
-                    <Input id="sessionInstructorContact" value={sessionDefaults.instructorContact || ''} onChange={e => handleSessionDefaultChange('instructorContact', e.target.value)} placeholder="Phone or Email" />
-                </div>
-                <div className="space-y-1 flex items-center gap-2">
-                  <input type="file" id="sessionSchoolLogoUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'schoolLogoDataUri')} />
-                  <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('sessionSchoolLogoUpload')?.click()}><UploadCloud className="mr-2 h-4 w-4" />Logo</Button>
-                  {sessionDefaults.schoolLogoDataUri && <NextImage src={sessionDefaults.schoolLogoDataUri} alt="logo" width={40} height={40} className="rounded border p-1 object-contain"/>}
-                </div>
-                <div className="space-y-1 flex items-center gap-2">
-                  <input type="file" id="sessionHeadMasterSignatureUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'headMasterSignatureDataUri')} />
-                  <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('sessionHeadMasterSignatureUpload')?.click()}><Signature className="mr-2 h-4 w-4" />Signature</Button>
-                  {sessionDefaults.headMasterSignatureDataUri && <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>}
-                </div>
+
+            <div className="flex items-center justify-center gap-3">
+            <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
+            <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
             </div>
-        </CardContent>
-      </Card>
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.email} ({user.role})</p>
+            
+            <div className="absolute top-0 right-0 flex items-center gap-2">
+              <ThemeToggleButton />
+              <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4"/>Logout</Button>
+            </div>
+          </header>
+          
+          {indexError && (
+            <Alert variant="destructive" className="mb-8 no-print">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Action Required: Firestore Index Needed</AlertTitle>
+                <AlertDescription>
+                    {indexError} Your data cannot be loaded until this is fixed in your Firebase project.
+                </AlertDescription>
+            </Alert>
+          )}
 
-      <main className="flex-grow grid grid-cols-1 lg:grid-cols-5 gap-8">
-        <section className="lg:col-span-2 no-print space-y-4">
-          <ReportForm
-            onFormUpdate={handleFormUpdate}
-            initialData={currentEditingReport}
-            isEditing={!currentEditingReport.id.startsWith('unsaved-')}
-            reportPrintListForHistory={allRankedReports}
-            onSaveReport={handleSaveOrUpdateReport}
-            onResetForm={handleClearAndReset}
-          />
-        </section>
-
-        <section className="lg:col-span-3 flex flex-col">
-          <Card className="shadow-lg flex-grow flex flex-col bg-card text-card-foreground">
-            <CardHeader className="no-print">
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <Eye className="mr-1 h-5 w-5 md:h-6 md:w-6 text-primary" />
-                    <CardTitle className="font-headline text-lg md:text-xl">
-                      {reportsCount > 0 ? `Report ${currentPreviewIndex + 1} of ${reportsCount}` : `Report Print Preview`}
-                    </CardTitle>
-                  </div>
-                  {reportsCount > 1 && (
-                    <div className="flex items-center gap-2">
-                      <Button onClick={handlePreviousPreview} disabled={currentPreviewIndex === 0} variant="outline" size="icon" aria-label="Previous Report">
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <Button onClick={handleNextPreview} disabled={currentPreviewIndex >= reportsCount - 1} variant="outline" size="icon" aria-label="Next Report">
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-2 items-stretch">
-                  <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-                    {isAdminRole && (
-                        <Select value={adminFilters.schoolName} onValueChange={value => handleAdminFilterChange('schoolName', value)} disabled={user.role === 'admin'}>
-                            <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by school">
-                                <div className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by school..." /></div>
-                            </SelectTrigger>
-                            <SelectContent>{allFilterOptions.schools.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Schools' : s}</SelectItem>)}</SelectContent>
+          <Card className="mb-8 p-4 no-print">
+            <CardHeader className="p-2">
+                <CardTitle className="text-lg flex items-center"><Users className="mr-2 h-5 w-5 text-primary"/>Session Controls</CardTitle>
+                <CardDescription className="text-xs">These settings apply to the current report and are carried over for new entries.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-2 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                        <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
+                        <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)} disabled={!isSuperAdmin}>
+                            <SelectTrigger id="sessionRegion"><SelectValue placeholder="Select region" /></SelectTrigger>
+                            <SelectContent>
+                                {ghanaRegions.map(region => <SelectItem key={region} value={region}>{region}</SelectItem>)}
+                            </SelectContent>
                         </Select>
-                    )}
-                     <Select value={adminFilters.className} onValueChange={value => handleAdminFilterChange('className', value)}>
-                        <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by class">
-                            <div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by class..." /></div>
-                        </SelectTrigger>
-                        <SelectContent>{allFilterOptions.classes.map(c => <SelectItem key={c} value={c}>{c === 'all' ? 'All My Classes' : c}</SelectItem>)}</SelectContent>
-                    </Select>
-                     <Select value={adminFilters.academicYear} onValueChange={value => handleAdminFilterChange('academicYear', value)}>
-                        <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by year">
-                            <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by year..." /></div>
-                        </SelectTrigger>
-                        <SelectContent>{allFilterOptions.years.map(y => <SelectItem key={y} value={y}>{y === 'all' ? 'All Years' : y}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Select value={adminFilters.academicTerm} onValueChange={value => handleAdminFilterChange('academicTerm', value)}>
-                        <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by term">
-                            <div className="flex items-center gap-2"><BookMarked className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by term..." /></div>
-                        </SelectTrigger>
-                        <SelectContent>{allFilterOptions.terms.map(t => <SelectItem key={t} value={t}>{t === 'all' ? 'All Terms' : t}</SelectItem>)}</SelectContent>
-                    </Select>
-                     <Button
-                        onClick={() => setIsClassDashboardOpen(true)}
-                        disabled={reportsCount === 0 || isLoadingReports}
-                        variant="outline"
-                        size="sm"
-                        title={reportsCount > 0 ? "View AI-powered class performance dashboard" : "Add reports to list to view dashboard"}
-                      >
-                       <BarChartHorizontalBig className="mr-2 h-4 w-4" />
-                       Class Dashboard
-                     </Button>
-                     {isAdminRole && (
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="sessionDistrict" className="text-sm font-medium">District/Municipal</Label>
+                        <Select 
+                            value={sessionDefaults.district || ''} 
+                            onValueChange={value => handleSessionDefaultChange('district', value)}
+                            disabled={!isSuperAdmin && !isBigAdmin}
+                        >
+                            <SelectTrigger id="sessionDistrict">
+                                <SelectValue placeholder="Select district" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableDistricts.length > 0 ? (
+                                    availableDistricts.map(district => <SelectItem key={district} value={district}>{district}</SelectItem>)
+                                ) : (
+                                    <SelectItem value="-" disabled>Select a region first</SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="sessionCircuit" className="text-sm font-medium">Circuit</Label>
+                        <Input 
+                            id="sessionCircuit" 
+                            value={sessionDefaults.circuit || ''} 
+                            onChange={e => handleSessionDefaultChange('circuit', e.target.value)} 
+                            placeholder="e.g., Kalpohin"
+                            list="circuit-datalist"
+                            disabled={!isSuperAdmin && !isBigAdmin && !isAdmin}
+                        />
+                        <datalist id="circuit-datalist">
+                            {availableCircuits.map(circuit => (
+                                <option key={circuit} value={circuit} />
+                            ))}
+                        </datalist>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                    <div className="space-y-1 md:col-span-2">
+                        <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
+                        <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={!isSuperAdmin && !isBigAdmin}/>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
+                        <Select value={sessionDefaults.academicYear || ''} onValueChange={value => handleSessionDefaultChange('academicYear', value)}>
+                            <SelectTrigger id="sessionAcademicYear"><SelectValue placeholder="Select academic year" /></SelectTrigger>
+                            <SelectContent>
+                                {academicYearOptions.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="sessionClassName" className="text-sm font-medium">Current Class</Label>
+                        <Select value={sessionDefaults.className || ''} onValueChange={value => handleSessionDefaultChange('className', value === ADD_CUSTOM_CLASS_VALUE ? '' : value)} disabled={isRegularUser}>
+                            <SelectTrigger id="sessionClassName"><SelectValue placeholder="Select or add class" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={ADD_CUSTOM_CLASS_VALUE} onSelect={() => setIsCustomClassNameDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
+                                <SelectSeparator />
+                                {isRegularUser && user.classNames?.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                                {!isRegularUser && classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
+                                {!isRegularUser && customClassNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="sessionAcademicTerm" className="text-sm font-medium">Academic Term</Label>
+                        <Select value={sessionDefaults.academicTerm || ''} onValueChange={value => handleSessionDefaultChange('academicTerm', value)}>
+                            <SelectTrigger id="sessionAcademicTerm"><SelectValue placeholder="Select term/semester" /></SelectTrigger>
+                            <SelectContent>
+                                {academicTermOptions.map(term => <SelectItem key={term} value={term}>{term}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="sessionTemplate" className="text-sm font-medium">Report Template</Label>
+                        <Select value={sessionDefaults.selectedTemplateId || 'default'} onValueChange={value => handleSessionDefaultChange('selectedTemplateId', value)}>
+                            <SelectTrigger id="sessionTemplate"><SelectValue placeholder="Select a template" /></SelectTrigger>
+                            <SelectContent>
+                                {reportTemplateOptions.map(option => <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="sessionTotalSchoolDays" className="text-sm font-medium">Total School Days</Label>
+                        <Input id="sessionTotalSchoolDays" type="number" value={sessionDefaults.totalSchoolDays ?? ''} onChange={e => handleSessionDefaultChange('totalSchoolDays', e.target.value === '' ? null : Number(e.target.value))} placeholder="e.g., 90" />
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="sessionInstructorContact" className="text-sm font-medium">Instructor's Contact</Label>
+                        <Input id="sessionInstructorContact" value={sessionDefaults.instructorContact || ''} onChange={e => handleSessionDefaultChange('instructorContact', e.target.value)} placeholder="Phone or Email" />
+                    </div>
+                    <div className="space-y-1 flex items-center gap-2">
+                    <input type="file" id="sessionSchoolLogoUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'schoolLogoDataUri')} />
+                    <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('sessionSchoolLogoUpload')?.click()}><UploadCloud className="mr-2 h-4 w-4" />Logo</Button>
+                    {sessionDefaults.schoolLogoDataUri && <NextImage src={sessionDefaults.schoolLogoDataUri} alt="logo" width={40} height={40} className="rounded border p-1 object-contain"/>}
+                    </div>
+                    <div className="space-y-1 flex items-center gap-2">
+                    <input type="file" id="sessionHeadMasterSignatureUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'headMasterSignatureDataUri')} />
+                    <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('sessionHeadMasterSignatureUpload')?.click()}><Signature className="mr-2 h-4 w-4" />Signature</Button>
+                    {sessionDefaults.headMasterSignatureDataUri && <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>}
+                    </div>
+                </div>
+            </CardContent>
+          </Card>
+
+          <main className="flex-grow grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <section className="lg:col-span-2 no-print space-y-4">
+              <ReportForm
+                onFormUpdate={handleFormUpdate}
+                initialData={currentEditingReport}
+                isEditing={!currentEditingReport.id.startsWith('unsaved-')}
+                reportPrintListForHistory={allRankedReports}
+                onSaveReport={handleSaveOrUpdateReport}
+                onResetForm={handleClearAndReset}
+              />
+            </section>
+
+            <section className="lg:col-span-3 flex flex-col">
+              <Card className="shadow-lg flex-grow flex flex-col bg-card text-card-foreground">
+                <CardHeader className="no-print">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <Eye className="mr-1 h-5 w-5 md:h-6 md:w-6 text-primary" />
+                        <CardTitle className="font-headline text-lg md:text-xl">
+                          {reportsCount > 0 ? `Report ${currentPreviewIndex + 1} of ${reportsCount}` : `Report Print Preview`}
+                        </CardTitle>
+                      </div>
+                      {reportsCount > 1 && (
+                        <div className="flex items-center gap-2">
+                          <Button onClick={handlePreviousPreview} disabled={currentPreviewIndex === 0} variant="outline" size="icon" aria-label="Previous Report">
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button onClick={handleNextPreview} disabled={currentPreviewIndex >= reportsCount - 1} variant="outline" size="icon" aria-label="Next Report">
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-2 items-stretch">
+                      <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+                        {isAdminRole && (
+                            <Select value={adminFilters.schoolName} onValueChange={value => handleAdminFilterChange('schoolName', value)} disabled={user.role === 'admin'}>
+                                <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by school">
+                                    <div className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by school..." /></div>
+                                </SelectTrigger>
+                                <SelectContent>{allFilterOptions.schools.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Schools' : s}</SelectItem>)}</SelectContent>
+                            </Select>
+                        )}
+                        <Select value={adminFilters.className} onValueChange={value => handleAdminFilterChange('className', value)}>
+                            <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by class">
+                                <div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by class..." /></div>
+                            </SelectTrigger>
+                            <SelectContent>{allFilterOptions.classes.map(c => <SelectItem key={c} value={c}>{c === 'all' ? 'All My Classes' : c}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={adminFilters.academicYear} onValueChange={value => handleAdminFilterChange('academicYear', value)}>
+                            <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by year">
+                                <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by year..." /></div>
+                            </SelectTrigger>
+                            <SelectContent>{allFilterOptions.years.map(y => <SelectItem key={y} value={y}>{y === 'all' ? 'All Years' : y}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={adminFilters.academicTerm} onValueChange={value => handleAdminFilterChange('academicTerm', value)}>
+                            <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by term">
+                                <div className="flex items-center gap-2"><BookMarked className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by term..." /></div>
+                            </SelectTrigger>
+                            <SelectContent>{allFilterOptions.terms.map(t => <SelectItem key={t} value={t}>{t === 'all' ? 'All Terms' : t}</SelectItem>)}</SelectContent>
+                        </Select>
                         <Button
-                            onClick={() => setIsSchoolDashboardOpen(true)}
+                            onClick={() => setIsClassDashboardOpen(true)}
                             disabled={reportsCount === 0 || isLoadingReports}
                             variant="outline"
                             size="sm"
-                            title={reportsCount > 0 ? "View AI-powered school overview dashboard" : "Add reports to list to view dashboard"}
-                        >
-                           <Building className="mr-2 h-4 w-4" />
-                           School Overview
+                            title={reportsCount > 0 ? "View AI-powered class performance dashboard" : "Add reports to list to view dashboard"}
+                          >
+                          <BarChartHorizontalBig className="mr-2 h-4 w-4" />
+                          Class Dashboard
                         </Button>
-                     )}
-                    <Button onClick={() => handleInitiatePrint(true)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Download all reports in the list as a single PDF" : "Add or filter reports to the list to enable download"}>
-                      <Download className="mr-2 h-4 w-4" />
-                      Download as PDF
-                    </Button>
-                    <Button onClick={() => handleInitiatePrint(false)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Print all reports in the list" : "Add or filter reports to the list to enable printing"}>
-                      <Printer className="mr-2 h-4 w-4" />
-                      Print ({reportsCount})
-                    </Button>
-                  </div>
-                   <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-                     <Button
-                        onClick={() => setIsImportStudentsDialogOpen(true)}
-                        variant="outline"
-                        size="sm"
-                        title="Import student data from previous term/class"
-                        disabled={isLoadingReports}
-                      >
-                       <Upload className="mr-2 h-4 w-4" />
-                       Import Promoted Students
-                     </Button>
-                    <Button onClick={handleClearList} disabled={isLoadingReports && allRankedReports.length === 0} variant="destructive" size="sm">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Clear Local View
-                    </Button>
-                   </div>
-                </div>
-              </div>
-              <CardDescription className="mt-2 md:mt-1 space-y-1">
-                <span>
-                  {reportsCount > 0
-                    ? `${filterDescription} Use navigation buttons if multiple reports are in the list.`
-                    : 'This area shows a live preview of the data from the form. Click "Add Report to List" to save it to the database.'}
-                </span>
-                <span className="block text-xs italic">
-                  <Share2 className="inline-block mr-1 h-3 w-3 text-muted-foreground" /> Share options (Email/WhatsApp) below each report will open your default app.
-                </span>
-                {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on overall average within each class.</span>}
-              </CardDescription>
-            </CardHeader>
-            <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">
-              {isLoadingReports && allRankedReports.length === 0 ? (
-                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
-                  <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
-                  <h3 className="text-lg font-semibold">Loading Reports...</h3>
-                  <p>Fetching your report data from the cloud.</p>
-                </div>
-              ) : reportsCount > 0 ? (
-                // This is the list of SAVED reports
-                <>
-                  {filteredReports.map((reportData, index) => (
-                    <div key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>
-                        {index === currentPreviewIndex && (
-                          <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
-                            <ReportActions report={reportData} onEditReport={handleLoadReportForEditing} />
-                          </div>
+                        {isAdminRole && (
+                            <Button
+                                onClick={() => setIsSchoolDashboardOpen(true)}
+                                disabled={reportsCount === 0 || isLoadingReports}
+                                variant="outline"
+                                size="sm"
+                                title={reportsCount > 0 ? "View AI-powered school overview dashboard" : "Add reports to list to view dashboard"}
+                            >
+                              <Building className="mr-2 h-4 w-4" />
+                              School Overview
+                            </Button>
                         )}
-                        <div className="a4-page-simulation break-inside-avoid">
-                          <ReportPreview data={reportData} />
-                        </div>
+                        <Button onClick={() => handleInitiatePrint(true)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Download all reports in the list as a single PDF" : "Add or filter reports to the list to enable download"}>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download as PDF
+                        </Button>
+                        <Button onClick={() => handleInitiatePrint(false)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Print all reports in the list" : "Add or filter reports to the list to enable printing"}>
+                          <Printer className="mr-2 h-4 w-4" />
+                          Print ({reportsCount})
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+                        <Button
+                            onClick={() => setIsImportStudentsDialogOpen(true)}
+                            variant="outline"
+                            size="sm"
+                            title="Import student data from previous term/class"
+                            disabled={isLoadingReports}
+                          >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Import Promoted Students
+                        </Button>
+                        <Button onClick={handleClearList} disabled={isLoadingReports && allRankedReports.length === 0} variant="destructive" size="sm">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Clear Local View
+                        </Button>
+                      </div>
                     </div>
-                  ))}
-                  {/* This ensures the individual print styles are applied by mapping over the array */}
-                  <div className="hidden print:block">
+                  </div>
+                  <CardDescription className="mt-2 md:mt-1 space-y-1">
+                    <span>
+                      {reportsCount > 0
+                        ? `${filterDescription} Use navigation buttons if multiple reports are in the list.`
+                        : 'This area shows a live preview of the data from the form. Click "Add Report to List" to save it to the database.'}
+                    </span>
+                    <span className="block text-xs italic">
+                      <Share2 className="inline-block mr-1 h-3 w-3 text-muted-foreground" /> Share options (Email/WhatsApp) below each report will open your default app.
+                    </span>
+                    {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on overall average within each class.</span>}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent id="report-preview-container" className="flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800">
+                  {isLoadingReports && allRankedReports.length === 0 ? (
+                    <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
+                      <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+                      <h3 className="text-lg font-semibold">Loading Reports...</h3>
+                      <p>Fetching your report data from the cloud.</p>
+                    </div>
+                  ) : reportsCount > 0 ? (
+                    // This is the list of SAVED reports for SCREEN view
+                    <>
                       {filteredReports.map((reportData, index) => (
-                          <div key={`print-${reportData.id}`} className="a4-page-simulation break-inside-avoid">
-                            <ReportPreview data={reportData} />
-                          </div>
+                        <div key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>
+                            {index === currentPreviewIndex && (
+                              <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
+                                <ReportActions report={reportData} onEditReport={handleLoadReportForEditing} />
+                              </div>
+                            )}
+                            <div className="a4-page-simulation break-inside-avoid">
+                              <ReportPreview data={reportData} />
+                            </div>
+                        </div>
                       ))}
-                  </div>
-                </>
-              ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
-                  // This is the LIVE preview of the report being edited in the form
-                  <div className="a4-page-simulation break-inside-avoid">
-                    <ReportPreview data={currentEditingReport} />
-                  </div>
-              ) : (
-                <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
-                  <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
-                  <h3 className="text-xl font-semibold mb-2">{reportsCount === 0 && allRankedReports.length > 0 ? `No Reports Found` : `Report Preview Area`}</h3>
-                  <p>{noReportsFoundMessage}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </section>
-      </main>
+                    </>
+                  ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
+                      // This is the LIVE preview of the report being edited in the form
+                      <div className="a4-page-simulation break-inside-avoid">
+                        <ReportPreview data={currentEditingReport} />
+                      </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
+                      <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
+                      <h3 className="text-xl font-semibold mb-2">{reportsCount === 0 && allRankedReports.length > 0 ? `No Reports Found` : `Report Preview Area`}</h3>
+                      <p>{noReportsFoundMessage}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          </main>
 
-      <footer className="text-center mt-12 py-6 text-sm text-muted-foreground border-t no-print">
-        <p>&copy; {new Date().getFullYear()} Report Card Generator. Professionally designed for educators.</p>
-      </footer>
-    </div>
+          <footer className="text-center mt-12 py-6 text-sm text-muted-foreground border-t no-print">
+            <p>&copy; {new Date().getFullYear()} Report Card Generator. Professionally designed for educators.</p>
+          </footer>
+        </div>
+      </div>
 
-    <Dialog open={isCustomClassNameDialogOpen} onOpenChange={setIsCustomClassNameDialogOpen}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Add Class Name</DialogTitle></DialogHeader>
-        <Input value={customClassNameInputValue} onChange={e => setCustomClassNameInputValue(e.target.value)} placeholder="e.g., Form 1 Gold"/>
-        <DialogFooter><Button onClick={handleAddCustomClassNameToListAndForm}>Add Class</Button></DialogFooter>
-      </DialogContent>
-    </Dialog>
+      {/* This is the dedicated container for PRINTING ONLY. It is OUTSIDE the main app container. */}
+      <div className="print-only-reports">
+        {reportsCount > 0 ? (
+          filteredReports.map((reportData) => (
+            <div key={`print-${reportData.id}`} className="a4-page-simulation">
+              <ReportPreview data={reportData} />
+            </div>
+          ))
+        ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
+          <div className="a4-page-simulation">
+            <ReportPreview data={currentEditingReport} />
+          </div>
+        ) : null}
+      </div>
 
-    {isClassDashboardOpen && (
-        <ClassPerformanceDashboard
-            isOpen={isClassDashboardOpen}
-            onOpenChange={setIsClassDashboardOpen}
-            allReports={allRankedReports}
-            availableClasses={allFilterOptions.classes.filter(c => c !== 'all')}
-            initialClassName={initialClassForDashboard}
-            schoolNameProp={schoolNameForDashboard}
-            academicYearProp={academicYearForDashboard}
+
+      <Dialog open={isCustomClassNameDialogOpen} onOpenChange={setIsCustomClassNameDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Add Class Name</DialogTitle></DialogHeader>
+          <Input value={customClassNameInputValue} onChange={e => setCustomClassNameInputValue(e.target.value)} placeholder="e.g., Form 1 Gold"/>
+          <DialogFooter><Button onClick={handleAddCustomClassNameToListAndForm}>Add Class</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {isClassDashboardOpen && (
+          <ClassPerformanceDashboard
+              isOpen={isClassDashboardOpen}
+              onOpenChange={setIsClassDashboardOpen}
+              allReports={allRankedReports}
+              availableClasses={allFilterOptions.classes.filter(c => c !== 'all')}
+              initialClassName={initialClassForDashboard}
+              schoolNameProp={schoolNameForDashboard}
+              academicYearProp={academicYearForDashboard}
+          />
+      )}
+      {isSchoolDashboardOpen && (
+          <SchoolPerformanceDashboard
+              isOpen={isSchoolDashboardOpen}
+              onOpenChange={setIsSchoolDashboardOpen}
+              allReports={filteredReports} // Pass filtered reports to the dashboard
+              schoolNameProp={schoolNameForDashboard}
+              academicYearProp={academicYearForDashboard}
+              userRole={user.role}
+          />
+      )}
+      {isImportStudentsDialogOpen && (
+        <ImportStudentsDialog
+          isOpen={isImportStudentsDialogOpen}
+          onOpenChange={setIsImportStudentsDialogOpen}
+          onImport={handleImportStudents}
         />
-    )}
-    {isSchoolDashboardOpen && (
-        <SchoolPerformanceDashboard
-            isOpen={isSchoolDashboardOpen}
-            onOpenChange={setIsSchoolDashboardOpen}
-            allReports={filteredReports} // Pass filtered reports to the dashboard
-            schoolNameProp={schoolNameForDashboard}
-            academicYearProp={academicYearForDashboard}
-            userRole={user.role}
-        />
-    )}
-    {isImportStudentsDialogOpen && (
-      <ImportStudentsDialog
-        isOpen={isImportStudentsDialogOpen}
-        onOpenChange={setIsImportStudentsDialogOpen}
-        onImport={handleImportStudents}
-      />
-    )}
+      )}
     </>
   );
 }
