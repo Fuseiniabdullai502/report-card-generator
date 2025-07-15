@@ -97,7 +97,7 @@ Firebase App Hosting is the recommended way to deploy this Next.js application, 
     firebase init hosting
     ```
 2.  **Select a Firebase Project:** Choose the Firebase project you want to use from the list.
-3.  **Configure Hosting:** When prompted, select **"App Hosting: for web frameworks (Next.js, Angular, etc)"**.
+3.  **Configure Hosting:** When prompted to select a hosting option, use the arrow keys to choose **"App Hosting: for web frameworks (Next.js, Angular, etc)"**. This is the most important step. If you select the other "Hosting" option, it will ask for a public directory, which is not correct for this setup.
 4.  **Set Backend Region:** Choose a region for your backend server (e.g., `us-central1`).
 5.  **Connect to GitHub:** The CLI will guide you to connect to your GitHub account and select the repository for this project. This will set up a GitHub Action to enable automatic deployments whenever you push to your main branch.
 
