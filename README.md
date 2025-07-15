@@ -66,21 +66,6 @@ The Admin SDK is required for secure server actions like deactivating users and 
 2.  Open the service account JSON file you downloaded.
 3.  Copy the **entire content** of the JSON file and paste it as the value for the `FIREBASE_SERVICE_ACCOUNT` variable. The value should be a single-line JSON string. Most hosting providers handle this automatically, but if you're pasting it into a text file, ensure any newlines within the private key are escaped (e.g., `\\n`).
 
-### Troubleshooting
-
-#### "Admin features are disabled..." or "PERMISSION_DENIED" Error
-
-If you see an error message that says **`Admin features are disabled. The Firebase Admin SDK failed to initialize...`** when you try to use an admin feature, it means your **Admin SDK Credentials are not set up correctly** for your environment. This is a configuration issue, not a code bug. To fix it, you must provide the server with secure credentials.
-
-**To fix this for local development:**
-
-1.  Follow the instructions in **"Step 2: Admin SDK Credentials"** above.
-2.  Make sure you have downloaded the `firebase-service-account.json` file from your Firebase project.
-3.  Make sure you have placed this file in the **root directory** of this project.
-4.  Make sure the line `GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json` in your `.env` file is **uncommented** (the `#` is removed).
-
-Once you have correctly configured the local file, restart your development server. The error will be resolved.
-
 ### Running the Development Server
 
 Once your environment is set up, you can run the development server:
@@ -91,7 +76,70 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### How to Use the Invite & User Management System
+## Hosting the Application
+
+The recommended way to host a Next.js application is with **Vercel**, the creators of Next.js. Here is a step-by-step guide to deploying your app.
+
+### Step 1: Push Your Code to a Git Repository
+
+1.  **Initialize Git:** If you haven't already, open a terminal in your project's root directory and run `git init`.
+2.  **Create a GitHub Repository:** Go to [GitHub](https://github.com/new) and create a new repository. Do not initialize it with a README or .gitignore file, as your project already has these.
+3.  **Commit and Push:** In your terminal, run the following commands, replacing the URL with your new repository's URL:
+    ```bash
+    git add .
+    git commit -m "Initial commit of report card generator"
+    git branch -M main
+    git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
+    git push -u origin main
+    ```
+
+### Step 2: Deploy to Vercel
+
+1.  **Sign Up for Vercel:** Go to [Vercel](https://vercel.com) and sign up for a free account. It's best to sign up using your GitHub account.
+2.  **Import Your Project:** From your Vercel dashboard, click **"Add New..."** > **"Project"**.
+3.  **Import Git Repository:** Find and import the GitHub repository you just created.
+4.  **Configure Project:** Vercel will automatically detect that you're using Next.js and configure the build settings for you. You do not need to change these defaults.
+
+### Step 3: Configure Environment Variables
+
+This is the most important step for the deployed app to work correctly.
+
+1.  In your Vercel project's settings, navigate to the **"Environment Variables"** section.
+2.  You will need to add all the variables from your local `.env` file here. Vercel automatically handles the distinction between server-side and client-side (NEXT_PUBLIC_) variables.
+3.  Add the following variables, getting the values as described in the "Environment Setup" section above:
+    *   `NEXT_PUBLIC_ADMIN_EMAIL`: Your designated admin email address.
+    *   `GOOGLE_API_KEY`: Your API key for Google AI Studio.
+    *   `NEXT_PUBLIC_FIREBASE_API_KEY`: From your Firebase project's web app config.
+    *   `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`: From your Firebase project's web app config.
+    *   `NEXT_PUBLIC_FIREBASE_PROJECT_ID`: From your Firebase project's web app config.
+    *   `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`: From your Firebase project's web app config.
+    *   `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`: From your Firebase project's web app config.
+    *   `NEXT_PUBLIC_FIREBASE_APP_ID`: From your Firebase project's web app config.
+    *   `FIREBASE_SERVICE_ACCOUNT`: This is for the Admin SDK. Follow the "For Production" instructions in **Step 2** of the Firebase setup section above. Open your downloaded service account JSON file, copy the **entire content**, and paste it as the value for this variable.
+
+4.  **Save** the environment variables.
+
+### Step 4: Deploy
+
+1.  Once the environment variables are configured, click the **"Deploy"** button.
+2.  Vercel will build and deploy your application. Once it's finished, you'll be given a public URL where you can access your live app.
+
+Congratulations! Your Report Card Generator is now live on the web. Any future pushes to your `main` branch on GitHub will automatically trigger a new deployment on Vercel.
+
+## Troubleshooting
+
+### "Admin features are disabled..." or "PERMISSION_DENIED" Error
+
+If you see an error message that says **`Admin features are disabled. The Firebase Admin SDK failed to initialize...`** when you try to use an admin feature on your live site, it means your **`FIREBASE_SERVICE_ACCOUNT` environment variable is not set up correctly** on Vercel.
+
+**To fix this on Vercel:**
+
+1.  Follow the instructions in **"Step 3: Configure Environment Variables"** above.
+2.  Double-check that you have copied the **entire contents** of the `firebase-service-account.json` file.
+3.  Paste the full JSON content into the **value** field for the `FIREBASE_SERVICE_ACCOUNT` variable in your Vercel project settings.
+4.  After saving the variable, go to the "Deployments" tab in Vercel and **re-deploy** your latest commit to apply the changes.
+
+## How to Use the Invite & User Management System
 
 1.  Log in using the email you designated as the admin email.
 2.  You will see an "Admin Panel" button in the header. Click it to go to `/admin`.
