@@ -308,13 +308,13 @@ body {
   }
 
   /* Styles for printing Dialogs (Class & School Dashboards) */
-  body.class-dashboard-is-open #report-preview-container,
-  body.school-dashboard-is-open #report-preview-container {
+  body.dashboard-printing-active #report-preview-container {
     display: none !important;
   }
   
   .dashboard-print-header, 
-  .school-dashboard-print-header { 
+  .school-dashboard-print-header,
+  .ranking-print-header { 
     display: none;
   }
 
@@ -322,17 +322,14 @@ body {
     size: A4;
     margin: 0;
   }
-
-  body.class-dashboard-is-open {
+  
+  body.dashboard-printing-active {
     overflow: visible !important;
   }
   
-  body.school-dashboard-is-open {
-    overflow: visible !important;
-  }
-
-  #class-dashboard-dialog-content,
-  #school-dashboard-dialog-content {
+  body.dashboard-printing-active #class-dashboard-dialog-content,
+  body.dashboard-printing-active #school-dashboard-dialog-content,
+  body.dashboard-printing-active #ranking-print-content {
     position: static !important; 
     display: block !important; 
     width: 100% !important;
@@ -354,8 +351,9 @@ body {
     font-size: 8pt !important; /* Base font size for dashboards */
   }
   
-  #class-dashboard-dialog-content [data-testid="dashboard-inner-scroll-container"],
-  #school-dashboard-dialog-content [data-testid="school-dashboard-inner-scroll-container"] {
+  body.dashboard-printing-active [data-testid="dashboard-inner-scroll-container"],
+  body.dashboard-printing-active [data-testid="school-dashboard-inner-scroll-container"],
+  body.dashboard-printing-active #ranking-print-content {
     overflow: visible !important; /* Allow content to flow across pages */
     height: auto !important;
     max-height: none !important;
@@ -363,82 +361,51 @@ body {
     box-sizing: border-box !important;
   }
 
-  #class-dashboard-dialog-content *,
-  #class-dashboard-dialog-content *::before,
-  #class-dashboard-dialog-content *::after,
-  #school-dashboard-dialog-content *,
-  #school-dashboard-dialog-content *::before,
-  #school-dashboard-dialog-content *::after {
+  body.dashboard-printing-active * {
     color: black !important;
     border-color: #ccc !important; 
     box-shadow: none !important;
   }
   
-  #class-dashboard-dialog-content .card,
-  #class-dashboard-dialog-content .table,
-  #school-dashboard-dialog-content .card,
-  #school-dashboard-dialog-content .table {
+  body.dashboard-printing-active .card,
+  body.dashboard-printing-active .table {
     background-color: white !important; 
   }
-  #class-dashboard-dialog-content .card,
-  #school-dashboard-dialog-content .card {
+  
+  body.dashboard-printing-active .card {
     page-break-inside: avoid !important;
     margin-bottom: 6px !important;
     box-shadow: none !important;
   }
-  #class-dashboard-dialog-content .card-header,
-  #school-dashboard-dialog-content .card-header {
+  body.dashboard-printing-active .card-header {
     padding: 6px !important; 
   }
-  #class-dashboard-dialog-content .card-title,
-  #school-dashboard-dialog-content .card-title {
+  body.dashboard-printing-active .card-title {
     font-size: 10pt !important; 
   }
-  #class-dashboard-dialog-content .card-description,
-  #school-dashboard-dialog-content .card-description {
+  body.dashboard-printing-active .card-description {
     font-size: 7pt !important; 
   }
-  #class-dashboard-dialog-content .card-content,
-  #school-dashboard-dialog-content .card-content {
+  body.dashboard-printing-active .card-content {
     padding: 6px !important; 
   }
 
-   #class-dashboard-dialog-content .text-primary,
-   #school-dashboard-dialog-content .text-primary {
-     color: #2c5282 !important; 
-   }
-   #class-dashboard-dialog-content .text-accent,
-   #school-dashboard-dialog-content .text-accent {
-     color: #276749 !important; 
-   }
-   #class-dashboard-dialog-content .text-muted-foreground,
-   #school-dashboard-dialog-content .text-muted-foreground {
-     color: #4a5568 !important; 
-   }
-  #class-dashboard-dialog-content [class~="bg-accent/10"],
-  #school-dashboard-dialog-content [class~="bg-accent/10"] { 
+   body.dashboard-printing-active .text-primary { color: #2c5282 !important; }
+   body.dashboard-printing-active .text-accent { color: #276749 !important; }
+   body.dashboard-printing-active .text-muted-foreground { color: #4a5568 !important; }
+  
+  body.dashboard-printing-active [class~="bg-accent/10"] { 
     background-color: #f0fff4 !important; 
     border: 1px solid #a7f3d0 !important; 
   }
-  #class-dashboard-dialog-content .text-green-500, #class-dashboard-dialog-content .text-green-600,
-  #school-dashboard-dialog-content .text-green-500, #school-dashboard-dialog-content .text-green-600,
-  #school-dashboard-dialog-content .text-green-600 { color: green !important; }
+  body.dashboard-printing-active .text-green-500, body.dashboard-printing-active .text-green-600 { color: green !important; }
+  body.dashboard-printing-active .text-yellow-500, body.dashboard-printing-active .text-yellow-600 { color: #b45309 !important; } 
+  body.dashboard-printing-active .text-red-500, body.dashboard-printing-active .text-red-600 { color: red !important; }
+  body.dashboard-printing-active .text-blue-500, body.dashboard-printing-active .text-blue-600 { color: #2b6cb0 !important; }
+  body.dashboard-printing-active .text-purple-600 { color: #553c9a !important;}
 
-  #class-dashboard-dialog-content .text-yellow-500, #class-dashboard-dialog-content .text-yellow-600,
-  #school-dashboard-dialog-content .text-yellow-500, #school-dashboard-dialog-content .text-yellow-600,
-  #school-dashboard-dialog-content .text-yellow-600 { color: #b45309 !important; } 
-
-  #class-dashboard-dialog-content .text-red-500, #class-dashboard-dialog-content .text-red-600,
-  #school-dashboard-dialog-content .text-red-500, #school-dashboard-dialog-content .text-red-600 { color: red !important; }
-  
-  #class-dashboard-dialog-content .text-blue-500, #class-dashboard-dialog-content .text-blue-600,
-  #school-dashboard-dialog-content .text-blue-500, #school-dashboard-dialog-content .text-blue-600,
-  #school-dashboard-dialog-content .text-blue-600 { color: #2b6cb0 !important; }
-
-  #school-dashboard-dialog-content .text-purple-600 { color: #553c9a !important;}
-
-
-  .dashboard-print-header, 
+  .dashboard-print-header,
+  .ranking-print-header,
   .school-dashboard-print-header { 
     display: block !important;
     text-align: center;
@@ -447,145 +414,75 @@ body {
     border-bottom: 1px solid #ccc;
   }
   .dashboard-print-header h2,
+  .ranking-print-header h2,
   .school-dashboard-print-header h2 {
     font-size: 1.25rem; 
     font-weight: bold;
     color: black !important;
   }
   .dashboard-print-header p,
+  .ranking-print-header p,
   .school-dashboard-print-header p {
     font-size: 0.875rem; 
     color: black !important;
   }
   
-  #class-dashboard-dialog-content .no-print,
-  #class-dashboard-dialog-content > .dialog-header:not(.dashboard-print-header), 
-  #class-dashboard-dialog-content > .sticky.top-0, 
-  #class-dashboard-dialog-content > .sticky.bottom-0,
-  #school-dashboard-dialog-content .no-print,
-  #school-dashboard-dialog-content > .dialog-header:not(.school-dashboard-print-header),
-  #school-dashboard-dialog-content > .sticky.top-0,
-  #school-dashboard-dialog-content > .sticky.bottom-0,
-  .dialog-footer-print-hide,
-  .dialog-header-print-hide { 
+  body.dashboard-printing-active .dialog-footer-print-hide,
+  body.dashboard-printing-active .dialog-header-print-hide { 
     display: none !important;
   }
   
-  #class-dashboard-dialog-content > button[aria-label="Close"], 
-  #class-dashboard-dialog-content .dialog-footer-print-hide,
-  #school-dashboard-dialog-content > button[aria-label="Close"],
-  #school-dashboard-dialog-content .dialog-footer-print-hide { 
-      display: none !important;
+  body.dashboard-printing-active .print-hide { display: none !important; }
+  body.dashboard-printing-active .print-show { display: block !important; }
+  
+  body.dashboard-printing-active > *:not(#class-dashboard-dialog-content):not(#school-dashboard-dialog-content):not(#ranking-print-content) {
+    display: none !important;
+  }
+  
+  body:not(.dashboard-printing-active) .print-only {
+    display: none !important;
   }
 
-  #class-dashboard-dialog-content .table,
-  #school-dashboard-dialog-content .table {
-    min-width: 0 !important;
-    width: 100% !important;
-    table-layout: fixed !important;
+  body.dashboard-printing-active #class-dashboard-dialog-content .student-ranking-card,
+  body.dashboard-printing-active #ranking-print-content {
+      page-break-inside: auto; /* Allow ranking table to break across pages */
   }
-  #class-dashboard-dialog-content .table th,
-  #class-dashboard-dialog-content .table td,
-  #school-dashboard-dialog-content .table th,
-  #school-dashboard-dialog-content .table td {
-    word-break: break-word !important;
-    padding: 2px 3px !important; 
-    white-space: normal !important;
-    font-size: 7pt !important;
+  body.dashboard-printing-active #ranking-print-content .table-body-rankings tr {
+      page-break-inside: avoid;
   }
-  #class-dashboard-dialog-content .table th,
-  #school-dashboard-dialog-content .table th {
-    font-size: 7pt !important; 
-  }
+  
+  body.dashboard-printing-active .table { min-width: 0 !important; width: 100% !important; table-layout: fixed !important; }
+  body.dashboard-printing-active .table th,
+  body.dashboard-printing-active .table td { word-break: break-word !important; padding: 2px 3px !important; white-space: normal !important; font-size: 7pt !important; }
+  body.dashboard-printing-active .table th { font-size: 7pt !important; }
 
-  #class-dashboard-dialog-content tr,
-  #school-dashboard-dialog-content tr {
-    page-break-inside: avoid !important; 
-  }
+  body.dashboard-printing-active tr { page-break-inside: avoid !important; }
 
   /* Chart specific print enhancements */
-  #class-dashboard-dialog-content [data-testid="subject-barchart-container"],
-  #class-dashboard-dialog-content [data-testid="gender-piechart-container"],
-  #school-dashboard-dialog-content [data-testid="school-subject-barchart-container"],
-  #school-dashboard-dialog-content [data-testid="school-gender-piechart-container"] {
+  body.dashboard-printing-active [data-testid="subject-barchart-container"],
+  body.dashboard-printing-active [data-testid="gender-piechart-container"],
+  body.dashboard-printing-active [data-testid="school-subject-barchart-container"],
+  body.dashboard-printing-active [data-testid="school-gender-piechart-container"] {
     min-width: 0 !important;
     width: 100% !important;
     height: 120px !important; 
     margin-top: 4px !important;
     margin-bottom: 8px !important;
   }
-  #class-dashboard-dialog-content .recharts-responsive-container,
-  #school-dashboard-dialog-content .recharts-responsive-container {
-    width: 100% !important; 
-  }
-  #class-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper,
-  #school-dashboard-dialog-content .recharts-responsive-container > .recharts-wrapper {
-    width: 100% !important; 
-    height: 100% !important; 
-    max-height: 100% !important;
-    overflow: visible !important;
-  }
-  #class-dashboard-dialog-content .recharts-surface,
-  #school-dashboard-dialog-content .recharts-surface { 
-    width: 100% !important;
-  }
-  #class-dashboard-dialog-content .recharts-tooltip-wrapper,
-  #school-dashboard-dialog-content .recharts-tooltip-wrapper { 
-    display: none !important;
-  }
-  #class-dashboard-dialog-content .recharts-legend-wrapper,
-  #school-dashboard-dialog-content .recharts-legend-wrapper { 
-    display: block !important; 
-    font-size: 6pt !important;
-    padding-top: 2px !important;
-  }
-   #class-dashboard-dialog-content .recharts-legend-wrapper ul,
-   #school-dashboard-dialog-content .recharts-legend-wrapper ul {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important;
-  }
-  #class-dashboard-dialog-content .recharts-legend-item,
-  #school-dashboard-dialog-content .recharts-legend-item {
-    margin-right: 4px !important;
-  }
-   #class-dashboard-dialog-content .recharts-cartesian-axis-tick text,
-   #school-dashboard-dialog-content .recharts-cartesian-axis-tick text {
-    font-size: 6pt !important;
-  }
+  body.dashboard-printing-active .recharts-responsive-container { width: 100% !important; }
+  body.dashboard-printing-active .recharts-responsive-container > .recharts-wrapper { width: 100% !important; height: 100% !important; max-height: 100% !important; overflow: visible !important; }
+  body.dashboard-printing-active .recharts-surface { width: 100% !important; }
+  body.dashboard-printing-active .recharts-tooltip-wrapper { display: none !important; }
+  body.dashboard-printing-active .recharts-legend-wrapper { display: block !important; font-size: 6pt !important; padding-top: 2px !important; }
+  body.dashboard-printing-active .recharts-legend-wrapper ul { display: flex !important; flex-wrap: wrap !important; justify-content: center !important; }
+  body.dashboard-printing-active .recharts-legend-item { margin-right: 4px !important; }
+  body.dashboard-printing-active .recharts-cartesian-axis-tick text { font-size: 6pt !important; }
   
-  /* School Ranking Print Styles */
-  #school-ranking-card {
-      border: none !important;
-      box-shadow: none !important;
-  }
-
-  #school-ranking-card .card-header {
-      display: none !important;
-  }
-
-  .school-ranking-print-header {
-      display: block !important;
-      text-align: center;
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid #ccc;
-  }
-
-  .school-ranking-print-header h2 {
-      font-size: 1.25rem;
-      font-weight: bold;
-      color: black !important;
-  }
-  .school-ranking-print-header p {
-      font-size: 0.875rem;
-      color: black !important;
-  }
-
-  #school-ranking-card .table th,
-  #school-ranking-card .table td {
-      padding: 4px 6px !important;
-      font-size: 9pt !important;
-  }
+  #school-ranking-card { border: none !important; box-shadow: none !important; }
+  #school-ranking-card .card-header { display: none !important; }
+  .school-ranking-print-header { display: block !important; text-align: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #ccc; }
+  .school-ranking-print-header h2 { font-size: 1.25rem; font-weight: bold; color: black !important; }
+  .school-ranking-print-header p { font-size: 0.875rem; color: black !important; }
+  #school-ranking-card .table th, #school-ranking-card .table td { padding: 4px 6px !important; font-size: 9pt !important; }
 }
     

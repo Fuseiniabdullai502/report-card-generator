@@ -84,16 +84,32 @@ export default function ClassPerformanceDashboard({
   const [historicalData, setHistoricalData] = useState<HistoricalTermData[]>([]);
 
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.classList.add('class-dashboard-is-open');
-    } else {
-      document.body.classList.remove('class-dashboard-is-open');
+  const handlePrint = (printType: 'dashboard' | 'rankings') => {
+    if (reportsForClass.length === 0) {
+      toast({
+        title: "Nothing to Print",
+        description: "Dashboard or ranking data is not available.",
+        variant: "destructive",
+      });
+      return;
     }
-    return () => {
-      document.body.classList.remove('class-dashboard-is-open');
-    };
-  }, [isOpen]);
+
+    const body = document.body;
+    body.classList.add('dashboard-printing-active');
+    
+    if (printType === 'rankings') {
+        body.setAttribute('data-print-target', 'rankings');
+    } else {
+        body.setAttribute('data-print-target', 'dashboard');
+    }
+
+    setTimeout(() => {
+      window.print();
+      body.classList.remove('dashboard-printing-active');
+      body.removeAttribute('data-print-target');
+    }, 300);
+  };
+
 
   useEffect(() => {
     if (isOpen) {
@@ -271,22 +287,6 @@ export default function ClassPerformanceDashboard({
       fetchAiInsights();
     }
   }, [isOpen, classStats, fetchAiInsights]);
-
-  const handlePrint = () => {
-    if (reportsForClass.length === 0) {
-      toast({
-        title: "Nothing to Print",
-        description: "Class dashboard data is not available.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // A small delay can help ensure all styles and elements are rendered before the print dialog opens.
-    setTimeout(() => {
-      window.print();
-    }, 300);
-  };
 
   const subjectPerformanceChartData = useMemo(() => {
     return classStats?.subjectStats.map(s => ({
@@ -490,7 +490,7 @@ export default function ClassPerformanceDashboard({
 
             {classStats && (
               <>
-                <Card className="shadow-md">
+                <Card className="shadow-md print-hide-on-rankings">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Users className="mr-2 h-5 w-5" />Overall Snapshot ({mostRecentTerm})</CardTitle>
                   </CardHeader>
@@ -508,10 +508,20 @@ export default function ClassPerformanceDashboard({
                   </CardContent>
                 </Card>
 
-                <Card className="shadow-md">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Trophy className="mr-2 h-5 w-5 text-yellow-500" />Student Ranking ({mostRecentTerm})</CardTitle>
-                    <CardDescription className="text-xs text-muted-foreground pt-1">Students in this class ranked by their overall average for the term.</CardDescription>
+                <Card className="shadow-md student-ranking-card">
+                   <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <CardTitle className="text-lg font-semibold text-primary flex items-center">
+                        <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
+                        Student Ranking ({mostRecentTerm})
+                      </CardTitle>
+                      <Button variant="outline" size="sm" className="no-print" onClick={() => handlePrint('rankings')}>
+                          <Printer className="mr-2 h-4 w-4" /> Print Rankings
+                      </Button>
+                    </div>
+                    <CardDescription className="text-xs text-muted-foreground pt-1 no-print">
+                      Students in this class ranked by their overall average for the term.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-4">
                       <Table className="border rounded-md min-w-[500px]">
@@ -522,7 +532,7 @@ export default function ClassPerformanceDashboard({
                                   <TableHead className="text-right font-semibold">Average (%)</TableHead>
                               </TableRow>
                           </ShadcnUITableHeader>
-                          <TableBody>
+                          <TableBody className="table-body-rankings">
                               {rankedStudents.map((student) => (
                                   <TableRow key={student.id}>
                                       <TableCell className="font-bold text-lg">{student.rank || 'N/A'}</TableCell>
@@ -538,7 +548,7 @@ export default function ClassPerformanceDashboard({
                 </Card>
 
                  {historicalData.length > 1 && (
-                    <Card className="shadow-md">
+                    <Card className="shadow-md print-hide-on-rankings">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><History className="mr-2 h-5 w-5"/>Term-over-Term Comparison</CardTitle>
                         </CardHeader>
@@ -566,7 +576,7 @@ export default function ClassPerformanceDashboard({
                  )}
 
                 {classStats.subjectStats.length > 0 && (
-                  <Card className="shadow-md">
+                  <Card className="shadow-md print-hide-on-rankings">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><TrendingUp className="mr-2 h-5 w-5 text-green-600" />Subject Performance ({mostRecentTerm})</CardTitle>
                       <CardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject (Below Average &lt;40%, Average 40-59%, Above Average &ge;60%).</CardDescription>
@@ -620,7 +630,7 @@ export default function ClassPerformanceDashboard({
                 )}
 
                 {classStats.genderStats.length > 0 && (
-                 <Card className="shadow-md">
+                 <Card className="shadow-md print-hide-on-rankings">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics ({mostRecentTerm})</CardTitle>
                          <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</CardDescription>
@@ -682,7 +692,7 @@ export default function ClassPerformanceDashboard({
                     </Card>
                 )}
                 
-                <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50")}>
+                <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50 print-hide-on-rankings")}>
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-center border-b pb-2">
                       <CardTitle className="text-lg font-semibold text-primary flex items-center">
@@ -702,7 +712,7 @@ export default function ClassPerformanceDashboard({
           </div>
 
         <ShadcnDialogFooter className="w-full shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide flex flex-row justify-end space-x-2">
-          <Button variant="outline" onClick={handlePrint} disabled={!classStats || reportsForClass.length === 0}>
+          <Button variant="outline" onClick={() => handlePrint('dashboard')} disabled={!classStats || reportsForClass.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
           <DialogClose asChild>
