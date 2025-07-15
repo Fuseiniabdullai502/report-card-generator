@@ -1179,6 +1179,7 @@ function AppContent({ user }: { user: CustomUser }) {
                   <p>Fetching your report data from the cloud.</p>
                 </div>
               ) : reportsCount > 0 && filteredReports[currentPreviewIndex] ? (
+                // This is the list of SAVED reports
                 filteredReports.map((reportData, index) => (
                   <div key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>
                       {index === currentPreviewIndex && (
@@ -1192,10 +1193,9 @@ function AppContent({ user }: { user: CustomUser }) {
                   </div>
                 ))
               ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
-                  <div className="report-preview-item active-preview-screen" key={currentEditingReport.id}>
-                    <div className="a4-page-simulation">
-                      <ReportPreview data={currentEditingReport} />
-                    </div>
+                  // This is the LIVE preview of the report being edited in the form
+                  <div className="a4-page-simulation">
+                    <ReportPreview data={currentEditingReport} />
                   </div>
               ) : (
                 <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
