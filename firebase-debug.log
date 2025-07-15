@@ -1,212 +1,49 @@
-[debug] [2025-07-15T07:19:06.350Z] ----------------------------------------------------------------------
-[debug] [2025-07-15T07:19:06.353Z] Command:       /nix/store/rbdrkcs5kkwpalxcd7c6bnm33lk2955n-nodejs-20.19.0/bin/node /home/user/.global_modules/bin/firebase deploy
-[debug] [2025-07-15T07:19:06.354Z] CLI Version:   14.10.1
-[debug] [2025-07-15T07:19:06.354Z] Platform:      linux
-[debug] [2025-07-15T07:19:06.354Z] Node Version:  v20.19.0
-[debug] [2025-07-15T07:19:06.354Z] Time:          Tue Jul 15 2025 07:19:06 GMT+0000 (Coordinated Universal Time)
-[debug] [2025-07-15T07:19:06.354Z] ----------------------------------------------------------------------
+[debug] [2025-07-15T21:27:36.631Z] ----------------------------------------------------------------------
+[debug] [2025-07-15T21:27:36.635Z] Command:       /nix/store/rbdrkcs5kkwpalxcd7c6bnm33lk2955n-nodejs-20.19.0/bin/node /home/user/.global_modules/bin/firebase init hosting:github
+[debug] [2025-07-15T21:27:36.636Z] CLI Version:   14.10.1
+[debug] [2025-07-15T21:27:36.636Z] Platform:      linux
+[debug] [2025-07-15T21:27:36.637Z] Node Version:  v20.19.0
+[debug] [2025-07-15T21:27:36.637Z] Time:          Tue Jul 15 2025 21:27:36 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-07-15T21:27:36.637Z] ----------------------------------------------------------------------
 [debug] 
-[debug] [2025-07-15T07:19:06.842Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
-[debug] [2025-07-15T07:19:06.843Z] > authorizing via signed-in user (fabdullai502@gmail.com)
-[debug] [2025-07-15T07:19:06.843Z] [iam] checking project report-card-generator-e3zkv for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]
-[debug] [2025-07-15T07:19:06.845Z] Checked if tokens are valid: true, expires at: 1752566640196
-[debug] [2025-07-15T07:19:06.845Z] Checked if tokens are valid: true, expires at: 1752566640196
-[debug] [2025-07-15T07:19:06.847Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions [none]
-[debug] [2025-07-15T07:19:06.847Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions x-goog-quota-user=projects/report-card-generator-e3zkv
-[debug] [2025-07-15T07:19:06.847Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
-[debug] [2025-07-15T07:19:07.582Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions 200
-[debug] [2025-07-15T07:19:07.582Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
-[debug] [2025-07-15T07:19:07.585Z] Checked if tokens are valid: true, expires at: 1752566640196
-[debug] [2025-07-15T07:19:07.585Z] Checked if tokens are valid: true, expires at: 1752566640196
-[debug] [2025-07-15T07:19:07.586Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv [none]
-[debug] [2025-07-15T07:19:07.789Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv 200
-[debug] [2025-07-15T07:19:07.789Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv {"projectId":"report-card-generator-e3zkv","projectNumber":"103786735519","displayName":"Report Card Generator","name":"projects/report-card-generator-e3zkv","resources":{"hostingSite":"report-card-generator-e3zkv"},"state":"ACTIVE","etag":"1_730ad702-c696-42d3-8469-7fbd08141e21"}
-[debug] [2025-07-15T07:19:12.230Z] defaultcredentials: writing to file /home/user/.config/firebase/fabdullai502_gmail_com_application_default_credentials.json
-[debug] [2025-07-15T07:19:12.237Z] Checked if tokens are valid: true, expires at: 1752566640196
-[debug] [2025-07-15T07:19:12.238Z] Checked if tokens are valid: true, expires at: 1752566640196
-[debug] [2025-07-15T07:19:12.239Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites pageToken=&pageSize=10
-[debug] [2025-07-15T07:19:13.430Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites 200
-[debug] [2025-07-15T07:19:13.430Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites {"sites":[{"name":"projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv","defaultUrl":"https://report-card-generator-e3zkv.web.app","appId":"1:103786735519:web:22922ed07e07c3dd817faa","type":"DEFAULT_SITE"}]}
-[debug] [2025-07-15T07:19:13.431Z] Checked if tokens are valid: true, expires at: 1752566640196
-[debug] [2025-07-15T07:19:13.431Z] Checked if tokens are valid: true, expires at: 1752566640196
-[debug] [2025-07-15T07:19:13.435Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:103786735519:web:22922ed07e07c3dd817faa/config [none]
-[debug] [2025-07-15T07:19:14.216Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:103786735519:web:22922ed07e07c3dd817faa/config 200
-[debug] [2025-07-15T07:19:14.216Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:103786735519:web:22922ed07e07c3dd817faa/config {"projectId":"report-card-generator-e3zkv","appId":"1:103786735519:web:22922ed07e07c3dd817faa","storageBucket":"report-card-generator-e3zkv.firebasestorage.app","apiKey":"AIzaSyCRe24-c5OnazQ2jbs84eiLnQheopbiIno","authDomain":"report-card-generator-e3zkv.firebaseapp.com","messagingSenderId":"103786735519","measurementId":"G-GFSQTH9VMT"}
+[debug] [2025-07-15T21:27:37.285Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-07-15T21:27:37.287Z] > authorizing via signed-in user (fabdullai502@gmail.com)
 [info] 
-   Thank you for trying our early preview of Next.js support on Firebase Hosting.
-   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
-   The integration is known to work with Next.js version 12 - 15.0. You may encounter errors.
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
 
-   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
-   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
-   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+You're about to initialize a Firebase project in this directory:
 
-   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+  /home/user/studio
 
-[debug] [2025-07-15T07:19:22.071Z] Checked if tokens are valid: true, expires at: 1752566640196
-[debug] [2025-07-15T07:19:22.071Z] Checked if tokens are valid: true, expires at: 1752566640196
-[debug] [2025-07-15T07:19:22.075Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv [none]
-[debug] [2025-07-15T07:19:23.035Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv 200
-[debug] [2025-07-15T07:19:23.035Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv {"name":"projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv","defaultUrl":"https://report-card-generator-e3zkv.web.app","appId":"1:103786735519:web:22922ed07e07c3dd817faa","type":"DEFAULT_SITE"}
-[info]    ▲ Next.js 15.3.3
+Before we get started, keep in mind:
 
-[info]    - Environments: .env.local, .env
+  * You are initializing within an existing Firebase project directory
 
-
-[info]    Creating an optimized production build ...
-
-[info]  ⚠ Compiled with warnings in 11.0s
-
-
-[info] ./node_modules/@opentelemetry/sdk-node/build/src/TracerProviderWithEnvExporter.js
-Module not found: Can't resolve '@opentelemetry/exporter-jaeger' in '/home/user/studio/node_modules/@opentelemetry/sdk-node/build/src'
-
-Import trace for requested module:
-./node_modules/@opentelemetry/sdk-node/build/src/TracerProviderWithEnvExporter.js
-./node_modules/@opentelemetry/sdk-node/build/src/sdk.js
-./node_modules/@opentelemetry/sdk-node/build/src/index.js
-./node_modules/@genkit-ai/core/lib/tracing.js
-./node_modules/@genkit-ai/core/lib/action.js
-./node_modules/@genkit-ai/core/lib/registry.js
-./node_modules/genkit/lib/registry.js
-./node_modules/genkit/lib/genkit.js
-./node_modules/genkit/lib/index.mjs
-./src/ai/flows/generate-student-feedback.ts
-./src/app/actions.ts
-
-./node_modules/handlebars/lib/index.js
-require.extensions is not supported by webpack. Use a loader instead.
-
-Import trace for requested module:
-./node_modules/handlebars/lib/index.js
-./node_modules/dotprompt/dist/index.js
-./node_modules/@genkit-ai/core/lib/registry.js
-./node_modules/genkit/lib/registry.js
-./node_modules/genkit/lib/genkit.js
-./node_modules/genkit/lib/index.mjs
-./src/ai/flows/generate-student-feedback.ts
-./src/app/actions.ts
-
-./node_modules/handlebars/lib/index.js
-require.extensions is not supported by webpack. Use a loader instead.
-
-Import trace for requested module:
-./node_modules/handlebars/lib/index.js
-./node_modules/dotprompt/dist/index.js
-./node_modules/@genkit-ai/core/lib/registry.js
-./node_modules/genkit/lib/registry.js
-./node_modules/genkit/lib/genkit.js
-./node_modules/genkit/lib/index.mjs
-./src/ai/flows/generate-student-feedback.ts
-./src/app/actions.ts
-
-./node_modules/handlebars/lib/index.js
-require.extensions is not supported by webpack. Use a loader instead.
-
-Import trace for requested module:
-./node_modules/handlebars/lib/index.js
-./node_modules/dotprompt/dist/index.js
-./node_modules/@genkit-ai/core/lib/registry.js
-./node_modules/genkit/lib/registry.js
-./node_modules/genkit/lib/genkit.js
-./node_modules/genkit/lib/index.mjs
-./src/ai/flows/generate-student-feedback.ts
-./src/app/actions.ts
-
-
-[info]  ✓ Compiled successfully in 16.0s
-
-[info]    Linting and checking validity of types ...
-
-[info] Failed to compile.
-
-
-[info] src/app/page.tsx
-Type error: Page "src/app/page.tsx" does not match the required types of a Next.js Page.
-  "STUDENT_PROFILES_STORAGE_KEY" is not a valid Page export field.
-
-
-[info] Next.js build worker exited with code: 1 and signal: null
-
-[debug] [2025-07-15T07:20:18.810Z] Error: ENOENT: no such file or directory, open '/home/user/studio/.next/export-marker.json'
-[error] 
-[error] Error: An unexpected error has occurred.
-[debug] [2025-07-15T13:47:26.614Z] ----------------------------------------------------------------------
-[debug] [2025-07-15T13:47:26.623Z] Command:       /nix/store/rbdrkcs5kkwpalxcd7c6bnm33lk2955n-nodejs-20.19.0/bin/node /nix/store/fprgfkwna33crhc86jqbf5878piivvgw-firebase-tools-14.7.0/lib/node_modules/firebase-tools/lib/bin/firebase.js emulators:start --project=demo-app --only=auth,firestore
-[debug] [2025-07-15T13:47:26.625Z] CLI Version:   14.7.0
-[debug] [2025-07-15T13:47:26.625Z] Platform:      linux
-[debug] [2025-07-15T13:47:26.625Z] Node Version:  v20.19.0
-[debug] [2025-07-15T13:47:26.626Z] Time:          Tue Jul 15 2025 13:47:26 GMT+0000 (Coordinated Universal Time)
-[debug] [2025-07-15T13:47:26.626Z] ----------------------------------------------------------------------
-[debug] 
-[debug] [2025-07-15T13:47:26.635Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
-[debug] [2025-07-15T13:47:28.569Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
-[debug] [2025-07-15T13:47:28.570Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
-[debug] [2025-07-15T13:47:29.262Z] openjdk version "21.0.5" 2024-10-15
-
-[debug] [2025-07-15T13:47:29.266Z] OpenJDK Runtime Environment (build 21.0.5+1-nixos)
-OpenJDK 64-Bit Server VM (build 21.0.5+1-nixos, mixed mode, sharing)
-
-[debug] [2025-07-15T13:47:29.303Z] Parsed Java major version: 21
-[info] i  emulators: Starting emulators: firestore {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: firestore"}}
-[info] i  emulators: Detected demo project ID "demo-app", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail. {"metadata":{"emulator":{"name":"hub"},"message":"Detected demo project ID \"demo-app\", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail."}}
-[warn] ⚠  auth: Not starting the auth emulator, make sure you have run firebase init. {"metadata":{"emulator":{"name":"auth"},"message":"Not starting the auth emulator, make sure you have run firebase init."}}
-[warn] ⚠  hub: Error when trying to check port 4400 on ::1: Error: listen EADDRNOTAVAIL: address not available ::1:4400 {"metadata":{"emulator":{"name":"hub"},"message":"Error when trying to check port 4400 on ::1: Error: listen EADDRNOTAVAIL: address not available ::1:4400"}}
-[warn] ⚠  hub: Port 4400 is available on 127.0.0.1 but not ::1. This may cause issues with some clients. {"metadata":{"emulator":{"name":"hub"},"message":"Port 4400 is available on 127.0.0.1 but not ::1. This may cause issues with some clients."}}
-[warn] ⚠  hub: If you encounter connectivity issues, consider switching to a different port or explicitly specifying "host": "<ip address>" instead of hostname in firebase.json {"metadata":{"emulator":{"name":"hub"},"message":"If you encounter connectivity issues, consider switching to a different port or explicitly specifying \"host\": \"<ip address>\" instead of hostname in firebase.json"}}
-[warn] ⚠  ui: Error when trying to check port 4000 on ::1: Error: listen EADDRNOTAVAIL: address not available ::1:4000 {"metadata":{"emulator":{"name":"ui"},"message":"Error when trying to check port 4000 on ::1: Error: listen EADDRNOTAVAIL: address not available ::1:4000"}}
-[warn] ⚠  ui: Port 4000 is available on 127.0.0.1 but not ::1. This may cause issues with some clients. {"metadata":{"emulator":{"name":"ui"},"message":"Port 4000 is available on 127.0.0.1 but not ::1. This may cause issues with some clients."}}
-[warn] ⚠  ui: If you encounter connectivity issues, consider switching to a different port or explicitly specifying "host": "<ip address>" instead of hostname in firebase.json {"metadata":{"emulator":{"name":"ui"},"message":"If you encounter connectivity issues, consider switching to a different port or explicitly specifying \"host\": \"<ip address>\" instead of hostname in firebase.json"}}
-[warn] ⚠  logging: Error when trying to check port 4500 on ::1: Error: listen EADDRNOTAVAIL: address not available ::1:4500 {"metadata":{"emulator":{"name":"logging"},"message":"Error when trying to check port 4500 on ::1: Error: listen EADDRNOTAVAIL: address not available ::1:4500"}}
-[warn] ⚠  logging: Port 4500 is available on 127.0.0.1 but not ::1. This may cause issues with some clients. {"metadata":{"emulator":{"name":"logging"},"message":"Port 4500 is available on 127.0.0.1 but not ::1. This may cause issues with some clients."}}
-[warn] ⚠  logging: If you encounter connectivity issues, consider switching to a different port or explicitly specifying "host": "<ip address>" instead of hostname in firebase.json {"metadata":{"emulator":{"name":"logging"},"message":"If you encounter connectivity issues, consider switching to a different port or explicitly specifying \"host\": \"<ip address>\" instead of hostname in firebase.json"}}
-[warn] ⚠  firestore: Error when trying to check port 8080 on ::1: Error: listen EADDRNOTAVAIL: address not available ::1:8080 {"metadata":{"emulator":{"name":"firestore"},"message":"Error when trying to check port 8080 on ::1: Error: listen EADDRNOTAVAIL: address not available ::1:8080"}}
-[warn] ⚠  firestore: Port 8080 is available on 127.0.0.1 but not ::1. This may cause issues with some clients. {"metadata":{"emulator":{"name":"firestore"},"message":"Port 8080 is available on 127.0.0.1 but not ::1. This may cause issues with some clients."}}
-[warn] ⚠  firestore: If you encounter connectivity issues, consider switching to a different port or explicitly specifying "host": "<ip address>" instead of hostname in firebase.json {"metadata":{"emulator":{"name":"firestore"},"message":"If you encounter connectivity issues, consider switching to a different port or explicitly specifying \"host\": \"<ip address>\" instead of hostname in firebase.json"}}
-[warn] ⚠  firestore.websocket: Error when trying to check port 9150 on ::1: Error: listen EADDRNOTAVAIL: address not available ::1:9150 {"metadata":{"emulator":{"name":"firestore"},"message":"Error when trying to check port 9150 on ::1: Error: listen EADDRNOTAVAIL: address not available ::1:9150"}}
-[warn] ⚠  firestore: Port 9150 is available on 127.0.0.1 but not ::1. This may cause issues with some clients. {"metadata":{"emulator":{"name":"firestore"},"message":"Port 9150 is available on 127.0.0.1 but not ::1. This may cause issues with some clients."}}
-[warn] ⚠  firestore: If you encounter connectivity issues, consider switching to a different port or explicitly specifying "host": "<ip address>" instead of hostname in firebase.json {"metadata":{"emulator":{"name":"firestore"},"message":"If you encounter connectivity issues, consider switching to a different port or explicitly specifying \"host\": \"<ip address>\" instead of hostname in firebase.json"}}
-[debug] [2025-07-15T13:47:29.329Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"firestore":[{"address":"127.0.0.1","family":"IPv4","port":8080}],"firestore.websocket":[{"address":"127.0.0.1","family":"IPv4","port":9150}]},"metadata":{"message":"assigned listening specs for emulators"}}
-[debug] [2025-07-15T13:47:29.339Z] [hub] writing locator at /tmp/hub-demo-app.json
-[warn] ⚠  firestore: Did not find a Cloud Firestore rules file specified in a firebase.json config file. {"metadata":{"emulator":{"name":"firestore"},"message":"Did not find a Cloud Firestore rules file specified in a firebase.json config file."}}
-[warn] ⚠  firestore: The emulator will default to allowing all reads and writes. Learn more about this option: https://firebase.google.com/docs/emulator-suite/install_and_configure#security_rules_configuration. {"metadata":{"emulator":{"name":"firestore"},"message":"The emulator will default to allowing all reads and writes. Learn more about this option: https://firebase.google.com/docs/emulator-suite/install_and_configure#security_rules_configuration."}}
-[debug] [2025-07-15T13:47:29.370Z] Ignoring unsupported arg: auto_download {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: auto_download"}}
-[debug] [2025-07-15T13:47:29.371Z] Ignoring unsupported arg: single_project_mode_error {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: single_project_mode_error"}}
-[debug] [2025-07-15T13:47:29.371Z] Starting Firestore Emulator with command {"binary":"java","args":["-Dgoogle.cloud_firestore.debug_log_level=FINE","-Duser.language=en","-jar","/nix/store/w60wgw0k95kiq4yl5f561xhydyg07gf7-emulators/cloud-firestore-emulator-v1.19.8.jar","--host","127.0.0.1","--port",8080,"--websocket_port",9150,"--project_id","demo-app","--single_project_mode",true],"optionalArgs":["port","webchannel_port","host","rules","websocket_port","functions_emulator","seed_from_export","project_id","single_project_mode"],"joinArgs":false,"shell":false,"port":8080} {"metadata":{"emulator":{"name":"firestore"},"message":"Starting Firestore Emulator with command {\"binary\":\"java\",\"args\":[\"-Dgoogle.cloud_firestore.debug_log_level=FINE\",\"-Duser.language=en\",\"-jar\",\"/nix/store/w60wgw0k95kiq4yl5f561xhydyg07gf7-emulators/cloud-firestore-emulator-v1.19.8.jar\",\"--host\",\"127.0.0.1\",\"--port\",8080,\"--websocket_port\",9150,\"--project_id\",\"demo-app\",\"--single_project_mode\",true],\"optionalArgs\":[\"port\",\"webchannel_port\",\"host\",\"rules\",\"websocket_port\",\"functions_emulator\",\"seed_from_export\",\"project_id\",\"single_project_mode\"],\"joinArgs\":false,\"shell\":false,\"port\":8080}"}}
-[info] i  firestore: Firestore Emulator logging to firestore-debug.log {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator logging to firestore-debug.log"}}
-[debug] [2025-07-15T13:47:35.860Z] Jul 15, 2025 1:47:35 PM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start
-INFO: Started WebSocket server on ws://127.0.0.1:9150
- {"metadata":{"emulator":{"name":"firestore"},"message":"Jul 15, 2025 1:47:35 PM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start\nINFO: Started WebSocket server on ws://127.0.0.1:9150\n"}}
-[debug] [2025-07-15T13:47:36.028Z] API endpoint: http:// {"metadata":{"emulator":{"name":"firestore"},"message":"API endpoint: http://"}}
-[debug] [2025-07-15T13:47:36.032Z] 127.0.0.1:8080
-If you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:
-
-   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
-
-If you are running a Firestore in Datastore Mode project, run:
-
-   export DATASTORE_EMULATOR_HOST=127.0.0.1:8080
-
-Note: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.
- {"metadata":{"emulator":{"name":"firestore"},"message":"127.0.0.1:8080\nIf you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:\n\n   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080\n\nIf you are running a Firestore in Datastore Mode project, run:\n\n   export DATASTORE_EMULATOR_HOST=127.0.0.1:8080\n\nNote: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.\n"}}
-[debug] [2025-07-15T13:47:36.038Z] Dev App Server is now running.
-
- {"metadata":{"emulator":{"name":"firestore"},"message":"Dev App Server is now running.\n\n"}}
-[info] ✔  firestore: Firestore Emulator UI websocket is running on 9150. {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator UI websocket is running on 9150."}}
-[debug] [2025-07-15T13:47:36.259Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: connect ECONNREFUSED 127.0.0.1:40001. If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
 [info] 
-┌─────────────────────────────────────────────────────────────┐
-│ ✔  All emulators ready! It is now safe to connect your app. │
-│ i  View Emulator UI at http://127.0.0.1:4000/               │
-└─────────────────────────────────────────────────────────────┘
-
-┌───────────┬────────────────┬─────────────────────────────────┐
-│ Emulator  │ Host:Port      │ View in Emulator UI             │
-├───────────┼────────────────┼─────────────────────────────────┤
-│ Firestore │ 127.0.0.1:8080 │ http://127.0.0.1:4000/firestore │
-└───────────┴────────────────┴─────────────────────────────────┘
-  Emulator Hub host: 127.0.0.1 port: 4400
-  Other reserved ports: 4500, 9150
-
-Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
- 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] but for now we'll just set up a default project.
+[info] 
+[debug] [2025-07-15T21:27:37.293Z] Using project from CLI flag: report-card-generator-e3zkv
+[debug] [2025-07-15T21:27:37.295Z] Checked if tokens are valid: true, expires at: 1752617183786
+[debug] [2025-07-15T21:27:37.295Z] Checked if tokens are valid: true, expires at: 1752617183786
+[debug] [2025-07-15T21:27:37.298Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv [none]
+[debug] [2025-07-15T21:27:37.691Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv 200
+[debug] [2025-07-15T21:27:37.691Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv {"projectId":"report-card-generator-e3zkv","projectNumber":"103786735519","displayName":"Report Card Generator","name":"projects/report-card-generator-e3zkv","resources":{"hostingSite":"report-card-generator-e3zkv"},"state":"ACTIVE","etag":"1_730ad702-c696-42d3-8469-7fbd08141e21"}
+[info] i  Using project report-card-generator-e3zkv (Report Card Generator) 
+[info] 
+=== Hosting:github Setup
+[info] 
+[info] i  Detected a .git folder at /home/user/studio 
+[info] i  Authorizing with GitHub to upload your service account to a GitHub repository's secrets store. 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://github.com/login/oauth/authorize?client_id=89cf50f02ac6aaed3484&state=741757108&redirect_uri=http%3A%2F%2Flocalhost%3A9005&scope=read%3Auser%20repo%20public_repo
+[info] 
+[info] Waiting for authentication...

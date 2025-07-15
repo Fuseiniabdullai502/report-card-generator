@@ -78,7 +78,9 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 Firebase App Hosting is the recommended way to deploy this Next.js application, as it's designed for full-stack web frameworks and integrates seamlessly with Firebase.
 
-### Step 1: Prerequisites
+### Recommended Method: Using the Firebase CLI
+
+This is the standard way to set up your hosting environment.
 
 1.  **Install Firebase CLI:** If you don't have it, install it globally by running:
     ```bash
@@ -90,25 +92,50 @@ Firebase App Hosting is the recommended way to deploy this Next.js application, 
     ```
 3.  **Push to GitHub:** Your code must be in a GitHub repository. If you haven't already, create a new repository on GitHub and push your project to it.
 
-### Step 2: Initialize App Hosting
-
-1.  **Run the init command** in your project's root directory:
+4.  **Run the init command** in your project's root directory:
     ```bash
     firebase init hosting
     ```
-2.  **Select a Firebase Project:** Choose the Firebase project you want to use from the list.
-3.  **IMPORTANT: Configure Hosting:** When prompted to select a hosting option, use the arrow keys to choose **"App Hosting: for web frameworks (Next.js, Angular, etc)"**. This is the most important step. If you select the other "Hosting" option, it will ask for a public directory, which is not correct for this setup.
-4.  **Set Backend Region:** Choose a region for your backend server (e.g., `us-central1`).
-5.  **Connect to GitHub:** The CLI will guide you to connect to your GitHub account and select the repository for this project. This will set up a GitHub Action to enable automatic deployments whenever you push to your main branch.
+5.  **Select a Firebase Project:** Choose the Firebase project you want to use from the list.
+6.  **IMPORTANT: Configure Hosting:** When prompted to select a hosting option, use the arrow keys to choose **"App Hosting: for web frameworks (Next.js, Angular, etc)"**. This is the most important step.
+7.  **Set Backend Region:** Choose a region for your backend server (e.g., `us-central1`).
+8.  **Connect to GitHub:** The CLI will guide you to connect to your GitHub account and select the repository for this project. This will set up a GitHub Action to enable automatic deployments whenever you push to your main branch.
+9.  **Configure Environment Variables:** Finally, follow the instructions in **Step 4** of the "Manual App Hosting Setup" guide below to add your secrets and environment variables.
 
-### Step 3: Configure Environment Variables
+### Alternative Method: Manual App Hosting Setup
 
-This is the most critical step for your live application to work. You need to provide your API keys to the deployed app.
+If you have issues with the Firebase CLI, you can set up everything manually in the Firebase Console.
 
-1.  **Go to the Firebase Console** and select your project.
-2.  Navigate to the **App Hosting** section in the left-hand menu. You should see your newly created backend. Click on it to open its dashboard.
-3.  Go to the **"Settings"** tab. Here, you will add all the environment variables from your local `.env` file.
-4.  **Add each variable** by clicking "Add variable" and entering the key and value:
+#### Step 1: Go to the Firebase Console
+
+- Open your browser and navigate to the [Firebase Console](https://console.firebase.google.com/).
+- Select the Firebase project you are using for this application.
+
+#### Step 2: Create a New Backend
+
+- In the left-hand menu, under the "Build" section, click on **App Hosting**.
+- Click the **"Create backend"** button.
+
+#### Step 3: Connect to GitHub
+
+- Click the **"Connect to GitHub"** button. A pop-up window will appear.
+- Authorize Firebase to access your GitHub account. You may need to install the Firebase GitHub App on your account or a specific organization.
+- Once connected, select the **GitHub repository** where your application code is stored.
+- For the **"Root directory"**, leave it as the default (`/`) unless your app is in a subfolder within the repository.
+- Click **"Next"**.
+
+#### Step 4: Configure Deployment Settings
+
+- Firebase will automatically detect that you're using Next.js.
+- Set a **Backend ID** (e.g., `report-card-app`) and choose a **Region** for your server (e.g., `us-central1`).
+- Click **"Create backend"**. Firebase will now set up the necessary infrastructure and a GitHub Action in your repository.
+
+#### Step 5: Configure Environment Variables (CRITICAL)
+
+Your application will not work without these settings. This is the most important step.
+
+1.  After your backend is created, you will be taken to its dashboard. Click on the **"Settings"** tab.
+2.  **Add each variable** by clicking "Add variable" and entering the key and value from your local `.env` file:
     *   `GOOGLE_API_KEY`: Your API key for Google AI Studio.
     *   `NEXT_PUBLIC_ADMIN_EMAIL`: Your designated admin email address.
     *   `NEXT_PUBLIC_FIREBASE_API_KEY`: From your Firebase project's web app config.
@@ -117,18 +144,17 @@ This is the most critical step for your live application to work. You need to pr
     *   `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`: From your Firebase project's web app config.
     *   `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`: From your Firebase project's web app config.
     *   `NEXT_PUBLIC_FIREBASE_APP_ID`: From your Firebase project's web app config.
-5.  **Add the Admin SDK Service Account:**
+3.  **Add the Admin SDK Service Account:**
     *   Click **"Add secret"** (this is more secure for sensitive credentials).
     *   For the secret name, enter `FIREBASE_SERVICE_ACCOUNT`.
     *   For the value, open the `firebase-service-account.json` file you downloaded earlier.
     *   Copy the **entire JSON content** and paste it into the secret value field.
+4.  **Save** all your variables.
 
-6.  **Save** all your variables.
+#### Step 6: Deploy Your App
 
-### Step 4: Deploy
-
-1.  **Trigger a Deployment:** Your first deployment will start automatically after the GitHub connection is made. You can monitor its progress in the App Hosting dashboard in the Firebase Console.
-2.  **Automatic Future Deployments:** From now on, every time you `git push` to your main branch, the GitHub Action will automatically build and deploy the new version of your app.
+1.  Your first deployment may have already started automatically. You can monitor its progress in the "Logs" tab of your App Hosting backend dashboard.
+2.  To trigger a new deployment, simply `git push` a change to your main branch on GitHub. The GitHub Action will automatically build and deploy the new version of your app.
 
 Congratulations! Your Report Card Generator is now live on the web, fully integrated with Firebase.
 
@@ -140,7 +166,7 @@ If you see an error message that says **`Admin features are disabled. The Fireba
 
 **To fix this on App Hosting:**
 
-1.  Follow the instructions in **"Step 3: Configure Environment Variables"** above.
+1.  Follow the instructions in **"Step 5: Configure Environment Variables"** in the manual setup guide above.
 2.  Go to your App Hosting backend's **Settings** tab in the Firebase Console.
 3.  Find the `FIREBASE_SERVICE_ACCOUNT` secret and click to edit it.
 4.  Double-check that you have copied the **entire contents** of the `firebase-service-account.json` file.
@@ -164,3 +190,4 @@ If the CLI asks you "What do you want to use as your public directory?", it mean
 3.  On the admin page, you can authorize new users by entering their email address.
 4.  Once authorized, the user can go to the `/register` page and create an account. Users who have not been authorized will not be able to register.
 5.  You can also activate or deactivate existing user accounts directly from the admin panel. Deactivated users will not be able to log in.
+
