@@ -100,7 +100,7 @@ This is the standard way to set up your hosting environment.
 6.  **IMPORTANT: Configure Hosting:** When prompted to select a hosting option, use the arrow keys to choose **"App Hosting: for web frameworks (Next.js, Angular, etc)"**. This is the most important step.
 7.  **Set Backend Region:** Choose a region for your backend server (e.g., `us-central1`).
 8.  **Connect to GitHub:** The CLI will guide you to connect to your GitHub account and select the repository for this project. This will set up a GitHub Action to enable automatic deployments whenever you push to your main branch.
-9.  **Configure Environment Variables:** Finally, follow the instructions in **Step 4** of the "Manual App Hosting Setup" guide below to add your secrets and environment variables.
+9.  **Configure Environment Variables:** Finally, follow the instructions in **Step 5** of the "Manual App Hosting Setup" guide below to add your secrets and environment variables.
 
 ### Alternative Method: Manual App Hosting Setup
 
@@ -135,21 +135,28 @@ If you have issues with the Firebase CLI, you can set up everything manually in 
 Your application will not work without these settings. This is the most important step.
 
 1.  After your backend is created, you will be taken to its dashboard. Click on the **"Settings"** tab.
-2.  **Add each variable** by clicking "Add variable" and entering the key and value from your local `.env` file:
-    *   `GOOGLE_API_KEY`: Your API key for Google AI Studio.
-    *   `NEXT_PUBLIC_ADMIN_EMAIL`: Your designated admin email address.
-    *   `NEXT_PUBLIC_FIREBASE_API_KEY`: From your Firebase project's web app config.
-    *   `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`: From your Firebase project's web app config.
-    *   `NEXT_PUBLIC_FIREBASE_PROJECT_ID`: From your Firebase project's web app config.
-    *   `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`: From your Firebase project's web app config.
-    *   `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`: From your Firebase project's web app config.
-    *   `NEXT_PUBLIC_FIREBASE_APP_ID`: From your Firebase project's web app config.
-3.  **Add the Admin SDK Service Account:**
-    *   Click **"Add secret"** (this is more secure for sensitive credentials).
-    *   For the secret name, enter `FIREBASE_SERVICE_ACCOUNT`.
-    *   For the value, open the `firebase-service-account.json` file you downloaded earlier.
-    *   Copy the **entire JSON content** and paste it into the secret value field.
-4.  **Save** all your variables.
+2.  You will see sections for **Environment variables** and **Secrets**.
+3.  **To add regular variables:**
+    *   Click the **"Add variable"** button.
+    *   A form will appear with fields for both **Name** (the key) and **Value**.
+    *   Add each variable by entering the key from your `.env` file into the "Name" field and the corresponding value into the "Value" field.
+    *   **Example:** For `GOOGLE_API_KEY`, enter `GOOGLE_API_KEY` in the Name field, and paste your actual API key in the Value field.
+    *   Add all of the following variables this way:
+        *   `GOOGLE_API_KEY`
+        *   `NEXT_PUBLIC_ADMIN_EMAIL`
+        *   `NEXT_PUBLIC_FIREBASE_API_KEY`
+        *   `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+        *   `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+        *   `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+        *   `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+        *   `NEXT_PUBLIC_FIREBASE_APP_ID`
+4.  **To add the Admin SDK Service Account (as a secret):**
+    *   In the **Secrets** section, click **"Add secret"**.
+    *   For the secret **Name**, enter `FIREBASE_SERVICE_ACCOUNT`.
+    *   For the **Value**, open the `firebase-service-account.json` file you downloaded earlier.
+    *   Copy the **entire JSON content** and paste it into the secret **Value** field.
+    *   Click **"Save"**.
+5.  **Save** all your variables.
 
 #### Step 6: Deploy Your App
 
@@ -190,4 +197,3 @@ If the CLI asks you "What do you want to use as your public directory?", it mean
 3.  On the admin page, you can authorize new users by entering their email address.
 4.  Once authorized, the user can go to the `/register` page and create an account. Users who have not been authorized will not be able to register.
 5.  You can also activate or deactivate existing user accounts directly from the admin panel. Deactivated users will not be able to log in.
-
