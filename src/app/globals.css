@@ -227,11 +227,11 @@ body {
     box-sizing: border-box !important;
     overflow: visible !important; 
     font-size: 8pt !important; /* MORE AGGRESSIVE FONT SIZE */
-    page-break-inside: avoid !important;
+    page-break-after: always !important; /* FORCE PAGE BREAK AFTER EACH REPORT */
   }
 
-  .a4-page-simulation:not(:first-child) {
-    page-break-before: always !important;
+  .a4-page-simulation:last-child {
+    page-break-after: auto !important; /* Prevent extra blank page at the end */
   }
 
   .a4-page-simulation * {
