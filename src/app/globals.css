@@ -367,8 +367,7 @@ body {
     box-shadow: none !important;
   }
   
-  body.dashboard-printing-active .card,
-  body.dashboard-printing-active .table {
+  body.dashboard-printing-active .card {
     background-color: white !important; 
   }
   
@@ -440,6 +439,16 @@ body {
   }
   
   body:not(.dashboard-printing-active) .print-only {
+    display: none !important;
+  }
+
+  body[data-print-target="dashboard"] .student-ranking-card,
+  body[data-print-target="dashboard"] .ranking-print-header {
+    display: none !important;
+  }
+  
+  body[data-print-target="rankings"] .print-hide-on-rankings,
+  body[data-print-target="rankings"] .dashboard-print-header {
     display: none !important;
   }
 

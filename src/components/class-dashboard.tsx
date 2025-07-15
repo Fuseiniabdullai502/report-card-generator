@@ -459,6 +459,10 @@ export default function ClassPerformanceDashboard({
                 <h2 className="text-xl font-bold">{schoolNameProp} - Class Performance: {selectedClass}</h2>
                 <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
             </div>
+            <div className="ranking-print-header">
+                <h2 className="text-xl font-bold">{schoolNameProp} - Student Ranking: {selectedClass}</h2>
+                <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
+            </div>
 
             {(isLoadingStats && !classStats) && (
               <Card className="shadow-md">
@@ -670,7 +674,7 @@ export default function ClassPerformanceDashboard({
                             </RechartsPieChart>
                         </ResponsiveContainer>
                         </div>
-                        <Table className="border rounded-md min-w-[300px] bg-card">
+                        <Table className="border rounded-md bg-card min-w-[300px]">
                         <ShadcnUITableHeader className="bg-muted/50">
                             <TableRow>
                             <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
