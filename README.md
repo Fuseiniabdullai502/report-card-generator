@@ -99,7 +99,8 @@ This is the standard way to set up your hosting environment.
 5.  **Select a Firebase Project:** Choose the Firebase project you want to use from the list.
 6.  **IMPORTANT: Configure Hosting:** When prompted to select a hosting option, use the arrow keys to choose **"App Hosting: for web frameworks (Next.js, Angular, etc)"**. This is the most important step.
 7.  **Set Backend Region:** Choose a region for your backend server (e.g., `us-central1`).
-8.  **Connect to GitHub:** The CLI will guide you to connect to your GitHub account and select the repository for this project. This will set up a GitHub Action to enable automatic deployments whenever you push to your main branch.
+8.  **Connect to GitHub:** The CLI will guide you to connect to
+ your GitHub account and select the repository for this project. This will set up a GitHub Action to enable automatic deployments whenever you push to your main branch.
 9.  **Configure Environment Variables:** Finally, follow the instructions in **Step 5** of the "Manual App Hosting Setup" guide below to add your secrets and environment variables.
 
 ### Alternative Method: Manual App Hosting Setup

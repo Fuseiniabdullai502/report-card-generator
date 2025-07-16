@@ -21,30 +21,37 @@ runConfig:
 env:
   # PUBLIC variables available during build and runtime
   - variable: NEXT_PUBLIC_ADMIN_EMAIL
+    value  :fuseiniabdullai024@gmail.com
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyCRe24-c5OnazQ2jbs84eiLnQheopbiIno
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: report-card-generator-e3zkv.firebaseapp.com
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: report-card-generator-e3zkv
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: report-card-generator-e3zkv.firebasestorage.app
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: 103786735519
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:103786735519:web:22922ed07e07c3dd817faa
     availability:
       - BUILD
       - RUNTIME

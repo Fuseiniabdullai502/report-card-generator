@@ -2,8 +2,7 @@
 import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/components/auth-provider'; // Import AuthProvider
+import { Providers } from '@/components/providers'; // Import the new Providers component
 
 const APP_NAME = 'Report Card Generator';
 const APP_DESCRIPTION = 'Easily create, customize, rank, and print student terminal reports. An AI-powered tool for educators.';
@@ -85,15 +84,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <ThemeProvider
-          defaultTheme="light"
-          storageKey="report-card-theme"
-        >
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+        <Providers>
+          {children}
           <Toaster />
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
