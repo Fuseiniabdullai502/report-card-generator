@@ -43,7 +43,7 @@ The application uses Firebase for authentication and Firestore. You need to conn
 
 ##### Step 2: Admin SDK Credentials (for the server)
 
-The Admin SDK is required for secure server actions like deactivating users and deleting invites. This setup supports two methods: a local file for development and an environment variable for production.
+The Admin SDK is required for secure server actions like deactivating users and deleting invites. This setup supports two methods: a local file for development and a secret for production.
 
 **For Local Development:**
 
@@ -62,7 +62,7 @@ The Admin SDK is required for secure server actions like deactivating users and 
 
 **For Production (Firebase App Hosting):**
 
-You will not use the JSON file directly for App Hosting. Instead, you will copy its contents into a secret environment variable. This is covered in the deployment guide below.
+You will not use the JSON file directly for App Hosting. Instead, you will upload its contents to a secret environment variable. This is covered in the deployment guide below.
 
 ### Running the Development Server
 
@@ -162,6 +162,22 @@ Your application will not work without these settings. This is the most importan
 
 1.  Your first deployment may have already started automatically. You can monitor its progress in the "Logs" tab of your App Hosting backend dashboard.
 2.  To trigger a new deployment, simply `git push` a change to your main branch on GitHub. The GitHub Action will automatically build and deploy the new version of your app.
+
+### Alternative: Deploying with Environment Variables via Terminal
+
+If you prefer using the terminal or are having issues with the console UI for secrets, you can use the Firebase CLI to manage your Admin SDK secret.
+
+1.  **Enable Required API:** You must first enable the Secret Manager API for your Firebase project. Visit this URL, select your project, and click "Enable":
+    ```
+    https://console.cloud.google.com/apis/library/secretmanager.googleapis.com
+    ```
+2.  **Create the Secret:** Run the following command in your terminal. This creates a secret container named `FIREBASE_SERVICE_ACCOUNT` but does not yet add the value.
+    ```bash
+    firebase functions:secrets:set FIREBASE_SERVICE_ACCOUNT
+    ```
+3.  **Set the Secret's Value:** When prompted, paste the **entire content** of your `firebase-service-account.json` file into the terminal and press Enter. It should be a single line of JSON.
+
+4.  **Deploy the Application:** Trigger a new deployment by pushing to your `main` branch on GitHub. The application is now configured to read this secret automatically. **Note:** You still need to set the other, non-secret environment variables in the Firebase Console as described in Step 5 of the manual guide.
 
 Congratulations! Your Report Card Generator is now live on the web, fully integrated with Firebase.
 

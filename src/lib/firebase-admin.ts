@@ -1,5 +1,10 @@
 // lib/firebase-admin.ts
 import * as admin from 'firebase-admin';
+import {defineSecret} from 'firebase-functions/params';
+
+// This line defines a secret that will be managed by the Firebase CLI.
+// You will set its value using a terminal command.
+const serviceAccountSecret = defineSecret('FIREBASE_SERVICE_ACCOUNT');
 
 let adminInstance: typeof admin;
 
@@ -11,22 +16,29 @@ if (admin.apps.length) {
         const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
         const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
-        if (serviceAccountEnv) {
-            // Production: Use service account from environment variable
+        if (serviceAccountSecret.value()) {
+            // Production on App Hosting using the defined secret.
+            const serviceAccount = JSON.parse(serviceAccountSecret.value());
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+            });
+            console.log("Firebase Admin SDK initialized using defined secret 'FIREBASE_SERVICE_ACCOUNT'.");
+        } else if (serviceAccountEnv) {
+            // Fallback for environments that set the variable directly.
             const serviceAccount = JSON.parse(serviceAccountEnv);
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
             });
             console.log("Firebase Admin SDK initialized using FIREBASE_SERVICE_ACCOUNT environment variable.");
         } else if (credentialsPath) {
-            // Development: Use service account from file path
+            // Development: Use service account from local file path.
             admin.initializeApp({
                 credential: admin.credential.applicationDefault(),
             });
             console.log("Firebase Admin SDK initialized using GOOGLE_APPLICATION_CREDENTIALS environment variable.");
         } else {
             // No configuration is present, so we'll set up the proxy.
-            throw new Error('No Firebase Admin credentials found. Set either FIREBASE_SERVICE_ACCOUNT (for production) or GOOGLE_APPLICATION_CREDENTIALS (for local dev).');
+            throw new Error('No Firebase Admin credentials found. Set a secret or environment variable.');
         }
         adminInstance = admin;
 
