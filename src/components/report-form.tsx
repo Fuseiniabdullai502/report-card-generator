@@ -1,7 +1,7 @@
 
 'use client';
 
-import { type ReportData, type SubjectEntry, ReportDataSchema } from '@/lib/schemas';
+import { type ReportData, type SubjectEntry, ReportDataSchema, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
 import React, { useState, useTransition, useEffect, useMemo, ChangeEvent, FormEvent } from 'react';
 import NextImage from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -31,8 +31,6 @@ interface ReportFormProps {
   onSaveReport: (data: ReportData) => Promise<void>;
   onResetForm: () => void;
 }
-
-export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 
 const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
 const ADD_CUSTOM_HOBBY_VALUE = "--add-custom-hobby--";

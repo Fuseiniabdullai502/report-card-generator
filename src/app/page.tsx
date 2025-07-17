@@ -17,7 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Printer, BookMarked, FileText, Eye, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
-import { defaultReportData } from '@/lib/schemas';
+import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, setDoc, deleteDoc, writeBatch, where, getDocs } from 'firebase/firestore';
 import { calculateOverallAverage } from '@/lib/calculations';
@@ -45,7 +45,6 @@ const ImportStudentsDialog = dynamic(() => import('@/components/import-students-
 });
 
 
-export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 const academicTermOptions = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
@@ -770,7 +769,7 @@ function AppContent({ user }: { user: CustomUser }) {
             academicTerm: sessionDefaults.academicTerm ?? defaultReportData.academicTerm,
             selectedTemplateId: sessionDefaults.selectedTemplateId ?? defaultReportData.selectedTemplateId,
             totalSchoolDays: sessionDefaults.totalSchoolDays ?? null,
-            headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? null,
+            headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? defaultReportData.headMasterSignatureDataUri,
             instructorContact: sessionDefaults.instructorContact || "",
             daysAttended: null, parentEmail: '', parentPhoneNumber: '',
             performanceSummary: '', strengths: '', areasForImprovement: '',

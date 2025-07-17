@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { STUDENT_PROFILES_STORAGE_KEY } from '@/app/page'; // Import the key
+import { STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
 import type { ReportData } from '@/lib/schemas'; // For student profile type
 import { User, Users, ArrowRightLeft, CheckSquare, XSquare } from 'lucide-react';
 

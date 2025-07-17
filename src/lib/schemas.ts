@@ -2,6 +2,8 @@
 import { z } from 'zod';
 import { serverTimestamp } from 'firebase/firestore'; // Import serverTimestamp
 
+export const STUDENT_PROFILES_STORAGE_KEY = 'studentProfilesReportCardApp_v1';
+
 export const SubjectEntrySchema = z.object({
   subjectName: z.string().min(1, 'Subject name is required'),
   continuousAssessment: z.coerce

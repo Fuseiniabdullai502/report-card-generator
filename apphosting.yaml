@@ -1,68 +1,58 @@
-# Settings to manage and configure a Firebase App Hosting backend.
-# https://firebase.google.com/docs/app-hosting/configure
-
-# Runtime settings for the server.
 runConfig:
-  # Minimum number of server instances to keep running.
-  # Useful for reducing cold starts, but may incur costs.
   # minInstances: 0
-
-  # Maximum number of server instances to scale up to.
-  # Increased to 10 to handle more concurrent users.
   maxInstances: 10
-
-  # Optional: You can specify CPU and Memory for your instances.
   # cpu: 1
   # memoryMiB: 512
 
-# Environment variables and secrets that will be available to your app.
-# Secrets must be created in Google Secret Manager first.
-# The `README.md` contains instructions for creating these secrets via the Firebase CLI.
 env:
-  # PUBLIC variables available during build and runtime
   - variable: NEXT_PUBLIC_ADMIN_EMAIL
-    value  :fuseiniabdullai024@gmail.com
-    availability:
-      - BUILD
-      - RUNTIME
-  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: AIzaSyCRe24-c5OnazQ2jbs84eiLnQheopbiIno
-    availability:
-      - BUILD
-      - RUNTIME
-  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: report-card-generator-e3zkv.firebaseapp.com
-    availability:
-      - BUILD
-      - RUNTIME
-  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: report-card-generator-e3zkv
-    availability:
-      - BUILD
-      - RUNTIME
-  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: report-card-generator-e3zkv.firebasestorage.app
-    availability:
-      - BUILD
-      - RUNTIME
-  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    value: 103786735519
-    availability:
-      - BUILD
-      - RUNTIME
-  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: 1:103786735519:web:22922ed07e07c3dd817faa
+    value: "fuseiniabdullai024@gmail.com"
     availability:
       - BUILD
       - RUNTIME
 
-  # SECURE variables available only at runtime on the server
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyCRe24-c5OnazQ2jbs84eiLnQheopbiIno"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "report-card-generator-e3zkv.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "report-card-generator-e3zkv"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "report-card-generator-e3zkv.appspot.com"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "103786735519"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:103786735519:web:22922ed07e07c3dd817faa"
+    availability:
+      - BUILD
+      - RUNTIME
+
   - variable: GOOGLE_API_KEY
-    secret: GOOGLE_API_KEY # References the secret named 'GOOGLE_API_KEY'
+    secret: GOOGLE_API_KEY
     availability:
       - RUNTIME
 
   - variable: FIREBASE_SERVICE_ACCOUNT
-    secret: FIREBASE_SERVICE_ACCOUNT # References the secret named 'FIREBASE_SERVICE_ACCOUNT'
+    secret: FIREBASE_SERVICE_ACCOUNT
     availability:
       - RUNTIME
