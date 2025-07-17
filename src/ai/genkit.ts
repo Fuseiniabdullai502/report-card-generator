@@ -1,6 +1,6 @@
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import type { GenkitConfig } from '@genkit-ai/core'; // Use this or your own type
+import type { GenkitConfig } from 'genkit'; // Use this or your own type
 
 let aiInstance: any;
 

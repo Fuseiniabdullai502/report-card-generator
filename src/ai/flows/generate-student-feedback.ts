@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -17,11 +16,11 @@ const GenerateStudentFeedbackInputSchema = z.object({
   className: z.string().describe('The name of the class.'),
   performanceSummary: z
     .string()
-    .describe('A summary of the student\'s performance in the class.'),
+    .describe("A summary of the student's performance in the class."),
   areasForImprovement: z
     .string()
     .describe('Areas where the student can improve.'),
-  strengths: z.string().describe('The student\'s strengths in the class.'),
+  strengths: z.string().describe("The student's strengths in the class."),
 });
 
 export type GenerateStudentFeedbackInput = z.infer<
@@ -29,7 +28,10 @@ export type GenerateStudentFeedbackInput = z.infer<
 >;
 
 const GenerateStudentFeedbackOutputSchema = z.object({
-  feedback: z.string().describe('The AI-generated personalized feedback for the student.').optional(),
+  feedback: z
+    .string()
+    .describe('The AI-generated personalized feedback for the student.')
+    .optional(),
 });
 
 export type GenerateStudentFeedbackOutput = z.infer<
@@ -66,17 +68,15 @@ const generateStudentFeedbackFlow = ai.defineFlow(
     inputSchema: GenerateStudentFeedbackInputSchema,
     outputSchema: GenerateStudentFeedbackOutputSchema,
   },
-  async input => {
+  async (input: z.infer<typeof GenerateStudentFeedbackInputSchema>) => {
     const {output} = await generateStudentFeedbackPrompt(input);
     if (!output) {
-      // Don't throw an error for empty output, just return an empty object.
       return {
-          feedback: ''
+        feedback: '',
       };
     }
-    // Return the output, providing a default empty string if feedback is missing.
     return {
-        feedback: output.feedback || ''
+      feedback: output.feedback || '',
     };
   }
 );
