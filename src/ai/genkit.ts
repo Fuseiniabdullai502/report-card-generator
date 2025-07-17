@@ -1,5 +1,5 @@
 
-import { genkit, type GenkitPlugin, type Genkit as GenkitInstance } from 'genkit';
+import { genkit, type Plugin as GenkitPlugin, type Genkit as GenkitInstance } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 
 let aiInstance: GenkitInstance;
