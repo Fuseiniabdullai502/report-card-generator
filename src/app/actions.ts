@@ -358,7 +358,7 @@ const CreateInviteActionInputSchema = z.object({
 });
 
 type CurrentUserForAction = {
-    role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
+    role: 'super-admin' | 'big-admin' | 'admin' | null;
     region?: string | null;
     district?: string | null;
     circuit?: string | null;

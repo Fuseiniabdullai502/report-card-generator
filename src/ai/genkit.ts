@@ -1,6 +1,5 @@
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import type { GenkitConfig } from 'genkit'; // Use this or your own type
 
 let aiInstance: any;
 
@@ -20,7 +19,7 @@ try {
   );
 
   const errorMessage =
-    'AI features are disabled. The Genkit GoogleAI plugin failed to initialize, which is commonly caused by a missing or invalid GOOGLE_API_KEY environment variable. Please check your setup and server logs.';
+    'AI features are disabled. The Genkit GoogleAI plugin failed to initialize. Please check your GOOGLE_API_KEY setup.';
 
   aiInstance = new Proxy({}, {
     get() {
