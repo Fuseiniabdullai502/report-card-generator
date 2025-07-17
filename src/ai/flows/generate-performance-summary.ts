@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow for generating a student's performance summary,
@@ -11,8 +10,8 @@
  * - GenerateReportInsightsOutput - The return type for the generateReportInsights function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z}from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
 // Define the schema for individual subject entries for the flow input - NOT EXPORTED
 const FlowSubjectEntrySchema = z.object({
@@ -24,7 +23,7 @@ const FlowSubjectEntrySchema = z.object({
 // Define the schema for previous term performance data - NOT EXPORTED
 const PreviousTermPerformanceSchema = z.object({
   termName: z.string().describe("The name of the previous academic term (e.g., 'First Term')."),
-  subjects: z.array(FlowSubjectEntrySchema).describe("An array of subjects with their marks for that term."),
+  subjects: z.array(FlowSubjectEntrySchema).describe('An array of subjects with their marks for that term.'),
   overallAverage: z.number().nullable().optional().describe("The student's overall average for that term, if available."),
 });
 
@@ -36,44 +35,29 @@ const GenerateReportInsightsInputSchema = z.object({
   daysAttended: z.number().nullable().optional().describe('Number of days the student attended school in the current term.'),
   totalSchoolDays: z.number().nullable().optional().describe('Total number of school days in the current term.'),
   subjects: z.array(FlowSubjectEntrySchema).describe('An array of subjects with their marks for the current term. CA is out of 60, Exam is out of 100.'),
-  previousTermsData: z.array(PreviousTermPerformanceSchema).optional().describe("Performance data from previous academic terms for comparison."),
+  previousTermsData: z.array(PreviousTermPerformanceSchema).optional().describe('Performance data from previous academic terms for comparison.'),
 });
 
-export type GenerateReportInsightsInput = z.infer<
-  typeof GenerateReportInsightsInputSchema
->;
+export type GenerateReportInsightsInput = z.infer<typeof GenerateReportInsightsInputSchema>;
 
 // Output schema is now optional to handle cases where the AI might not return all fields
 const GenerateReportInsightsOutputSchema = z.object({
-  performanceSummary: z
-    .string()
-    .describe('The AI-generated concise (1-3 sentences) overall performance summary for the student, including comparison if previous data was provided.')
-    .optional(),
-  strengths: z
-    .string()
-    .describe("The AI-generated brief list of the student's key strengths (e.g., 2-3 points), considering progress or sustained performance.")
-    .optional(),
-  areasForImprovement: z
-    .string()
-    .describe('The AI-generated brief list of areas where the student can improve (e.g., 2-3 points), considering any decline or persistent challenges.')
-    .optional(),
+  performanceSummary: z.string().describe('The AI-generated concise (1-3 sentences) overall performance summary for the student, including comparison if previous data was provided.').optional(),
+  strengths: z.string().describe("The AI-generated brief list of the student's key strengths (e.g., 2-3 points), considering progress or sustained performance.").optional(),
+  areasForImprovement: z.string().describe('The AI-generated brief list of areas where the student can improve (e.g., 2-3 points), considering any decline or persistent challenges.').optional(),
 });
 
-export type GenerateReportInsightsOutput = z.infer<
-  typeof GenerateReportInsightsOutputSchema
->;
+export type GenerateReportInsightsOutput = z.infer<typeof GenerateReportInsightsOutputSchema>;
 
-export async function generateReportInsights(
-  input: GenerateReportInsightsInput
-): Promise<GenerateReportInsightsOutput> {
+export async function generateReportInsights(input: GenerateReportInsightsInput): Promise<GenerateReportInsightsOutput> {
   return generateReportInsightsFlow(input);
 }
 
 const generateReportInsightsPrompt = ai.definePrompt({
   name: 'generateReportInsightsPrompt',
   model: 'googleai/gemini-1.5-flash-latest',
-  input: {schema: GenerateReportInsightsInputSchema},
-  output: {schema: GenerateReportInsightsOutputSchema},
+  input: { schema: GenerateReportInsightsInputSchema },
+  output: { schema: GenerateReportInsightsOutputSchema },
   prompt: `You are an academic advisor tasked with writing concise insights for a student's report card for the {{{currentAcademicTerm}}}.
 Analyze the student's performance based on their subject marks and attendance data provided below for the current term.
 
@@ -144,21 +128,19 @@ const generateReportInsightsFlow = ai.defineFlow(
     inputSchema: GenerateReportInsightsInputSchema,
     outputSchema: GenerateReportInsightsOutputSchema,
   },
-  async input => {
-    const {output} = await generateReportInsightsPrompt(input);
+  async (input: z.infer<typeof GenerateReportInsightsInputSchema>) => {
+    const { output } = await generateReportInsightsPrompt(input);
     if (!output) {
-      // Don't throw an error for empty output, just return an empty object.
       return {
-          performanceSummary: '',
-          strengths: '',
-          areasForImprovement: '',
+        performanceSummary: '',
+        strengths: '',
+        areasForImprovement: '',
       };
     }
-    // Return the output, but provide default empty strings for any missing optional fields
     return {
-        performanceSummary: output.performanceSummary || '',
-        strengths: output.strengths || '',
-        areasForImprovement: output.areasForImprovement || '',
+      performanceSummary: output.performanceSummary || '',
+      strengths: output.strengths || '',
+      areasForImprovement: output.areasForImprovement || '',
     };
   }
 );
