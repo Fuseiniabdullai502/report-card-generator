@@ -358,7 +358,7 @@ const CreateInviteActionInputSchema = z.object({
 });
 
 type CurrentUserForAction = {
-    role: 'super-admin' | 'big-admin' | 'admin' | null;
+    role: 'super-admin' | 'big-admin' | 'admin';
     region?: string | null;
     district?: string | null;
     circuit?: string | null;
@@ -370,6 +370,9 @@ export async function createInviteAction(
   currentUser: CurrentUserForAction
 ): Promise<{ success: boolean; message: string }> {
   try {
+    if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
+        throw new Error('You do not have permission to invite users.');
+    }
     const validatedData = CreateInviteActionInputSchema.parse(data);
     const { email, role, ...scopesFromClient } = validatedData;
     const normalizedEmail = email.trim().toLowerCase();
@@ -392,8 +395,6 @@ export async function createInviteAction(
             throw new Error("An 'admin' can only invite users with the 'user' role.");
           }
           break;
-        default:
-          throw new Error('You do not have permission to invite users.');
       }
     }
     
