@@ -370,6 +370,7 @@ export async function createInviteAction(
   currentUser: CurrentUserForAction
 ): Promise<{ success: boolean; message: string }> {
   try {
+    // Add a guard clause for extra safety
     if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
         throw new Error('You do not have permission to invite users.');
     }
@@ -395,6 +396,8 @@ export async function createInviteAction(
             throw new Error("An 'admin' can only invite users with the 'user' role.");
           }
           break;
+        default:
+          throw new Error('You do not have permission to invite users.');
       }
     }
     
