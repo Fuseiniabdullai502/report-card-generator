@@ -79,13 +79,8 @@ export default function AdminPage() {
     setPopulationStats(null);
     setSchoolStats(null);
     try {
-      const usersPromise = getUsersAction({
-        id: currentUser.uid,
-        role: currentUser.role,
-        district: currentUser.district,
-        schoolName: currentUser.schoolName,
-      } as CustomUser);
-      const invitesPromise = getInvitesAction({ role: currentUser.role });
+      const usersPromise = getUsersAction(currentUser);
+      const invitesPromise = getInvitesAction(currentUser);
       
       let reportsPromise: Promise<{ success: boolean; reports?: ReportData[]; error?: string; }> | null = null;
       if (currentUser.role === 'super-admin' || currentUser.role === 'big-admin') {
