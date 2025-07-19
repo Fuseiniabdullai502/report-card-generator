@@ -491,7 +491,7 @@ function AppContent({ user }: { user: CustomUser }) {
       schoolLogoDataUri: formDataFromForm.schoolLogoDataUri || null,
       academicYear: formDataFromForm.academicYear || '',
       academicTerm: formDataFromForm.academicTerm || '',
-      selectedTemplateId: formDataFromForm.selectedTemplateId || 'default',
+      selectedTemplateId: formDataFromForm.selectedTemplateId ?? 'default',
       daysAttended: formDataFromForm.daysAttended === undefined || formDataFromForm.daysAttended === null ? null : Number(formDataFromForm.daysAttended),
       totalSchoolDays: formDataFromForm.totalSchoolDays === undefined || formDataFromForm.totalSchoolDays === null ? null : Number(formDataFromForm.totalSchoolDays),
       parentEmail: formDataFromForm.parentEmail || "",
@@ -728,8 +728,15 @@ function AppContent({ user }: { user: CustomUser }) {
   }, [user.role, user.schoolName, sessionDefaults.schoolName, currentEditingReport.schoolName]);
   
   const academicYearForDashboard = useMemo(() => {
-    return sessionDefaults.academicYear || "Academic Year";
-  }, [sessionDefaults.academicYear]);
+    if (sessionDefaults.academicYear) {
+      return sessionDefaults.academicYear;
+    }
+    const years = new Set(allRankedReports.map(r => r.academicYear).filter(Boolean));
+    if (years.size === 1) {
+      return Array.from(years)[0];
+    }
+    return years.size > 1 ? "Multiple Years" : "Academic Year";
+  }, [sessionDefaults.academicYear, allRankedReports]);
 
  const handleImportStudents = async (selectedStudentNames: string[], destinationClass: string) => {
     if (selectedStudentNames.length === 0 || !destinationClass) {
@@ -1232,9 +1239,9 @@ function AppContent({ user }: { user: CustomUser }) {
           <SchoolPerformanceDashboard
               isOpen={isSchoolDashboardOpen}
               onOpenChange={setIsSchoolDashboardOpen}
-              allReports={allRankedReports.filter(r => r.academicYear === academicYearForDashboard)}
+              allReports={allRankedReports.filter(r => r.academicYear === sessionDefaults.academicYear)}
               schoolNameProp={schoolNameForDashboard}
-              academicYearProp={academicYearForDashboard}
+              academicYearProp={sessionDefaults.academicYear ?? 'All Years'}
               userRole={user.role}
           />
       )}
