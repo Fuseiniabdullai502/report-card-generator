@@ -21,6 +21,7 @@ import {
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
 import admin from '@/lib/firebase-admin'; // Import the default admin instance
+import type { Query, DocumentData } from 'firebase-admin/firestore';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser } from '@/components/auth-provider';
@@ -357,13 +358,8 @@ const CreateInviteActionInputSchema = z.object({
   classNames: z.array(z.string()).optional().nullable(),
 });
 
-type CurrentUserForAction = {
-    role: 'super-admin' | 'big-admin' | 'admin';
-    region?: string | null;
-    district?: string | null;
-    circuit?: string | null;
-    schoolName?: string | null;
-}
+type CurrentUserForAction = Pick<CustomUser, 'role' | 'region' | 'district' | 'circuit' | 'schoolName'>;
+
 
 export async function createInviteAction(
   data: z.infer<typeof CreateInviteActionInputSchema>,
@@ -384,7 +380,7 @@ export async function createInviteAction(
         throw new Error("A 'super-admin' cannot invite another 'super-admin'.");
       }
       if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) {
-        throw new Error("A 'big-admin' cannot invite another 'big-admin' or 'super-admin'.");
+        throw new Error("A 'big-admin' cannot invite another 'big-admin' or a 'super-admin'.");
       }
       if (currentUser.role === 'admin' && role !== 'user') {
         throw new Error("An 'admin' can only invite users with the 'user' role.");
@@ -756,7 +752,7 @@ export async function getUsersAction(currentUser: CustomUser): Promise<{ success
       throw new Error("You do not have permission to view this data.");
     }
     
-    let usersQuery: admin.firestore.Query = admin.firestore().collection('users');
+    let usersQuery: Query = admin.firestore().collection('users');
 
     if (currentUser.role === 'big-admin') {
       if (!currentUser.district) throw new Error("Big-admin scope error: district not defined for your account.");
@@ -769,8 +765,8 @@ export async function getUsersAction(currentUser: CustomUser): Promise<{ success
     const usersSnapshot = await usersQuery.get();
     
     const users = usersSnapshot.docs
-      .filter(doc => doc.id !== currentUser.id)
-      .map(doc => {
+      .filter((doc: DocumentData) => doc.id !== currentUser.id)
+      .map((doc: DocumentData) => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -787,7 +783,7 @@ export async function getUsersAction(currentUser: CustomUser): Promise<{ success
           createdAt: data.createdAt?.toDate().toISOString() ?? null,
         };
       })
-      .sort((a, b) => {
+      .sort((a: UserForAdmin, b: UserForAdmin) => {
           const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return dateB - dateA;
@@ -846,7 +842,7 @@ export async function getReportsForAdminAction(user: CustomUser): Promise<{ succ
     }
 
     const reportsCollectionRef = admin.firestore().collection('reports');
-    let q: admin.firestore.Query;
+    let q: Query;
 
     if (user.role === 'super-admin') {
       q = reportsCollectionRef;

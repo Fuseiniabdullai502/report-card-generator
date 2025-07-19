@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -7,6 +8,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 export interface CustomUser extends User {
+  id: string; // Add the 'id' property here
   name?: string | null;
   telephone?: string | null;
   role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
@@ -111,11 +113,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           
           console.log(`📄 Firestore data: Name: ${name}, Tel: ${telephone}, Role: ${role}, Status: ${status}, Region: ${region}, District: ${district}, Circuit: ${circuit}, School: ${schoolName}, Classes: ${classNames?.join(', ')}`);
-          setUser({ ...firebaseUser, name, telephone, role, status, region, district, circuit, schoolName, classNames });
+          setUser({ ...firebaseUser, id: firebaseUser.uid, name, telephone, role, status, region, district, circuit, schoolName, classNames });
 
         } catch (error) {
           console.error('Error in AuthProvider while fetching/setting user role:', error);
-          setUser({ ...firebaseUser, role: null, status: null, name: null, telephone: null, region: null, district: null, circuit: null, schoolName: null, classNames: null }); // Fallback on error
+          setUser({ ...firebaseUser, id: firebaseUser.uid, role: null, status: null, name: null, telephone: null, region: null, district: null, circuit: null, schoolName: null, classNames: null }); // Fallback on error
         }
       } else {
         // User is not logged in.
