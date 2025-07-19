@@ -26,6 +26,7 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
+import type { ReportData } from '@/lib/schemas';
 
 
 // Schema for student feedback generation
@@ -376,7 +377,7 @@ export async function createInviteAction(
         throw new Error("A 'super-admin' cannot invite another 'super-admin'.");
       }
       if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) {
-        throw new Error("A 'big-admin' cannot invite another 'big-admin' or a 'super-admin'.");
+        throw new Error("A 'big-admin' cannot invite another 'big-admin' or 'super-admin'.");
       }
       if (currentUser.role === 'admin' && role !== 'user') {
         throw new Error("An 'admin' can only invite users with the 'user' role.");
