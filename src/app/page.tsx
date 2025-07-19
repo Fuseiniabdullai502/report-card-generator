@@ -355,10 +355,10 @@ function AppContent({ user }: { user: CustomUser }) {
            }
       } else if (user.role === 'user') {
           // User's scope is now set in a separate useEffect, this is a fallback.
-          newSessionDefaults.schoolName = user.schoolName || fetchedReports.find(r => r.schoolName?.trim())?.schoolName || null;
-          newSessionDefaults.region = user.region || fetchedReports.find(r => r.region?.trim())?.region || null;
-          newSessionDefaults.district = user.district || fetchedReports.find(r => r.district?.trim())?.district || null;
-          newSessionDefaults.circuit = user.circuit || fetchedReports.find(r => r.circuit?.trim())?.circuit || null;
+          newSessionDefaults.schoolName = user.schoolName ?? fetchedReports.find(r => r.schoolName?.trim())?.schoolName ?? '';
+          newSessionDefaults.region = user.region ?? fetchedReports.find(r => r.region?.trim())?.region ?? '';
+          newSessionDefaults.district = user.district ?? fetchedReports.find(r => r.district?.trim())?.district ?? '';
+          newSessionDefaults.circuit = user.circuit ?? fetchedReports.find(r => r.circuit?.trim())?.circuit ?? '';
       }
       setSessionDefaults(prev => ({...prev, ...newSessionDefaults}));
       
