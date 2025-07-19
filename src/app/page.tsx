@@ -571,7 +571,7 @@ function AppContent({ user }: { user: CustomUser }) {
       className: reportToSaveForFirestore.className,
       academicYear: reportToSaveForFirestore.academicYear,
       academicTerm: reportToSaveForFirestore.academicTerm ?? '',
-      selectedTemplateId: reportToSaveForFirestore.selectedTemplateId,
+      selectedTemplateId: reportToSaveForFirestore.selectedTemplateId ?? 'default',
       totalSchoolDays: reportToSaveForFirestore.totalSchoolDays,
       headMasterSignatureDataUri: reportToSaveForFirestore.headMasterSignatureDataUri,
       instructorContact: reportToSaveForFirestore.instructorContact,
@@ -728,7 +728,7 @@ function AppContent({ user }: { user: CustomUser }) {
   }, [user.role, user.schoolName, sessionDefaults.schoolName, currentEditingReport.schoolName]);
   
   const academicYearForDashboard = useMemo(() => {
-    return sessionDefaults.academicYear || "All Years";
+    return sessionDefaults.academicYear ?? "All Years";
   }, [sessionDefaults.academicYear]);
 
  const handleImportStudents = async (selectedStudentNames: string[], destinationClass: string) => {
@@ -743,7 +743,7 @@ function AppContent({ user }: { user: CustomUser }) {
         
         let importedCount = 0;
         let currentImportEntryNumberBase = nextStudentEntryNumber;
-
+        
         for (const studentName of selectedStudentNames) {
             const profile = Object.values(profiles).find(p => p.studentName === studentName);
             if (profile) {
