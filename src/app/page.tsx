@@ -728,13 +728,8 @@ function AppContent({ user }: { user: CustomUser }) {
   }, [user.role, user.schoolName, sessionDefaults.schoolName, currentEditingReport.schoolName]);
   
   const academicYearForDashboard = useMemo(() => {
-    if (reportsCount > 0) {
-      const uniqueYears = new Set(filteredReports.map(r => r.academicYear).filter(Boolean));
-      if (uniqueYears.size === 1) return uniqueYears.values().next().value;
-      return "Multiple Years";
-    }
-    return currentEditingReport.academicYear || "Academic Year";
-  }, [filteredReports, currentEditingReport.academicYear, reportsCount]);
+    return sessionDefaults.academicYear || "Academic Year";
+  }, [sessionDefaults.academicYear]);
 
  const handleImportStudents = async (selectedStudentNames: string[], destinationClass: string) => {
     if (selectedStudentNames.length === 0 || !destinationClass) {
@@ -749,12 +744,12 @@ function AppContent({ user }: { user: CustomUser }) {
       let importedCount = 0;
       let currentImportEntryNumberBase = nextStudentEntryNumber;
 
-      for (const [index, studentName] of selectedStudentNames.entries()) {
+      for (const studentName of selectedStudentNames) {
         const profile = Object.values(profiles).find(p => p.studentName === studentName);
         if (profile) {
           const importedReportForFirestore = {
             teacherId: user.uid,
-            studentEntryNumber: currentImportEntryNumberBase + index,
+            studentEntryNumber: currentImportEntryNumberBase + importedCount,
             createdAt: serverTimestamp(),
             studentName: profile.studentName,
             gender: profile.gender ?? '',
@@ -776,7 +771,7 @@ function AppContent({ user }: { user: CustomUser }) {
             hobbies: [], teacherFeedback: '',
             subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
             promotionStatus: null,
-            clientSideId: `imported-${Date.now()}-${index}`,
+            clientSideId: `imported-${Date.now()}-${importedCount}`,
           };
           
           await addDoc(collection(db, 'reports'), importedReportForFirestore);
@@ -1237,7 +1232,7 @@ function AppContent({ user }: { user: CustomUser }) {
           <SchoolPerformanceDashboard
               isOpen={isSchoolDashboardOpen}
               onOpenChange={setIsSchoolDashboardOpen}
-              allReports={filteredReports} // Pass filtered reports to the dashboard
+              allReports={allRankedReports.filter(r => r.academicYear === academicYearForDashboard)}
               schoolNameProp={schoolNameForDashboard}
               academicYearProp={academicYearForDashboard}
               userRole={user.role}
