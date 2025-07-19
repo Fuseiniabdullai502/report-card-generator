@@ -372,7 +372,7 @@ export async function createInviteAction(
     const normalizedEmail = email.trim().toLowerCase();
 
     // Permission checks for who can invite whom
-    if (role) { // Only check if a role is being assigned
+    if (role) {
       if (currentUser.role === 'super-admin' && role === 'super-admin') {
         throw new Error("A 'super-admin' cannot invite another 'super-admin'.");
       }
@@ -762,7 +762,7 @@ export async function getUsersAction(currentUser: CustomUser): Promise<{ success
     const usersSnapshot = await usersQuery.get();
     
     const users = usersSnapshot.docs
-      .filter((doc: DocumentData) => doc.id !== currentUser.id)
+      .filter((doc: DocumentData) => doc.id !== currentUser.uid)
       .map((doc: DocumentData) => {
         const data = doc.data();
         return {
