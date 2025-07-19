@@ -379,25 +379,15 @@ export async function createInviteAction(
     const normalizedEmail = email.trim().toLowerCase();
 
     // Permission checks for who can invite whom
-    if (role) { // Only check if a role is being assigned
-      switch (currentUser.role) {
-        case 'super-admin':
-          if (role === 'super-admin') {
-            throw new Error("A 'super-admin' cannot invite another 'super-admin'.");
-          }
-          break;
-        case 'big-admin':
-          if (role === 'big-admin' || role === 'super-admin') {
-            throw new Error("A 'big-admin' cannot invite another 'big-admin' or a 'super-admin'.");
-          }
-          break;
-        case 'admin':
-          if (role !== 'user') {
-            throw new Error("An 'admin' can only invite users with the 'user' role.");
-          }
-          break;
-        default:
-          throw new Error('You do not have permission to invite users.');
+    if (role) {
+      if (currentUser.role === 'super-admin' && role === 'super-admin') {
+        throw new Error("A 'super-admin' cannot invite another 'super-admin'.");
+      }
+      if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) {
+        throw new Error("A 'big-admin' cannot invite another 'big-admin' or 'super-admin'.");
+      }
+      if (currentUser.role === 'admin' && role !== 'user') {
+        throw new Error("An 'admin' can only invite users with the 'user' role.");
       }
     }
     
