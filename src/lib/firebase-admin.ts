@@ -1,3 +1,4 @@
+
 // lib/firebase-admin.ts
 import * as admin from 'firebase-admin';
 import {defineSecret} from 'firebase-functions/params';
@@ -15,10 +16,11 @@ if (admin.apps.length) {
     try {
         const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
         const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+        const secretValue = serviceAccountSecret.value();
 
-        if (serviceAccountSecret.value()) {
+        if (secretValue) {
             // Production on App Hosting using the defined secret.
-            const serviceAccount = JSON.parse(serviceAccountSecret.value());
+            const serviceAccount = JSON.parse(secretValue);
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
             });
