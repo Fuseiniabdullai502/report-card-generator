@@ -11,8 +11,8 @@ export interface CustomUser extends User {
   id: string; // Add the 'id' property here
   name?: string | null;
   telephone?: string | null;
-  role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
-  status: 'active' | 'inactive' | null;
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  status: 'active' | 'inactive';
   region?: string | null;
   district?: string | null;
   circuit?: string | null;
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         } catch (error) {
           console.error('Error in AuthProvider while fetching/setting user role:', error);
-          setUser({ ...firebaseUser, id: firebaseUser.uid, role: null, status: null, name: null, telephone: null, region: null, district: null, circuit: null, schoolName: null, classNames: null }); // Fallback on error
+          setUser({ ...firebaseUser, id: firebaseUser.uid, role: 'user', status: 'active', name: null, telephone: null, region: null, district: null, circuit: null, schoolName: null, classNames: null }); // Fallback on error
         }
       } else {
         // User is not logged in.

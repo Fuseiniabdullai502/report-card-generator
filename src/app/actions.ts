@@ -19,14 +19,14 @@ import {
   type GenerateSchoolInsightsOutput,
 } from '@/ai/flows/generate-school-insights-flow';
 import { z } from 'zod';
-import { auth, db } from '@/lib/firebase';
-import admin from '@/lib/firebase-admin'; // Import the default admin instance
+import admin from '@/lib/firebase-admin';
 import type { Query, DocumentData } from 'firebase-admin/firestore';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 import type { ReportData } from '@/lib/schemas';
+import { auth, db } from '@/lib/firebase';
 
 
 // Schema for student feedback generation
@@ -565,10 +565,10 @@ export async function deleteUserAction(
   data: { userId: string },
   currentUser: CustomUser
 ): Promise<{ success: boolean; message: string }> {
-  try {
-    if (currentUser.role !== 'super-admin') {
+  if (currentUser.role !== 'super-admin') {
       throw new Error("You do not have permission to perform this action.");
-    }
+  }
+  try {
     const { userId } = DeleteUserActionInputSchema.parse(data);
 
     // Delete from Firestore first
