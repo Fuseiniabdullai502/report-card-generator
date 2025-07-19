@@ -25,7 +25,7 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
-import type { ReportData } from '@/lib/schemas';
+import { type ReportData } from '@/lib/schemas';
 import { auth, db } from '@/lib/firebase';
 
 
@@ -350,7 +350,7 @@ export async function registerUserAction(data: {
 // Action for creating a detailed invite with optional role
 const CreateInviteActionInputSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
-  role: z.enum(['big-admin', 'admin', 'user']).optional().nullable(),
+  role: z.enum(['super-admin', 'big-admin', 'admin', 'user']).optional(),
   region: z.string().optional().nullable(),
   district: z.string().optional().nullable(),
   circuit: z.string().optional().nullable(),
@@ -372,7 +372,7 @@ export async function createInviteAction(
     const normalizedEmail = email.trim().toLowerCase();
 
     // Permission checks for who can invite whom
-    if (role) {
+    if (role) { // Only check if a role is being assigned
       if (currentUser.role === 'super-admin' && role === 'super-admin') {
         throw new Error("A 'super-admin' cannot invite another 'super-admin'.");
       }
