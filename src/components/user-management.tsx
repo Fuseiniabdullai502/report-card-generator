@@ -591,7 +591,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
 
 const inviteFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
-  role: z.enum(['big-admin', 'admin', 'user', '']).optional(),
+  role: z.enum(['big-admin', 'admin', 'user']).optional(),
   region: z.string().optional(),
   district: z.string().optional(),
   circuit: z.string().optional(),
@@ -607,7 +607,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
         resolver: zodResolver(inviteFormSchema),
         defaultValues: {
             email: '',
-            role: '',
+            role: undefined,
             region: '',
             district: '',
             circuit: '',
@@ -669,7 +669,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
         };
         const result = await createInviteAction({
             ...data,
-            role: (data.role as any) || undefined,
+            role: data.role ?? undefined,
         }, currentUserData);
 
         if(result.success) {
