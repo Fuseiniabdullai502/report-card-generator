@@ -124,10 +124,10 @@ function AppContent({ user }: { user: CustomUser }) {
   useEffect(() => {
     if (isRegularUser) {
       const userDefaults: Partial<ReportData> = {
-        region: user.region,
-        district: user.district,
-        circuit: user.circuit,
-        schoolName: user.schoolName,
+        region: user.region ?? '',
+        district: user.district ?? '',
+        circuit: user.circuit ?? '',
+        schoolName: user.schoolName ?? '',
         className: user.classNames?.[0] || '', // Default to first assigned class
       };
       setSessionDefaults(prev => ({...prev, ...userDefaults}));
