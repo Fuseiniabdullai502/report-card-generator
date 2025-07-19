@@ -216,7 +216,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
     const reportsWithAverages = listToProcess.map(report => {
         const overallAverage = calculateOverallAverage(report.subjects);
-        return { ...report, overallAverage };
+        return { ...report, overallAverage: overallAverage === null ? undefined : overallAverage };
     });
 
     const reportsByClass = new Map<string, ReportData[]>();
