@@ -350,13 +350,14 @@ export async function registerUserAction(data: {
 // Action for creating a detailed invite with optional role
 const CreateInviteActionInputSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
-  role: z.enum(['super-admin', 'big-admin', 'admin', 'user']).optional(),
+  role: z.enum(['big-admin', 'admin', 'user']).optional(),
   region: z.string().optional().nullable(),
   district: z.string().optional().nullable(),
   circuit: z.string().optional().nullable(),
   schoolName: z.string().optional().nullable(),
   classNames: z.array(z.string()).optional().nullable(),
 });
+
 
 export async function createInviteAction(
   data: z.infer<typeof CreateInviteActionInputSchema>,
@@ -371,13 +372,11 @@ export async function createInviteAction(
     const { email, role, ...scopesFromClient } = validatedData;
     const normalizedEmail = email.trim().toLowerCase();
 
+    // No need for this check since role can never be 'super-admin'
     // Permission checks for who can invite whom
     if (role) {
-      if (currentUser.role === 'super-admin' && role === 'super-admin') {
-        throw new Error("A 'super-admin' cannot invite another 'super-admin'.");
-      }
-      if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) {
-        throw new Error("A 'big-admin' cannot invite another 'big-admin' or 'super-admin'.");
+      if (currentUser.role === 'big-admin' && role === 'big-admin') {
+        throw new Error("A 'big-admin' cannot invite another 'big-admin'.");
       }
       if (currentUser.role === 'admin' && role !== 'user') {
         throw new Error("An 'admin' can only invite users with the 'user' role.");
@@ -494,7 +493,7 @@ export async function updateInviteAction(
     const validatedData = UpdateInviteActionSchema.parse(data);
     const { inviteId, role, ...scopes } = validatedData;
     
-    if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) { throw new Error("A 'big-admin' cannot assign 'big-admin' or 'super-admin' roles."); }
+    if (currentUser.role === 'big-admin' && (role === 'big-admin')) { throw new Error("A 'big-admin' cannot assign 'big-admin' roles."); }
     if (currentUser.role === 'admin' && role !== 'user') { throw new Error("An 'admin' can only assign the 'user' role."); }
     
     const inviteDocRef = admin.firestore().collection('invites').doc(inviteId);
@@ -644,7 +643,7 @@ export async function updateUserRoleAndScopeAction(
     const { userId, role, ...scopes } = validatedData;
     
     // Permission checks
-    if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) {
+    if (currentUser.role === 'big-admin' && (role === 'big-admin')) {
       throw new Error("A 'big-admin' cannot assign 'big-admin' or 'super-admin' roles.");
     }
     if (currentUser.role === 'admin' && role !== 'user') {
