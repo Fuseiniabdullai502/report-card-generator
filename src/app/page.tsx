@@ -20,7 +20,7 @@ import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, setDoc, deleteDoc, writeBatch, where, getDocs } from 'firebase/firestore';
-import { calculateOverallAverage } from '@/lib/calculations';
+import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import type { CustomUser } from '@/components/auth-provider';
@@ -728,12 +728,22 @@ function AppContent({ user }: { user: CustomUser }) {
   }, [user.role, user.schoolName, sessionDefaults.schoolName, currentEditingReport.schoolName]);
   
   const academicYearForDashboard = useMemo(() => {
-    return sessionDefaults.academicYear ?? "All Years";
-  }, [sessionDefaults.academicYear]);
+    return sessionDefaults.academicYear ?? allRankedReports[0]?.academicYear ?? "All Years";
+  }, [sessionDefaults.academicYear, allRankedReports]);
 
  const handleImportStudents = async (selectedStudentNames: string[], destinationClass: string) => {
     if (selectedStudentNames.length === 0 || !destinationClass) {
       toast({ title: "Import Error", description: "No students selected or destination class missing.", variant: "destructive" });
+      return;
+    }
+
+    // ✅ Validate required fields first
+    if (!sessionDefaults.schoolName || !sessionDefaults.region || !sessionDefaults.district || !sessionDefaults.academicYear || !sessionDefaults.academicTerm || !sessionDefaults.selectedTemplateId) {
+      toast({
+        title: "Missing Session Defaults",
+        description: "Required session data is missing. Please review your session settings before importing.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -788,26 +798,28 @@ function AppContent({ user }: { user: CustomUser }) {
             const newNextEntryNumForForm = currentImportEntryNumberBase + importedCount;
             const studentSpecificDefaultsForImport = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
 
+            // ✅ Proceed safely with fallbacks for optional fields
             setCurrentEditingReport({
                 ...studentSpecificDefaultsForImport,
                 schoolName: sessionDefaults.schoolName,
                 region: sessionDefaults.region,
                 district: sessionDefaults.district,
-                circuit: sessionDefaults.circuit,
-                schoolLogoDataUri: sessionDefaults.schoolLogoDataUri,
+                circuit: sessionDefaults.circuit ?? '',
+                schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? '',
                 className: destinationClass,
                 academicYear: sessionDefaults.academicYear,
                 academicTerm: sessionDefaults.academicTerm,
                 selectedTemplateId: sessionDefaults.selectedTemplateId,
-                totalSchoolDays: sessionDefaults.totalSchoolDays,
-                headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri,
-                instructorContact: sessionDefaults.instructorContact,
+                totalSchoolDays: sessionDefaults.totalSchoolDays ?? null,
+                headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? '',
+                instructorContact: sessionDefaults.instructorContact ?? '',
                 id: `unsaved-${Date.now()}`,
                 studentEntryNumber: newNextEntryNumForForm,
                 teacherId: user.uid,
             });
+
             setNextStudentEntryNumber(newNextEntryNumForForm);
-            setSessionDefaults(prev => ({...prev, className: destinationClass}));
+            setSessionDefaults(prev => ({ ...prev, className: destinationClass }));
         } else {
             toast({ title: "No Students Imported", description: "Could not find matching profiles for selected students.", variant: "destructive" });
         }
@@ -943,7 +955,7 @@ function AppContent({ user }: { user: CustomUser }) {
                         <Label htmlFor="sessionCircuit" className="text-sm font-medium">Circuit</Label>
                         <Input 
                             id="sessionCircuit" 
-                            value={sessionDefaults.circuit || ''} 
+                            value={sessionDefaults.circuit ?? ''} 
                             onChange={e => handleSessionDefaultChange('circuit', e.target.value)} 
                             placeholder="e.g., Kalpohin"
                             list="circuit-datalist"
@@ -959,7 +971,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
                     <div className="space-y-1 md:col-span-2">
                         <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
-                        <Input id="sessionSchoolName" value={sessionDefaults.schoolName || ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={!isSuperAdmin && !isBigAdmin}/>
+                        <Input id="sessionSchoolName" value={sessionDefaults.schoolName ?? ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={!isSuperAdmin && !isBigAdmin}/>
                     </div>
                     <div className="space-y-1">
                         <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
@@ -1007,7 +1019,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     </div>
                     <div className="space-y-1">
                         <Label htmlFor="sessionInstructorContact" className="text-sm font-medium">Instructor's Contact</Label>
-                        <Input id="sessionInstructorContact" value={sessionDefaults.instructorContact || ''} onChange={e => handleSessionDefaultChange('instructorContact', e.target.value)} placeholder="Phone or Email" />
+                        <Input id="sessionInstructorContact" value={sessionDefaults.instructorContact ?? ''} onChange={e => handleSessionDefaultChange('instructorContact', e.target.value)} placeholder="Phone or Email" />
                     </div>
                     <div className="space-y-1 flex items-center gap-2">
                     <input type="file" id="sessionSchoolLogoUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'schoolLogoDataUri')} />
@@ -1232,7 +1244,7 @@ function AppContent({ user }: { user: CustomUser }) {
           <SchoolPerformanceDashboard
               isOpen={isSchoolDashboardOpen}
               onOpenChange={setIsSchoolDashboardOpen}
-              allReports={allRankedReports.filter(r => r.academicYear === academicYearForDashboard)}
+              allReports={allRankedReports.filter(r => r.academicYear === sessionDefaults.academicYear)}
               schoolNameProp={schoolNameForDashboard}
               academicYearProp={academicYearForDashboard}
               userRole={user.role}
