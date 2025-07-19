@@ -767,7 +767,7 @@ function AppContent({ user }: { user: CustomUser }) {
             schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? null,
             academicYear: sessionDefaults.academicYear ?? defaultReportData.academicYear,
             academicTerm: sessionDefaults.academicTerm ?? defaultReportData.academicTerm,
-            selectedTemplateId: sessionDefaults.selectedTemplateId ?? defaultReportData.selectedTemplateId,
+            selectedTemplateId: sessionDefaults.selectedTemplateId ?? 'default',
             totalSchoolDays: sessionDefaults.totalSchoolDays ?? null,
             headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? defaultReportData.headMasterSignatureDataUri,
             instructorContact: sessionDefaults.instructorContact || "",
