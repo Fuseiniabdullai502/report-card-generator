@@ -736,7 +736,7 @@ function AppContent({ user }: { user: CustomUser }) {
     return currentEditingReport.academicYear || "Academic Year";
   }, [filteredReports, currentEditingReport.academicYear, reportsCount]);
 
- const handleImportStudents = (selectedStudentNames: string[], destinationClass: string) => {
+ const handleImportStudents = async (selectedStudentNames: string[], destinationClass: string) => {
     if (selectedStudentNames.length === 0 || !destinationClass) {
       toast({ title: "Import Error", description: "No students selected or destination class missing.", variant: "destructive" });
       return;
@@ -745,11 +745,11 @@ function AppContent({ user }: { user: CustomUser }) {
     try {
       const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
       const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
-
-      const reportsToImportPromises: Promise<void>[] = [];
+      
+      let importedCount = 0;
       let currentImportEntryNumberBase = nextStudentEntryNumber;
 
-      selectedStudentNames.forEach((studentName, index) => {
+      for (const [index, studentName] of selectedStudentNames.entries()) {
         const profile = Object.values(profiles).find(p => p.studentName === studentName);
         if (profile) {
           const importedReportForFirestore = {
@@ -778,61 +778,41 @@ function AppContent({ user }: { user: CustomUser }) {
             promotionStatus: null,
             clientSideId: `imported-${Date.now()}-${index}`,
           };
-          reportsToImportPromises.push(addDoc(collection(db, 'reports'), importedReportForFirestore));
+          
+          await addDoc(collection(db, 'reports'), importedReportForFirestore);
+          importedCount++;
         }
-      });
+      }
 
-      if (reportsToImportPromises.length > 0) {
-        Promise.all(reportsToImportPromises)
-          .then(() => {
-            toast({
-              title: "Students Imported",
-              description: `${reportsToImportPromises.length} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
-            });
-            const newNextEntryNumForForm = currentImportEntryNumberBase + reportsToImportPromises.length;
-            const studentSpecificDefaultsForImport = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
+      if (importedCount > 0) {
+        toast({
+          title: "Students Imported",
+          description: `${importedCount} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
+        });
+        
+        const newNextEntryNumForForm = currentImportEntryNumberBase + importedCount;
+        const studentSpecificDefaultsForImport = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
 
-            setCurrentEditingReport({
-                schoolName: sessionDefaults.schoolName ?? studentSpecificDefaultsForImport.schoolName,
-                region: sessionDefaults.region ?? studentSpecificDefaultsForImport.region,
-                district: sessionDefaults.district ?? studentSpecificDefaultsForImport.district,
-                circuit: sessionDefaults.circuit ?? studentSpecificDefaultsForImport.circuit,
-                schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? studentSpecificDefaultsForImport.schoolLogoDataUri,
-                className: destinationClass,
-                academicYear: sessionDefaults.academicYear ?? studentSpecificDefaultsForImport.academicYear,
-                academicTerm: sessionDefaults.academicTerm ?? studentSpecificDefaultsForImport.academicTerm,
-                selectedTemplateId: sessionDefaults.selectedTemplateId ?? studentSpecificDefaultsForImport.selectedTemplateId,
-                totalSchoolDays: sessionDefaults.totalSchoolDays ?? studentSpecificDefaultsForImport.totalSchoolDays,
-                headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? studentSpecificDefaultsForImport.headMasterSignatureDataUri,
-                instructorContact: sessionDefaults.instructorContact ?? studentSpecificDefaultsForImport.instructorContact,
-                studentName: studentSpecificDefaultsForImport.studentName,
-                gender: studentSpecificDefaultsForImport.gender,
-                studentPhotoDataUri: studentSpecificDefaultsForImport.studentPhotoDataUri,
-                subjects: studentSpecificDefaultsForImport.subjects.map(s => ({...s})),
-                daysAttended: studentSpecificDefaultsForImport.daysAttended,
-                parentEmail: studentSpecificDefaultsForImport.parentEmail,
-                parentPhoneNumber: studentSpecificDefaultsForImport.parentPhoneNumber,
-                performanceSummary: studentSpecificDefaultsForImport.performanceSummary,
-                strengths: studentSpecificDefaultsForImport.strengths,
-                areasForImprovement: studentSpecificDefaultsForImport.areasForImprovement,
-                hobbies: [...studentSpecificDefaultsForImport.hobbies],
-                teacherFeedback: studentSpecificDefaultsForImport.teacherFeedback,
-                promotionStatus: studentSpecificDefaultsForImport.promotionStatus,
-                id: `unsaved-${Date.now()}`,
-                studentEntryNumber: newNextEntryNumForForm,
-                createdAt: undefined,
-                updatedAt: undefined,
-                overallAverage: undefined,
-                rank: undefined,
-                teacherId: user.uid,
-            });
-            setNextStudentEntryNumber(newNextEntryNumForForm);
-            setSessionDefaults(prev => ({...prev, className: destinationClass}));
-          })
-          .catch(error => {
-            console.error("Error importing students to Firestore:", error);
-            toast({ title: "Import Failed", description: "Could not save imported students to the database.", variant: "destructive" });
-          });
+        setCurrentEditingReport({
+            ...studentSpecificDefaultsForImport,
+            schoolName: sessionDefaults.schoolName,
+            region: sessionDefaults.region,
+            district: sessionDefaults.district,
+            circuit: sessionDefaults.circuit,
+            schoolLogoDataUri: sessionDefaults.schoolLogoDataUri,
+            className: destinationClass,
+            academicYear: sessionDefaults.academicYear,
+            academicTerm: sessionDefaults.academicTerm,
+            selectedTemplateId: sessionDefaults.selectedTemplateId,
+            totalSchoolDays: sessionDefaults.totalSchoolDays,
+            headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri,
+            instructorContact: sessionDefaults.instructorContact,
+            id: `unsaved-${Date.now()}`,
+            studentEntryNumber: newNextEntryNumForForm,
+            teacherId: user.uid,
+        });
+        setNextStudentEntryNumber(newNextEntryNumForForm);
+        setSessionDefaults(prev => ({...prev, className: destinationClass}));
       } else {
         toast({ title: "No Students Imported", description: "Could not find matching profiles for selected students.", variant: "destructive" });
       }
