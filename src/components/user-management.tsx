@@ -281,7 +281,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
     setIsDeletingUser(true);
-    const result = await deleteUserAction({ userId: userToDelete.id }, { role: user.role });
+    const result = await deleteUserAction({ userId: userToDelete.id }, user);
     if (result.success) {
       toast({ title: 'User Deleted', description: `The user ${userToDelete.email} has been permanently removed.` });
       onDataRefresh();
@@ -669,7 +669,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
         };
         const result = await createInviteAction({
             ...data,
-            role: data.role || null,
+            role: (data.role as any) || undefined,
         }, currentUserData);
 
         if(result.success) {
