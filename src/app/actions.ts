@@ -26,7 +26,6 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
-import type { ReportData } from '@/lib/schemas';
 
 
 // Schema for student feedback generation
@@ -358,15 +357,12 @@ const CreateInviteActionInputSchema = z.object({
   classNames: z.array(z.string()).optional().nullable(),
 });
 
-type CurrentUserForAction = Pick<CustomUser, 'role' | 'region' | 'district' | 'circuit' | 'schoolName'>;
-
-
 export async function createInviteAction(
   data: z.infer<typeof CreateInviteActionInputSchema>,
-  currentUser: CurrentUserForAction
+  currentUser: CustomUser
 ): Promise<{ success: boolean; message: string }> {
   try {
-    // Add a guard clause for extra safety
+    // Guard clause for extra safety
     if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
         throw new Error('You do not have permission to invite users.');
     }
@@ -380,7 +376,7 @@ export async function createInviteAction(
         throw new Error("A 'super-admin' cannot invite another 'super-admin'.");
       }
       if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) {
-        throw new Error("A 'big-admin' cannot invite another 'big-admin' or 'super-admin' roles.");
+        throw new Error("A 'big-admin' cannot invite another 'big-admin' or a 'super-admin'.");
       }
       if (currentUser.role === 'admin' && role !== 'user') {
         throw new Error("An 'admin' can only invite users with the 'user' role.");
@@ -566,7 +562,7 @@ const DeleteUserActionInputSchema = z.object({
 
 export async function deleteUserAction(
   data: { userId: string },
-  currentUser: { role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null }
+  currentUser: CustomUser
 ): Promise<{ success: boolean; message: string }> {
   try {
     if (currentUser.role !== 'super-admin') {
@@ -797,16 +793,14 @@ export async function getUsersAction(currentUser: CustomUser): Promise<{ success
 }
 
 
-export async function getInvitesAction(currentUser: {
-  role: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
-}): Promise<{ success: boolean; invites?: InviteForAdmin[]; error?: string }> {
+export async function getInvitesAction(currentUser: CustomUser): Promise<{ success: boolean; invites?: InviteForAdmin[]; error?: string }> {
    if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
       throw new Error("You do not have permission to view this data.");
     }
 
   try {
     const invitesSnapshot = await admin.firestore().collection('invites').get();
-    const invites = invitesSnapshot.docs.map(doc => {
+    const invites = invitesSnapshot.docs.map((doc: DocumentData) => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -854,7 +848,7 @@ export async function getReportsForAdminAction(user: CustomUser): Promise<{ succ
     }
     
     const snapshot = await q.get();
-    const fetchedReports = snapshot.docs.map(doc => {
+    const fetchedReports = snapshot.docs.map((doc: DocumentData) => {
       const data = doc.data();
       return {
         ...data,
@@ -901,7 +895,7 @@ export async function getDistrictStatsAction(district: string): Promise<{
     let maleCount = 0;
     let femaleCount = 0;
     
-    reportsSnapshot.forEach(doc => {
+    reportsSnapshot.forEach((doc: DocumentData) => {
       const data = doc.data();
       if (data.schoolName) {
         schoolNames.add(data.schoolName);
@@ -964,7 +958,7 @@ export async function getSchoolStatsAction(schoolName: string): Promise<{
     let maleCount = 0;
     let femaleCount = 0;
     
-    reportsSnapshot.forEach(doc => {
+    reportsSnapshot.forEach((doc: DocumentData) => {
       const data = doc.data();
       if (data.className) {
         classNames.add(data.className);
@@ -1020,7 +1014,7 @@ export async function getSystemWideStatsAction(): Promise<{
     let maleCount = 0;
     let femaleCount = 0;
     
-    reportsSnapshot.forEach(doc => {
+    reportsSnapshot.forEach((doc: DocumentData) => {
       const data = doc.data();
       if (data.schoolName) {
         schoolNames.add(data.schoolName);
@@ -1085,7 +1079,7 @@ export async function getDistrictClassRankingAction(input: { district: string; c
     }
 
     const reportsBySchool = new Map<string, any[]>();
-    reportsSnapshot.forEach(doc => {
+    reportsSnapshot.forEach((doc: DocumentData) => {
       const data = doc.data();
       const schoolName = data.schoolName?.trim();
       if (schoolName) {
