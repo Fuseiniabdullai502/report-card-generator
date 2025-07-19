@@ -570,8 +570,8 @@ function AppContent({ user }: { user: CustomUser }) {
       schoolLogoDataUri: reportToSaveForFirestore.schoolLogoDataUri,
       className: reportToSaveForFirestore.className,
       academicYear: reportToSaveForFirestore.academicYear,
-      academicTerm: reportToSaveForFirestore.academicTerm,
-      selectedTemplateId: reportToSaveForFirestore.selectedTemplateId ?? 'default',
+      academicTerm: reportToSaveForFirestore.academicTerm ?? '',
+      selectedTemplateId: reportToSaveForFirestore.selectedTemplateId,
       totalSchoolDays: reportToSaveForFirestore.totalSchoolDays,
       headMasterSignatureDataUri: reportToSaveForFirestore.headMasterSignatureDataUri,
       instructorContact: reportToSaveForFirestore.instructorContact,
@@ -728,7 +728,7 @@ function AppContent({ user }: { user: CustomUser }) {
   }, [user.role, user.schoolName, sessionDefaults.schoolName, currentEditingReport.schoolName]);
   
   const academicYearForDashboard = useMemo(() => {
-    return sessionDefaults.academicYear || "Academic Year";
+    return sessionDefaults.academicYear || "All Years";
   }, [sessionDefaults.academicYear]);
 
  const handleImportStudents = async (selectedStudentNames: string[], destinationClass: string) => {
@@ -1232,9 +1232,9 @@ function AppContent({ user }: { user: CustomUser }) {
           <SchoolPerformanceDashboard
               isOpen={isSchoolDashboardOpen}
               onOpenChange={setIsSchoolDashboardOpen}
-              allReports={allRankedReports.filter(r => r.academicYear === sessionDefaults.academicYear)}
+              allReports={allRankedReports.filter(r => r.academicYear === academicYearForDashboard)}
               schoolNameProp={schoolNameForDashboard}
-              academicYearProp={sessionDefaults.academicYear ?? 'All Years'}
+              academicYearProp={academicYearForDashboard}
               userRole={user.role}
           />
       )}
