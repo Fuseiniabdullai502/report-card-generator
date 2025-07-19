@@ -216,7 +216,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
     const reportsWithAverages = listToProcess.map(report => {
         const overallAverage = calculateOverallAverage(report.subjects);
-        return { ...report, overallAverage: overallAverage === null ? undefined : overallAverage };
+        return { ...report, overallAverage: overallAverage ?? undefined };
     });
 
     const reportsByClass = new Map<string, ReportData[]>();
@@ -571,7 +571,7 @@ function AppContent({ user }: { user: CustomUser }) {
       className: reportToSaveForFirestore.className,
       academicYear: reportToSaveForFirestore.academicYear,
       academicTerm: reportToSaveForFirestore.academicTerm,
-      selectedTemplateId: reportToSaveForFirestore.selectedTemplateId,
+      selectedTemplateId: reportToSaveForFirestore.selectedTemplateId ?? 'default',
       totalSchoolDays: reportToSaveForFirestore.totalSchoolDays,
       headMasterSignatureDataUri: reportToSaveForFirestore.headMasterSignatureDataUri,
       instructorContact: reportToSaveForFirestore.instructorContact,
@@ -728,15 +728,8 @@ function AppContent({ user }: { user: CustomUser }) {
   }, [user.role, user.schoolName, sessionDefaults.schoolName, currentEditingReport.schoolName]);
   
   const academicYearForDashboard = useMemo(() => {
-    if (sessionDefaults.academicYear) {
-      return sessionDefaults.academicYear;
-    }
-    const years = new Set(allRankedReports.map(r => r.academicYear).filter(Boolean));
-    if (years.size === 1) {
-      return Array.from(years)[0];
-    }
-    return years.size > 1 ? "Multiple Years" : "Academic Year";
-  }, [sessionDefaults.academicYear, allRankedReports]);
+    return sessionDefaults.academicYear || "Academic Year";
+  }, [sessionDefaults.academicYear]);
 
  const handleImportStudents = async (selectedStudentNames: string[], destinationClass: string) => {
     if (selectedStudentNames.length === 0 || !destinationClass) {
@@ -745,85 +738,85 @@ function AppContent({ user }: { user: CustomUser }) {
     }
 
     try {
-      const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
-      const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
-      
-      let importedCount = 0;
-      let currentImportEntryNumberBase = nextStudentEntryNumber;
-
-      for (const studentName of selectedStudentNames) {
-        const profile = Object.values(profiles).find(p => p.studentName === studentName);
-        if (profile) {
-          const importedReportForFirestore = {
-            teacherId: user.uid,
-            studentEntryNumber: currentImportEntryNumberBase + importedCount,
-            createdAt: serverTimestamp(),
-            studentName: profile.studentName,
-            gender: profile.gender ?? '',
-            studentPhotoDataUri: profile.studentPhotoDataUri ?? null,
-            className: destinationClass,
-            schoolName: sessionDefaults.schoolName ?? defaultReportData.schoolName,
-            region: sessionDefaults.region ?? defaultReportData.region,
-            district: sessionDefaults.district ?? defaultReportData.district,
-            circuit: sessionDefaults.circuit ?? defaultReportData.circuit,
-            schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? null,
-            academicYear: sessionDefaults.academicYear ?? defaultReportData.academicYear,
-            academicTerm: sessionDefaults.academicTerm ?? defaultReportData.academicTerm,
-            selectedTemplateId: sessionDefaults.selectedTemplateId ?? 'default',
-            totalSchoolDays: sessionDefaults.totalSchoolDays ?? null,
-            headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? defaultReportData.headMasterSignatureDataUri,
-            instructorContact: sessionDefaults.instructorContact || "",
-            daysAttended: null, parentEmail: '', parentPhoneNumber: '',
-            performanceSummary: '', strengths: '', areasForImprovement: '',
-            hobbies: [], teacherFeedback: '',
-            subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
-            promotionStatus: null,
-            clientSideId: `imported-${Date.now()}-${importedCount}`,
-          };
-          
-          await addDoc(collection(db, 'reports'), importedReportForFirestore);
-          importedCount++;
-        }
-      }
-
-      if (importedCount > 0) {
-        toast({
-          title: "Students Imported",
-          description: `${importedCount} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
-        });
+        const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
+        const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
         
-        const newNextEntryNumForForm = currentImportEntryNumberBase + importedCount;
-        const studentSpecificDefaultsForImport = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
+        let importedCount = 0;
+        let currentImportEntryNumberBase = nextStudentEntryNumber;
 
-        setCurrentEditingReport({
-            ...studentSpecificDefaultsForImport,
-            schoolName: sessionDefaults.schoolName,
-            region: sessionDefaults.region,
-            district: sessionDefaults.district,
-            circuit: sessionDefaults.circuit,
-            schoolLogoDataUri: sessionDefaults.schoolLogoDataUri,
-            className: destinationClass,
-            academicYear: sessionDefaults.academicYear,
-            academicTerm: sessionDefaults.academicTerm,
-            selectedTemplateId: sessionDefaults.selectedTemplateId,
-            totalSchoolDays: sessionDefaults.totalSchoolDays,
-            headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri,
-            instructorContact: sessionDefaults.instructorContact,
-            id: `unsaved-${Date.now()}`,
-            studentEntryNumber: newNextEntryNumForForm,
-            teacherId: user.uid,
-        });
-        setNextStudentEntryNumber(newNextEntryNumForForm);
-        setSessionDefaults(prev => ({...prev, className: destinationClass}));
-      } else {
-        toast({ title: "No Students Imported", description: "Could not find matching profiles for selected students.", variant: "destructive" });
-      }
+        for (const studentName of selectedStudentNames) {
+            const profile = Object.values(profiles).find(p => p.studentName === studentName);
+            if (profile) {
+                const importedReportForFirestore = {
+                    teacherId: user.uid,
+                    studentEntryNumber: currentImportEntryNumberBase + importedCount,
+                    createdAt: serverTimestamp(),
+                    studentName: profile.studentName,
+                    gender: profile.gender ?? '',
+                    studentPhotoDataUri: profile.studentPhotoDataUri ?? null,
+                    className: destinationClass,
+                    schoolName: sessionDefaults.schoolName ?? defaultReportData.schoolName,
+                    region: sessionDefaults.region ?? defaultReportData.region,
+                    district: sessionDefaults.district ?? defaultReportData.district,
+                    circuit: sessionDefaults.circuit ?? defaultReportData.circuit,
+                    schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? null,
+                    academicYear: sessionDefaults.academicYear ?? defaultReportData.academicYear,
+                    academicTerm: sessionDefaults.academicTerm ?? defaultReportData.academicTerm,
+                    selectedTemplateId: sessionDefaults.selectedTemplateId ?? 'default',
+                    totalSchoolDays: sessionDefaults.totalSchoolDays ?? null,
+                    headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? defaultReportData.headMasterSignatureDataUri,
+                    instructorContact: sessionDefaults.instructorContact || "",
+                    daysAttended: null, parentEmail: '', parentPhoneNumber: '',
+                    performanceSummary: '', strengths: '', areasForImprovement: '',
+                    hobbies: [], teacherFeedback: '',
+                    subjects: [{ subjectName: '', continuousAssessment: null, examinationMark: null }],
+                    promotionStatus: null,
+                    clientSideId: `imported-${Date.now()}-${importedCount}`,
+                };
+                
+                await addDoc(collection(db, 'reports'), importedReportForFirestore);
+                importedCount++;
+            }
+        }
+
+        if (importedCount > 0) {
+            toast({
+                title: "Students Imported",
+                description: `${importedCount} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
+            });
+            
+            const newNextEntryNumForForm = currentImportEntryNumberBase + importedCount;
+            const studentSpecificDefaultsForImport = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
+
+            setCurrentEditingReport({
+                ...studentSpecificDefaultsForImport,
+                schoolName: sessionDefaults.schoolName,
+                region: sessionDefaults.region,
+                district: sessionDefaults.district,
+                circuit: sessionDefaults.circuit,
+                schoolLogoDataUri: sessionDefaults.schoolLogoDataUri,
+                className: destinationClass,
+                academicYear: sessionDefaults.academicYear,
+                academicTerm: sessionDefaults.academicTerm,
+                selectedTemplateId: sessionDefaults.selectedTemplateId,
+                totalSchoolDays: sessionDefaults.totalSchoolDays,
+                headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri,
+                instructorContact: sessionDefaults.instructorContact,
+                id: `unsaved-${Date.now()}`,
+                studentEntryNumber: newNextEntryNumForForm,
+                teacherId: user.uid,
+            });
+            setNextStudentEntryNumber(newNextEntryNumForForm);
+            setSessionDefaults(prev => ({...prev, className: destinationClass}));
+        } else {
+            toast({ title: "No Students Imported", description: "Could not find matching profiles for selected students.", variant: "destructive" });
+        }
     } catch (e) {
-      console.error("Error during import student profiles:", e);
-      toast({ title: "Import Failed", description: "An error occurred while preparing student data for import.", variant: "destructive" });
+        console.error("Error during import student profiles:", e);
+        toast({ title: "Import Failed", description: "An error occurred while preparing student data for import.", variant: "destructive" });
     }
     setIsImportStudentsDialogOpen(false);
-  };
+};
   
     const initialClassForDashboard = useMemo(() => {
         const currentClassFilter = adminFilters.className;
