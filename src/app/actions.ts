@@ -380,7 +380,7 @@ export async function createInviteAction(
         throw new Error("A 'super-admin' cannot invite another 'super-admin'.");
       }
       if (currentUser.role === 'big-admin' && (role === 'big-admin' || role === 'super-admin')) {
-        throw new Error("A 'big-admin' cannot invite another 'big-admin' or a 'super-admin'.");
+        throw new Error("A 'big-admin' cannot invite another 'big-admin' or 'super-admin' roles.");
       }
       if (currentUser.role === 'admin' && role !== 'user') {
         throw new Error("An 'admin' can only invite users with the 'user' role.");
@@ -1158,3 +1158,5 @@ export async function getDistrictClassRankingAction(input: { district: string; c
   }
 }
       
+
+    
