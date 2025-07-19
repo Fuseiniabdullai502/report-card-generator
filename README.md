@@ -1,151 +1,222 @@
-# Report Card Generator - Setup & Deployment Guide
+# Firebase Studio - Report Card Generator
 
-This guide will walk you through setting up your development environment and deploying your Next.js application.
+This is a Next.js application built in Firebase Studio that allows educators to easily create, customize, rank, and print student terminal reports, enhanced with AI-powered insights. This version includes an admin-only user invitation system.
 
----
+## Getting Started
 
-## 1. Local Development Setup (Required First)
+To get started with development, you first need to set up your environment variables. This app requires keys for Google AI (for AI features) and Firebase (for database, user management, and secure admin actions).
 
-Before you can run the app locally, you must authenticate to Google Cloud and set up your local environment variables.
+### Environment Setup
 
-### Step 1.1: Authenticate for Local Development
-
-To run the server locally with Firebase Admin features, your machine needs to be authenticated.
-
-1.  **Install the Google Cloud CLI:** If you haven't already, [install the gcloud CLI](https://cloud.google.com/sdk/docs/install).
-2.  **Log in to your account:** Run the following command and follow the prompts in your browser.
+1.  **Copy the example environment file:**
     ```bash
-    gcloud auth login
+    cp .env.example .env
     ```
-3.  **Set your project:** Tell gcloud which project you're working on.
-    ```bash
-    gcloud config set project report-card-generator-e3zkv
+2.  Open the newly created `.env` file and add the required values for the variables listed there.
+
+#### Admin User Setup
+
+To give yourself admin privileges, you need to specify your email address. This will grant you access to the Admin Panel to invite other users.
+
+In your `.env` file, set the `NEXT_PUBLIC_ADMIN_EMAIL` variable:
+```
+NEXT_PUBLIC_ADMIN_EMAIL="your-admin-email@example.com"
+```
+**Important:** The first time you log in with this email, the application will automatically assign you the 'super-admin' role.
+
+#### Google AI (Genkit) Setup
+
+The AI features in this application are powered by Google's Gemini models through Genkit. To use them, you need a Google AI API key.
+
+1.  [**Get an API key from Google AI Studio**](https://aistudio.google.com/app/apikey).
+2.  In your `.env` file, set the `GOOGLE_API_KEY` variable:
     ```
-4.  **Set up Application Default Credentials:** This is the crucial step that allows your local server to act as the service account.
-    ```bash
-    gcloud auth application-default login
+    GOOGLE_API_KEY="YOUR_API_KEY_HERE"
     ```
 
-### Step 1.2: Create and Configure `.env.local`
+#### Firebase Setup
 
-1.  In the root of your project, create a new file named `.env.local`.
-2.  Copy the contents of `.env.example` into your new `.env.local` file.
-3.  **Get your Google AI API Key:**
-    *   Go to [**Google AI Studio**](https://aistudio.google.com/app/apikey) and create an API key.
-    *   Paste the key into `.env.local`: `GOOGLE_API_KEY="YOUR_API_KEY_HERE"`
-4.  **Get your Firebase Web App Credentials:**
-    *   In your [**Firebase project**](https://console.firebase.google.com/project/report-card-generator-e3zkv/overview), go to **Project Settings** (gear icon) > **General** tab.
-    *   Scroll to "Your apps" and find your web app configuration object.
-    *   Copy the values into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in `.env.local`.
-5.  **Set Your Admin Email:**
-    *   In `.env.local`, set the `NEXT_PUBLIC_ADMIN_EMAIL` variable: `NEXT_PUBLIC_ADMIN_EMAIL="your-admin-email@example.com"`
-    *   The first time you log in with this email, the app will automatically grant you the 'super-admin' role.
+The application uses Firebase for authentication and Firestore. You need to connect it to a Firebase project and provide two sets of credentials: one for the client-side app (browser) and one for the Admin SDK (server).
 
-### Step 1.3: Run the App
+##### Step 1: Client SDK Credentials (for the browser)
+
+1.  If you don't have one, [**create a Firebase project**](https://firebase.google.com/docs/web/setup#create-project).
+2.  In your project's dashboard, go to **Project Settings** (the gear icon) > **General** tab.
+3.  Scroll down to the "Your apps" section and click on the **Web** icon (`</>`) to register a new web app. If you already have a web app, you can use its configuration.
+4.  After registering, Firebase will show you a configuration object. Copy the values from this object into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file.
+
+##### Step 2: Admin SDK Credentials (for the server)
+
+The Admin SDK is required for secure server actions like deactivating users and deleting invites. This setup supports two methods: a local file for development and a secret for production.
+
+**For Local Development:**
+
+1.  In the Firebase console, go to **Project Settings** > **Service accounts** tab.
+2.  Click the **"Generate new private key"** button. A JSON file will be downloaded.
+3.  **Rename this file to `firebase-service-account.json` and place it in the root directory of your project.**
+4.  In your `.env` file, uncomment the following line:
+    ```
+    # GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json
+    ```
+    becomes:
+    ```
+    GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json
+    ```
+5.  The `.gitignore` file is already configured to prevent this sensitive file from being committed to your repository.
+
+**For Production (Firebase App Hosting):**
+
+You will not use the JSON file directly for App Hosting. Instead, you will upload its contents to a secret environment variable. This is covered in the deployment guide below.
+
+### Running the Development Server
+
+Once your environment is set up, you can run the development server:
 
 ```bash
 npm run dev
 ```
 
----
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## 2. Initial Deployment to Firebase App Hosting
+## Hosting with Firebase App Hosting
 
-This is the recommended method for deploying your project for the first time.
+Firebase App Hosting is the recommended way to deploy this Next.js application, as it's designed for full-stack web frameworks and integrates seamlessly with Firebase.
 
-### Step 2.1: Initialize App Hosting
+### Recommended Method: Using the Firebase CLI
 
-In your project's root directory, run: `firebase init hosting`.
+This is the standard way to set up your hosting environment.
 
-1.  **Select a Firebase Project:** Choose `report-card-generator-e3zkv`.
-2.  **Configure Hosting Option:** Select **`App Hosting: for web frameworks...`**.
-3.  **Set Backend Region:** Choose a region (e.g., `us-central1`).
-4.  **Connect to GitHub:** Follow the prompts to connect your GitHub account and repository.
-
-### Step 2.2: Create Secrets in Google Secret Manager
-
-Your live application needs secure keys. You will only store the most sensitive keys as secrets.
-
-1.  [**Enable the Secret Manager API**](https://console.cloud.google.com/apis/library/secretmanager.googleapis.com) for your Google Cloud project.
-2.  **Generate a Service Account Key (if you don't have the file):**
-    *   If you haven't done so for local setup, go to the [Google Cloud Console for Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts). Find the service account with an email like `firebase-adminsdk-....@...gserviceaccount.com`.
-    *   Click on it, go to the **"Keys"** tab, click **"Add Key"** > **"Create new key"**, select **JSON**, and create it. A JSON file will be downloaded.
-3.  **Run the following `gcloud` commands** in your terminal to create the secrets:
-
+1.  **Install Firebase CLI:** If you don't have it, install it globally by running:
     ```bash
-    # Create the Google API Key secret from the value in your .env.local
-    echo "YOUR_API_KEY_HERE" | gcloud secrets create GOOGLE_API_KEY --data-file=-
-
-    # Create the Admin Email secret from the value in your .env.local
-    echo "your-admin-email@example.com" | gcloud secrets create NEXT_PUBLIC_ADMIN_EMAIL --data-file=-
-    
-    # Create the Service Account secret from your downloaded JSON file
-    gcloud secrets create FIREBASE_SERVICE_ACCOUNT --data-file=./path/to/your/downloaded-service-account-file.json
+    npm install -g firebase-tools
     ```
+2.  **Log in to Firebase:**
+    ```bash
+    firebase login
+    ```
+3.  **Push to GitHub:** Your code must be in a GitHub repository. If you haven't already, create a new repository on GitHub and push your project to it.
 
-### Step 2.3: Set Environment Variables in App Hosting
+4.  **Run the init command** in your project's root directory:
+    ```bash
+    firebase init hosting
+    ```
+5.  **Select a Firebase Project:** Choose the Firebase project you want to use from the list.
+6.  **IMPORTANT: Configure Hosting:** When prompted to select a hosting option, use the arrow keys to choose **"App Hosting: for web frameworks (Next.js, Angular, etc)"**. This is the most important step.
+7.  **Set Backend Region:** Choose a region for your backend server (e.g., `us-central1`).
+8.  **Connect to GitHub:** The CLI will guide you to connect to
+ your GitHub account and select the repository for this project. This will set up a GitHub Action to enable automatic deployments whenever you push to your main branch.
+9.  **Configure Environment Variables:** Finally, follow the instructions in **Step 5** of the "Manual App Hosting Setup" guide below to add your secrets and environment variables.
 
-The public Firebase configuration does **not** need to be secret. Set these directly in App Hosting.
+### Alternative Method: Manual App Hosting Setup
 
-1.  Go to the [**Firebase Console**](https://console.firebase.google.com/project/report-card-generator-e3zkv) and navigate to the **App Hosting** section.
-2.  Select your backend (e.g., `report-card-generator`).
-3.  Go to the **"Settings"** tab.
-4.  Under **"Environment variables"**, click **"Add variable"**.
-5.  Add a variable for each `NEXT_PUBLIC_FIREBASE_*` key from your `.env.local` file and paste in its corresponding value.
+If you have issues with the Firebase CLI, you can set up everything manually in the Firebase Console.
+
+#### Step 1: Go to the Firebase Console
+
+- Open your browser and navigate to the [Firebase Console](https://console.firebase.google.com/).
+- Select the Firebase project you are using for this application.
+
+#### Step 2: Create a New Backend
+
+- In the left-hand menu, under the "Build" section, click on **App Hosting**.
+- Click the **"Create backend"** button.
+
+#### Step 3: Connect to GitHub
+
+- Click the **"Connect to GitHub"** button. A pop-up window will appear.
+- Authorize Firebase to access your GitHub account. You may need to install the Firebase GitHub App on your account or a specific organization.
+- Once connected, select the **GitHub repository** where your application code is stored.
+- For the **"Root directory"**, leave it as the default (`/`) unless your app is in a subfolder within the repository.
+- Click **"Next"**.
+
+#### Step 4: Configure Deployment Settings
+
+- Firebase will automatically detect that you're using Next.js.
+- Set a **Backend ID** (e.g., `report-card-app`) and choose a **Region** for your server (e.g., `us-central1`).
+- Click **"Create backend"**. Firebase will now set up the necessary infrastructure and a GitHub Action in your repository.
+
+#### Step 5: Configure Secrets (CRITICAL)
+
+Your application will not work without these settings. This is the most important step.
+
+1.  After your backend is created, you will be taken to its dashboard. Click on the **"Settings"** tab.
+2.  Go to the **Secrets** section.
+3.  You must add a secret for **each** variable from your `.env` file. Click the **"Add secret"** button for each one.
+4.  **Example:** For `GOOGLE_API_KEY`, enter `GOOGLE_API_KEY` in the Name field, paste your actual API key in the Value field, and click "Save".
+5.  Add all of the following variables as secrets:
+    *   `GOOGLE_API_KEY`
+    *   `NEXT_PUBLIC_ADMIN_EMAIL`
     *   `NEXT_PUBLIC_FIREBASE_API_KEY`
     *   `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
     *   `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
     *   `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
     *   `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
     *   `NEXT_PUBLIC_FIREBASE_APP_ID`
+6.  **To add the Admin SDK Service Account:**
+    *   In the **Secrets** section, click **"Add secret"**.
+    *   For the secret **Name**, enter `FIREBASE_SERVICE_ACCOUNT`.
+    *   For the **Value**, open the `firebase-service-account.json` file you downloaded earlier.
+    *   Copy the **entire JSON content** and paste it into the secret **Value** field.
+    *   Click **"Save"**.
+7.  **Save** all your variables. Your `apphosting.yaml` file tells App Hosting to use these secrets.
 
-### Step 2.4: Deploy
+#### Step 6: Deploy Your App
 
-Commit the `firebase.json` and `apphosting.yaml` files and push to your main branch.
+1.  Your first deployment may have already started automatically. You can monitor its progress in the "Logs" tab of your App Hosting backend dashboard.
+2.  To trigger a new deployment, simply `git push` a change to your main branch on GitHub. The GitHub Action will automatically build and deploy the new version of your app.
 
-```bash
-git add .
-git commit -m "Configure Firebase App Hosting"
-git push
-```
+### Alternative: Deploying with Environment Variables via Terminal
 
-The GitHub Action will automatically build and deploy your application.
+If you prefer using the terminal, you can use the Firebase CLI to manage your secrets.
 
----
-
-## 3. Updating Your Application
-
-Once your application is live, follow these steps to deploy any new changes you've made.
-
-### Step 3.1: Check for New Secrets or Variables
-
-*   If you added any **new sensitive keys** (like another API key), add them to Google Secret Manager following **Step 2.2**.
-*   If you added any **new public environment variables**, add them to your App Hosting backend settings following **Step 2.3**.
-
-### Step 3.2: Commit and Push Your Changes
-
-This is the standard process for deploying updates.
-
-1.  **Add your changes:** Stage all the files you've modified.
-    ```bash
-    git add .
+1.  **Enable Required API:** You must first enable the Secret Manager API for your Firebase project. Visit this URL, select your project, and click "Enable":
     ```
-
-2.  **Commit the changes:** Give your update a descriptive message.
-    ```bash
-    git commit -m "feat: Add new feature for student ranking"
+    https://console.cloud.google.com/apis/library/secretmanager.googleapis.com
     ```
+2.  **Set Secrets:** Run `firebase secrets:set SECRET_NAME` for each secret.
+    *   For simple keys:
+        ```bash
+        firebase secrets:set GOOGLE_API_KEY
+        # When prompted, paste your key and press Enter.
+        ```
+    *   For the service account file:
+        ```bash
+        firebase functions:secrets:set FIREBASE_SERVICE_ACCOUNT --from-file=firebase-service-account.json
+        ```
+3.  **Repeat for all secrets** listed in the `.env.example` file.
+4.  **Deploy the Application:** Trigger a new deployment by pushing to your `main` branch on GitHub.
 
-3.  **Push to your main branch:** This is the action that triggers the automatic deployment.
-    ```bash
-    git push origin main
-    ```
+Congratulations! Your Report Card Generator is now securely live on the web, fully integrated with Firebase.
 
-### Step 3.3: Monitor the Deployment
+## Troubleshooting
 
-After you push your changes, a new build and deployment will automatically start.
+### "Admin features are disabled..." or "PERMISSION_DENIED" Error
 
-1.  Go to the **Firebase Console**.
-2.  Navigate to the **App Hosting** section for your project.
-3.  Select your backend.
-4.  Go to the **"Logs"** tab to monitor the build and deployment process in real-time. Once it completes, your changes will be live.
+If you see an error message that says **`Admin features are disabled. The Firebase Admin SDK failed to initialize...`** when you try to use an admin feature on your live site, it means your **`FIREBASE_SERVICE_ACCOUNT` secret is not set up correctly** on App Hosting.
+
+**To fix this on App Hosting:**
+
+1.  Follow the instructions in **"Step 5: Configure Secrets"** in the manual setup guide above.
+2.  Go to your App Hosting backend's **Settings** tab in the Firebase Console.
+3.  Find the `FIREBASE_SERVICE_ACCOUNT` secret and click to edit it.
+4.  Double-check that you have copied the **entire contents** of the `firebase-service-account.json` file.
+5.  Paste the full JSON content into the **value** field for the secret.
+6.  After saving the variable, trigger a new deployment by pushing a small change to your `main` branch on GitHub.
+
+### Why is `firebase init hosting` asking for a "public directory"?
+
+If the CLI asks you "What do you want to use as your public directory?", it means you have selected the wrong hosting option. You must choose **App Hosting** for this project.
+
+**To fix this:**
+1.  Cancel the current command (`Ctrl + C`).
+2.  Run `firebase init hosting` again.
+3.  At the very first prompt, use the arrow keys to highlight and select the option: **`App Hosting: for web frameworks (Next.js, Angular, etc)`**.
+4.  The CLI will then correctly identify your Next.js app and will **not** ask for a public directory.
+
+## How to Use the Invite & User Management System
+
+1.  Log in using the email you designated as the admin email.
+2.  You will see an "Admin Panel" button in the header. Click it to go to `/admin`.
+3.  On the admin page, you can authorize new users by entering their email address.
+4.  Once authorized, the user can go to the `/register` page and create an account. Users who have not been authorized will not be able to register.
+5.  You can also activate or deactivate existing user accounts directly from the admin panel. Deactivated users will not be able to log in.
