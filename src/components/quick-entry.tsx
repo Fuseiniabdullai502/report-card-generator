@@ -13,10 +13,9 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, ChevronDown, Book, Folder } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -25,6 +24,9 @@ import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/fires
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface QuickEntryProps {
   allReports: ReportData[];
@@ -185,28 +187,51 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 space-y-1">
-                <Label htmlFor="class-select">Class</Label>
-                <Select value={selectedClass} onValueChange={setSelectedClass}>
-                    <SelectTrigger id="class-select"><SelectValue placeholder="Select a class..." /></SelectTrigger>
-                    <SelectContent>
-                        {availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+        <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="w-full sm:w-auto sm:flex-1">
+                <Label htmlFor="class-select" className="text-xs text-muted-foreground">Class</Label>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button id="class-select" variant="outline" className="w-full justify-between">
+                            <span className="flex items-center gap-2">
+                                <Folder className="h-4 w-4" />
+                                {selectedClass || 'Select a class...'}
+                            </span>
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                        <ScrollArea className="h-48">
+                            {availableClasses.map(c => <DropdownMenuItem key={c} onSelect={() => setSelectedClass(c)}>{c}</DropdownMenuItem>)}
+                        </ScrollArea>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
-            <div className="flex-1 space-y-1">
-                <Label htmlFor="subject-select">Subject</Label>
-                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                    <SelectTrigger id="subject-select"><SelectValue placeholder="Select a subject..." /></SelectTrigger>
-                    <SelectContent>
-                        {subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        {subjectsForClass.length === 0 && <SelectItem value="-" disabled>No subjects for this class</SelectItem>}
-                    </SelectContent>
-                </Select>
+            <div className="w-full sm:w-auto sm:flex-1">
+                <Label htmlFor="subject-select" className="text-xs text-muted-foreground">Subject</Label>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button id="subject-select" variant="outline" className="w-full justify-between" disabled={!selectedClass}>
+                            <span className="flex items-center gap-2">
+                                <Book className="h-4 w-4" />
+                                {selectedSubject || 'Select a subject...'}
+                            </span>
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                         <ScrollArea className="h-48">
+                            {subjectsForClass.length > 0 ? (
+                                subjectsForClass.map(s => <DropdownMenuItem key={s} onSelect={() => setSelectedSubject(s)}>{s}</DropdownMenuItem>)
+                            ) : (
+                                <DropdownMenuItem disabled>No subjects for this class</DropdownMenuItem>
+                            )}
+                        </ScrollArea>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
-             <div className="self-end">
-                <Button onClick={addNewStudent}><UserPlus className="mr-2"/> Add Student</Button>
+             <div className="w-full sm:w-auto">
+                <Button onClick={addNewStudent} className="w-full"><UserPlus className="mr-2"/> Add Student</Button>
             </div>
         </div>
         <div className="overflow-x-auto">
