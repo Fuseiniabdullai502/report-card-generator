@@ -45,12 +45,14 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
   const { toast } = useToast();
 
   const availableClasses = useMemo(() => {
-    return [...new Set(allReports.map(r => r.className).filter(Boolean))].sort();
+    return [...new Set(allReports.map(r => r.className).filter(Boolean) as string[])].sort();
   }, [allReports]);
 
   useEffect(() => {
-    if (availableClasses.length > 0 && !selectedClass) {
+    if (availableClasses.length > 0 && !availableClasses.includes(selectedClass)) {
       setSelectedClass(availableClasses[0]);
+    } else if (availableClasses.length === 0) {
+      setSelectedClass('');
     }
   }, [availableClasses, selectedClass]);
 
