@@ -18,25 +18,15 @@ import {
   type GenerateSchoolInsightsInput,
   type GenerateSchoolInsightsOutput,
 } from '@/ai/flows/generate-school-insights-flow';
-import {
-  generateDistrictInsights,
-  type GenerateDistrictInsightsInput,
-  type GenerateDistrictInsightsOutput,
-} from '@/ai/flows/generate-district-insights-flow';
-import {
-  generateBulkStudentFeedback,
-  type GenerateBulkStudentFeedbackInput,
-  type GenerateBulkStudentFeedbackOutput,
-} from '@/ai/flows/generate-bulk-student-feedback-flow';
 import { z } from 'zod';
 import admin from '@/lib/firebase-admin';
 import type { Query, DocumentData } from 'firebase-admin/firestore';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc, writeBatch, Timestamp, getDoc } from 'firebase/firestore';
-import type { CustomUser, PlainUser } from '@/components/auth-provider';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import type { CustomUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
-import { ReportDataSchema, type ReportData, type SubjectEntry, SubjectEntrySchema } from '@/lib/schemas';
-import { db } from '@/lib/firebase';
-import type { UserData, InviteData } from '@/types';
+import { type ReportData } from '@/lib/schemas';
+import { auth, db } from '@/lib/firebase';
 
 
 // Schema for student feedback generation
@@ -231,928 +221,942 @@ export async function getAiSchoolInsightsAction(
   }
 }
 
-// Schemas for AI District Insights
-const ActionDistrictSubjectPerformanceStatSchema = z.object({
-  subjectName: z.string(),
-  numBelowAverage: z.number(),
-  numAverage: z.number(),
-  numAboveAverage: z.number(),
-  districtAverageForSubject: z.number().nullable(),
-});
-
-const ActionDistrictGenderPerformanceStatSchema = z.object({
-  gender: z.string(),
-  count: z.number(),
-  averageScore: z.number().nullable(),
-});
-
-const ActionDistrictSchoolSummarySchema = z.object({
-  schoolName: z.string(),
-  schoolAverage: z.number().nullable(),
-  numberOfStudents: z.number(),
-});
-
-const GenerateDistrictInsightsActionInputSchema = z.object({
-  districtName: z.string(),
-  academicTerm: z.string(),
-  overallDistrictAverage: z.number().nullable(),
-  totalStudentsInDistrict: z.number(),
-  numberOfSchoolsRepresented: z.number(),
-  schoolSummaries: z.array(ActionDistrictSchoolSummarySchema),
-  overallSubjectStatsForDistrict: z.array(ActionDistrictSubjectPerformanceStatSchema),
-  overallGenderStatsForDistrict: z.array(ActionDistrictGenderPerformanceStatSchema),
-});
-
-export async function getAiDistrictInsightsAction(
-  input: GenerateDistrictInsightsInput
-): Promise<{ success: boolean; insights?: GenerateDistrictInsightsOutput; error?: string }> {
-  try {
-    const validatedInput = GenerateDistrictInsightsActionInputSchema.parse(input);
-    const result = await generateDistrictInsights(validatedInput);
-    return { success: true, insights: result };
-  } catch (error) {
-    console.error("Error generating AI district insights:", error);
-    let errorMessage = "Failed to generate AI district insights. Please try again.";
-    if (error instanceof z.ZodError) {
-      errorMessage = "Invalid input for AI district insights: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    return { success: false, error: errorMessage };
-  }
-}
-
-// Schemas for Bulk AI Feedback
-const ActionStudentFeedbackDataSchema = z.object({
-  studentId: z.string(),
-  studentName: z.string(),
-  className: z.string(),
-  performanceSummary: z.string(),
-  areasForImprovement: z.string(),
-  strengths: z.string(),
-});
-
-const GenerateBulkStudentFeedbackActionInputSchema = z.object({
-  students: z.array(ActionStudentFeedbackDataSchema),
-});
-
-export async function getBulkAiTeacherFeedbackAction(
-  input: GenerateBulkStudentFeedbackInput
-): Promise<{ success: boolean; feedbacks?: { studentId: string; feedback: string }[]; error?: string }> {
-  try {
-    const validatedInput = GenerateBulkStudentFeedbackActionInputSchema.parse(input);
-    const result = await generateBulkStudentFeedback(validatedInput);
-    if(result.feedbacks) {
-      return { success: true, feedbacks: result.feedbacks };
-    }
-    return { success: false, error: 'AI did not return any feedback.'};
-  } catch (error) {
-    let errorMessage = "Failed to generate bulk AI feedback.";
-    if (error instanceof z.ZodError) {
-      errorMessage = "Invalid input for bulk feedback: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    return { success: false, error: errorMessage };
-  }
-}
-
-// --- Report Data Actions ---
-
-const ReportIdSchema = z.object({
-  reportId: z.string().min(1),
-});
-
-export async function deleteReportAction(
-  input: { reportId: string }
-): Promise<{ success: boolean; message?: string }> {
-  try {
-    const { reportId } = ReportIdSchema.parse(input);
-    await deleteDoc(doc(db, 'reports', reportId));
-    return { success: true };
-  } catch (error: any) {
-    console.error("Error deleting report:", error);
-    return { success: false, message: error.message || "Could not delete report." };
-  }
-}
-
-const ScoreUpdateSchema = z.object({
-  reportId: z.string(),
-  subjects: z.array(SubjectEntrySchema),
-});
-
-const BatchScoreUpdateSchema = z.object({
-  updates: z.array(ScoreUpdateSchema),
-});
-
-
-export async function batchUpdateStudentScoresAction(
-  input: { updates: { reportId: string; subjects: SubjectEntry[] }[] }
-): Promise<{ success: boolean, error?: string }> {
-  const validation = BatchScoreUpdateSchema.safeParse(input);
-  if (!validation.success) {
-    return { success: false, error: "Invalid data format for batch update." };
-  }
-  
-  const { updates } = validation.data;
-  const batch = writeBatch(db);
-
-  updates.forEach(update => {
-    const reportRef = doc(db, "reports", update.reportId);
-    batch.update(reportRef, { subjects: update.subjects });
-  });
+// Updated registerUserAction: now reads role and scope from the invite
+export async function registerUserAction(data: {
+  email: string;
+  password: string;
+  name: string;
+  telephone: string;
+}): Promise<{ success: boolean; message: string }> {
+  const { email, password, name, telephone } = data;
+  const trimmedEmail = email.trim().toLowerCase();
 
   try {
-    await batch.commit();
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message || "Failed to update scores." };
-  }
-}
+    const isSuperAdminRegistering =
+      trimmedEmail === process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase();
 
+    let role: CustomUser['role'] = 'user';
+    let userScopeData: any = {
+      region: null,
+      district: null,
+      circuit: null,
+      schoolName: null,
+      classNames: null,
+    };
+    let inviteDocId: string | null = null;
 
-const TeacherFeedbackUpdateSchema = z.object({
-  reportId: z.string(),
-  feedback: z.string(),
-});
+    if (!isSuperAdminRegistering) {
+      const invitesRef = collection(db, 'invites');
+      const inviteQuery = query(
+        invitesRef,
+        where('email', '==', trimmedEmail),
+        where('status', '==', 'pending')
+      );
+      const inviteSnapshot = await getDocs(inviteQuery);
 
-const BatchTeacherFeedbackUpdateSchema = z.object({
-  updates: z.array(TeacherFeedbackUpdateSchema),
-});
+      if (inviteSnapshot.empty) {
+        return {
+          success: false,
+          message: 'Registration failed. You must be invited by an administrator.',
+        };
+      }
+      
+      const inviteDoc = inviteSnapshot.docs[0];
+      inviteDocId = inviteDoc.id;
+      const inviteData = inviteDoc.data();
+      
+      // Prevent registration if role is not assigned
+      if (!inviteData.role) {
+          return {
+              success: false,
+              message: 'Your invitation is pending role assignment. Please contact an administrator.',
+          };
+      }
 
+      role = inviteData.role;
+      userScopeData = {
+        region: inviteData.region ?? null,
+        district: inviteData.district ?? null,
+        circuit: inviteData.circuit ?? null,
+        schoolName: inviteData.schoolName ?? null,
+        classNames: inviteData.classNames ?? null,
+      };
 
-export async function batchUpdateTeacherFeedbackAction(
-    input: { updates: { reportId: string; feedback: string }[] }
-): Promise<{ success: boolean, error?: string }> {
-    const validation = BatchTeacherFeedbackUpdateSchema.safeParse(input);
-    if (!validation.success) {
-        return { success: false, error: "Invalid data format for batch feedback update." };
+    } else {
+      role = 'super-admin';
     }
 
-    const { updates } = validation.data;
-    const batch = writeBatch(db);
+    // Create user in Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      trimmedEmail,
+      password
+    );
+    const newUser = userCredential.user;
 
-    updates.forEach(update => {
-        const reportRef = doc(db, "reports", update.reportId);
-        batch.update(reportRef, { teacherFeedback: update.feedback, updatedAt: serverTimestamp() });
+    // Create user document in Firestore with role and scope from the invite
+    await setDoc(doc(db, 'users', newUser.uid), {
+      email: trimmedEmail,
+      name: name,
+      telephone: telephone,
+      role: role,
+      status: 'active',
+      ...userScopeData,
+      createdAt: serverTimestamp(),
     });
 
-    try {
-        await batch.commit();
-        return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message || "Failed to update teacher feedback." };
-    }
-}
-
-const serializeReport = (doc: DocumentData): ReportData => {
-  const data = doc.data() || {};
-  
-  const reportForValidation: Partial<ReportData> = {
-    id: doc.id,
-    teacherId: data.teacherId,
-    studentEntryNumber: data.studentEntryNumber,
-    studentName: data.studentName,
-    className: data.className,
-    shsProgram: data.shsProgram,
-    gender: data.gender,
-    country: data.country,
-    schoolName: data.schoolName,
-    schoolCategory: data.schoolCategory,
-    region: data.region,
-    district: data.district,
-    circuit: data.circuit,
-    schoolLogoDataUri: data.schoolLogoDataUri,
-    academicYear: data.academicYear,
-    academicTerm: data.academicTerm,
-    reopeningDate: data.reopeningDate,
-    selectedTemplateId: data.selectedTemplateId,
-    daysAttended: data.daysAttended,
-    totalSchoolDays: data.totalSchoolDays,
-    parentEmail: data.parentEmail,
-    parentPhoneNumber: data.parentPhoneNumber,
-    performanceSummary: data.performanceSummary,
-    strengths: data.strengths,
-    areasForImprovement: data.areasForImprovement,
-    hobbies: Array.isArray(data.hobbies) ? data.hobbies : [],
-    teacherFeedback: data.teacherFeedback,
-    instructorContact: data.instructorContact,
-    subjects: Array.isArray(data.subjects) ? data.subjects.map((s: any) => ({
-      subjectName: s.subjectName || '',
-      continuousAssessment: s.continuousAssessment,
-      examinationMark: s.examinationMark,
-    })) : [],
-    promotionStatus: data.promotionStatus,
-    studentPhotoUrl: data.studentPhotoUrl,
-    headMasterSignatureDataUri: data.headMasterSignatureDataUri,
-    createdAt: data.createdAt?.toDate()?.toISOString(),
-    updatedAt: data.updatedAt?.toDate()?.toISOString(),
-  };
-
-  const parsed = ReportDataSchema.parse(reportForValidation);
-  const average = calculateOverallAverage(parsed.subjects);
-  parsed.overallAverage = average === null ? undefined : average;
-  return parsed;
-};
-
-export async function getReportsAction(user: PlainUser): Promise<{ success: boolean; reports?: ReportData[]; error?: string }> {
-  if (!user) {
-    return { success: false, error: 'User is not authenticated.' };
-  }
-  
-  try {
-    const dbAdmin = admin.firestore();
-    let q: Query = dbAdmin.collection('reports');
-
-    switch (user.role) {
-      case 'super-admin':
-        // Super admin sees all reports
-        break;
-      case 'big-admin':
-        if (!user.district) throw new Error("District admin's scope is not defined.");
-        q = q.where('district', '==', user.district);
-        break;
-      case 'admin':
-        if (!user.schoolName) throw new Error("School admin's scope is not defined.");
-        q = q.where('schoolName', '==', user.schoolName);
-        break;
-      case 'user':
-      case 'public_user':
-        q = q.where('teacherId', '==', user.uid);
-        break;
-      default:
-        // If role is undefined or not recognized, return no reports.
-        return { success: true, reports: [] };
+    // If it was a regular user, update their invite to 'completed' using ADMIN SDK
+    if (inviteDocId) {
+      const inviteDocRef = admin.firestore().collection('invites').doc(inviteDocId);
+      await inviteDocRef.update({ 
+          status: 'completed', 
+          completedAt: admin.firestore.FieldValue.serverTimestamp() 
+      });
     }
 
-    const snapshot = await q.get();
-    const reports = snapshot.docs.map(serializeReport);
-    
-    return { success: true, reports };
+    return { success: true, message: 'Registration successful! You will now be redirected to the dashboard.' };
 
   } catch (error: any) {
-    let errorMessage = "An unknown error occurred while fetching reports.";
-    if (error.code === 'FAILED_PRECONDITION' && error.message.includes('requires an index')) {
-      errorMessage = `A Firestore index is required for this query. Please create the index in your Firebase console. Details: ${error.message}`;
-    } else {
+    console.error('Registration Error:', error);
+    let errorMessage = 'An unexpected error occurred during registration.';
+    if (error.code) {
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'This email is already in use. Please log in or use a different email.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'Password is too weak. It must be at least 6 characters.';
+          break;
+        case 'failed-precondition':
+             errorMessage = 'A database index is needed to find your invite. Please ask an administrator to check the browser\'s developer console for a link to create the required index for the "invites" collection on the "email" and "status" fields. This is a one-time setup.';
+             break;
+        case 'permission-denied':
+            errorMessage = `A permission error occurred. This can happen if security rules are too restrictive or if an operation needs to be moved to a secure backend function. Error: ${error.message}`;
+            break;
+        default:
+          errorMessage = error.message;
+      }
+    } else if (error.message) {
       errorMessage = error.message;
     }
-    console.error("Error in getReportsAction: ", errorMessage);
-    return { success: false, error: errorMessage };
+    return { success: false, message: errorMessage };
   }
 }
 
 
-
-// --- User & Invite Management Actions ---
-
-const RegisterUserSchema = z.object({
-  uid: z.string(),
-  email: z.string().email(),
-  name: z.string().min(1),
-  telephone: z.string().optional(),
-  country: z.string().optional(),
-  schoolCategory: z.enum(['public', 'private']).optional(),
-});
-
-
-export async function registerUserAction(input: z.infer<typeof RegisterUserSchema>): Promise<{ success: boolean, message: string }> {
-    try {
-        const { uid, email, name, telephone, country, schoolCategory } = RegisterUserSchema.parse(input);
-        
-        const invitesRef = collection(db, 'invites');
-        const q = query(invitesRef, where("email", "==", email), where("status", "==", "pending"));
-        const inviteSnapshot = await getDocs(q);
-
-        const userDocRef = doc(db, 'users', uid);
-        
-        if (!inviteSnapshot.empty) {
-            // Invited User Flow
-            const inviteDoc = inviteSnapshot.docs[0];
-            const inviteData = inviteDoc.data();
-
-            await setDoc(userDocRef, {
-                uid: uid,
-                email: email,
-                name: name,
-                telephone: telephone || null,
-                role: inviteData.role || 'user', // Role from invite
-                status: 'active',
-                country: country || null,
-                region: inviteData.region || null,
-                district: inviteData.district || null,
-                circuit: inviteData.circuit || null,
-                schoolName: inviteData.schoolName || null,
-                classNames: inviteData.classNames || null,
-                schoolLevels: inviteData.schoolLevels || null,
-                schoolCategory: schoolCategory || inviteData.schoolCategory || null,
-                createdAt: serverTimestamp()
-            });
-
-            await updateDoc(inviteDoc.ref, {
-                status: 'completed',
-                registeredAt: serverTimestamp(),
-                registeredUserId: uid
-            });
-            return { success: true, message: "Registration successful! You have been registered with your assigned role." };
-        } else {
-            // Public User Flow
-            await setDoc(userDocRef, {
-                uid: uid,
-                email: email,
-                name: name,
-                telephone: telephone || null,
-                role: 'public_user', // Assign public_user role
-                status: 'active',
-                country: country || null,
-                schoolCategory: schoolCategory || null,
-                createdAt: serverTimestamp(),
-            });
-            return { success: true, message: "Registration successful! Welcome to the Report Card Generator." };
-        }
-
-    } catch (error: any) {
-        console.error("Registration Error:", error);
-        let message = 'An unexpected error occurred during registration.';
-        if (error.code === 'auth/email-already-in-use') {
-            message = 'This email address is already registered. Please log in instead.';
-        }
-        return { success: false, message };
-    }
-}
-
-const GoogleUserSchema = z.object({
-  uid: z.string(),
-  email: z.string().email().optional().nullable(),
-  displayName: z.string().nullable(),
-  phoneNumber: z.string().nullable(),
-});
-
-export async function handleGoogleSignInAction(
-  googleUser: z.infer<typeof GoogleUserSchema>
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const validatedUser = GoogleUserSchema.parse(googleUser);
-    const { uid, email, displayName, phoneNumber } = validatedUser;
-
-    const userDocRef = doc(db, 'users', uid);
-    const userDocSnap = await getDoc(userDocRef);
-
-    if (!userDocSnap.exists()) {
-      // This is a new public user
-      await setDoc(userDocRef, {
-        uid: uid,
-        email: email,
-        name: displayName || 'Public User',
-        telephone: phoneNumber || null,
-        role: 'public_user',
-        status: 'active',
-        createdAt: serverTimestamp(),
-      });
-      return { success: true, message: 'Welcome! Your public account has been created.' };
-    } else {
-      // This is a returning user. Check if their account is active.
-      const userData = userDocSnap.data();
-      if (userData.status === 'inactive') {
-        return { success: false, message: 'This account has been deactivated by an administrator.' };
-      }
-      return { success: true, message: 'Welcome back!' };
-    }
-  } catch (error: any) {
-    console.error('Google Sign-In DB Action Error:', error);
-    let message = 'An unknown error occurred on the server during Google sign-in.';
-    if (error instanceof z.ZodError) {
-      message = "Invalid user data received from client.";
-    } else {
-      message = error.message || 'Google sign-in failed on the server.';
-    }
-    return { success: false, message };
-  }
-}
-
-
-const checkPermissions = (currentUser: PlainUser, targetRole?: string, targetScope?: Partial<PlainUser>) => {
-  if (currentUser.role === 'super-admin') return true;
-
-  if (currentUser.role === 'big-admin') {
-    if (targetRole && (targetRole === 'super-admin' || targetRole === 'big-admin')) return false; // Big admin cannot create other big admins or super admins
-    if (targetScope?.district && targetScope.district !== currentUser.district) return false; // Must be within the same district
-    return true;
-  }
-
-  if (currentUser.role === 'admin') {
-     if (targetRole && targetRole !== 'user') return false; // Admin can only create users
-     if (targetScope?.schoolName && targetScope.schoolName !== currentUser.schoolName) return false; // Must be within the same school
-     return true;
-  }
-  
-  return false; // Users and public users cannot perform these actions
-};
-
-
-const CreateInviteSchema = z.object({
-  email: z.string().email(),
+// Action for creating a detailed invite with optional role
+const CreateInviteActionInputSchema = z.object({
+  email: z.string().email('Please enter a valid email address.'),
   role: z.enum(['big-admin', 'admin', 'user']).optional(),
-  region: z.string().optional(),
-  district: z.string().optional(),
-  circuit: z.string().optional(),
-  schoolName: z.string().optional(),
-  classNames: z.array(z.string()).optional(),
-  schoolLevels: z.array(z.string()).optional(),
-  schoolCategory: z.enum(['public', 'private']).optional(),
+  region: z.string().optional().nullable(),
+  district: z.string().optional().nullable(),
+  circuit: z.string().optional().nullable(),
+  schoolName: z.string().optional().nullable(),
+  classNames: z.array(z.string()).optional().nullable(),
 });
 
 
 export async function createInviteAction(
-  input: z.infer<typeof CreateInviteSchema>,
-  currentUser: PlainUser
+  data: z.infer<typeof CreateInviteActionInputSchema>,
+  currentUser: CustomUser
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const data = CreateInviteSchema.parse(input);
-    
-    if (!checkPermissions(currentUser, data.role, data)) {
-      return { success: false, message: 'Permission denied. You do not have the required privileges to create this invite.' };
+    // Guard clause for extra safety
+    if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
+        throw new Error('You do not have permission to invite users.');
+    }
+    const validatedData = CreateInviteActionInputSchema.parse(data);
+    const { email, role, ...scopesFromClient } = validatedData;
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // No need for this check since role can never be 'super-admin'
+    // Permission checks for who can invite whom
+    if (role) {
+      if (currentUser.role === 'big-admin' && role === 'big-admin') {
+        throw new Error("A 'big-admin' cannot invite another 'big-admin'.");
+      }
+      if (currentUser.role === 'admin' && role !== 'user') {
+        throw new Error("An 'admin' can only invite users with the 'user' role.");
+      }
     }
     
-    const invitesRef = collection(db, 'invites');
-    const usersRef = collection(db, 'users');
-
-    const inviteQuery = query(invitesRef, where("email", "==", data.email));
-    const userQuery = query(usersRef, where("email", "==", data.email));
-
-    const [inviteSnapshot, userSnapshot] = await Promise.all([getDocs(inviteQuery), getDocs(userQuery)]);
-
-    if (!userSnapshot.empty) {
-      return { success: false, message: "This email address is already registered to a user." };
+    // Check if user already exists in Firebase Auth
+    try {
+        await admin.auth().getUserByEmail(normalizedEmail);
+        // If the above line does not throw, the user exists.
+        return { success: false, message: `A user with the email ${normalizedEmail} is already registered.` };
+    } catch (error: any) {
+        // We expect 'auth/user-not-found'. If it's anything else, it's an actual error.
+        if (error.code !== 'auth/user-not-found') {
+            console.error("Error checking for existing user in Auth:", error);
+            throw new Error('An unexpected error occurred while checking for an existing user.');
+        }
+        // If user is not found, we can proceed.
     }
+
+    // Check for existing pending invite in Firestore using ADMIN SDK
+    const invitesRef = admin.firestore().collection('invites');
+    const inviteQuery = invitesRef
+      .where('email', '==', normalizedEmail)
+      .where('status', '==', 'pending');
+    const inviteSnapshot = await inviteQuery.get();
+    
     if (!inviteSnapshot.empty) {
-        const existingInvite = inviteSnapshot.docs[0].data();
-        if(existingInvite.status === 'pending') {
-            return { success: false, message: "An active invite for this email already exists." };
+      return { success: false, message: `A pending invite for ${normalizedEmail} already exists.` };
+    }
+    
+    // SERVER-SIDE SCOPE ENFORCEMENT
+    let finalScope: any = {};
+    if (role) { 
+        if (currentUser.role === 'super-admin') {
+            if (role === 'big-admin') {
+                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: null, schoolName: null, classNames: null };
+            } else if (role === 'admin') {
+                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: null };
+            } else { // user
+                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: scopesFromClient.classNames || null };
+            }
+        } else if (currentUser.role === 'big-admin') {
+            if (!currentUser.region || !currentUser.district) throw new Error("Your account ('big-admin') is not configured with a region and district.");
+            finalScope = {
+                region: currentUser.region,
+                district: currentUser.district,
+                circuit: (role === 'admin' || role === 'user') ? (scopesFromClient.circuit || null) : null,
+                schoolName: (role === 'admin' || role === 'user') ? (scopesFromClient.schoolName || null) : null,
+                classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
+            };
+        } else if (currentUser.role === 'admin') {
+            if (!currentUser.schoolName) throw new Error("Your account ('admin') is not configured with a school name.");
+            finalScope = {
+                region: currentUser.region,
+                district: currentUser.district,
+                circuit: currentUser.circuit,
+                schoolName: currentUser.schoolName,
+                classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
+            };
         }
     }
 
-    await addDoc(invitesRef, {
-      ...data,
+    // Create invite using ADMIN SDK
+    await invitesRef.add({
+      email: normalizedEmail,
       status: 'pending',
-      createdAt: serverTimestamp(),
-      invitedBy: currentUser.uid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      role: role || null,
+      ...finalScope,
     });
 
-    return { success: true, message: `Invite sent successfully to ${data.email}.` };
+    return { success: true, message: `User with email ${normalizedEmail} has been invited${role ? ` as a '${role}'` : ''}. They can now register once a role is assigned.` };
+
   } catch (error: any) {
-    console.error("Create invite error:", error);
-    return { success: false, message: error.message || 'Could not create invite.' };
+    console.error('Error in createInviteAction:', error);
+    let errorMessage = 'An unexpected error occurred during authorization.';
+    if (error.message && error.message.toLowerCase().includes('firebase admin sdk') && error.message.toLowerCase().includes('initialize')) {
+        errorMessage = `SERVER CONFIGURATION ERROR: The Firebase Admin SDK failed to initialize. See README.md for instructions.`;
+    }
+    else if (error.code === 'failed-precondition' && error.message && error.message.includes('index')) {
+        errorMessage = `A database index is needed. Please check the browser's developer console for a link to create it.`;
+    } 
+    else if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } 
+    else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, message: errorMessage };
   }
 }
 
-export async function deleteInviteAction(
-  input: { inviteId: string }
-): Promise<{ success: boolean; message?: string }> {
-  try {
-    await deleteDoc(doc(db, 'invites', input.inviteId));
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, message: error.message || 'Could not delete invite.' };
-  }
-}
-
-export async function updateUserStatusAction(
-  input: { userId: string; status: 'active' | 'inactive' }
-): Promise<{ success: boolean; message?: string }> {
-  try {
-    const userRef = doc(db, 'users', input.userId);
-    await updateDoc(userRef, { status: input.status });
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, message: error.message || 'Could not update user status.' };
-  }
-}
-
-
-const UpdateInviteSchema = CreateInviteSchema.extend({
-  inviteId: z.string(),
+// Action for updating a pending invite's role and scope
+const UpdateInviteActionSchema = z.object({
+  inviteId: z.string().min(1, "Invite ID is required"),
+  role: z.enum(['big-admin', 'admin', 'user']),
+  region: z.string().optional().nullable(),
+  district: z.string().optional().nullable(),
+  circuit: z.string().optional().nullable(),
+  schoolName: z.string().optional().nullable(),
+  classNames: z.array(z.string()).optional().nullable(),
 });
 
 export async function updateInviteAction(
-  input: z.infer<typeof UpdateInviteSchema>,
-  currentUser: PlainUser
+  data: z.infer<typeof UpdateInviteActionSchema>,
+  currentUser: CustomUser
 ): Promise<{ success: boolean; message: string }> {
-   try {
-    const data = UpdateInviteSchema.parse(input);
-     if (!checkPermissions(currentUser, data.role, data)) {
-      return { success: false, message: 'Permission denied.' };
+  try {
+    if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
+      throw new Error("You do not have permission to perform this action.");
     }
     
-    const inviteRef = doc(db, 'invites', data.inviteId);
-    await updateDoc(inviteRef, { ...data, updatedAt: serverTimestamp() });
-    return { success: true, message: 'Invite updated successfully.' };
+    const validatedData = UpdateInviteActionSchema.parse(data);
+    const { inviteId, role, ...scopes } = validatedData;
+    
+    if (currentUser.role === 'big-admin' && (role === 'big-admin')) { throw new Error("A 'big-admin' cannot assign 'big-admin' roles."); }
+    if (currentUser.role === 'admin' && role !== 'user') { throw new Error("An 'admin' can only assign the 'user' role."); }
+    
+    const inviteDocRef = admin.firestore().collection('invites').doc(inviteId);
+    
+    const updateData: any = { role };
+    // Scope enforcement logic (same as create/update user actions)
+    if (currentUser.role === 'super-admin') {
+      if (role === 'big-admin') { updateData.region = scopes.region; updateData.district = scopes.district; updateData.schoolName = null; updateData.circuit = null; updateData.classNames = null; }
+      else if (role === 'admin') { updateData.region = scopes.region; updateData.district = scopes.district; updateData.circuit = scopes.circuit; updateData.schoolName = scopes.schoolName; updateData.classNames = null; }
+      else { updateData.region = scopes.region; updateData.district = scopes.district; updateData.circuit = scopes.circuit; updateData.schoolName = scopes.schoolName; updateData.classNames = scopes.classNames; }
+    } else if (currentUser.role === 'big-admin') {
+      if (!currentUser.region || !currentUser.district) throw new Error("Current user ('big-admin') has an incomplete scope.");
+      updateData.region = currentUser.region; updateData.district = currentUser.district;
+      updateData.schoolName = (role === 'admin' || role === 'user') ? scopes.schoolName : null;
+      updateData.circuit = (role === 'admin' || role === 'user') ? scopes.circuit : null;
+      updateData.classNames = role === 'user' ? scopes.classNames : null;
+    } else if (currentUser.role === 'admin') {
+      if (!currentUser.schoolName) throw new Error("Current user ('admin') has an incomplete scope.");
+      updateData.region = currentUser.region; updateData.district = currentUser.district; updateData.circuit = currentUser.circuit; updateData.schoolName = currentUser.schoolName;
+      updateData.classNames = role === 'user' ? scopes.classNames : null;
+    }
+    
+    await inviteDocRef.update(updateData);
+    
+    return { success: true, message: "Invite details updated successfully." };
   } catch (error: any) {
-    return { success: false, message: error.message || 'Could not update invite.' };
+    console.error('Error updating invite:', error);
+    let errorMessage = 'An unexpected error occurred while updating the invite.';
+    if (error instanceof z.ZodError) { errorMessage = "Invalid input for updating invite: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', '); } 
+    else if (error.message) { errorMessage = error.message; }
+    return { success: false, message: errorMessage };
   }
 }
 
-const UpdateUserRoleAndScopeSchema = z.object({
-  userId: z.string(),
-  role: z.enum(['big-admin', 'admin', 'user', 'public_user']),
-  region: z.string().optional(),
-  district: z.string().optional(),
-  circuit: z.string().optional(),
-  schoolName: z.string().optional(),
-  classNames: z.array(z.string()).optional(),
-  schoolLevels: z.array(z.string()).optional(),
-  schoolCategory: z.enum(['public', 'private']).optional(),
-  country: z.string().optional(),
+
+// Action for deleting an invite
+const DeleteInviteActionInputSchema = z.object({
+  inviteId: z.string().min(1, 'Invite ID is required.'),
 });
 
-
-export async function updateUserRoleAndScopeAction(
-  input: z.infer<typeof UpdateUserRoleAndScopeSchema>,
-  currentUser: PlainUser
+export async function deleteInviteAction(
+  data: { inviteId: string }
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const data = UpdateUserRoleAndScopeSchema.parse(input);
-     if (!checkPermissions(currentUser, data.role, data)) {
-      return { success: false, message: 'Permission denied to assign this role or scope.' };
-    }
-    const userRef = doc(db, 'users', data.userId);
-    await updateDoc(userRef, { ...data, updatedAt: serverTimestamp() });
-    return { success: true, message: 'User updated successfully.' };
-  } catch (error: any) {
-    return { success: false, message: error.message || 'Could not update user.' };
-  }
-}
-
-
-const serializeUser = (userDoc: DocumentData): UserData => {
-  const data = userDoc.data();
-  return {
-    id: userDoc.id,
-    email: data.email,
-    name: data.name || null,
-    telephone: data.telephone || null,
-    role: data.role,
-    status: data.status,
-    country: data.country || null,
-    region: data.region || null,
-    district: data.district || null,
-    circuit: data.circuit || null,
-    schoolName: data.schoolName || null,
-    classNames: data.classNames || null,
-    schoolLevels: data.schoolLevels || null,
-    schoolCategory: data.schoolCategory || null,
-    createdAt: data.createdAt?.toDate()?.toISOString() || null,
-  };
-}
-
-
-const serializeInvite = (inviteDoc: DocumentData): InviteData => {
-  const data = inviteDoc.data();
-  return {
-    id: inviteDoc.id,
-    email: data.email,
-    status: data.status,
-    role: data.role || null,
-    region: data.region || null,
-    district: data.district || null,
-    circuit: data.circuit || null,
-    schoolName: data.schoolName || null,
-    classNames: data.classNames || null,
-    schoolLevels: data.schoolLevels || null,
-    schoolCategory: data.schoolCategory || null,
-    createdAt: data.createdAt?.toDate()?.toISOString() || null,
-  };
-};
-
-
-export async function getUsersAction(
-  user: PlainUser
-): Promise<{ success: boolean; users?: UserData[]; error?: string }> {
-  try {
-    const dbAdmin = admin.firestore();
-    let q: Query = dbAdmin.collection('users');
-
-    if (user.role === 'big-admin') {
-      if (!user.district) throw new Error("District admin's scope is not defined.");
-      q = q.where('district', '==', user.district);
-    } else if (user.role === 'admin') {
-      if (!user.schoolName) throw new Error("Admin's scope is not defined.");
-      q = q.where('schoolName', '==', user.schoolName);
-    } else if (user.role === 'user' || user.role === 'public_user') {
-       return { success: false, error: 'Permission denied.' };
-    }
-
-    const snapshot = await q.get();
-    let users = snapshot.docs.map(serializeUser);
-
-    // Only super-admins can see public_users
-    if (user.role !== 'super-admin') {
-        users = users.filter(u => u.role !== 'public_user');
-    }
-
-    return { success: true, users };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-export async function getInvitesAction(
-  user: PlainUser
-): Promise<{ success: boolean; invites?: InviteData[]; error?: string }> {
-  try {
-    const dbAdmin = admin.firestore();
-    let q: Query = dbAdmin.collection('invites');
-
-    if (user.role === 'big-admin') {
-        if (!user.district) throw new Error("District admin's scope is not defined.");
-        q = q.where('district', '==', user.district);
-    } else if (user.role === 'admin') {
-        if (!user.schoolName) throw new Error("Admin's scope is not defined.");
-        q = q.where('schoolName', '==', user.schoolName);
-    } else if (user.role === 'user' || user.role === 'public_user') {
-       return { success: false, error: 'Permission denied.' };
-    }
+    const { inviteId } = DeleteInviteActionInputSchema.parse(data);
     
-    const snapshot = await q.where('status', '==', 'pending').get();
-    const invites = snapshot.docs.map(serializeInvite);
-    return { success: true, invites };
+    await admin.firestore().collection('invites').doc(inviteId).delete();
+    
+    return { success: true, message: 'Invite successfully deleted.' };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    console.error('Error deleting invite:', error);
+    let errorMessage = 'An unexpected error occurred while deleting the invite.';
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for deleting invite: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, message: errorMessage };
   }
 }
 
-
-const DeleteUserActionSchema = z.object({
-  userId: z.string(),
+// Action for deleting a user (super-admin only)
+const DeleteUserActionInputSchema = z.object({
+  userId: z.string().min(1, 'User ID is required.'),
 });
 
 export async function deleteUserAction(
-  input: z.infer<typeof DeleteUserActionSchema>,
-  currentUser: PlainUser
-): Promise<{ success: boolean; message?: string }> {
+  data: { userId: string },
+  currentUser: CustomUser
+): Promise<{ success: boolean; message: string }> {
+  if (currentUser.role !== 'super-admin') {
+      throw new Error("You do not have permission to perform this action.");
+  }
   try {
-    const { userId } = DeleteUserActionSchema.parse(input);
+    const { userId } = DeleteUserActionInputSchema.parse(data);
 
-    if (currentUser.role !== 'super-admin') {
-      return { success: false, message: "Permission denied. Only super admins can delete users." };
-    }
-    
-    const dbAdmin = admin.firestore();
-    await dbAdmin.collection('users').doc(userId).delete();
-    // Note: This does not delete the user from Firebase Auth to prevent re-registration issues.
-    
-    return { success: true };
+    // Delete from Firestore first
+    await admin.firestore().collection('users').doc(userId).delete();
+
+    // Then delete from Firebase Auth
+    await admin.auth().deleteUser(userId);
+
+    return { success: true, message: 'User successfully deleted.' };
   } catch (error: any) {
-    console.error("Delete user error:", error);
-    return { success: false, message: error.message || "Could not delete user." };
+    console.error('Error deleting user:', error);
+    let errorMessage = 'An unexpected error occurred while deleting the user.';
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for deleting user: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, message: errorMessage };
   }
 }
 
-// Action to get population stats for admin dashboards
-export async function getSystemWideStatsAction(): Promise<{ success: boolean, stats?: any, error?: string }> {
-    try {
-        const reportsSnapshot = await admin.firestore().collection('reports').get();
-        const schools = new Set(reportsSnapshot.docs.map(doc => doc.data().schoolName).filter(Boolean));
-        const publicSchools = new Set(reportsSnapshot.docs.filter(doc => doc.data().schoolCategory === 'public').map(doc => doc.data().schoolName).filter(Boolean));
-        const privateSchools = new Set(reportsSnapshot.docs.filter(doc => doc.data().schoolCategory === 'private').map(doc => doc.data().schoolName).filter(Boolean));
-        const maleCount = reportsSnapshot.docs.filter(doc => doc.data().gender === 'Male').length;
-        const femaleCount = reportsSnapshot.docs.filter(doc => doc.data().gender === 'Female').length;
-        const schoolLevelCounts: Record<string, number> = {};
-        const usersSnapshot = await admin.firestore().collection('users').get();
-        usersSnapshot.docs.forEach(doc => {
-            const levels = doc.data().schoolLevels;
-            if (Array.isArray(levels)) {
-                levels.forEach(level => {
-                    schoolLevelCounts[level] = (schoolLevelCounts[level] || 0) + 1;
-                });
-            }
-        });
 
-        return {
-            success: true,
-            stats: {
-                schoolCount: schools.size,
-                publicSchoolCount: publicSchools.size,
-                privateSchoolCount: privateSchools.size,
-                totalStudents: reportsSnapshot.size,
-                maleCount,
-                femaleCount,
-                schoolLevelCounts,
-            }
-        };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+// Action for updating user status
+const UpdateUserStatusActionInputSchema = z.object({
+  userId: z.string().min(1, 'User ID is required.'),
+  status: z.enum(['active', 'inactive']),
+});
+
+export async function updateUserStatusAction(
+  data: { userId: string; status: 'active' | 'inactive' }
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { userId, status } = UpdateUserStatusActionInputSchema.parse(data);
+    
+    const userDocRef = admin.firestore().collection('users').doc(userId);
+    await userDocRef.update({ status });
+    
+    return { success: true, message: `User status updated to ${status}.` };
+  } catch (error: any) {
+    console.error('Error updating user status:', error);
+    let errorMessage = 'An unexpected error occurred.';
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
     }
-}
-
-export async function getDistrictStatsAction(district: string): Promise<{ success: boolean, stats?: any, error?: string }> {
-    try {
-        const reportsSnapshot = await admin.firestore().collection('reports').where('district', '==', district).get();
-        const schools = new Set(reportsSnapshot.docs.map(doc => doc.data().schoolName).filter(Boolean));
-        const publicSchools = new Set(reportsSnapshot.docs.filter(doc => doc.data().schoolCategory === 'public').map(doc => doc.data().schoolName).filter(Boolean));
-        const privateSchools = new Set(reportsSnapshot.docs.filter(doc => doc.data().schoolCategory === 'private').map(doc => doc.data().schoolName).filter(Boolean));
-        const maleCount = reportsSnapshot.docs.filter(doc => doc.data().gender === 'Male').length;
-        const femaleCount = reportsSnapshot.docs.filter(doc => doc.data().gender === 'Female').length;
-        const schoolLevelCounts: Record<string, number> = {};
-        const usersSnapshot = await admin.firestore().collection('users').where('district', '==', district).get();
-        usersSnapshot.docs.forEach(doc => {
-            const levels = doc.data().schoolLevels;
-            if (Array.isArray(levels)) {
-                levels.forEach(level => {
-                    schoolLevelCounts[level] = (schoolLevelCounts[level] || 0) + 1;
-                });
-            }
-        });
-
-        return {
-            success: true,
-            stats: {
-                schoolCount: schools.size,
-                publicSchoolCount: publicSchools.size,
-                privateSchoolCount: privateSchools.size,
-                totalStudents: reportsSnapshot.size,
-                maleCount,
-                femaleCount,
-                schoolLevelCounts,
-            }
-        };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-export async function getSchoolStatsAction(schoolName: string): Promise<{ success: boolean, stats?: any, error?: string }> {
-    try {
-        const reportsSnapshot = await admin.firestore().collection('reports').where('schoolName', '==', schoolName).get();
-        const classes = new Set(reportsSnapshot.docs.map(doc => doc.data().className).filter(Boolean));
-        const maleCount = reportsSnapshot.docs.filter(doc => doc.data().gender === 'Male').length;
-        const femaleCount = reportsSnapshot.docs.filter(doc => doc.data().gender === 'Female').length;
-        return {
-            success: true,
-            stats: {
-                classCount: classes.size,
-                totalStudents: reportsSnapshot.size,
-                maleCount,
-                femaleCount,
-            }
-        };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-export type SchoolRankingData = { schoolName: string; studentCount: number; average: number; rank: string };
-
-export async function getDistrictClassRankingAction(
-    { district, className, academicYear, academicTerm, subjectName, schoolCategory }: { district: string; className: string; academicYear: string | null, academicTerm: string | null, subjectName: string | null, schoolCategory: 'public' | 'private' | null }
-): Promise<{ success: boolean, ranking?: SchoolRankingData[], error?: string }> {
-    try {
-        let q: Query = admin.firestore().collection('reports')
-            .where('district', '==', district)
-            .where('className', '==', className);
-
-        if (academicYear) q = q.where('academicYear', '==', academicYear);
-        if (academicTerm) q = q.where('academicTerm', '==', academicTerm);
-        if (schoolCategory) q = q.where('schoolCategory', '==', schoolCategory);
-        
-        const snapshot = await q.get();
-        const reports = snapshot.docs.map(doc => serializeReport(doc));
-
-        const schools = new Map<string, { scores: number[], count: number }>();
-        reports.forEach(report => {
-            if (!report.schoolName!) {
-                return;
-            }
-            if (!schools.has(report.schoolName!)) {
-                schools.set(report.schoolName!, { scores: [], count: 0 });
-            }
-            const schoolData = schools.get(report.schoolName!)!;
-            schoolData.count++;
-            const average = subjectName
-              ? calculateSubjectFinalMark(report.subjects.find(s => s.subjectName === subjectName)!)
-              : report.overallAverage;
-
-            if (average !== null && average !== undefined) {
-                schoolData.scores.push(average);
-            }
-        });
-
-        const performance = Array.from(schools.entries()).map(([schoolName, data]) => ({
-            schoolName,
-            studentCount: data.count,
-            average: data.scores.length > 0 ? data.scores.reduce((a, b) => a + b, 0) / data.scores.length : 0,
-        }));
-        
-        performance.sort((a, b) => b.average - a.average);
-
-        const getOrdinalSuffix = (n: number) => { const s = ['th', 'st', 'nd', 'rd']; const v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; };
-
-        let lastScore = -1;
-        let lastRank = 0;
-        const rankedPerformance: SchoolRankingData[] = performance.map((item, index) => {
-            const rank = item.average === lastScore ? lastRank : index + 1;
-            lastScore = item.average;
-            lastRank = rank;
-            return {
-                ...item,
-                rank: `${rank}${getOrdinalSuffix(rank)}`,
-            };
-        });
-        
-        return { success: true, ranking: rankedPerformance };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-
-export type StudentRankingData = { studentName: string; average: number; rank: string };
-
-export async function getSchoolProgramRankingAction(
-  { schoolName, className, shsProgram, subjectName }: { schoolName: string; className: string; shsProgram: string; subjectName: string | null }
-): Promise<{ success: boolean; ranking?: StudentRankingData[]; error?: string }> {
-    try {
-        const q = admin.firestore().collection('reports')
-            .where('schoolName', '==', schoolName)
-            .where('className', '==', className)
-            .where('shsProgram', '==', shsProgram);
-        
-        const snapshot = await q.get();
-        const reports = snapshot.docs.map(doc => serializeReport(doc));
-
-        const performance = reports.map(report => {
-            const average = subjectName
-                ? calculateSubjectFinalMark(report.subjects.find(s => s.subjectName === subjectName)!)
-                : report.overallAverage;
-            return {
-                studentName: report.studentName,
-                average: average ?? 0,
-            };
-        });
-        
-        performance.sort((a, b) => b.average - a.average);
-        
-        const getOrdinalSuffix = (n: number) => { const s = ['th', 'st', 'nd', 'rd']; const v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; };
-        
-        let lastScore = -1;
-        let lastRank = 0;
-        const rankedPerformance: StudentRankingData[] = performance.map((item, index) => {
-            const rank = item.average === lastScore ? lastRank : index + 1;
-            lastScore = item.average;
-            lastRank = rank;
-            return {
-                ...item,
-                rank: `${rank}${getOrdinalSuffix(rank)}`,
-            };
-        });
-
-        return { success: true, ranking: rankedPerformance };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-export type PopulationStats = {
-  schoolCount: number;
-  publicSchoolCount: number;
-  privateSchoolCount: number;
-  totalStudents: number;
-  maleCount: number;
-  femaleCount: number;
-  schoolLevelCounts: Record<string, number>;
-}
-
-export async function getReportsForAdminAction(user: PlainUser): Promise<{ success: boolean; reports?: ReportData[]; error?: string }> {
-  if (!user || (user.role !== 'super-admin' && user.role !== 'big-admin')) {
-    return { success: false, error: 'Permission denied.' };
+    return { success: false, message: errorMessage };
   }
+}
+
+
+// Action for updating a user's role and scope
+const UpdateUserRoleAndScopeActionSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  role: z.enum(['big-admin', 'admin', 'user']),
+  region: z.string().optional().nullable(),
+  district: z.string().optional().nullable(),
+  circuit: z.string().optional().nullable(),
+  schoolName: z.string().optional().nullable(),
+  classNames: z.array(z.string()).optional().nullable(),
+});
+
+export async function updateUserRoleAndScopeAction(
+  data: z.infer<typeof UpdateUserRoleAndScopeActionSchema>,
+  currentUser: CustomUser
+): Promise<{ success: boolean; message: string }> {
+  try {
+    if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
+      throw new Error("You do not have permission to perform this action.");
+    }
+    
+    const validatedData = UpdateUserRoleAndScopeActionSchema.parse(data);
+    const { userId, role, ...scopes } = validatedData;
+    
+    // Permission checks
+    if (currentUser.role === 'big-admin' && (role === 'big-admin')) {
+      throw new Error("A 'big-admin' cannot assign 'big-admin' or 'super-admin' roles.");
+    }
+    if (currentUser.role === 'admin' && role !== 'user') {
+      throw new Error("An 'admin' can only assign the 'user' role.");
+    }
+    
+    const userDocRef = admin.firestore().collection('users').doc(userId);
+    
+    // SERVER-SIDE SCOPE ENFORCEMENT
+    const updateData: any = { role };
+
+    if (currentUser.role === 'big-admin') {
+      if (!currentUser.region || !currentUser.district) throw new Error("Current user ('big-admin') has an incomplete scope.");
+      updateData.region = currentUser.region;
+      updateData.district = currentUser.district;
+      updateData.schoolName = (role === 'admin' || role === 'user') ? scopes.schoolName : null;
+      updateData.circuit = (role === 'admin' || role === 'user') ? scopes.circuit : null;
+      updateData.classNames = role === 'user' ? scopes.classNames : null;
+
+    } else if (currentUser.role === 'admin') {
+      if (!currentUser.schoolName) throw new Error("Current user ('admin') has an incomplete scope.");
+      updateData.region = currentUser.region;
+      updateData.district = currentUser.district;
+      updateData.circuit = currentUser.circuit;
+      updateData.schoolName = currentUser.schoolName;
+      updateData.classNames = role === 'user' ? scopes.classNames : null;
+
+    } else { // super-admin
+      if (role === 'big-admin') {
+        if (!scopes.region?.trim()) throw new Error("A region must be specified for a 'big-admin'.");
+        if (!scopes.district?.trim()) throw new Error("A district must be specified for a 'big-admin'.");
+        updateData.region = scopes.region;
+        updateData.district = scopes.district;
+        updateData.schoolName = null;
+        updateData.circuit = null;
+        updateData.classNames = null;
+      } else if (role === 'admin') {
+        if (!scopes.schoolName?.trim()) throw new Error("A school name must be specified for an 'admin'.");
+        updateData.region = scopes.region;
+        updateData.district = scopes.district;
+        updateData.circuit = scopes.circuit;
+        updateData.schoolName = scopes.schoolName;
+        updateData.classNames = null;
+      } else { // 'user' role
+        updateData.region = scopes.region;
+        updateData.district = scopes.district;
+        updateData.circuit = scopes.circuit;
+        updateData.schoolName = scopes.schoolName;
+        updateData.classNames = scopes.classNames;
+      }
+    }
+    
+    await userDocRef.update(updateData);
+    
+    return { success: true, message: "User role and scope updated successfully." };
+  } catch (error: any) {
+    console.error('Error updating user role:', error);
+    let errorMessage = 'An unexpected error occurred while updating the user role.';
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for updating role: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, message: errorMessage };
+  }
+}
+
+
+// Define types for server-side data fetching
+interface UserForAdmin {
+  id: string;
+  email: string;
+  name: string;
+  telephone: string;
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  status: 'active' | 'inactive';
+  region?: string | null;
+  district?: string | null;
+  circuit?: string | null;
+  schoolName?: string | null;
+  classNames?: string[] | null;
+  createdAt: string | null;
+}
+
+interface InviteForAdmin {
+  id: string;
+  email: string;
+  status: 'pending' | 'completed';
+  role?: 'big-admin' | 'admin' | 'user' | null; // role is now optional
+  region?: string | null;
+  district?: string | null;
+  circuit?: string | null;
+  schoolName?: string | null;
+  classNames?: string[] | null;
+  createdAt: string | null;
+}
+
+
+export async function getUsersAction(currentUser: CustomUser): Promise<{ success: boolean; users?: UserForAdmin[]; error?: string }> {
+  try {
+    if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
+      throw new Error("You do not have permission to view this data.");
+    }
+
+    let usersQuery: Query = admin.firestore().collection('users');
+
+    if (currentUser.role === 'big-admin') {
+      if (!currentUser.district) throw new Error("Big-admin scope error: district not defined for your account.");
+      usersQuery = usersQuery.where('district', '==', currentUser.district);
+    } else if (currentUser.role === 'admin') {
+      if (!currentUser.schoolName) throw new Error("Admin scope error: schoolName not defined for your account.");
+      usersQuery = usersQuery.where('schoolName', '==', currentUser.schoolName);
+    }
+
+    const usersSnapshot = await usersQuery.get();
+
+    const users = usersSnapshot.docs
+      .filter((doc: DocumentData) => {
+        const data = doc.data();
+        if (doc.id === currentUser.uid) return false;
+        if (currentUser.role === 'big-admin') return ['admin', 'user'].includes(data.role);
+        if (currentUser.role === 'admin') return data.role === 'user';
+        return true;
+      })
+      .map((doc: DocumentData) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          email: data.email,
+          name: data.name,
+          telephone: data.telephone,
+          role: data.role,
+          status: data.status,
+          region: data.region,
+          district: data.district,
+          circuit: data.circuit,
+          schoolName: data.schoolName,
+          classNames: data.classNames,
+          createdAt: data.createdAt?.toDate().toISOString() ?? null,
+        };
+      })
+      .sort((a: UserForAdmin, b: UserForAdmin) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+      });
+      
+    return { success: true, users: users as UserForAdmin[] };
+  } catch (error: any) {
+    console.error('Error fetching users via server action:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+
+export async function getInvitesAction(currentUser: CustomUser): Promise<{ success: boolean; invites?: InviteForAdmin[]; error?: string }> {
+   if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
+      throw new Error("You do not have permission to view this data.");
+    }
 
   try {
-    const dbAdmin = admin.firestore();
-    let q: Query = dbAdmin.collection('reports');
+    const invitesSnapshot = await admin.firestore().collection('invites').get();
+    const invites = invitesSnapshot.docs.map((doc: DocumentData) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email,
+        status: data.status,
+        role: data.role,
+        region: data.region,
+        district: data.district,
+        circuit: data.circuit,
+        schoolName: data.schoolName,
+        classNames: data.classNames,
+        createdAt: data.createdAt?.toDate().toISOString() ?? null,
+      };
+    })
+    .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+    });
 
-    if (user.role === 'big-admin') {
-      if (!user.district) throw new Error("District admin's scope is not defined.");
-      q = q.where('district', '==', user.district);
+    return { success: true, invites: invites as InviteForAdmin[] };
+  } catch (error: any) {
+    console.error('Error fetching invites via server action:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+
+export async function getReportsForAdminAction(user: CustomUser): Promise<{ success: boolean; reports?: ReportData[], error?: string }> {
+  try {
+    if (!user || !user.role || !['super-admin', 'big-admin'].includes(user.role)) {
+      throw new Error("You do not have permission to view this data.");
     }
-    // No .where() for super-admin means all reports are fetched.
 
+    const reportsCollectionRef = admin.firestore().collection('reports');
+    let q: Query;
+
+    if (user.role === 'super-admin') {
+      q = reportsCollectionRef;
+    } else if (user.role === 'big-admin' && user.district) {
+      q = reportsCollectionRef.where('district', '==', user.district);
+    } else {
+      // Should not happen if the initial check passes, but good for safety
+      return { success: true, reports: [] };
+    }
+    
     const snapshot = await q.get();
-    const reports = snapshot.docs.map(serializeReport);
-    return { success: true, reports };
+    const fetchedReports = snapshot.docs.map((doc: DocumentData) => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        // Convert Firestore Timestamps to serializable strings or Dates
+        createdAt: data.createdAt?.toDate() || null, 
+        updatedAt: data.updatedAt?.toDate() || null,
+      } as ReportData;
+    });
+
+    return { success: true, reports: fetchedReports };
   } catch (error: any) {
-    return { success: false, error: `Failed to fetch reports for admin: ${error.message}` };
+    console.error("Error fetching reports for admin:", error);
+    return { success: false, error: error.message };
   }
 }
 
-    
 
+// Action for fetching district-level statistics
+export async function getDistrictStatsAction(district: string): Promise<{
+  success: boolean;
+  stats?: {
+    schoolCount: number;
+    maleCount: number;
+    femaleCount: number;
+    totalStudents: number;
+  };
+  error?: string;
+}> {
+  try {
+    if (!district) {
+      throw new Error("District is required to fetch stats.");
+    }
     
+    const reportsRef = admin.firestore().collection('reports');
+    const reportsQuery = reportsRef.where('district', '==', district);
+    const reportsSnapshot = await reportsQuery.get();
+    
+    if (reportsSnapshot.empty) {
+        return { success: true, stats: { schoolCount: 0, maleCount: 0, femaleCount: 0, totalStudents: 0 } };
+    }
 
+    const schoolNames = new Set<string>();
+    let maleCount = 0;
+    let femaleCount = 0;
     
+    reportsSnapshot.forEach((doc: DocumentData) => {
+      const data = doc.data();
+      if (data.schoolName) {
+        schoolNames.add(data.schoolName);
+      }
+      if (data.gender === 'Male') {
+        maleCount++;
+      } else if (data.gender === 'Female') {
+        femaleCount++;
+      }
+    });
+    
+    const stats = {
+      schoolCount: schoolNames.size,
+      maleCount,
+      femaleCount,
+      totalStudents: reportsSnapshot.size,
+    };
+    
+    return { success: true, stats };
 
-    
+  } catch (error: any) {
+    console.error('Error fetching district stats:', error);
+    // Provide a more user-friendly error
+    let errorMessage = "An unexpected error occurred while fetching district statistics.";
+    if (error.code === 'failed-precondition' && error.message.includes('index')) {
+        errorMessage = `A database index is needed to query reports by 'district'. Please check the browser's developer console for a link to create it. This is a one-time setup.`;
+    } else if (error.message) {
+        errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
 
+
+// Action for fetching school-level statistics
+export async function getSchoolStatsAction(schoolName: string): Promise<{
+  success: boolean;
+  stats?: {
+    classCount: number;
+    maleCount: number;
+    femaleCount: number;
+    totalStudents: number;
+  };
+  error?: string;
+}> {
+  try {
+    if (!schoolName) {
+      throw new Error("School name is required to fetch stats.");
+    }
     
+    const reportsRef = admin.firestore().collection('reports');
+    const reportsQuery = reportsRef.where('schoolName', '==', schoolName);
+    const reportsSnapshot = await reportsQuery.get();
+    
+    if (reportsSnapshot.empty) {
+        return { success: true, stats: { classCount: 0, maleCount: 0, femaleCount: 0, totalStudents: 0 } };
+    }
+
+    const classNames = new Set<string>();
+    let maleCount = 0;
+    let femaleCount = 0;
+    
+    reportsSnapshot.forEach((doc: DocumentData) => {
+      const data = doc.data();
+      if (data.className) {
+        classNames.add(data.className);
+      }
+      if (data.gender === 'Male') {
+        maleCount++;
+      } else if (data.gender === 'Female') {
+        femaleCount++;
+      }
+    });
+    
+    const stats = {
+      classCount: classNames.size,
+      maleCount,
+      femaleCount,
+      totalStudents: reportsSnapshot.size,
+    };
+    
+    return { success: true, stats };
+
+  } catch (error: any) {
+    console.error('Error fetching school stats:', error);
+    let errorMessage = "An unexpected error occurred while fetching school statistics.";
+    if (error.code === 'failed-precondition' && error.message.includes('index')) {
+        errorMessage = `A database index is needed to query reports by 'schoolName'. Please check the browser's developer console for a link to create it. This is a one-time setup.`;
+    } else if (error.message) {
+        errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Action for fetching system-wide statistics (super-admin only)
+export async function getSystemWideStatsAction(): Promise<{
+  success: boolean;
+  stats?: {
+    schoolCount: number;
+    maleCount: number;
+    femaleCount: number;
+    totalStudents: number;
+  };
+  error?: string;
+}> {
+  try {
+    const reportsRef = admin.firestore().collection('reports');
+    const reportsSnapshot = await reportsRef.get();
+    
+    if (reportsSnapshot.empty) {
+        return { success: true, stats: { schoolCount: 0, maleCount: 0, femaleCount: 0, totalStudents: 0 } };
+    }
+
+    const schoolNames = new Set<string>();
+    let maleCount = 0;
+    let femaleCount = 0;
+    
+    reportsSnapshot.forEach((doc: DocumentData) => {
+      const data = doc.data();
+      if (data.schoolName) {
+        schoolNames.add(data.schoolName);
+      }
+      if (data.gender === 'Male') {
+        maleCount++;
+      } else if (data.gender === 'Female') {
+        femaleCount++;
+      }
+    });
+    
+    const stats = {
+      schoolCount: schoolNames.size,
+      maleCount,
+      femaleCount,
+      totalStudents: reportsSnapshot.size,
+    };
+    
+    return { success: true, stats };
+
+  } catch (error: any) {
+    console.error('Error fetching system-wide stats:', error);
+    let errorMessage = "An unexpected error occurred while fetching system-wide statistics.";
+    if (error.message) {
+        errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
+
+export interface SchoolRankingData {
+  schoolName: string;
+  studentCount: number;
+  average: number;
+  rank: string;
+}
+
+const DistrictClassRankingInputSchema = z.object({
+  district: z.string().min(1, "District is required."),
+  className: z.string().min(1, "Class name is required."),
+  subjectName: z.string().optional().nullable(),
+});
+
+// Action for fetching district-class-level ranking
+export async function getDistrictClassRankingAction(input: { district: string; className: string; subjectName?: string | null; }): Promise<{
+  success: boolean;
+  ranking?: SchoolRankingData[];
+  error?: string;
+}> {
+  try {
+    const { district, className, subjectName } = DistrictClassRankingInputSchema.parse(input);
+    
+    const reportsRef = admin.firestore().collection('reports');
+    const reportsQuery = reportsRef
+      .where('district', '==', district)
+      .where('className', '==', className);
+    
+    const reportsSnapshot = await reportsQuery.get();
+    
+    if (reportsSnapshot.empty) {
+        return { success: true, ranking: [] };
+    }
+
+    const reportsBySchool = new Map<string, any[]>();
+    reportsSnapshot.forEach((doc: DocumentData) => {
+      const data = doc.data();
+      const schoolName = data.schoolName?.trim();
+      if (schoolName) {
+        if (!reportsBySchool.has(schoolName)) {
+          reportsBySchool.set(schoolName, []);
+        }
+        reportsBySchool.get(schoolName)!.push(data);
+      }
+    });
+    
+    const schoolPerformances = Array.from(reportsBySchool.entries()).map(([schoolName, schoolReports]) => {
+        const allAverages = schoolReports
+          .map(report => {
+              if (subjectName) {
+                  const subject = report.subjects?.find((s: any) => s.subjectName === subjectName);
+                  return subject ? calculateSubjectFinalMark(subject) : null;
+              }
+              return calculateOverallAverage(report.subjects);
+          })
+          .filter(avg => avg !== null) as number[];
+
+        const average = allAverages.length > 0
+          ? allAverages.reduce((sum, avg) => sum + avg, 0) / allAverages.length
+          : 0;
+
+        return {
+          schoolName,
+          studentCount: allAverages.length, // Count only students who had a score for the subject/overall
+          average,
+        };
+    }).filter(school => school.studentCount > 0); // Only include schools that had students with relevant scores
+
+    const sortedSchools = schoolPerformances
+        .sort((a, b) => b.average - a.average)
+        .map((school, index, arr) => {
+          const rankNumber = (index > 0 && school.average === arr[index - 1].average)
+            ? (arr[index - 1] as any).rankNumber
+            : index + 1;
+          return { ...school, rankNumber };
+        });
+    
+    const getOrdinalSuffix = (n: number): string => {
+        const s = ['th', 'st', 'nd', 'rd'];
+        const v = n % 100;
+        return s[(v - 20) % 10] || s[v] || s[0];
+    };
+
+    const finalRankedSchools = sortedSchools.map((school, index, arr) => {
+        const { rankNumber } = school;
+        const isTiedWithNext = index < arr.length - 1 && arr[index + 1].rankNumber === rankNumber;
+        const isTiedWithPrev = index > 0 && arr[index - 1].rankNumber === rankNumber;
+        const isTie = isTiedWithNext || isTiedWithPrev;
+        const rankString = `${isTie ? 'T-' : ''}${rankNumber}${getOrdinalSuffix(rankNumber)}`;
+        return { ...school, rank: rankString };
+    });
+    
+    return { success: true, ranking: finalRankedSchools };
+
+  } catch (error: any) {
+    console.error('Error fetching district-class ranking:', error);
+    let errorMessage = "An unexpected error occurred while fetching the ranking.";
+    if (error.code === 'failed-precondition' && error.message.includes('index')) {
+        errorMessage = `A database index is needed. Please check the browser's developer console for a link to create the required index on the 'reports' collection for fields 'district' and 'className'.`;
+    } else if (error instanceof z.ZodError) {
+        errorMessage = "Invalid input: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+        errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
+      
 
     
