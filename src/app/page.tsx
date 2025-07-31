@@ -771,7 +771,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? null,
                     academicYear: sessionDefaults.academicYear,
                     academicTerm: sessionDefaults.academicTerm,
-                    selectedTemplateId: sessionDefaults.selectedTemplateId ?? 'default',
+                    selectedTemplateId: sessionDefaults.selectedTemplateId,
                     totalSchoolDays: sessionDefaults.totalSchoolDays ?? null,
                     headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? '',
                     instructorContact: sessionDefaults.instructorContact || "",
@@ -807,7 +807,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 className: destinationClass,
                 academicYear: sessionDefaults.academicYear,
                 academicTerm: sessionDefaults.academicTerm,
-                selectedTemplateId: sessionDefaults.selectedTemplateId ?? 'default',
+                selectedTemplateId: sessionDefaults.selectedTemplateId,
                 totalSchoolDays: sessionDefaults.totalSchoolDays ?? null,
                 headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? '',
                 instructorContact: sessionDefaults.instructorContact ?? '',
@@ -1244,7 +1244,7 @@ function AppContent({ user }: { user: CustomUser }) {
           <SchoolPerformanceDashboard
               isOpen={isSchoolDashboardOpen}
               onOpenChange={setIsSchoolDashboardOpen}
-              allReports={allReports.filter(r => r.academicYear === sessionDefaults.academicYear)}
+              allReports={allReports}
               schoolNameProp={schoolNameForDashboard}
               academicYearProp={academicYearForDashboard}
               userRole={user.role}
