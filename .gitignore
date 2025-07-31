@@ -25,3 +25,7 @@ firestore-debug.log
 .env
 .env.local
 .env.production
+
+# Logs
+firestore-debug.log
+*.log
