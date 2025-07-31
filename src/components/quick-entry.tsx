@@ -201,7 +201,7 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
                     <SelectTrigger id="subject-select"><SelectValue placeholder="Select a subject..." /></SelectTrigger>
                     <SelectContent>
                         {subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        {subjectsForClass.length === 0 && <SelectItem value="" disabled>No subjects for this class</SelectItem>}
+                        {subjectsForClass.length === 0 && <SelectItem value="-" disabled>No subjects for this class</SelectItem>}
                     </SelectContent>
                 </Select>
             </div>
