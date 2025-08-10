@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo, ChangeEvent } from 'react';
+import React, { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import {
   Table,
@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Loader2, UserPlus, Upload, Save, CheckCircle, ChevronDown, Book, Folder } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
@@ -43,6 +43,10 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
   const [subjectsForClass, setSubjectsForClass] = useState<string[]>([]);
   const [savingStatus, setSavingStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
   const { toast } = useToast();
+  
+  const [newStudentName, setNewStudentName] = useState('');
+  const [isAddingStudent, setIsAddingStudent] = useState(false);
+
 
   const availableClasses = useMemo(() => {
     return [...new Set(allReports.map(r => r.className).filter(Boolean) as string[])].sort();
@@ -58,7 +62,9 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
 
   useEffect(() => {
     if (selectedClass) {
-      const reports = allReports.filter(r => r.className === selectedClass);
+      const reports = allReports
+        .filter(r => r.className === selectedClass)
+        .sort((a, b) => (a.studentName || '').localeCompare(b.studentName || '')); // Sort alphabetically
       setStudentsInClass(reports);
 
       const subjects = new Set<string>();
@@ -69,7 +75,9 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
       });
       const sortedSubjects = Array.from(subjects).sort();
       setSubjectsForClass(sortedSubjects);
-      if (sortedSubjects.length > 0 && !selectedSubject) {
+
+      // Preserve subject selection if possible, otherwise default
+      if (sortedSubjects.length > 0 && !sortedSubjects.includes(selectedSubject)) {
         setSelectedSubject(sortedSubjects[0]);
       } else if (sortedSubjects.length === 0) {
         setSelectedSubject('');
@@ -79,9 +87,12 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
       setSubjectsForClass([]);
       setSelectedSubject('');
     }
-  }, [selectedClass, allReports, selectedSubject]);
+  }, [selectedClass, allReports]);
   
   const debouncedSave = useDebouncedCallback(async (reportId: string, updatedFields: Partial<ReportData>) => {
+    // Prevent saving if the report is a temporary client-side one
+    if (reportId.startsWith('temp-')) return;
+    
     try {
       const reportRef = doc(db, 'reports', reportId);
       await setDoc(reportRef, updatedFields, { merge: true });
@@ -145,36 +156,68 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
     }
   };
 
-  const addNewStudent = async () => {
-    if (!selectedClass) {
-        toast({ title: 'No Class Selected', description: 'Please select a class before adding a student.', variant: 'destructive' });
-        return;
-    }
-    const lastReport = allReports[allReports.length - 1];
-    try {
-      await addDoc(collection(db, 'reports'), {
-        studentName: 'New Student',
-        className: selectedClass,
-        gender: '',
-        studentPhotoDataUri: null,
-        subjects: subjectsForClass.map(s => ({ subjectName: s, continuousAssessment: null, examinationMark: null })),
-        teacherId: user.uid,
-        createdAt: serverTimestamp(),
-        // Carry over session-like data from another student in the same class
-        academicYear: studentsInClass[0]?.academicYear || '',
-        academicTerm: studentsInClass[0]?.academicTerm || '',
-        schoolName: studentsInClass[0]?.schoolName || '',
-        region: studentsInClass[0]?.region || '',
-        district: studentsInClass[0]?.district || '',
-        circuit: studentsInClass[0]?.circuit || '',
-      });
-      toast({ title: 'Student Added', description: 'A new student entry has been added to the class list. You may need to refresh.' });
-      onDataRefresh();
-    } catch (error) {
-        console.error(error);
-        toast({ title: 'Error', description: 'Could not add a new student.', variant: 'destructive' });
-    }
-  };
+    const handleAddNewStudent = async () => {
+        if (!newStudentName.trim()) return;
+        if (!selectedClass) {
+            toast({ title: 'No Class Selected', description: 'Please select a class before adding a student.', variant: 'destructive' });
+            return;
+        }
+
+        setIsAddingStudent(true);
+        const tempId = `temp-${Date.now()}`;
+        const newStudentData: ReportData = {
+            id: tempId,
+            studentName: newStudentName.trim(),
+            className: selectedClass,
+            gender: '',
+            studentPhotoDataUri: null,
+            subjects: subjectsForClass.map(s => ({ subjectName: s, continuousAssessment: null, examinationMark: null })),
+            teacherId: user.uid,
+            studentEntryNumber: (allReports[allReports.length-1]?.studentEntryNumber || 0) + 1,
+            // Carry over session-like data from another student in the same class
+            academicYear: studentsInClass[0]?.academicYear || '',
+            academicTerm: studentsInClass[0]?.academicTerm || '',
+            schoolName: studentsInClass[0]?.schoolName || '',
+            region: studentsInClass[0]?.region || '',
+            district: studentsInClass[0]?.district || '',
+            circuit: studentsInClass[0]?.circuit || '',
+            performanceSummary: '',
+            strengths: '',
+            areasForImprovement: '',
+        };
+        
+        // Optimistically update UI
+        setStudentsInClass(prev => [...prev, newStudentData].sort((a, b) => (a.studentName || '').localeCompare(b.studentName || '')));
+        setNewStudentName('');
+
+        try {
+            const { id, ...dataToSave } = newStudentData;
+            const docRef = await addDoc(collection(db, 'reports'), {
+                ...dataToSave,
+                createdAt: serverTimestamp(),
+            });
+
+            // Update UI with real ID from Firestore
+            setStudentsInClass(prev => prev.map(s => s.id === tempId ? { ...s, id: docRef.id } : s));
+            
+            toast({ title: 'Student Added', description: `${newStudentData.studentName} has been added to the class.` });
+        } catch (error) {
+            console.error(error);
+            toast({ title: 'Error', description: 'Could not add the new student to the database.', variant: 'destructive' });
+            // Rollback optimistic update on error
+            setStudentsInClass(prev => prev.filter(s => s.id !== tempId));
+        } finally {
+            setIsAddingStudent(false);
+        }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAddNewStudent();
+        }
+    };
+
 
   const getSubjectForStudent = (student: ReportData, subjectName: string): SubjectEntry => {
     return student.subjects?.find(s => s.subjectName === subjectName) || { subjectName, continuousAssessment: null, examinationMark: null };
@@ -205,12 +248,13 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
                     <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
                         <ScrollArea className="h-48">
                             {availableClasses.map(c => <DropdownMenuItem key={c} onSelect={() => setSelectedClass(c)}>{c}</DropdownMenuItem>)}
+                            {availableClasses.length === 0 && <DropdownMenuItem disabled>No classes found</DropdownMenuItem>}
                         </ScrollArea>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
             <div className="w-full sm:w-auto sm:flex-1">
-                <Label htmlFor="subject-select" className="text-xs text-muted-foreground">Subject</Label>
+                <Label htmlFor="subject-select" className="text-xs text-muted-foreground">Subject for Marks</Label>
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button id="subject-select" variant="outline" className="w-full justify-between" disabled={!selectedClass}>
@@ -232,9 +276,6 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-             <div className="w-full sm:w-auto">
-                <Button onClick={addNewStudent} className="w-full"><UserPlus className="mr-2"/> Add Student</Button>
-            </div>
         </div>
         <div className="overflow-x-auto">
             <Table>
@@ -244,8 +285,8 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
                     <TableHead className="w-[80px]">Photo</TableHead>
                     <TableHead className="min-w-[200px]">Student Name</TableHead>
                     <TableHead className="min-w-[120px]">Gender</TableHead>
-                    <TableHead className="text-center min-w-[120px]">CA Score ({selectedSubject})</TableHead>
-                    <TableHead className="text-center min-w-[120px]">Exam Score ({selectedSubject})</TableHead>
+                    <TableHead className="text-center min-w-[120px]">CA Score ({selectedSubject || 'N/A'})</TableHead>
+                    <TableHead className="text-center min-w-[120px]">Exam Score ({selectedSubject || 'N/A'})</TableHead>
                     <TableHead className="w-[50px]">Status</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -279,7 +320,7 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
                                     <Input
                                         value={student.studentName || ''}
                                         onChange={(e) => handleFieldChange(student.id, 'studentName', e.target.value)}
-                                        className="border-none"
+                                        className="border-none bg-transparent"
                                     />
                                 </TableCell>
                                 <TableCell>
@@ -287,7 +328,7 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
                                         value={student.gender}
                                         onValueChange={(value) => handleFieldChange(student.id, 'gender', value)}
                                     >
-                                        <SelectTrigger className="border-none"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="border-none bg-transparent"><SelectValue placeholder="Select..."/></SelectTrigger>
                                         <SelectContent>
                                             {genderOptions.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                                         </SelectContent>
@@ -326,6 +367,25 @@ export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEnt
             </Table>
         </div>
       </CardContent>
+      <CardFooter className="border-t pt-6">
+          <div className="flex items-end gap-4 w-full">
+            <div className="flex-grow">
+              <Label htmlFor="new-student-name" className="text-xs text-muted-foreground">Add New Student</Label>
+              <Input
+                id="new-student-name"
+                placeholder="Type student name and press Enter..."
+                value={newStudentName}
+                onChange={(e) => setNewStudentName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={!selectedClass || isAddingStudent}
+              />
+            </div>
+            <Button onClick={handleAddNewStudent} disabled={!selectedClass || !newStudentName.trim() || isAddingStudent}>
+                {isAddingStudent ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+                Add Student
+            </Button>
+          </div>
+      </CardFooter>
     </Card>
   );
 }
