@@ -1,65 +1,71 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-    
-    function hasRole(userId, role) {
-      let userData = getUserData(userId);
-      return userData.role == role;
-    }
 
-    function isAdmin(userId) {
-      return hasRole(userId, 'super-admin') || hasRole(userId, 'big-admin') || hasRole(userId, 'admin');
-    }
+    function isSignedIn() { return request.auth != null; }
+    function userDoc() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function userData() { return userDoc().data; }
+    function role() { return userData().role; }
 
-    match /users/{userId} {
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow get: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null
-                    && request.auth.uid == userId
-                    && request.resource.data.role == resource.data.role;
-      allow delete: if request.auth != null && hasRole(request.auth.uid, 'super-admin');
-      allow list: if request.auth != null && isAdmin(request.auth.uid);
-    }
-    
-    match /invites/{inviteId} {
-      allow get: if true;
-      allow list, create, update, delete: if request.auth != null && isAdmin(request.auth.uid);
-    }
+    function isSuper()      { return role() == 'super-admin'; }
+    function isBig()        { return role() == 'big-admin'; }
+    function isAdmin()      { return role() == 'admin'; }
+    function isElevated()   { return isSuper() || isBig() || isAdmin(); }
 
+    function sameDistrict(r) { return r.district == userData().district; }
+    function sameSchool(r)   { return r.schoolName == userData().schoolName; }
+    function owns(r)         { return r.teacherId == request.auth.uid; }
+
+    // ---- reports ----
     match /reports/{reportId} {
-      allow create: if request.auth != null;
-      
-      allow get, update, delete: if request.auth != null && (
-        resource.data.teacherId == request.auth.uid ||
-        hasRole(request.auth.uid, 'super-admin') ||
-        (hasRole(request.auth.uid, 'big-admin') && getUserData(request.auth.uid).district == resource.data.district) ||
-        (hasRole(request.auth.uid, 'admin') && getUserData(request.auth.uid).schoolName == resource.data.schoolName)
+      // Read if owner OR elevated in scope
+      allow get, list, read: if isSignedIn() && (
+          owns(resource.data) ||
+          isSuper() ||
+          (isBig()   && sameDistrict(resource.data)) ||
+          (isAdmin() && sameSchool(resource.data))
       );
 
-      // Rules for LIST (queries) must be separate and check the query constraints.
-      allow list: if request.auth != null && (
-        hasRole(request.auth.uid, 'super-admin') ||
-        (
-          hasRole(request.auth.uid, 'big-admin') &&
-          request.query.where[0][1] == 'district' &&
-          request.query.where[0][2] == getUserData(request.auth.uid).district
-        ) ||
-        (
-          hasRole(request.auth.uid, 'admin') &&
-          request.query.where[0][1] == 'schoolName' &&
-          request.query.where[0][2] == getUserData(request.auth.uid).schoolName
-        ) ||
-        (
-          hasRole(request.auth.uid, 'user') &&
-          request.query.where[0][1] == 'teacherId' &&
-          request.query.where[0][2] == request.auth.uid
-        )
+      // Create must write scoped fields; owners can create their own
+      allow create: if isSignedIn() && (
+          owns(request.resource.data) ||
+          isSuper() ||
+          (isBig()   && sameDistrict(request.resource.data)) ||
+          (isAdmin() && sameSchool(request.resource.data))
       );
+
+      // Update/Delete: same scope rule, and owners can update their own
+      allow update, delete: if isSignedIn() && (
+          (owns(resource.data) && owns(request.resource.data)) ||
+          isSuper() ||
+          (isBig()   && sameDistrict(resource.data) && sameDistrict(request.resource.data)) ||
+          (isAdmin() && sameSchool(resource.data)   && sameSchool(request.resource.data))
+      );
+    }
+
+    // ---- invites ----
+    match /invites/{inviteId} {
+      // Visible to elevated roles (scoped), hidden from normal users
+      allow read: if isSignedIn() && (
+        isSuper() ||
+        (isBig()   && resource.data.district  == userData().district) ||
+        (isAdmin() && resource.data.schoolName == userData().schoolName)
+      );
+
+      // Only elevated roles can manage invites
+      allow create, update, delete: if isSignedIn() && isElevated();
+    }
+
+    // ---- users ----
+    match /users/{uid} {
+      // Users can read their own doc; super-admin can read all
+      allow read: if isSignedIn() && (request.auth.uid == uid || isSuper());
+
+      // Allow self-create at first login/registration
+      allow create: if isSignedIn() && request.auth.uid == uid;
+
+      // Only super-admin may update/delete user docs (role changes, etc.)
+      allow update, delete: if isSignedIn() && isSuper();
     }
   }
 }
