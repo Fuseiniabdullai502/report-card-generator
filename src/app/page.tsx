@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
@@ -29,6 +29,9 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import QuickEntry from '@/components/quick-entry';
+
 
 // Dynamically import heavy components
 const ClassPerformanceDashboard = dynamic(() => import('@/components/class-dashboard'), { 
@@ -268,10 +271,10 @@ function AppContent({ user }: { user: CustomUser }) {
 }, []);
 
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     if (!user?.uid) {
-        setIsLoadingReports(false);
-        return;
+      setIsLoadingReports(false);
+      return;
     }
     
     setIsLoadingReports(true);
@@ -402,8 +405,12 @@ function AppContent({ user }: { user: CustomUser }) {
       setIsLoadingReports(false);
     });
 
-    return () => unsubscribe();
+    return unsubscribe;
   }, [user, calculateAndSetRanks, toast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
 
   const handleFormUpdate = useCallback((data: ReportData) => {
@@ -737,13 +744,14 @@ function AppContent({ user }: { user: CustomUser }) {
       return;
     }
 
+    // ✅ Validate required fields first
     if (!sessionDefaults.schoolName || !sessionDefaults.region || !sessionDefaults.district || !sessionDefaults.academicYear || !sessionDefaults.academicTerm || !sessionDefaults.selectedTemplateId) {
-      toast({
-        title: "Missing Session Defaults",
-        description: "Required session data is missing. Please review your session settings before importing.",
-        variant: "destructive",
-      });
-      return;
+        toast({
+            title: "Missing Session Defaults",
+            description: "Required session data is missing. Please review your session settings before importing.",
+            variant: "destructive",
+        });
+        return;
     }
 
     try {
@@ -797,6 +805,7 @@ function AppContent({ user }: { user: CustomUser }) {
             const newNextEntryNumForForm = currentImportEntryNumberBase + importedCount;
             const studentSpecificDefaultsForImport = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
 
+            // ✅ Proceed safely with fallbacks for optional fields
             setCurrentEditingReport({
                 ...studentSpecificDefaultsForImport,
                 schoolName: sessionDefaults.schoolName,
@@ -1032,19 +1041,34 @@ function AppContent({ user }: { user: CustomUser }) {
                 </div>
             </CardContent>
           </Card>
-
+          
           <main className={cn("flex-grow grid grid-cols-1 gap-8", isPreviewVisible && "lg:grid-cols-5")}>
-            <section className={cn("space-y-4 no-print", isPreviewVisible ? "lg:col-span-2" : "lg:col-span-5")}>
-              <ReportForm
-                onFormUpdate={handleFormUpdate}
-                initialData={currentEditingReport}
-                isEditing={!currentEditingReport.id.startsWith('unsaved-')}
-                reportPrintListForHistory={allRankedReports}
-                onSaveReport={handleSaveOrUpdateReport}
-                onResetForm={handleClearAndReset}
-              />
-            </section>
-
+            <div className={cn("space-y-4 no-print", isPreviewVisible ? "lg:col-span-2" : "lg:col-span-5")}>
+              <Tabs defaultValue="detailed-entry" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="detailed-entry"><Edit className="mr-2 h-4 w-4" />Detailed Entry</TabsTrigger>
+                  <TabsTrigger value="quick-entry"><ListTodo className="mr-2 h-4 w-4" />Quick Entry</TabsTrigger>
+                </TabsList>
+                <TabsContent value="detailed-entry" className="mt-4">
+                    <ReportForm
+                      onFormUpdate={handleFormUpdate}
+                      initialData={currentEditingReport}
+                      isEditing={!currentEditingReport.id.startsWith('unsaved-')}
+                      reportPrintListForHistory={allRankedReports}
+                      onSaveReport={handleSaveOrUpdateReport}
+                      onResetForm={handleClearAndReset}
+                    />
+                </TabsContent>
+                <TabsContent value="quick-entry" className="mt-4">
+                  <QuickEntry 
+                    allReports={allRankedReports} 
+                    user={user} 
+                    onDataRefresh={fetchData} 
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+            
             <section className={cn("flex-col", isPreviewVisible ? "lg:col-span-3 flex" : "hidden")}>
               <Card className="shadow-lg flex-grow flex flex-col bg-card text-card-foreground">
                 <CardHeader className="no-print">

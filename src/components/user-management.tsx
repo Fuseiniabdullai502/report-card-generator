@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch, TrendingUp, Trophy as TrophyIcon, ListTodo } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch, TrendingUp, Trophy as TrophyIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -56,8 +56,6 @@ import type { SchoolRankingData } from '@/app/actions';
 import DistrictClassRankingDialog from './district-class-ranking';
 import { ReportData, SubjectEntry } from '@/lib/schemas';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import QuickEntry from '@/components/quick-entry';
 
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 
@@ -310,272 +308,261 @@ export default function UserManagement({ user, users, invites, populationStats, 
 
   return (
     <>
-      <Tabs defaultValue="dashboard">
-        <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="dashboard"><Users className="mr-2"/>Dashboard & User Management</TabsTrigger>
-            <TabsTrigger value="quick-entry"><ListTodo className="mr-2"/>Quick Data Entry</TabsTrigger>
-        </TabsList>
-        <TabsContent value="dashboard" className="mt-4">
-            <div className="space-y-8">
-            <div className="grid gap-4 md:grid-cols-2">
-            <Card className="border-primary/50 shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-primary">Total Managed Users</CardTitle><Users className="h-5 w-5 text-primary" /></CardHeader>
-                <CardContent><div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : totalUsers}</div><p className="text-xs text-muted-foreground">All users within your management scope.</p></CardContent>
-            </Card>
-            <Card className="border-amber-500/50 shadow-lg hover:shadow-amber-500/20 transition-shadow duration-300">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-amber-600">Pending Invites</CardTitle><Hourglass className="h-5 w-5 text-amber-600" /></CardHeader>
-                <CardContent><div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : pendingInvitesCount}</div><p className="text-xs text-muted-foreground">Users authorized but not yet registered.</p></CardContent>
-            </Card>
+        <div className="space-y-8">
+        <div className="grid gap-4 md:grid-cols-2">
+        <Card className="border-primary/50 shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-primary">Total Managed Users</CardTitle><Users className="h-5 w-5 text-primary" /></CardHeader>
+            <CardContent><div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : totalUsers}</div><p className="text-xs text-muted-foreground">All users within your management scope.</p></CardContent>
+        </Card>
+        <Card className="border-amber-500/50 shadow-lg hover:shadow-amber-500/20 transition-shadow duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-amber-600">Pending Invites</CardTitle><Hourglass className="h-5 w-5 text-amber-600" /></CardHeader>
+            <CardContent><div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : pendingInvitesCount}</div><p className="text-xs text-muted-foreground">Users authorized but not yet registered.</p></CardContent>
+        </Card>
+        </div>
+        
+        {user.role === 'super-admin' && !isLoading && (
+        <div className="space-y-8">
+            <div>
+            <h3 className="text-lg font-semibold text-foreground mb-4">System Role Overview</h3>
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Big Admins (District)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts?.bigAdmin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts?.bigAdmin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+                <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts?.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts?.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+                <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {roleCounts?.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {roleCounts?.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
             </div>
-            
-            {user.role === 'super-admin' && !isLoading && (
-            <div className="space-y-8">
+            </div>
+            {populationStats && (
                 <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4">System Role Overview</h3>
-                <div className="grid gap-4 md:grid-cols-3">
-                    <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Big Admins (District)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts?.bigAdmin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts?.bigAdmin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
-                    <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts?.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts?.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
-                    <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {roleCounts?.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {roleCounts?.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
-                </div>
-                </div>
-                {populationStats && (
-                    <div>
-                        <h3 className="text-lg font-semibold text-foreground mb-4">System-Wide Educational Data</h3>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Schools</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div><p className="text-xs text-muted-foreground">Schools with student reports</p></CardContent></Card>
-                            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.totalStudents}</div><p className="text-xs text-muted-foreground">Across all schools</p></CardContent></Card>
-                            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</p></CardContent></Card>
-                            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.femaleCount}</div><p className="text-xs text-muted-foreground">Female population</p></CardContent></Card>
-                        </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">System-Wide Educational Data</h3>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Schools</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div><p className="text-xs text-muted-foreground">Schools with student reports</p></CardContent></Card>
+                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.totalStudents}</div><p className="text-xs text-muted-foreground">Across all schools</p></CardContent></Card>
+                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</p></CardContent></Card>
+                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.femaleCount}</div><p className="text-xs text-muted-foreground">Female population</p></CardContent></Card>
                     </div>
-                )}
-            </div>
+                </div>
             )}
+        </div>
+        )}
 
-            {user.role === 'big-admin' && !isLoading && (
-            <div className="space-y-8">
+        {user.role === 'big-admin' && !isLoading && (
+        <div className="space-y-8">
+            <div>
+                <h3 className="text-lg font-semibold text-foreground mb-4">District Role Overview</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {bigAdminRoleCounts?.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {bigAdminRoleCounts?.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {bigAdminRoleCounts?.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {bigAdminRoleCounts?.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+                </div>
+            </div>
+            {populationStats && (
                 <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-4">District Role Overview</h3>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {bigAdminRoleCounts?.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {bigAdminRoleCounts?.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
-                        <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {bigAdminRoleCounts?.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {bigAdminRoleCounts?.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">District Educational Data</h3>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Schools in District</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div><p className="text-xs text-muted-foreground">Total schools with reports</p></CardContent></Card>
+                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.totalStudents}</div><p className="text-xs text-muted-foreground">Overall student population</p></CardContent></Card>
+                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</p></CardContent></Card>
+                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.femaleCount}</div><p className="text-xs text-muted-foreground">Female population</p></CardContent></Card>
                     </div>
                 </div>
-                {populationStats && (
-                    <div>
-                        <h3 className="text-lg font-semibold text-foreground mb-4">District Educational Data</h3>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Schools in District</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div><p className="text-xs text-muted-foreground">Total schools with reports</p></CardContent></Card>
-                            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.totalStudents}</div><p className="text-xs text-muted-foreground">Overall student population</p></CardContent></Card>
-                            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</p></CardContent></Card>
-                            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.femaleCount}</div><p className="text-xs text-muted-foreground">Female population</p></CardContent></Card>
-                        </div>
+            )}
+            <Card>
+                <CardHeader>
+                <CardTitle className="flex items-center gap-2"><BarChart /> District-Wide Class & Subject Analysis</CardTitle>
+                <CardDescription>Compare the performance of a class (and optionally, a specific subject) across all schools in your district.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row gap-4 items-end">
+                <div className="w-full sm:w-auto flex-grow">
+                    <Label htmlFor="class-ranking-select">Select Class Level</Label>
+                    <Select value={selectedRankingClass} onValueChange={setSelectedRankingClass}>
+                    <SelectTrigger id="class-ranking-select">
+                        <SelectValue placeholder="Select a class..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {classLevels.map(level => (
+                        <SelectItem key={level} value={level}>{level}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
+                <div className="w-full sm:w-auto flex-grow">
+                    <Label htmlFor="subject-ranking-select">Select Subject (Optional)</Label>
+                    <Select value={selectedRankingSubject} onValueChange={setSelectedRankingSubject} disabled={!selectedRankingClass || availableSubjectsForClass.length === 0}>
+                    <SelectTrigger id="subject-ranking-select">
+                        <SelectValue placeholder="Overall / Select Subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="overall">Overall Performance</SelectItem>
+                        {availableSubjectsForClass.map(subject => (
+                        <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
+                <Button onClick={handleGenerateRanking} disabled={isFetchingRanking || !selectedRankingClass}>
+                    {isFetchingRanking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSearch className="mr-2 h-4 w-4" />}
+                    Generate Report
+                </Button>
+                </CardContent>
+            </Card>
+        </div>
+        )}
+
+        {user.role === 'admin' && !isLoading && (
+            <div className="space-y-8">
+                {schoolStats && (
+                <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">School Data Overview</h3>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Classes</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{schoolStats.classCount}</div>
+                                <p className="text-xs text-muted-foreground">Classes with student reports</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{schoolStats.totalStudents}</div>
+                                <p className="text-xs text-muted-foreground">Overall student population</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Male Students</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{schoolStats.maleCount}</div>
+                                <p className="text-xs text-muted-foreground">Male population</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Female Students</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{schoolStats.femaleCount}</div>
+                                <p className="text-xs text-muted-foreground">Female population</p>
+                            </CardContent>
+                        </Card>
                     </div>
+                </div>
                 )}
                 <Card>
                     <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><BarChart /> District-Wide Class & Subject Analysis</CardTitle>
-                    <CardDescription>Compare the performance of a class (and optionally, a specific subject) across all schools in your district.</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><TrophyIcon /> Class Performance Ranking</CardTitle>
+                        <CardDescription>Rank classes in your school by their overall average performance.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col sm:flex-row gap-4 items-end">
-                    <div className="w-full sm:w-auto flex-grow">
-                        <Label htmlFor="class-ranking-select">Select Class Level</Label>
-                        <Select value={selectedRankingClass} onValueChange={setSelectedRankingClass}>
-                        <SelectTrigger id="class-ranking-select">
-                            <SelectValue placeholder="Select a class..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {classLevels.map(level => (
-                            <SelectItem key={level} value={level}>{level}</SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="w-full sm:w-auto flex-grow">
-                        <Label htmlFor="subject-ranking-select">Select Subject (Optional)</Label>
-                        <Select value={selectedRankingSubject} onValueChange={setSelectedRankingSubject} disabled={!selectedRankingClass || availableSubjectsForClass.length === 0}>
-                        <SelectTrigger id="subject-ranking-select">
-                            <SelectValue placeholder="Overall / Select Subject" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="overall">Overall Performance</SelectItem>
-                            {availableSubjectsForClass.map(subject => (
-                            <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
-                    </div>
-                    <Button onClick={handleGenerateRanking} disabled={isFetchingRanking || !selectedRankingClass}>
-                        {isFetchingRanking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSearch className="mr-2 h-4 w-4" />}
-                        Generate Report
-                    </Button>
+                    <CardContent>
+                        {classPerformanceRanking.length > 0 ? (
+                            <Table>
+                                <TableHeader><TableRow><TableHead>Rank</TableHead><TableHead>Class Name</TableHead><TableHead># Students</TableHead><TableHead className="text-right">Average (%)</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {classPerformanceRanking.map((c, index) => (
+                                        <TableRow key={c.className}><TableCell className="font-semibold">{index + 1}</TableCell><TableCell>{c.className}</TableCell><TableCell>{c.studentCount}</TableCell><TableCell className="text-right font-medium">{c.average.toFixed(2)}</TableCell></TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (<p className="text-sm text-muted-foreground">No class data available to generate ranking.</p>)}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><TrendingUp /> Subject Performance Analysis</CardTitle>
+                        <CardDescription>Rank subjects within a selected class to see where students are excelling or struggling.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="mb-4 max-w-xs">
+                        <Label htmlFor="subject-analysis-class">Select a Class</Label>
+                        <Select value={subjectAnalysisClass} onValueChange={setSubjectAnalysisClass}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{allAvailableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                        </div>
+                        {subjectPerformanceForClass.length > 0 ? (
+                            <Table>
+                                <TableHeader><TableRow><TableHead>Rank</TableHead><TableHead>Subject Name</TableHead><TableHead className="text-right">Average Score (%)</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {subjectPerformanceForClass.map((s, index) => (
+                                        <TableRow key={s.subjectName}><TableCell className="font-semibold">{index + 1}</TableCell><TableCell>{s.subjectName}</TableCell><TableCell className="text-right font-medium">{s.averageScore?.toFixed(2) || 'N/A'}</TableCell></TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (<p className="text-sm text-muted-foreground">No subject data available for the selected class.</p>)}
                     </CardContent>
                 </Card>
             </div>
-            )}
+        )}
+        
+        <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus /> Authorize New User</CardTitle><CardDescription>Create an invite by email. You can optionally pre-assign a role and scope, or assign them later by editing the pending invite.</CardDescription></CardHeader>
+        <CardContent><Button onClick={() => setIsCreateInviteDialogOpen(true)}><CheckCircle className="mr-2" />Create New Invite</Button></CardContent>
+        </Card>
 
-            {user.role === 'admin' && !isLoading && (
-                <div className="space-y-8">
-                    {schoolStats && (
-                    <div>
-                        <h3 className="text-lg font-semibold text-foreground mb-4">School Data Overview</h3>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Total Classes</CardTitle>
-                                    <Users className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold">{schoolStats.classCount}</div>
-                                    <p className="text-xs text-muted-foreground">Classes with student reports</p>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                                    <Users className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold">{schoolStats.totalStudents}</div>
-                                    <p className="text-xs text-muted-foreground">Overall student population</p>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Male Students</CardTitle>
-                                    <Users className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold">{schoolStats.maleCount}</div>
-                                    <p className="text-xs text-muted-foreground">Male population</p>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Female Students</CardTitle>
-                                    <Users className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold">{schoolStats.femaleCount}</div>
-                                    <p className="text-xs text-muted-foreground">Female population</p>
-                                </CardContent>
-                            </Card>
+        <Card>
+        <CardHeader><CardTitle>User & Invite Management</CardTitle><CardDescription>Manage roles, status, and pending invites for all system users.</CardDescription></CardHeader>
+        <CardContent>
+            {isLoading ? <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div> : (
+            <div className="overflow-x-auto">
+                <Table>
+                <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                <TableBody>
+                    {users.map((u) => (
+                    <TableRow key={u.id}>
+                        <TableCell>
+                        <div className="font-medium">{u.name || u.email}</div>
+                        <div className="text-xs text-muted-foreground">
+                            {u.name && <div>{u.email}</div>}
+                            {u.telephone && <div>{u.telephone}</div>}
                         </div>
-                    </div>
-                    )}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><TrophyIcon /> Class Performance Ranking</CardTitle>
-                            <CardDescription>Rank classes in your school by their overall average performance.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {classPerformanceRanking.length > 0 ? (
-                                <Table>
-                                    <TableHeader><TableRow><TableHead>Rank</TableHead><TableHead>Class Name</TableHead><TableHead># Students</TableHead><TableHead className="text-right">Average (%)</TableHead></TableRow></TableHeader>
-                                    <TableBody>
-                                        {classPerformanceRanking.map((c, index) => (
-                                            <TableRow key={c.className}><TableCell className="font-semibold">{index + 1}</TableCell><TableCell>{c.className}</TableCell><TableCell>{c.studentCount}</TableCell><TableCell className="text-right font-medium">{c.average.toFixed(2)}</TableCell></TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            ) : (<p className="text-sm text-muted-foreground">No class data available to generate ranking.</p>)}
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><TrendingUp /> Subject Performance Analysis</CardTitle>
-                            <CardDescription>Rank subjects within a selected class to see where students are excelling or struggling.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="mb-4 max-w-xs">
-                            <Label htmlFor="subject-analysis-class">Select a Class</Label>
-                            <Select value={subjectAnalysisClass} onValueChange={setSubjectAnalysisClass}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{allAvailableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
-                            </div>
-                            {subjectPerformanceForClass.length > 0 ? (
-                                <Table>
-                                    <TableHeader><TableRow><TableHead>Rank</TableHead><TableHead>Subject Name</TableHead><TableHead className="text-right">Average Score (%)</TableHead></TableRow></TableHeader>
-                                    <TableBody>
-                                        {subjectPerformanceForClass.map((s, index) => (
-                                            <TableRow key={s.subjectName}><TableCell className="font-semibold">{index + 1}</TableCell><TableCell>{s.subjectName}</TableCell><TableCell className="text-right font-medium">{s.averageScore?.toFixed(2) || 'N/A'}</TableCell></TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            ) : (<p className="text-sm text-muted-foreground">No subject data available for the selected class.</p>)}
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-            
-            <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus /> Authorize New User</CardTitle><CardDescription>Create an invite by email. You can optionally pre-assign a role and scope, or assign them later by editing the pending invite.</CardDescription></CardHeader>
-            <CardContent><Button onClick={() => setIsCreateInviteDialogOpen(true)}><CheckCircle className="mr-2" />Create New Invite</Button></CardContent>
-            </Card>
-
-            <Card>
-            <CardHeader><CardTitle>User & Invite Management</CardTitle><CardDescription>Manage roles, status, and pending invites for all system users.</CardDescription></CardHeader>
-            <CardContent>
-                {isLoading ? <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div> : (
-                <div className="overflow-x-auto">
-                    <Table>
-                    <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-                    <TableBody>
-                        {users.map((u) => (
-                        <TableRow key={u.id}>
-                            <TableCell>
-                            <div className="font-medium">{u.name || u.email}</div>
-                            <div className="text-xs text-muted-foreground">
-                                {u.name && <div>{u.email}</div>}
-                                {u.telephone && <div>{u.telephone}</div>}
-                            </div>
-                            </TableCell>
-                            <TableCell>
+                        </TableCell>
+                        <TableCell>
+                        <div className="flex flex-col text-xs">
+                            <span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span>
+                            <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
+                            {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}
+                            {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}
+                            {u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}
+                        </div>
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                        {u.role !== 'super-admin' && <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingUser(u)}><Edit className="h-4 w-4" /></Button>}
+                        {u.role !== 'super-admin' && <Switch id={`switch-${u.id}`} checked={u.status === 'active'} onCheckedChange={() => handleStatusChange(u.id, u.status)} aria-label={`Toggle status for ${u.email}`} />}
+                        {user.role === 'super-admin' && u.role !== 'super-admin' && u.status === 'inactive' && (<Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setUserToDelete(u)} title={`Delete user ${u.email}`}><Trash2 className="h-4 w-4" /></Button>)}
+                        </TableCell>
+                    </TableRow>
+                    ))}
+                    {invites.filter((i) => i.status === 'pending').map((invite) => (
+                        <TableRow key={invite.id}>
+                        <TableCell className="font-medium">{invite.email}</TableCell>
+                        <TableCell>
                             <div className="flex flex-col text-xs">
-                                <span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span>
-                                <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
-                                {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}
-                                {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}
-                                {u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}
+                            <span className="italic font-semibold text-yellow-600">Status: Pending Invite</span>
+                            {invite.role ? (
+                                <span className={`capitalize font-semibold ${invite.role === 'big-admin' ? 'text-purple-600' : invite.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {invite.role}</span>
+                            ) : (
+                                <span className="flex items-center gap-1 font-semibold text-destructive"><AlertCircle className="h-3 w-3" />Role Not Assigned</span>
+                            )}
                             </div>
-                            </TableCell>
-                            <TableCell className="text-right space-x-2">
-                            {u.role !== 'super-admin' && <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingUser(u)}><Edit className="h-4 w-4" /></Button>}
-                            {u.role !== 'super-admin' && <Switch id={`switch-${u.id}`} checked={u.status === 'active'} onCheckedChange={() => handleStatusChange(u.id, u.status)} aria-label={`Toggle status for ${u.email}`} />}
-                            {user.role === 'super-admin' && u.role !== 'super-admin' && u.status === 'inactive' && (<Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setUserToDelete(u)} title={`Delete user ${u.email}`}><Trash2 className="h-4 w-4" /></Button>)}
-                            </TableCell>
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => setEditingInvite(invite)}><Edit className="mr-2 h-4 w-4" />Edit</Button>
+                            <Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
+                        </TableCell>
                         </TableRow>
-                        ))}
-                        {invites.filter((i) => i.status === 'pending').map((invite) => (
-                            <TableRow key={invite.id}>
-                            <TableCell className="font-medium">{invite.email}</TableCell>
-                            <TableCell>
-                                <div className="flex flex-col text-xs">
-                                <span className="italic font-semibold text-yellow-600">Status: Pending Invite</span>
-                                {invite.role ? (
-                                    <span className={`capitalize font-semibold ${invite.role === 'big-admin' ? 'text-purple-600' : invite.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {invite.role}</span>
-                                ) : (
-                                    <span className="flex items-center gap-1 font-semibold text-destructive"><AlertCircle className="h-3 w-3" />Role Not Assigned</span>
-                                )}
-                                </div>
-                            </TableCell>
-                            <TableCell className="text-right space-x-2">
-                                <Button variant="outline" size="sm" onClick={() => setEditingInvite(invite)}><Edit className="mr-2 h-4 w-4" />Edit</Button>
-                                <Button variant="destructive" size="sm" onClick={() => setInviteToDelete(invite)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
-                            </TableCell>
-                            </TableRow>
-                        ))}
-                        {(users.length === 0 && pendingInvitesCount === 0) && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No users or pending authorizations found.</TableCell></TableRow>}
-                    </TableBody>
-                    </Table>
-                </div>
-                )}
-            </CardContent>
-            </Card>
+                    ))}
+                    {(users.length === 0 && pendingInvitesCount === 0) && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No users or pending authorizations found.</TableCell></TableRow>}
+                </TableBody>
+                </Table>
             </div>
-        </TabsContent>
-        <TabsContent value="quick-entry" className="mt-4">
-            <QuickEntry allReports={allReports} user={user} onDataRefresh={onDataRefresh} />
-        </TabsContent>
-      </Tabs>
+            )}
+        </CardContent>
+        </Card>
+        </div>
       
       <AlertDialog open={!!inviteToDelete} onOpenChange={(open) => !open && setInviteToDelete(null)}>
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the invite for <strong>{inviteToDelete?.email}</strong> and they will not be able to register.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setInviteToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteInvite} disabled={isDeleting}>{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Continue</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
