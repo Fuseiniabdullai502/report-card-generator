@@ -1058,7 +1058,7 @@ function AppContent({ user }: { user: CustomUser }) {
           </Card>
           
           <main className={cn("flex-grow grid grid-cols-1 gap-8", isPreviewVisible && "lg:grid-cols-5")}>
-            <div className={cn("space-y-4 no-print", isPreviewVisible ? "lg:col-span-2" : "lg:col-span-5")}>
+            <div className={cn("space-y-4 no-print transition-all duration-300", isPreviewVisible ? "lg:col-span-2" : "lg:col-span-5")}>
               <Tabs defaultValue="detailed-entry" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="detailed-entry"><Edit className="mr-2 h-4 w-4" />Detailed Entry</TabsTrigger>
@@ -1084,15 +1084,26 @@ function AppContent({ user }: { user: CustomUser }) {
               </Tabs>
             </div>
             
-            <section className={cn("flex-col", isPreviewVisible ? "lg:col-span-3 flex" : "hidden")}>
+            {!isPreviewVisible && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="fixed bottom-8 right-8 z-50 h-14 w-14 rounded-full shadow-2xl no-print lg:hidden"
+                onClick={() => setIsPreviewVisible(true)}
+              >
+                <FileText className="h-6 w-6" />
+              </Button>
+            )}
+
+            <section className={cn("flex-col no-print transition-all duration-300", isPreviewVisible ? "lg:col-span-3 flex" : "hidden")}>
               <Card className="shadow-lg flex-grow flex flex-col bg-card text-card-foreground">
-                <CardHeader className="no-print">
+                <CardHeader>
                   <div className="flex flex-col gap-4">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                        <div className="flex items-center gap-2">
                          <CardTitle className="font-headline text-lg md:text-xl flex items-center gap-2">
                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsPreviewVisible(prev => !prev)}>
-                               {isPreviewVisible ? <EyeOff /> : <Eye />}
+                               <EyeOff />
                            </Button>
                            {reportsCount > 0 ? `Report ${currentPreviewIndex + 1} of ${reportsCount}` : `Report Print Preview`}
                          </CardTitle>
@@ -1321,3 +1332,5 @@ export default function Home() {
   
   return <AppContent user={user} />;
 }
+
+    
