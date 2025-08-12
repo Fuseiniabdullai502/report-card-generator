@@ -1031,12 +1031,12 @@ function AppContent({ user }: { user: CustomUser }) {
                     <div className="space-y-1 flex items-center gap-2">
                     <input type="file" id="sessionSchoolLogoUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'schoolLogoDataUri')} />
                     <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('sessionSchoolLogoUpload')?.click()}><UploadCloud className="mr-2 h-4 w-4" />Logo</Button>
-                    {sessionDefaults.schoolLogoDataUri && <NextImage src={sessionDefaults.schoolLogoDataUri} alt="logo" width={40} height={40} className="rounded border p-1 object-contain"/>}
+                    {sessionDefaults.schoolLogoDataUri && (sessionDefaults.schoolLogoDataUri.startsWith('data:image') || sessionDefaults.schoolLogoDataUri.startsWith('http')) && <NextImage src={sessionDefaults.schoolLogoDataUri} alt="logo" width={40} height={40} className="rounded border p-1 object-contain"/>}
                     </div>
                     <div className="space-y-1 flex items-center gap-2">
                     <input type="file" id="sessionHeadMasterSignatureUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'headMasterSignatureDataUri')} />
                     <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('sessionHeadMasterSignatureUpload')?.click()}><Signature className="mr-2 h-4 w-4" />Signature</Button>
-                    {sessionDefaults.headMasterSignatureDataUri && <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>}
+                    {sessionDefaults.headMasterSignatureDataUri && (sessionDefaults.headMasterSignatureDataUri.startsWith('data:image') || sessionDefaults.headMasterSignatureDataUri.startsWith('http')) && <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>}
                     </div>
                 </div>
             </CardContent>
