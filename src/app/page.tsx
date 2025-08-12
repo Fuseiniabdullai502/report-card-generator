@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, PenSquare, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, PenSquare, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo, SlidersHorizontal, Settings } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
@@ -98,6 +98,9 @@ function AppContent({ user }: { user: CustomUser }) {
   const [isSchoolDashboardOpen, setIsSchoolDashboardOpen] = useState(false);
   const [isImportStudentsDialogOpen, setIsImportStudentsDialogOpen] = useState(false);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
+  
+  const [isSessionControlsVisible, setIsSessionControlsVisible] = useState(true);
+  const [isReportFormVisible, setIsReportFormVisible] = useState(true);
   const [isPreviewVisible, setIsPreviewVisible] = useState(true);
   
   const [customClassNames, setCustomClassNames] = useState<string[]>([]);
@@ -926,327 +929,370 @@ function AppContent({ user }: { user: CustomUser }) {
             </Alert>
           )}
 
-          <Card className="mb-8 p-4 no-print">
-            <CardHeader className="p-2">
-                <CardTitle className="text-lg flex items-center"><Users className="mr-2 h-5 w-5 text-primary"/>Session Controls</CardTitle>
-                <CardDescription className="text-xs">These settings apply to the current report and are carried over for new entries.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-2 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-1">
-                        <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
-                        <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)} disabled={!isSuperAdmin}>
-                            <SelectTrigger id="sessionRegion"><SelectValue placeholder="Select region" /></SelectTrigger>
-                            <SelectContent>
-                                {ghanaRegions.map(region => <SelectItem key={region} value={region}>{region}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="sessionDistrict" className="text-sm font-medium">District/Municipal</Label>
-                        <Select 
-                            value={sessionDefaults.district || ''} 
-                            onValueChange={value => handleSessionDefaultChange('district', value)}
-                            disabled={!isSuperAdmin && !isBigAdmin}
-                        >
-                            <SelectTrigger id="sessionDistrict">
-                                <SelectValue placeholder="Select district" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {availableDistricts.length > 0 ? (
-                                    availableDistricts.map(district => <SelectItem key={district} value={district}>{district}</SelectItem>)
-                                ) : (
-                                    <SelectItem value="-" disabled>Select a region first</SelectItem>
-                                )}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="sessionCircuit" className="text-sm font-medium">Circuit</Label>
-                        <Input 
-                            id="sessionCircuit" 
-                            value={sessionDefaults.circuit ?? ''} 
-                            onChange={e => handleSessionDefaultChange('circuit', e.target.value)} 
-                            placeholder="e.g., Kalpohin"
-                            list="circuit-datalist"
-                            disabled={!isSuperAdmin && !isBigAdmin && !isAdmin}
-                        />
-                        <datalist id="circuit-datalist">
-                            {availableCircuits.map(circuit => (
-                                <option key={circuit} value={circuit} />
-                            ))}
-                        </datalist>
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
-                    <div className="space-y-1 md:col-span-2">
-                        <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
-                        <Input id="sessionSchoolName" value={sessionDefaults.schoolName ?? ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={!isSuperAdmin && !isBigAdmin}/>
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
-                        <Select value={sessionDefaults.academicYear || ''} onValueChange={value => handleSessionDefaultChange('academicYear', value)}>
-                            <SelectTrigger id="sessionAcademicYear"><SelectValue placeholder="Select academic year" /></SelectTrigger>
-                            <SelectContent>
-                                {academicYearOptions.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="sessionClassName" className="text-sm font-medium">Current Class</Label>
-                        <Select value={sessionDefaults.className || ''} onValueChange={value => handleSessionDefaultChange('className', value === ADD_CUSTOM_CLASS_VALUE ? '' : value)} disabled={isRegularUser}>
-                            <SelectTrigger id="sessionClassName"><SelectValue placeholder="Select or add class" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value={ADD_CUSTOM_CLASS_VALUE} onSelect={() => setIsCustomClassNameDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
-                                <SelectSeparator />
-                                {isRegularUser && user.classNames?.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-                                {!isRegularUser && classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
-                                {!isRegularUser && customClassNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="sessionAcademicTerm" className="text-sm font-medium">Academic Term</Label>
-                        <Select value={sessionDefaults.academicTerm || ''} onValueChange={value => handleSessionDefaultChange('academicTerm', value)}>
-                            <SelectTrigger id="sessionAcademicTerm"><SelectValue placeholder="Select term/semester" /></SelectTrigger>
-                            <SelectContent>
-                                {academicTermOptions.map(term => <SelectItem key={term} value={term}>{term}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="sessionTemplate" className="text-sm font-medium">Report Template</Label>
-                        <Select value={sessionDefaults.selectedTemplateId || 'default'} onValueChange={value => handleSessionDefaultChange('selectedTemplateId', value)}>
-                            <SelectTrigger id="sessionTemplate"><SelectValue placeholder="Select a template" /></SelectTrigger>
-                            <SelectContent>
-                                {reportTemplateOptions.map(option => <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="sessionTotalSchoolDays" className="text-sm font-medium">Total School Days</Label>
-                        <Input id="sessionTotalSchoolDays" type="number" value={sessionDefaults.totalSchoolDays ?? ''} onChange={e => handleSessionDefaultChange('totalSchoolDays', e.target.value === '' ? null : Number(e.target.value))} placeholder="e.g., 90" />
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="sessionInstructorContact" className="text-sm font-medium">Instructor's Contact</Label>
-                        <Input id="sessionInstructorContact" value={sessionDefaults.instructorContact ?? ''} onChange={e => handleSessionDefaultChange('instructorContact', e.target.value)} placeholder="Phone or Email" />
-                    </div>
-                    <div className="space-y-1 flex items-center gap-2">
-                        <input type="file" id="sessionSchoolLogoUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'schoolLogoDataUri')} />
-                        <Button asChild type="button" variant="outline" size="sm">
-                            <span onClick={() => document.getElementById('sessionSchoolLogoUpload')?.click()} className="flex items-center gap-2 cursor-pointer">
-                                <UploadCloud className="h-4 w-4" />Logo
-                            </span>
-                        </Button>
-                        {mounted && sessionDefaults.schoolLogoDataUri && (sessionDefaults.schoolLogoDataUri.startsWith('data:image') || sessionDefaults.schoolLogoDataUri.startsWith('http')) && (
-                          <NextImage src={sessionDefaults.schoolLogoDataUri} alt="logo" width={40} height={40} className="rounded border p-1 object-contain"/>
-                        )}
-                    </div>
-                    <div className="space-y-1 flex items-center gap-2">
-                        <input type="file" id="sessionHeadMasterSignatureUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'headMasterSignatureDataUri')} />
-                         <Button asChild type="button" variant="outline" size="sm">
-                            <span onClick={() => document.getElementById('sessionHeadMasterSignatureUpload')?.click()} className="flex items-center gap-2 cursor-pointer">
-                                <PenSquare className="h-4 w-4" />Signature
-                            </span>
-                        </Button>
-                        {mounted && sessionDefaults.headMasterSignatureDataUri && (sessionDefaults.headMasterSignatureDataUri.startsWith('data:image') || sessionDefaults.headMasterSignatureDataUri.startsWith('http')) && (
-                          <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>
-                        )}
-                    </div>
-                </div>
-            </CardContent>
-          </Card>
+          {isSessionControlsVisible && (
+            <Card className="mb-8 p-4 no-print">
+              <CardHeader className="p-2 flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center"><Settings className="mr-2 h-5 w-5 text-primary"/>Session Controls</CardTitle>
+                    <CardDescription className="text-xs">These settings apply to the current report and are carried over for new entries.</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsSessionControlsVisible(false)}>
+                      <EyeOff />
+                  </Button>
+              </CardHeader>
+              <CardContent className="p-2 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                          <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
+                          <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)} disabled={!isSuperAdmin}>
+                              <SelectTrigger id="sessionRegion"><SelectValue placeholder="Select region" /></SelectTrigger>
+                              <SelectContent>
+                                  {ghanaRegions.map(region => <SelectItem key={region} value={region}>{region}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-1">
+                          <Label htmlFor="sessionDistrict" className="text-sm font-medium">District/Municipal</Label>
+                          <Select 
+                              value={sessionDefaults.district || ''} 
+                              onValueChange={value => handleSessionDefaultChange('district', value)}
+                              disabled={!isSuperAdmin && !isBigAdmin}
+                          >
+                              <SelectTrigger id="sessionDistrict">
+                                  <SelectValue placeholder="Select district" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {availableDistricts.length > 0 ? (
+                                      availableDistricts.map(district => <SelectItem key={district} value={district}>{district}</SelectItem>)
+                                  ) : (
+                                      <SelectItem value="-" disabled>Select a region first</SelectItem>
+                                  )}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-1">
+                          <Label htmlFor="sessionCircuit" className="text-sm font-medium">Circuit</Label>
+                          <Input 
+                              id="sessionCircuit" 
+                              value={sessionDefaults.circuit ?? ''} 
+                              onChange={e => handleSessionDefaultChange('circuit', e.target.value)} 
+                              placeholder="e.g., Kalpohin"
+                              list="circuit-datalist"
+                              disabled={!isSuperAdmin && !isBigAdmin && !isAdmin}
+                          />
+                          <datalist id="circuit-datalist">
+                              {availableCircuits.map(circuit => (
+                                  <option key={circuit} value={circuit} />
+                              ))}
+                          </datalist>
+                      </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                      <div className="space-y-1 md:col-span-2">
+                          <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
+                          <Input id="sessionSchoolName" value={sessionDefaults.schoolName ?? ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={!isSuperAdmin && !isBigAdmin}/>
+                      </div>
+                      <div className="space-y-1">
+                          <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>
+                          <Select value={sessionDefaults.academicYear || ''} onValueChange={value => handleSessionDefaultChange('academicYear', value)}>
+                              <SelectTrigger id="sessionAcademicYear"><SelectValue placeholder="Select academic year" /></SelectTrigger>
+                              <SelectContent>
+                                  {academicYearOptions.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-1">
+                          <Label htmlFor="sessionClassName" className="text-sm font-medium">Current Class</Label>
+                          <Select value={sessionDefaults.className || ''} onValueChange={value => handleSessionDefaultChange('className', value === ADD_CUSTOM_CLASS_VALUE ? '' : value)} disabled={isRegularUser}>
+                              <SelectTrigger id="sessionClassName"><SelectValue placeholder="Select or add class" /></SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value={ADD_CUSTOM_CLASS_VALUE} onSelect={() => setIsCustomClassNameDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
+                                  <SelectSeparator />
+                                  {isRegularUser && user.classNames?.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                                  {!isRegularUser && classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
+                                  {!isRegularUser && customClassNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-1">
+                          <Label htmlFor="sessionAcademicTerm" className="text-sm font-medium">Academic Term</Label>
+                          <Select value={sessionDefaults.academicTerm || ''} onValueChange={value => handleSessionDefaultChange('academicTerm', value)}>
+                              <SelectTrigger id="sessionAcademicTerm"><SelectValue placeholder="Select term/semester" /></SelectTrigger>
+                              <SelectContent>
+                                  {academicTermOptions.map(term => <SelectItem key={term} value={term}>{term}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-1">
+                          <Label htmlFor="sessionTemplate" className="text-sm font-medium">Report Template</Label>
+                          <Select value={sessionDefaults.selectedTemplateId || 'default'} onValueChange={value => handleSessionDefaultChange('selectedTemplateId', value)}>
+                              <SelectTrigger id="sessionTemplate"><SelectValue placeholder="Select a template" /></SelectTrigger>
+                              <SelectContent>
+                                  {reportTemplateOptions.map(option => <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-1">
+                          <Label htmlFor="sessionTotalSchoolDays" className="text-sm font-medium">Total School Days</Label>
+                          <Input id="sessionTotalSchoolDays" type="number" value={sessionDefaults.totalSchoolDays ?? ''} onChange={e => handleSessionDefaultChange('totalSchoolDays', e.target.value === '' ? null : Number(e.target.value))} placeholder="e.g., 90" />
+                      </div>
+                      <div className="space-y-1">
+                          <Label htmlFor="sessionInstructorContact" className="text-sm font-medium">Instructor's Contact</Label>
+                          <Input id="sessionInstructorContact" value={sessionDefaults.instructorContact ?? ''} onChange={e => handleSessionDefaultChange('instructorContact', e.target.value)} placeholder="Phone or Email" />
+                      </div>
+                      <div className="space-y-1 flex items-center gap-2">
+                          <input type="file" id="sessionSchoolLogoUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'schoolLogoDataUri')} />
+                          <Button asChild type="button" variant="outline" size="sm">
+                              <span onClick={() => document.getElementById('sessionSchoolLogoUpload')?.click()} className="flex items-center gap-2 cursor-pointer">
+                                  <UploadCloud className="h-4 w-4" />Logo
+                              </span>
+                          </Button>
+                          {mounted && sessionDefaults.schoolLogoDataUri && (sessionDefaults.schoolLogoDataUri.startsWith('data:image') || sessionDefaults.schoolLogoDataUri.startsWith('http')) && (
+                            <NextImage src={sessionDefaults.schoolLogoDataUri} alt="logo" width={40} height={40} className="rounded border p-1 object-contain"/>
+                          )}
+                      </div>
+                      <div className="space-y-1 flex items-center gap-2">
+                          <input type="file" id="sessionHeadMasterSignatureUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'headMasterSignatureDataUri')} />
+                           <Button asChild type="button" variant="outline" size="sm">
+                              <span onClick={() => document.getElementById('sessionHeadMasterSignatureUpload')?.click()} className="flex items-center gap-2 cursor-pointer">
+                                  <PenSquare className="h-4 w-4" />Signature
+                              </span>
+                          </Button>
+                          {mounted && sessionDefaults.headMasterSignatureDataUri && (sessionDefaults.headMasterSignatureDataUri.startsWith('data:image') || sessionDefaults.headMasterSignatureDataUri.startsWith('http')) && (
+                            <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>
+                          )}
+                      </div>
+                  </div>
+              </CardContent>
+            </Card>
+          )}
           
-          <main className={cn("flex-grow grid grid-cols-1 gap-8", isPreviewVisible && "lg:grid-cols-5")}>
-            <div className={cn("space-y-4 no-print transition-all duration-300", isPreviewVisible ? "lg:col-span-2" : "lg:col-span-5")}>
-              <Tabs defaultValue="detailed-entry" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="detailed-entry"><Edit className="mr-2 h-4 w-4" />Detailed Entry</TabsTrigger>
-                  <TabsTrigger value="quick-entry"><ListTodo className="mr-2 h-4 w-4" />Quick Entry</TabsTrigger>
-                </TabsList>
-                <TabsContent value="detailed-entry" className="mt-4">
-                    <ReportForm
-                      onFormUpdate={handleFormUpdate}
-                      initialData={currentEditingReport}
-                      isEditing={!currentEditingReport.id.startsWith('unsaved-')}
-                      reportPrintListForHistory={allRankedReports}
-                      onSaveReport={handleSaveOrUpdateReport}
-                      onResetForm={handleClearAndReset}
-                    />
-                </TabsContent>
-                <TabsContent value="quick-entry" className="mt-4">
-                  <QuickEntry 
-                    allReports={allRankedReports} 
-                    user={user} 
-                    onDataRefresh={fetchData} 
-                  />
-                </TabsContent>
-              </Tabs>
-            </div>
+          <main className={cn("flex-grow grid grid-cols-1 gap-8", (isReportFormVisible || isPreviewVisible) && "lg:grid-cols-5")}>
+             {isReportFormVisible && (
+                <div className={cn("space-y-4 no-print transition-all duration-300", 
+                    isPreviewVisible ? "lg:col-span-2" : "lg:col-span-5"
+                )}>
+                  <Tabs defaultValue="detailed-entry" className="w-full">
+                    <div className='flex justify-between items-center mb-2'>
+                        <TabsList className="grid w-full grid-cols-2 max-w-sm">
+                          <TabsTrigger value="detailed-entry"><Edit className="mr-2 h-4 w-4" />Detailed Entry</TabsTrigger>
+                          <TabsTrigger value="quick-entry"><ListTodo className="mr-2 h-4 w-4" />Quick Entry</TabsTrigger>
+                        </TabsList>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsReportFormVisible(false)}>
+                            <EyeOff />
+                        </Button>
+                    </div>
+                    <TabsContent value="detailed-entry" className="mt-4">
+                        <ReportForm
+                          onFormUpdate={handleFormUpdate}
+                          initialData={currentEditingReport}
+                          isEditing={!currentEditingReport.id.startsWith('unsaved-')}
+                          reportPrintListForHistory={allRankedReports}
+                          onSaveReport={handleSaveOrUpdateReport}
+                          onResetForm={handleClearAndReset}
+                        />
+                    </TabsContent>
+                    <TabsContent value="quick-entry" className="mt-4">
+                      <QuickEntry 
+                        allReports={allRankedReports} 
+                        user={user} 
+                        onDataRefresh={fetchData} 
+                      />
+                    </TabsContent>
+                  </Tabs>
+                </div>
+            )}
             
+            {!isSessionControlsVisible && (
+                <Button
+                    variant="outline"
+                    size="icon"
+                    className="fixed bottom-8 left-8 z-50 h-14 w-14 rounded-full shadow-2xl no-print"
+                    onClick={() => setIsSessionControlsVisible(true)}
+                    title="Show Session Controls"
+                >
+                    <Settings className="h-6 w-6" />
+                </Button>
+            )}
+            
+            {!isReportFormVisible && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="fixed bottom-8 left-28 z-50 h-14 w-14 rounded-full shadow-2xl no-print"
+                onClick={() => setIsReportFormVisible(true)}
+                 title="Show Report Form"
+              >
+                <Edit className="h-6 w-6" />
+              </Button>
+            )}
+
             {!isPreviewVisible && (
               <Button
                 variant="outline"
                 size="icon"
-                className="fixed bottom-8 right-8 z-50 h-14 w-14 rounded-full shadow-2xl no-print lg:hidden"
+                className="fixed bottom-8 right-8 z-50 h-14 w-14 rounded-full shadow-2xl no-print"
                 onClick={() => setIsPreviewVisible(true)}
+                title="Show Report Preview"
               >
                 <FileText className="h-6 w-6" />
               </Button>
             )}
 
-            <section className={cn("flex-col no-print transition-all duration-300", isPreviewVisible ? "lg:col-span-3 flex" : "hidden")}>
-              <Card className="shadow-lg flex-grow flex flex-col bg-card text-card-foreground">
-                <CardHeader>
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                       <div className="flex items-center gap-2">
-                         <CardTitle className="font-headline text-lg md:text-xl flex items-center gap-2">
-                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsPreviewVisible(prev => !prev)}>
-                               <EyeOff />
-                           </Button>
-                           {reportsCount > 0 ? `Report ${currentPreviewIndex + 1} of ${reportsCount}` : `Report Print Preview`}
-                         </CardTitle>
-                       </div>
-                      {reportsCount > 1 && (
-                        <div className="flex items-center gap-2 self-end sm:self-center">
-                          <Button onClick={handlePreviousPreview} disabled={currentPreviewIndex === 0} variant="outline" size="icon" aria-label="Previous Report">
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <Button onClick={handleNextPreview} disabled={currentPreviewIndex >= reportsCount - 1} variant="outline" size="icon" aria-label="Next Report">
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2 items-stretch">
-                      <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-                        {isAdminRole && (
-                            <Select value={adminFilters.schoolName} onValueChange={value => handleAdminFilterChange('schoolName', value)} disabled={user.role === 'admin'}>
-                                <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by school">
-                                    <div className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by school..." /></div>
-                                </SelectTrigger>
-                                <SelectContent>{allFilterOptions.schools.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Schools' : s}</SelectItem>)}</SelectContent>
-                            </Select>
-                        )}
-                        <Select value={adminFilters.className} onValueChange={value => handleAdminFilterChange('className', value)}>
-                            <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by class">
-                                <div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by class..." /></div>
-                            </SelectTrigger>
-                            <SelectContent>{allFilterOptions.classes.map(c => <SelectItem key={c} value={c}>{c === 'all' ? 'All My Classes' : c}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={adminFilters.academicYear} onValueChange={value => handleAdminFilterChange('academicYear', value)}>
-                            <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by year">
-                                <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by year..." /></div>
-                            </SelectTrigger>
-                            <SelectContent>{allFilterOptions.years.map(y => <SelectItem key={y} value={y}>{y === 'all' ? 'All Years' : y}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={adminFilters.academicTerm} onValueChange={value => handleAdminFilterChange('academicTerm', value)}>
-                            <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by term">
-                                <div className="flex items-center gap-2"><BookMarked className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by term..." /></div>
-                            </SelectTrigger>
-                            <SelectContent>{allFilterOptions.terms.map(t => <SelectItem key={t} value={t}>{t === 'all' ? 'All Terms' : t}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Button
-                            onClick={() => setIsClassDashboardOpen(true)}
-                            disabled={reportsCount === 0 || isLoadingReports}
-                            variant="outline"
-                            size="sm"
-                            title={reportsCount > 0 ? "View AI-powered class performance dashboard" : "Add reports to list to view dashboard"}
-                          >
-                          <BarChartHorizontalBig className="mr-2 h-4 w-4" />
-                          Class Dashboard
-                        </Button>
-                        {isAdminRole && (
-                            <Button
-                                onClick={() => setIsSchoolDashboardOpen(true)}
-                                disabled={reportsCount === 0 || isLoadingReports}
-                                variant="outline"
-                                size="sm"
-                                title={reportsCount > 0 ? "View AI-powered school overview dashboard" : "Add reports to list to view dashboard"}
-                            >
-                              <Building className="mr-2 h-4 w-4" />
-                              School Overview
+            {isPreviewVisible && (
+              <section className={cn("flex-col no-print transition-all duration-300", isReportFormVisible ? "lg:col-span-3 flex" : "lg:col-span-5 flex")}>
+                <Card className="shadow-lg flex-grow flex flex-col bg-card text-card-foreground">
+                  <CardHeader>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                         <div className="flex items-center gap-2">
+                           <CardTitle className="font-headline text-lg md:text-xl flex items-center gap-2">
+                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsPreviewVisible(false)}>
+                                 <EyeOff />
+                             </Button>
+                             {reportsCount > 0 ? `Report ${currentPreviewIndex + 1} of ${reportsCount}` : `Report Print Preview`}
+                           </CardTitle>
+                         </div>
+                        {reportsCount > 1 && (
+                          <div className="flex items-center gap-2 self-end sm:self-center">
+                            <Button onClick={handlePreviousPreview} disabled={currentPreviewIndex === 0} variant="outline" size="icon" aria-label="Previous Report">
+                              <ChevronLeft className="h-4 w-4" />
                             </Button>
+                            <Button onClick={handleNextPreview} disabled={currentPreviewIndex >= reportsCount - 1} variant="outline" size="icon" aria-label="Next Report">
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </div>
                         )}
-                        <Button onClick={() => handleInitiatePrint(true)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Download all reports in the list as a single PDF" : "Add or filter reports to the list to enable download"}>
-                          <Download className="mr-2 h-4 w-4" />
-                          Download as PDF
-                        </Button>
-                        <Button onClick={() => handleInitiatePrint(false)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Print all reports in the list" : "Add or filter reports to the list to enable printing"}>
-                          <Printer className="mr-2 h-4 w-4" />
-                          Print ({reportsCount})
-                        </Button>
                       </div>
-                      <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-                        <Button
-                            onClick={() => setIsImportStudentsDialogOpen(true)}
-                            variant="outline"
-                            size="sm"
-                            title="Import student data from previous term/class"
-                            disabled={isLoadingReports}
-                          >
-                          <Upload className="mr-2 h-4 w-4" />
-                          Import Promoted Students
-                        </Button>
-                        <Button onClick={handleClearList} disabled={isLoadingReports && allRankedReports.length === 0} variant="destructive" size="sm">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Clear Local View
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  <CardDescription className="mt-2 md:mt-1 space-y-1">
-                    <span>
-                      {reportsCount > 0
-                        ? `${filterDescription} Use navigation buttons if multiple reports are in the list.`
-                        : 'This area shows a live preview of the data from the form. Click "Add Report to List" to save it to the database.'}
-                    </span>
-                    <span className="block text-xs italic">
-                      <Share2 className="inline-block mr-1 h-3 w-3 text-muted-foreground" /> Share options (Email/WhatsApp) below each report will open your default app.
-                    </span>
-                    {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on overall average within each class.</span>}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent id="report-preview-container" className={cn("flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800", !isPreviewVisible && "hidden")}>
-                  {isLoadingReports && allRankedReports.length === 0 ? (
-                    <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
-                      <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
-                      <h3 className="text-lg font-semibold">Loading Reports...</h3>
-                      <p>Fetching your report data from the cloud.</p>
-                    </div>
-                  ) : reportsCount > 0 ? (
-                    // This is the list of SAVED reports for SCREEN view
-                    <>
-                      {filteredReports.map((reportData, index) => (
-                        <div key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>
-                            {index === currentPreviewIndex && (
-                              <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
-                                <ReportActions report={reportData} onEditReport={handleLoadReportForEditing} />
-                              </div>
-                            )}
-                            <div className="a4-page-simulation break-inside-avoid">
-                              <ReportPreview data={reportData} />
-                            </div>
+
+                      <div className="flex flex-col gap-2 items-stretch">
+                        <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+                          {isAdminRole && (
+                              <Select value={adminFilters.schoolName} onValueChange={value => handleAdminFilterChange('schoolName', value)} disabled={user.role === 'admin'}>
+                                  <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by school">
+                                      <div className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by school..." /></div>
+                                  </SelectTrigger>
+                                  <SelectContent>{allFilterOptions.schools.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Schools' : s}</SelectItem>)}</SelectContent>
+                              </Select>
+                          )}
+                          <Select value={adminFilters.className} onValueChange={value => handleAdminFilterChange('className', value)}>
+                              <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by class">
+                                  <div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by class..." /></div>
+                              </SelectTrigger>
+                              <SelectContent>{allFilterOptions.classes.map(c => <SelectItem key={c} value={c}>{c === 'all' ? 'All My Classes' : c}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <Select value={adminFilters.academicYear} onValueChange={value => handleAdminFilterChange('academicYear', value)}>
+                              <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by year">
+                                  <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by year..." /></div>
+                              </SelectTrigger>
+                              <SelectContent>{allFilterOptions.years.map(y => <SelectItem key={y} value={y}>{y === 'all' ? 'All Years' : y}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <Select value={adminFilters.academicTerm} onValueChange={value => handleAdminFilterChange('academicTerm', value)}>
+                              <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by term">
+                                  <div className="flex items-center gap-2"><BookMarked className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by term..." /></div>
+                              </SelectTrigger>
+                              <SelectContent>{allFilterOptions.terms.map(t => <SelectItem key={t} value={t}>{t === 'all' ? 'All Terms' : t}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <Button
+                              onClick={() => setIsClassDashboardOpen(true)}
+                              disabled={reportsCount === 0 || isLoadingReports}
+                              variant="outline"
+                              size="sm"
+                              title={reportsCount > 0 ? "View AI-powered class performance dashboard" : "Add reports to list to view dashboard"}
+                            >
+                            <BarChartHorizontalBig className="mr-2 h-4 w-4" />
+                            Class Dashboard
+                          </Button>
+                          {isAdminRole && (
+                              <Button
+                                  onClick={() => setIsSchoolDashboardOpen(true)}
+                                  disabled={reportsCount === 0 || isLoadingReports}
+                                  variant="outline"
+                                  size="sm"
+                                  title={reportsCount > 0 ? "View AI-powered school overview dashboard" : "Add reports to list to view dashboard"}
+                              >
+                                <Building className="mr-2 h-4 w-4" />
+                                School Overview
+                              </Button>
+                          )}
+                          <Button onClick={() => handleInitiatePrint(true)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Download all reports in the list as a single PDF" : "Add or filter reports to the list to enable download"}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download as PDF
+                          </Button>
+                          <Button onClick={() => handleInitiatePrint(false)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Print all reports in the list" : "Add or filter reports to the list to enable printing"}>
+                            <Printer className="mr-2 h-4 w-4" />
+                            Print ({reportsCount})
+                          </Button>
                         </div>
-                      ))}
-                    </>
-                  ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
-                      // This is the LIVE preview of the report being edited in the form
-                      <div className="a4-page-simulation break-inside-avoid">
-                        <ReportPreview data={currentEditingReport} />
+                        <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+                          <Button
+                              onClick={() => setIsImportStudentsDialogOpen(true)}
+                              variant="outline"
+                              size="sm"
+                              title="Import student data from previous term/class"
+                              disabled={isLoadingReports}
+                            >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Import Promoted Students
+                          </Button>
+                          <Button onClick={handleClearList} disabled={isLoadingReports && allRankedReports.length === 0} variant="destructive" size="sm">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Clear Local View
+                          </Button>
+                        </div>
                       </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
-                      <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
-                      <h3 className="text-xl font-semibold mb-2">{reportsCount === 0 && allRankedReports.length > 0 ? `No Reports Found` : `Report Preview Area`}</h3>
-                      <p>{noReportsFoundMessage}</p>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </section>
+                    <CardDescription className="mt-2 md:mt-1 space-y-1">
+                      <span>
+                        {reportsCount > 0
+                          ? `${filterDescription} Use navigation buttons if multiple reports are in the list.`
+                          : 'This area shows a live preview of the data from the form. Click "Add Report to List" to save it to the database.'}
+                      </span>
+                      <span className="block text-xs italic">
+                        <Share2 className="inline-block mr-1 h-3 w-3 text-muted-foreground" /> Share options (Email/WhatsApp) below each report will open your default app.
+                      </span>
+                      {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on overall average within each class.</span>}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent id="report-preview-container" className={cn("flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800", !isPreviewVisible && "hidden")}>
+                    {isLoadingReports && allRankedReports.length === 0 ? (
+                      <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
+                        <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+                        <h3 className="text-lg font-semibold">Loading Reports...</h3>
+                        <p>Fetching your report data from the cloud.</p>
+                      </div>
+                    ) : reportsCount > 0 ? (
+                      // This is the list of SAVED reports for SCREEN view
+                      <>
+                        {filteredReports.map((reportData, index) => (
+                          <div key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>
+                              {index === currentPreviewIndex && (
+                                <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
+                                  <ReportActions report={reportData} onEditReport={handleLoadReportForEditing} />
+                                </div>
+                              )}
+                              <div className="a4-page-simulation break-inside-avoid">
+                                <ReportPreview data={reportData} />
+                              </div>
+                          </div>
+                        ))}
+                      </>
+                    ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
+                        // This is the LIVE preview of the report being edited in the form
+                        <div className="a4-page-simulation break-inside-avoid">
+                          <ReportPreview data={currentEditingReport} />
+                        </div>
+                    ) : (
+                      <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
+                        <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
+                        <h3 className="text-xl font-semibold mb-2">{reportsCount === 0 && allRankedReports.length > 0 ? `No Reports Found` : `Report Preview Area`}</h3>
+                        <p>{noReportsFoundMessage}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </section>
+            )}
           </main>
 
           <footer className="text-center mt-12 py-6 text-sm text-muted-foreground border-t no-print">
@@ -1332,5 +1378,3 @@ export default function Home() {
   
   return <AppContent user={user} />;
 }
-
-    
