@@ -53,7 +53,7 @@ import {
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import type { CustomUser } from './auth-provider';
 import type { SchoolRankingData } from '@/app/actions';
-import DistrictClassRankingDialog from './district-class-ranking';
+import DistrictClassRankingDialog from '@/components/district-class-ranking';
 import { ReportData, SubjectEntry } from '@/lib/schemas';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 
