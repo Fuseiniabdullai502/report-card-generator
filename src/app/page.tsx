@@ -30,7 +30,7 @@ import dynamic from 'next/dynamic';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import QuickEntry from '@/components/quick-entry';
+import { QuickEntry } from '@/components/quick-entry';
 
 
 // Dynamically import heavy components

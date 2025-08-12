@@ -36,7 +36,7 @@ interface QuickEntryProps {
 
 const genderOptions = ["Male", "Female"];
 
-export default function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps) {
+export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps) {
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [studentsInClass, setStudentsInClass] = useState<ReportData[]>([]);
