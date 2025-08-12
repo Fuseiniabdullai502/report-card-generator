@@ -38,7 +38,6 @@ const genderOptions = ["Male", "Female"];
 
 export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps) {
   const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [studentsInClass, setStudentsInClass] = useState<ReportData[]>([]);
   const [subjectsForClass, setSubjectsForClass] = useState<string[]>([]);
   const [savingStatus, setSavingStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
@@ -64,7 +63,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     if (selectedClass) {
       const reports = allReports
         .filter(r => r.className === selectedClass)
-        .sort((a, b) => (a.studentName || '').localeCompare(b.studentName || '')); // Sort alphabetically
+        .sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''));
       setStudentsInClass(reports);
 
       const subjects = new Set<string>();
@@ -76,21 +75,13 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       const sortedSubjects = Array.from(subjects).sort();
       setSubjectsForClass(sortedSubjects);
 
-      // Preserve subject selection if possible, otherwise default
-      if (sortedSubjects.length > 0 && !sortedSubjects.includes(selectedSubject)) {
-        setSelectedSubject(sortedSubjects[0]);
-      } else if (sortedSubjects.length === 0) {
-        setSelectedSubject('');
-      }
     } else {
       setStudentsInClass([]);
       setSubjectsForClass([]);
-      setSelectedSubject('');
     }
   }, [selectedClass, allReports]);
   
   const debouncedSave = useDebouncedCallback(async (reportId: string, updatedFields: Partial<ReportData>) => {
-    // Prevent saving if the report is a temporary client-side one
     if (reportId.startsWith('temp-')) return;
     
     try {
@@ -174,7 +165,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             subjects: subjectsForClass.map(s => ({ subjectName: s, continuousAssessment: null, examinationMark: null })),
             teacherId: user.uid,
             studentEntryNumber: (allReports[allReports.length-1]?.studentEntryNumber || 0) + 1,
-            // Carry over session-like data from another student in the same class
             academicYear: studentsInClass[0]?.academicYear || '',
             academicTerm: studentsInClass[0]?.academicTerm || '',
             schoolName: studentsInClass[0]?.schoolName || '',
@@ -186,7 +176,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             areasForImprovement: '',
         };
         
-        // Optimistically update UI
         setStudentsInClass(prev => [...prev, newStudentData].sort((a, b) => (a.studentName || '').localeCompare(b.studentName || '')));
         setNewStudentName('');
 
@@ -197,14 +186,12 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                 createdAt: serverTimestamp(),
             });
 
-            // Update UI with real ID from Firestore
             setStudentsInClass(prev => prev.map(s => s.id === tempId ? { ...s, id: docRef.id } : s));
             
             toast({ title: 'Student Added', description: `${newStudentData.studentName} has been added to the class.` });
         } catch (error) {
             console.error(error);
             toast({ title: 'Error', description: 'Could not add the new student to the database.', variant: 'destructive' });
-            // Rollback optimistic update on error
             setStudentsInClass(prev => prev.filter(s => s.id !== tempId));
         } finally {
             setIsAddingStudent(false);
@@ -220,7 +207,10 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
 
 
   const getSubjectForStudent = (student: ReportData, subjectName: string): SubjectEntry => {
-    return student.subjects?.find(s => s.subjectName === subjectName) || { subjectName, continuousAssessment: null, examinationMark: null };
+    const existingSubject = student.subjects?.find(s => s.subjectName === subjectName);
+    if (existingSubject) return existingSubject;
+    // If subject doesn't exist for this student (e.g., student added before subject), return a blank entry
+    return { subjectName, continuousAssessment: null, examinationMark: null };
   };
 
   return (
@@ -228,75 +218,57 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       <CardHeader>
         <CardTitle>Quick Data Entry</CardTitle>
         <CardDescription>
-          Rapidly enter student information, CA scores, and exam scores for an entire class. Changes are saved automatically.
+          Rapidly enter student information and scores in a spreadsheet-like view. Changes are saved automatically.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4 items-end">
             <div className="w-full sm:w-auto sm:flex-1">
-                <Label htmlFor="class-select" className="text-xs text-muted-foreground">Class</Label>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button id="class-select" variant="outline" className="w-full justify-between">
-                            <span className="flex items-center gap-2">
-                                <Folder className="h-4 w-4" />
-                                {selectedClass || 'Select a class...'}
-                            </span>
-                            <ChevronDown className="h-4 w-4 opacity-50" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                        <ScrollArea className="h-48">
-                            {availableClasses.map(c => <DropdownMenuItem key={c} onSelect={() => setSelectedClass(c)}>{c}</DropdownMenuItem>)}
-                            {availableClasses.length === 0 && <DropdownMenuItem disabled>No classes found</DropdownMenuItem>}
-                        </ScrollArea>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-            <div className="w-full sm:w-auto sm:flex-1">
-                <Label htmlFor="subject-select" className="text-xs text-muted-foreground">Subject for Marks</Label>
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button id="subject-select" variant="outline" className="w-full justify-between" disabled={!selectedClass}>
-                            <span className="flex items-center gap-2">
-                                <Book className="h-4 w-4" />
-                                {selectedSubject || 'Select a subject...'}
-                            </span>
-                            <ChevronDown className="h-4 w-4 opacity-50" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                         <ScrollArea className="h-48">
-                            {subjectsForClass.length > 0 ? (
-                                subjectsForClass.map(s => <DropdownMenuItem key={s} onSelect={() => setSelectedSubject(s)}>{s}</DropdownMenuItem>)
-                            ) : (
-                                <DropdownMenuItem disabled>No subjects for this class</DropdownMenuItem>
-                            )}
-                        </ScrollArea>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <Label htmlFor="class-select" className="text-xs text-muted-foreground">Select a Class</Label>
+                <Select value={selectedClass} onValueChange={setSelectedClass}>
+                    <SelectTrigger id="class-select" className="w-full">
+                        <SelectValue placeholder="Select a class..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        {availableClasses.length === 0 && <SelectItem value="" disabled>No classes found</SelectItem>}
+                    </SelectContent>
+                </Select>
             </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative border rounded-lg">
             <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 bg-muted z-10">
                     <TableRow>
-                    <TableHead className="w-[50px]">#</TableHead>
-                    <TableHead className="w-[80px]">Photo</TableHead>
-                    <TableHead className="min-w-[200px]">Student Name</TableHead>
-                    <TableHead className="min-w-[120px]">Gender</TableHead>
-                    <TableHead className="text-center min-w-[120px]">CA Score ({selectedSubject || 'N/A'})</TableHead>
-                    <TableHead className="text-center min-w-[120px]">Exam Score ({selectedSubject || 'N/A'})</TableHead>
-                    <TableHead className="w-[50px]">Status</TableHead>
+                        <TableHead className="w-[50px] sticky left-0 bg-muted z-20">#</TableHead>
+                        <TableHead className="w-[80px] sticky left-[50px] bg-muted z-20">Photo</TableHead>
+                        <TableHead className="min-w-[200px] sticky left-[130px] bg-muted z-20">Student Name</TableHead>
+                        <TableHead className="min-w-[120px]">Gender</TableHead>
+                        {subjectsForClass.map(subject => (
+                            <TableHead key={subject} colSpan={2} className="text-center border-l">{subject}</TableHead>
+                        ))}
+                        <TableHead className="w-[50px] text-center">Status</TableHead>
+                    </TableRow>
+                     <TableRow className="bg-muted/50">
+                        <TableHead className="sticky left-0 bg-muted/50 z-20"></TableHead>
+                        <TableHead className="sticky left-[50px] bg-muted/50 z-20"></TableHead>
+                        <TableHead className="sticky left-[130px] bg-muted/50 z-20"></TableHead>
+                        <TableHead></TableHead>
+                        {subjectsForClass.map(subject => (
+                            <React.Fragment key={`${subject}-scores`}>
+                                <TableHead className="text-center text-xs border-l">CA (60)</TableHead>
+                                <TableHead className="text-center text-xs">Exam (100)</TableHead>
+                            </React.Fragment>
+                        ))}
+                        <TableHead></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {studentsInClass.map((student, index) => {
-                        const subjectData = getSubjectForStudent(student, selectedSubject);
                         return (
                             <TableRow key={student.id}>
-                                <TableCell>{index + 1}</TableCell>
-                                <TableCell>
+                                <TableCell className="sticky left-0 bg-background z-10">{index + 1}</TableCell>
+                                <TableCell className="sticky left-[50px] bg-background z-10">
                                     <div className="relative w-12 h-16">
                                         <input
                                             type="file"
@@ -316,7 +288,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                         </label>
                                     </div>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="sticky left-[130px] bg-background z-10">
                                     <Input
                                         value={student.studentName || ''}
                                         onChange={(e) => handleFieldChange(student.id, 'studentName', e.target.value)}
@@ -334,31 +306,36 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                         </SelectContent>
                                     </Select>
                                 </TableCell>
+                                {subjectsForClass.map(subjectName => {
+                                    const subjectData = getSubjectForStudent(student, subjectName);
+                                    return (
+                                        <React.Fragment key={`${student.id}-${subjectName}`}>
+                                            <TableCell className="border-l">
+                                                <Input
+                                                    type="number"
+                                                    value={subjectData.continuousAssessment ?? ''}
+                                                    onChange={(e) => handleMarkChange(student.id, subjectName, 'continuousAssessment', e.target.value)}
+                                                    placeholder="CA"
+                                                    className="text-center min-w-[70px]"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Input
+                                                    type="number"
+                                                    value={subjectData.examinationMark ?? ''}
+                                                    onChange={(e) => handleMarkChange(student.id, subjectName, 'examinationMark', e.target.value)}
+                                                    placeholder="Exam"
+                                                    className="text-center min-w-[70px]"
+                                                />
+                                            </TableCell>
+                                        </React.Fragment>
+                                    );
+                                })}
                                 <TableCell>
-                                    {selectedSubject && (
-                                        <Input
-                                            type="number"
-                                            value={subjectData.continuousAssessment ?? ''}
-                                            onChange={(e) => handleMarkChange(student.id, selectedSubject, 'continuousAssessment', e.target.value)}
-                                            placeholder="CA Mark"
-                                            className="text-center"
-                                        />
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {selectedSubject && (
-                                        <Input
-                                            type="number"
-                                            value={subjectData.examinationMark ?? ''}
-                                            onChange={(e) => handleMarkChange(student.id, selectedSubject, 'examinationMark', e.target.value)}
-                                            placeholder="Exam Mark"
-                                            className="text-center"
-                                        />
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {savingStatus[student.id] === 'saving' && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
-                                    {savingStatus[student.id] === 'saved' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                                    <div className="flex justify-center">
+                                        {savingStatus[student.id] === 'saving' && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                                        {savingStatus[student.id] === 'saved' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         );
@@ -370,7 +347,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       <CardFooter className="border-t pt-6">
           <div className="flex items-end gap-4 w-full">
             <div className="flex-grow">
-              <Label htmlFor="new-student-name" className="text-xs text-muted-foreground">Add New Student</Label>
+              <Label htmlFor="new-student-name" className="text-xs text-muted-foreground">Add New Student to "{selectedClass || '...'}"</Label>
               <Input
                 id="new-student-name"
                 placeholder="Type student name and press Enter..."
