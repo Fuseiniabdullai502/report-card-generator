@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -73,6 +73,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   const [scoreType, setScoreType] = useState<ScoreType>('continuousAssessment');
   const [isExportGradesheetDialogOpen, setIsExportGradesheetDialogOpen] = useState(false);
   const [isImportGradesheetDialogOpen, setIsImportGradesheetDialogOpen] = useState(false);
+  const [isTableVisible, setIsTableVisible] = useState(false);
 
 
   const availableClasses = useMemo(() => {
@@ -359,66 +360,74 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                   </div>
               </div>
           </div>
-          <div className="overflow-x-auto relative border rounded-lg">
-              <Table>
-                  <TableHeader className="sticky top-0 bg-muted z-10">
-                      <TableRow>
-                          <TableHead className="w-[50px]">#</TableHead>
-                          <TableHead className="min-w-[200px]">Student Name</TableHead>
-                          <TableHead className="min-w-[150px] text-center">
-                            {focusedSubject ? `${focusedSubject} - ${scoreType === 'continuousAssessment' ? 'CA (60)' : 'Exam (100)'}` : 'Score'}
-                          </TableHead>
-                          <TableHead className="w-[50px] text-center">Status</TableHead>
-                          <TableHead className="w-[80px] text-center">Actions</TableHead>
-                      </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                      {filteredStudents.map((student, index) => {
-                          const subjectData = student.subjects.find(s => s.subjectName === focusedSubject);
-                          const score = subjectData ? subjectData[scoreType] : null;
-
-                          return (
-                              <TableRow key={student.id}>
-                                  <TableCell>{index + 1}</TableCell>
-                                  <TableCell className="font-medium">
-                                      {student.studentName || ''}
-                                  </TableCell>
-                                  <TableCell>
-                                      <Input
-                                          id={`score-input-${student.id}`}
-                                          type="number"
-                                          value={score ?? ''}
-                                          onChange={(e) => handleMarkChange(student.id, focusedSubject, scoreType, e.target.value)}
-                                          onKeyDown={(e) => handleScoreKeyDown(e, index)}
-                                          placeholder="Enter score"
-                                          className="text-center"
-                                          disabled={!focusedSubject}
-                                      />
-                                  </TableCell>
-                                  <TableCell>
-                                      <div className="flex justify-center">
-                                          {savingStatus[student.id] === 'saving' && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
-                                          {savingStatus[student.id] === 'saved' && <CheckCircle className="h-5 w-5 text-green-500" />}
-                                      </div>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                      <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setStudentToDelete(student)}>
-                                          <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                  </TableCell>
-                              </TableRow>
-                          );
-                      })}
-                       {filteredStudents.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
-                              No students found. {searchQuery ? 'Try adjusting your search.' : 'Select a class or add a new student.'}
-                            </TableCell>
-                          </TableRow>
-                       )}
-                  </TableBody>
-              </Table>
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => setIsTableVisible(!isTableVisible)} disabled={studentsInClass.length === 0}>
+                {isTableVisible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                {isTableVisible ? 'Hide' : 'Show'} Gradesheet ({filteredStudents.length})
+            </Button>
           </div>
+          {isTableVisible && (
+            <div className="overflow-x-auto relative border rounded-lg">
+                <Table>
+                    <TableHeader className="sticky top-0 bg-muted z-10">
+                        <TableRow>
+                            <TableHead className="w-[50px]">#</TableHead>
+                            <TableHead className="min-w-[200px]">Student Name</TableHead>
+                            <TableHead className="min-w-[150px] text-center">
+                              {focusedSubject ? `${focusedSubject} - ${scoreType === 'continuousAssessment' ? 'CA (60)' : 'Exam (100)'}` : 'Score'}
+                            </TableHead>
+                            <TableHead className="w-[50px] text-center">Status</TableHead>
+                            <TableHead className="w-[80px] text-center">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredStudents.map((student, index) => {
+                            const subjectData = student.subjects.find(s => s.subjectName === focusedSubject);
+                            const score = subjectData ? subjectData[scoreType] : null;
+
+                            return (
+                                <TableRow key={student.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell className="font-medium">
+                                        {student.studentName || ''}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Input
+                                            id={`score-input-${student.id}`}
+                                            type="number"
+                                            value={score ?? ''}
+                                            onChange={(e) => handleMarkChange(student.id, focusedSubject, scoreType, e.target.value)}
+                                            onKeyDown={(e) => handleScoreKeyDown(e, index)}
+                                            placeholder="Enter score"
+                                            className="text-center"
+                                            disabled={!focusedSubject}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex justify-center">
+                                            {savingStatus[student.id] === 'saving' && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                                            {savingStatus[student.id] === 'saved' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setStudentToDelete(student)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                         {filteredStudents.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                                No students found. {searchQuery ? 'Try adjusting your search.' : 'Select a class or add a new student.'}
+                              </TableCell>
+                            </TableRow>
+                         )}
+                    </TableBody>
+                </Table>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="border-t pt-6 flex flex-col sm:flex-row items-center gap-4">
             <div className="flex items-end gap-4 w-full sm:w-auto flex-grow">
