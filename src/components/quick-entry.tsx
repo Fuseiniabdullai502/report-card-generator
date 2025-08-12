@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -36,6 +36,10 @@ import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { deleteReportAction } from '@/app/actions';
+import * as XLSX from 'xlsx';
+import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogContent } from '@/components/ui/dialog';
+import { Checkbox } from './ui/checkbox';
+import { ScrollArea } from './ui/scroll-area';
 
 interface QuickEntryProps {
   allReports: ReportData[];
@@ -43,7 +47,6 @@ interface QuickEntryProps {
   onDataRefresh: () => void;
 }
 
-const genderOptions = ["Male", "Female"];
 const scoreTypeOptions = [
     { value: 'continuousAssessment', label: 'Continuous Assessment (CA)' },
     { value: 'examinationMark', label: 'Examination Mark (Exam)' }
@@ -68,6 +71,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   // New state for focused entry mode
   const [focusedSubject, setFocusedSubject] = useState<string>('');
   const [scoreType, setScoreType] = useState<ScoreType>('continuousAssessment');
+  const [isExportGradesheetDialogOpen, setIsExportGradesheetDialogOpen] = useState(false);
 
 
   const availableClasses = useMemo(() => {
@@ -110,7 +114,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setSubjectsForClass([]);
       setFocusedSubject('');
     }
-  }, [selectedClass, allReports]);
+  }, [selectedClass, allReports, focusedSubject]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return studentsInClass;
@@ -135,15 +139,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setSavingStatus(prev => ({ ...prev, [reportId]: 'idle' }));
     }
   }, 1000);
-
-  const handleFieldChange = (reportId: string, field: keyof ReportData, value: any) => {
-    setSavingStatus(prev => ({ ...prev, [reportId]: 'saving' }));
-    const updatedStudents = studentsInClass.map(student =>
-      student.id === reportId ? { ...student, [field]: value } : student
-    );
-    setStudentsInClass(updatedStudents);
-    debouncedSave(reportId, { [field]: value });
-  };
 
   const handleMarkChange = (reportId: string, subjectName: string, markType: ScoreType, value: string) => {
     setSavingStatus(prev => ({ ...prev, [reportId]: 'saving' }));
@@ -189,25 +184,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             const nextInput = document.getElementById(`score-input-${nextStudent.id}`);
             nextInput?.focus();
         }
-    }
-  };
-
-  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>, reportId: string) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setSavingStatus(prev => ({...prev, [reportId]: 'saving' }));
-    toast({ title: 'Uploading...', description: 'Please wait.' });
-
-    try {
-      const storageRef = ref(storage, `student_photos/${uuidv4()}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      handleFieldChange(reportId, 'studentPhotoDataUri', downloadURL);
-      toast({ title: 'Upload Successful', description: 'Student photo has been updated.' });
-    } catch (error) {
-      toast({ title: 'Upload Failed', description: 'Could not upload image.', variant: 'destructive' });
-      setSavingStatus(prev => ({...prev, [reportId]: 'idle' }));
     }
   };
 
@@ -409,8 +385,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
               </Table>
           </div>
         </CardContent>
-        <CardFooter className="border-t pt-6">
-            <div className="flex items-end gap-4 w-full">
+        <CardFooter className="border-t pt-6 flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex items-end gap-4 w-full sm:w-auto flex-grow">
               <div className="flex-grow">
                 <Label htmlFor="new-student-name" className="text-xs text-muted-foreground">Add New Student to "{selectedClass || '...'}"</Label>
                 <Input
@@ -425,6 +401,17 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
               <Button onClick={handleAddNewStudent} disabled={!selectedClass || !newStudentName.trim() || isAddingStudent}>
                   {isAddingStudent ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
                   Add Student
+              </Button>
+            </div>
+            <div className="w-full sm:w-auto">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setIsExportGradesheetDialogOpen(true)}
+                disabled={studentsInClass.length === 0}
+              >
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Blank Gradesheet
               </Button>
             </div>
         </CardFooter>
@@ -447,6 +434,94 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {isExportGradesheetDialogOpen && (
+        <ExportGradesheetDialog
+            isOpen={isExportGradesheetDialogOpen}
+            onOpenChange={setIsExportGradesheetDialogOpen}
+            subjects={subjectsForClass}
+            students={studentsInClass}
+            className={selectedClass}
+        />
+      )}
     </>
   );
+}
+
+
+function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, className }: { isOpen: boolean, onOpenChange: (open: boolean) => void, subjects: string[], students: ReportData[], className: string }) {
+    const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setSelectedSubjects(subjects);
+        }
+    }, [isOpen, subjects]);
+
+    const handleSubjectSelection = (subject: string, checked: boolean) => {
+        setSelectedSubjects(prev => checked ? [...prev, subject] : prev.filter(s => s !== subject));
+    };
+
+    const handleExport = () => {
+        const dataForSheet = students.map(student => ({
+            'Student Name': student.studentName,
+            ...selectedSubjects.reduce((acc, subject) => {
+                acc[`${subject} CA (60)`] = '';
+                acc[`${subject} Exam (100)`] = '';
+                return acc;
+            }, {} as Record<string, string>)
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, `${className} Grades`);
+
+        // Auto-size columns
+        const cols = [{ wch: 30 }]; // Student Name column width
+        selectedSubjects.forEach(subject => {
+            cols.push({ wch: subject.length + 10 }); // CA column
+            cols.push({ wch: subject.length + 12 }); // Exam column
+        });
+        worksheet['!cols'] = cols;
+        
+        XLSX.writeFile(workbook, `${className}_Gradesheet_${new Date().toISOString().split('T')[0]}.xlsx`);
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Export Blank Gradesheet</DialogTitle>
+                    <CardDescription>Select the subjects to include in the Excel export.</CardDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label className="font-semibold">Subjects</Label>
+                    <ScrollArea className="h-60 mt-2 border rounded-md p-4">
+                        <div className="space-y-2">
+                            {subjects.map(subject => (
+                                <div key={subject} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`subject-check-${subject}`}
+                                        checked={selectedSubjects.includes(subject)}
+                                        onCheckedChange={(checked) => handleSubjectSelection(subject, Boolean(checked))}
+                                    />
+                                    <Label htmlFor={`subject-check-${subject}`} className="font-normal cursor-pointer">
+                                        {subject}
+                                    </Label>
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button onClick={handleExport} disabled={selectedSubjects.length === 0}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Export ({selectedSubjects.length})
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
