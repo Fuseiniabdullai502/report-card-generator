@@ -78,7 +78,11 @@ export default function AdminPage() {
       }
 
       if (invitesResult.success && invitesResult.invites) {
+<<<<<<< HEAD
         setInvites(invitesResult.invites);
+=======
+        setInvites(invitesResult.invites.map(i => ({...i, role: i.role || undefined, region: i.region, district: i.district, circuit: i.circuit, schoolName: i.schoolName, classNames: i.classNames, createdAt: i.createdAt ? new Date(i.createdAt) : null } as InviteData)));
+>>>>>>> 6e01f493 (Add a fallback for dynamic imports: import dynamic from 'next/dynamic';)
       } else {
         toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
       }
