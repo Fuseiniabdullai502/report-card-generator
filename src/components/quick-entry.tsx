@@ -25,17 +25,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
 import { db, storage } from '@/lib/firebase';
-import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { deleteReportAction } from '@/app/actions';
+import { deleteReportAction, batchUpdateStudentScoresAction } from '@/app/actions';
 import * as XLSX from 'xlsx';
 import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogContent } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
@@ -72,6 +72,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   const [focusedSubject, setFocusedSubject] = useState<string>('');
   const [scoreType, setScoreType] = useState<ScoreType>('continuousAssessment');
   const [isExportGradesheetDialogOpen, setIsExportGradesheetDialogOpen] = useState(false);
+  const [isImportGradesheetDialogOpen, setIsImportGradesheetDialogOpen] = useState(false);
 
 
   const availableClasses = useMemo(() => {
@@ -262,6 +263,40 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         setIsDeleting(false);
         setStudentToDelete(null);
     };
+    
+  const handleImportedData = async (dataToImport: { studentName: string, subjects: SubjectEntry[] }[]) => {
+      const updates = dataToImport.map(importedStudent => {
+          const existingStudent = studentsInClass.find(s => s.studentName === importedStudent.studentName);
+          if (!existingStudent) return null;
+
+          // Merge subjects
+          const existingSubjectsMap = new Map(existingStudent.subjects.map(s => [s.subjectName, s]));
+          importedStudent.subjects.forEach(importedSub => {
+              existingSubjectsMap.set(importedSub.subjectName, { ...existingSubjectsMap.get(importedSub.subjectName), ...importedSub });
+          });
+
+          return {
+              reportId: existingStudent.id,
+              subjects: Array.from(existingSubjectsMap.values()),
+          };
+      }).filter(Boolean) as { reportId: string; subjects: SubjectEntry[] }[];
+
+      if (updates.length === 0) {
+          toast({ title: 'No Matching Students', description: 'No students in the Excel file matched the students in the selected class.', variant: 'destructive' });
+          return;
+      }
+
+      const result = await batchUpdateStudentScoresAction({ updates });
+
+      if (result.success) {
+          toast({ title: 'Import Successful', description: `${updates.length} student records have been updated.` });
+          onDataRefresh(); // Refresh data from parent
+      } else {
+          toast({ title: 'Import Failed', description: result.error, variant: 'destructive' });
+      }
+      setIsImportGradesheetDialogOpen(false);
+  };
+
 
   return (
     <>
@@ -403,7 +438,16 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                   Add Student
               </Button>
             </div>
-            <div className="w-full sm:w-auto">
+            <div className="w-full sm:w-auto flex gap-2">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setIsImportGradesheetDialogOpen(true)}
+                disabled={studentsInClass.length === 0}
+              >
+                  <FileUp className="mr-2 h-4 w-4" />
+                  Import Gradesheet
+              </Button>
               <Button 
                 variant="outline" 
                 className="w-full"
@@ -444,6 +488,15 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             className={selectedClass}
         />
       )}
+      {isImportGradesheetDialogOpen && (
+        <ImportGradesheetDialog
+            isOpen={isImportGradesheetDialogOpen}
+            onOpenChange={setIsImportGradesheetDialogOpen}
+            studentsInClass={studentsInClass}
+            onImport={handleImportedData}
+            className={selectedClass}
+        />
+      )}
     </>
   );
 }
@@ -473,6 +526,15 @@ function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, clas
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
+        
+        // Make worksheet editable and set focus on the first data cell
+        if (worksheet['B2']) { // Check if the first data cell exists
+            worksheet['!protect'] = {
+                sheet: false, // unprotected
+            };
+            worksheet['!ref'] = `A1:Z${students.length + 1}`;
+        }
+        
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, `${className} Grades`);
 
@@ -519,6 +581,105 @@ function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, clas
                     <Button onClick={handleExport} disabled={selectedSubjects.length === 0}>
                         <Download className="mr-2 h-4 w-4" />
                         Export ({selectedSubjects.length})
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function ImportGradesheetDialog({ isOpen, onOpenChange, studentsInClass, onImport, className }: { isOpen: boolean, onOpenChange: (open: boolean) => void, studentsInClass: ReportData[], onImport: (data: any[]) => void, className: string }) {
+    const [file, setFile] = useState<File | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const { toast } = useToast();
+
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            setFile(e.target.files[0]);
+        }
+    };
+
+    const handleImport = () => {
+        if (!file) {
+            toast({ title: 'No File Selected', description: 'Please select an Excel file to import.', variant: 'destructive' });
+            return;
+        }
+        setIsProcessing(true);
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target!.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+                const dataToImport = json.map(row => {
+                    const studentName = row['Student Name'];
+                    if (!studentName) return null;
+
+                    const subjects: SubjectEntry[] = [];
+                    Object.keys(row).forEach(key => {
+                        if (key !== 'Student Name') {
+                            const matchCA = key.match(/(.+) CA \(60\)/);
+                            const matchExam = key.match(/(.+) Exam \(100\)/);
+                            const subjectName = matchCA?.[1] || matchExam?.[1];
+
+                            if (subjectName) {
+                                let subject = subjects.find(s => s.subjectName === subjectName);
+                                if (!subject) {
+                                    subject = { subjectName, continuousAssessment: null, examinationMark: null };
+                                    subjects.push(subject);
+                                }
+                                const value = row[key] === '' ? null : Number(row[key]);
+                                if (matchCA) subject.continuousAssessment = value;
+                                if (matchExam) subject.examinationMark = value;
+                            }
+                        }
+                    });
+                    return { studentName, subjects };
+                }).filter(Boolean);
+
+                onImport(dataToImport as any);
+            } catch (error) {
+                console.error("Error processing Excel file:", error);
+                toast({ title: 'Import Error', description: 'Failed to read or process the Excel file. Please ensure it is in the correct format.', variant: 'destructive' });
+            } finally {
+                setIsProcessing(false);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Import Gradesheet for "{className}"</DialogTitle>
+                    <DialogDescription>
+                        Select the completed Excel gradesheet. The system will match student names and update their scores.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="space-y-1">
+                        <Label htmlFor="gradesheet-file">Excel File</Label>
+                        <Input id="gradesheet-file" type="file" accept=".xlsx, .xls" onChange={handleFileChange} />
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold">Instructions:</p>
+                        <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 mt-1">
+                            <li>Ensure the "Student Name" column in your Excel file exactly matches the names in the class list.</li>
+                            <li>Only columns for CA and Exam marks will be imported.</li>
+                            <li>Empty cells in the Excel file will be ignored.</li>
+                        </ul>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button onClick={handleImport} disabled={!file || isProcessing}>
+                        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                        Process and Import
                     </Button>
                 </DialogFooter>
             </DialogContent>

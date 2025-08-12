@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { generateStudentFeedback, type GenerateStudentFeedbackInput } from '@/ai/flows/generate-student-feedback';
@@ -21,11 +22,11 @@ import {
 import { z } from 'zod';
 import admin from '@/lib/firebase-admin';
 import type { Query, DocumentData } from 'firebase-admin/firestore';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
-import { type ReportData } from '@/lib/schemas';
+import { type ReportData, type SubjectEntry } from '@/lib/schemas';
 import { auth, db } from '@/lib/firebase';
 
 
@@ -1157,6 +1158,70 @@ export async function getDistrictClassRankingAction(input: { district: string; c
     return { success: false, error: errorMessage };
   }
 }
+
+// Action for deleting a report
+const DeleteReportActionInputSchema = z.object({
+  reportId: z.string().min(1, 'Report ID is required.'),
+});
+
+export async function deleteReportAction(
+  data: { reportId: string }
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { reportId } = DeleteReportActionInputSchema.parse(data);
+    
+    await admin.firestore().collection('reports').doc(reportId).delete();
+    
+    return { success: true, message: 'Student report successfully deleted.' };
+  } catch (error: any) {
+    console.error('Error deleting report:', error);
+    let errorMessage = 'An unexpected error occurred while deleting the report.';
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for deleting report: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, message: errorMessage };
+  }
+}
+
+// Action for batch updating student scores from Excel import
+const StudentScoreUpdateSchema = z.object({
+  reportId: z.string(),
+  subjects: z.array(ActionFlowSubjectEntrySchema),
+});
+
+const BatchUpdateStudentScoresInputSchema = z.object({
+  updates: z.array(StudentScoreUpdateSchema),
+});
+
+export async function batchUpdateStudentScoresAction(
+  input: z.infer<typeof BatchUpdateStudentScoresInputSchema>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { updates } = BatchUpdateStudentScoresInputSchema.parse(input);
+    const batch = admin.firestore().batch();
+
+    updates.forEach(update => {
+      const reportRef = admin.firestore().collection('reports').doc(update.reportId);
+      batch.update(reportRef, { subjects: update.subjects });
+    });
+
+    await batch.commit();
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error in batchUpdateStudentScoresAction:", error);
+    let errorMessage = "An unexpected server error occurred during batch update.";
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid data provided for batch update: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
       
 
     
+
+
