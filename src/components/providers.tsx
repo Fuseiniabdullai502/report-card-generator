@@ -10,7 +10,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   
   useEffect(() => {
     // This is the correct place for browser-specific code.
+<<<<<<< HEAD
     // Enable Firestore debug logging ONLY on the client side during development.
+=======
+    // Enable Firestore debug logging on the client side.
+>>>>>>> 982cbcaf (Error: Element type is invalid: expected a string (for built-in componen)
     if (process.env.NODE_ENV === 'development') {
       setLogLevel('debug');
     }
