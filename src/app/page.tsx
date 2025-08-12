@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, Signature, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, PenSquare, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
@@ -104,6 +104,9 @@ function AppContent({ user }: { user: CustomUser }) {
   const [isCustomClassNameDialogOpen, setIsCustomClassNameDialogOpen] = useState(false);
   const [customClassNameInputValue, setCustomClassNameInputValue] = useState('');
   
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   // State for filters
   const [adminFilters, setAdminFilters] = useState({
     schoolName: 'all',
@@ -1029,14 +1032,26 @@ function AppContent({ user }: { user: CustomUser }) {
                         <Input id="sessionInstructorContact" value={sessionDefaults.instructorContact ?? ''} onChange={e => handleSessionDefaultChange('instructorContact', e.target.value)} placeholder="Phone or Email" />
                     </div>
                     <div className="space-y-1 flex items-center gap-2">
-                    <input type="file" id="sessionSchoolLogoUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'schoolLogoDataUri')} />
-                    <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('sessionSchoolLogoUpload')?.click()}><UploadCloud className="mr-2 h-4 w-4" />Logo</Button>
-                    {sessionDefaults.schoolLogoDataUri && (sessionDefaults.schoolLogoDataUri.startsWith('data:image') || sessionDefaults.schoolLogoDataUri.startsWith('http')) && <NextImage src={sessionDefaults.schoolLogoDataUri} alt="logo" width={40} height={40} className="rounded border p-1 object-contain"/>}
+                        <input type="file" id="sessionSchoolLogoUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'schoolLogoDataUri')} />
+                        <Button asChild type="button" variant="outline" size="sm">
+                            <span onClick={() => document.getElementById('sessionSchoolLogoUpload')?.click()} className="flex items-center gap-2 cursor-pointer">
+                                <UploadCloud className="h-4 w-4" />Logo
+                            </span>
+                        </Button>
+                        {mounted && sessionDefaults.schoolLogoDataUri && (sessionDefaults.schoolLogoDataUri.startsWith('data:image') || sessionDefaults.schoolLogoDataUri.startsWith('http')) && (
+                          <NextImage src={sessionDefaults.schoolLogoDataUri} alt="logo" width={40} height={40} className="rounded border p-1 object-contain"/>
+                        )}
                     </div>
                     <div className="space-y-1 flex items-center gap-2">
-                    <input type="file" id="sessionHeadMasterSignatureUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'headMasterSignatureDataUri')} />
-                    <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('sessionHeadMasterSignatureUpload')?.click()}><Signature className="mr-2 h-4 w-4" />Signature</Button>
-                    {sessionDefaults.headMasterSignatureDataUri && (sessionDefaults.headMasterSignatureDataUri.startsWith('data:image') || sessionDefaults.headMasterSignatureDataUri.startsWith('http')) && <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>}
+                        <input type="file" id="sessionHeadMasterSignatureUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'headMasterSignatureDataUri')} />
+                         <Button asChild type="button" variant="outline" size="sm">
+                            <span onClick={() => document.getElementById('sessionHeadMasterSignatureUpload')?.click()} className="flex items-center gap-2 cursor-pointer">
+                                <PenSquare className="h-4 w-4" />Signature
+                            </span>
+                        </Button>
+                        {mounted && sessionDefaults.headMasterSignatureDataUri && (sessionDefaults.headMasterSignatureDataUri.startsWith('data:image') || sessionDefaults.headMasterSignatureDataUri.startsWith('http')) && (
+                          <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>
+                        )}
                     </div>
                 </div>
             </CardContent>
