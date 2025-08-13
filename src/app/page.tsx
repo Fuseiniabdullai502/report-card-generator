@@ -101,9 +101,9 @@ function AppContent({ user }: { user: CustomUser }) {
   const [isImportStudentsDialogOpen, setIsImportStudentsDialogOpen] = useState(false);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
   
-  const [isSessionControlsVisible, setIsSessionControlsVisible] = useState(true);
-  const [isReportFormVisible, setIsReportFormVisible] = useState(true);
-  const [isPreviewVisible, setIsPreviewVisible] = useState(true);
+  const [isSessionControlsVisible, setIsSessionControlsVisible] = useState(false);
+  const [isReportFormVisible, setIsReportFormVisible] = useState(false);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   
   const [customClassNames, setCustomClassNames] = useState<string[]>([]);
   const [isCustomClassNameDialogOpen, setIsCustomClassNameDialogOpen] = useState(false);
@@ -1133,41 +1133,25 @@ function AppContent({ user }: { user: CustomUser }) {
                 </div>
             )}
             
-            {!isSessionControlsVisible && (
-                <Button
-                    variant="outline"
-                    size="icon"
-                    className="fixed bottom-8 left-8 z-50 h-14 w-14 rounded-full shadow-2xl no-print"
-                    onClick={() => setIsSessionControlsVisible(true)}
-                    title="Show Session Controls"
-                >
-                    <Settings className="h-6 w-6" />
-                </Button>
-            )}
-            
-            {!isReportFormVisible && (
-              <Button
-                variant="outline"
-                size="icon"
-                className="fixed bottom-8 left-28 z-50 h-14 w-14 rounded-full shadow-2xl no-print"
-                onClick={() => setIsReportFormVisible(true)}
-                 title="Show Report Form"
-              >
-                <Edit className="h-6 w-6" />
-              </Button>
+            {(!isSessionControlsVisible && !isReportFormVisible && !isPreviewVisible) && (
+              <Card className="col-span-full flex items-center justify-center h-64 border-2 border-dashed">
+                <div className="text-center text-muted-foreground space-y-4">
+                    <p className="font-semibold text-lg">Select an action to begin</p>
+                    <div className="flex gap-4">
+                        <Button variant="outline" size="lg" onClick={() => setIsSessionControlsVisible(true)}>
+                            <Settings className="mr-2 h-5 w-5" /> Session Controls
+                        </Button>
+                        <Button variant="outline" size="lg" onClick={() => setIsReportFormVisible(true)}>
+                            <Edit className="mr-2 h-5 w-5" /> Report Form
+                        </Button>
+                        <Button variant="outline" size="lg" onClick={() => setIsPreviewVisible(true)}>
+                            <FileText className="mr-2 h-5 w-5" /> Report Preview
+                        </Button>
+                    </div>
+                </div>
+              </Card>
             )}
 
-            {!isPreviewVisible && (
-              <Button
-                variant="outline"
-                size="icon"
-                className="fixed bottom-8 right-8 z-50 h-14 w-14 rounded-full shadow-2xl no-print"
-                onClick={() => setIsPreviewVisible(true)}
-                title="Show Report Preview"
-              >
-                <FileText className="h-6 w-6" />
-              </Button>
-            )}
 
             {isPreviewVisible && (
               <section className={cn("flex-col no-print transition-all duration-300", isReportFormVisible ? "lg:col-span-3 flex" : "lg:col-span-5 flex")}>
@@ -1439,3 +1423,5 @@ export default function Home() {
   
   return <AppContent user={user} />;
 }
+
+    
