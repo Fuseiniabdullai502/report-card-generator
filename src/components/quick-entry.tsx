@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -83,8 +82,12 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
 
 
   const availableClasses = useMemo(() => {
+    // For 'user' role, only show their assigned classes. For others, show all from reports.
+    if (user.role === 'user' && user.classNames) {
+        return user.classNames.sort();
+    }
     return [...new Set(allReports.map(r => r.className).filter(Boolean) as string[])].sort();
-  }, [allReports]);
+  }, [allReports, user.role, user.classNames]);
 
   useEffect(() => {
     if (availableClasses.length > 0 && !availableClasses.includes(selectedClass)) {
@@ -215,12 +218,11 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         }
 
         setIsAddingStudent(true);
-        const tempId = `temp-${Date.now()}`;
         
-        const classTemplate = studentsInClass[0]; // Use an existing student as a template for shared fields
+        // Use an existing student as a template, or fallback to the user's own scope.
+        const classTemplate = studentsInClass[0]; 
         
-        const newStudentData: ReportData = {
-            id: tempId,
+        const newStudentData: Omit<ReportData, 'id'> = {
             studentName: newStudentName.trim(),
             className: selectedClass,
             gender: '',
@@ -228,25 +230,25 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             subjects: subjectsForClass.map(s => ({ subjectName: s, continuousAssessment: null, examinationMark: null })),
             teacherId: user.uid,
             studentEntryNumber: (allReports.reduce((max, r) => Math.max(r.studentEntryNumber || 0, max), 0) || 0) + 1,
+            // Use template if available, otherwise use current user's scope for school/location data
             academicYear: classTemplate?.academicYear || '',
             academicTerm: classTemplate?.academicTerm || '',
-            schoolName: classTemplate?.schoolName || '',
-            region: classTemplate?.region || '',
-            district: classTemplate?.district || '',
-            circuit: classTemplate?.circuit || '',
+            schoolName: classTemplate?.schoolName || user.schoolName || '',
+            region: classTemplate?.region || user.region || '',
+            district: classTemplate?.district || user.district || '',
+            circuit: classTemplate?.circuit || user.circuit || '',
             performanceSummary: '',
             strengths: '',
             areasForImprovement: '',
         };
         
         try {
-            const { id, ...dataToSave } = newStudentData;
-            const docRef = await addDoc(collection(db, 'reports'), {
-                ...dataToSave,
+            await addDoc(collection(db, 'reports'), {
+                ...newStudentData,
                 createdAt: serverTimestamp(),
             });
             
-            toast({ title: 'Student Added', description: `${newStudentData.studentName} has been added to the class.` });
+            toast({ title: 'Student Added', description: `${newStudentData.studentName} has been added to ${selectedClass}.` });
             setNewStudentName(''); // Clear input on success
             onDataRefresh(); // Refresh parent data to get the new student with a real ID
         } catch (error) {
@@ -422,7 +424,9 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                             <SelectContent>
                                 {availableClasses.length > 0 ? (
                                   availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
-                                ) : null}
+                                ) : (
+                                  <SelectItem value="" disabled>No classes found</SelectItem>
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
@@ -827,3 +831,5 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
         </Dialog>
     );
 }
+
+    
