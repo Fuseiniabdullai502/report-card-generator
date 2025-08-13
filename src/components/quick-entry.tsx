@@ -422,9 +422,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                             <SelectContent>
                                 {availableClasses.length > 0 ? (
                                   availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
-                                ) : (
-                                  <SelectItem value="" disabled>No classes found</SelectItem>
-                                )}
+                                ) : null}
                             </SelectContent>
                         </Select>
                     </div>
@@ -437,9 +435,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                             <SelectContent>
                                 {subjectsForClass.length > 0 ? (
                                   subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
-                                ) : (
-                                  <SelectItem value="" disabled>No subjects for this class</SelectItem>
-                                )}
+                                ) : null}
                             </SelectContent>
                         </Select>
                     </div>
@@ -670,7 +666,6 @@ function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, clas
 
         const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
         
-        // Make worksheet editable
         if (worksheet['B2']) {
             worksheet['!protect'] = {
                 sheet: false,
@@ -680,11 +675,10 @@ function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, clas
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, `${className} Grades`);
 
-        // Auto-size columns
-        const cols = [{ wch: 30 }]; // Student Name column width
+        const cols = [{ wch: 30 }]; 
         selectedSubjects.forEach(subject => {
-            cols.push({ wch: subject.length + 10 }); // CA column
-            cols.push({ wch: subject.length + 12 }); // Exam column
+            cols.push({ wch: subject.length + 10 }); 
+            cols.push({ wch: subject.length + 12 }); 
         });
         worksheet['!cols'] = cols;
         
