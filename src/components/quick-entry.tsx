@@ -398,8 +398,11 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                           <SelectValue placeholder="Select a class..." />
                       </SelectTrigger>
                       <SelectContent>
-                          {availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                          {availableClasses.length === 0 && <SelectItem value="" disabled>No classes found</SelectItem>}
+                          {availableClasses.length > 0 ? (
+                            availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
+                          ) : (
+                            <SelectItem value="no-classes" disabled>No classes found</SelectItem>
+                          )}
                       </SelectContent>
                   </Select>
               </div>
@@ -410,8 +413,11 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                           <SelectValue placeholder="Select a subject..." />
                       </SelectTrigger>
                       <SelectContent>
-                          {subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                          {subjectsForClass.length === 0 && <SelectItem value="" disabled>No subjects for this class</SelectItem>}
+                          {subjectsForClass.length > 0 ? (
+                            subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
+                          ) : (
+                            <SelectItem value="no-subjects" disabled>No subjects for this class</SelectItem>
+                          )}
                       </SelectContent>
                   </Select>
               </div>
