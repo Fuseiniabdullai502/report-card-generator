@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -56,6 +56,7 @@ const scoreTypeOptions = [
     { value: 'examinationMark', label: 'Examination Mark (Exam)' }
 ];
 type ScoreType = 'continuousAssessment' | 'examinationMark';
+const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
 
 
 export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps) {
@@ -79,6 +80,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   const [isImportGradesheetDialogOpen, setIsImportGradesheetDialogOpen] = useState(false);
   const [isTableVisible, setIsTableVisible] = useState(true);
   const [isGeneratingBulkInsights, setIsGeneratingBulkInsights] = useState(false);
+  const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
+  const [customSubjectInputValue, setCustomSubjectInputValue] = useState('');
 
 
   const availableClasses = useMemo(() => {
@@ -114,7 +117,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setSubjectsForClass(sortedSubjects);
       
       // Reset focused subject if it's not in the new list of subjects
-      if (sortedSubjects.length > 0 && !sortedSubjects.includes(focusedSubject)) {
+      if (sortedSubjects.length > 0 && (!focusedSubject || !sortedSubjects.includes(focusedSubject))) {
         setFocusedSubject(sortedSubjects[0]);
       } else if (sortedSubjects.length === 0) {
         setFocusedSubject('');
@@ -125,7 +128,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setSubjectsForClass([]);
       setFocusedSubject('');
     }
-  }, [selectedClass, allReports, focusedSubject]);
+  }, [selectedClass, allReports]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return studentsInClass;
@@ -393,6 +396,37 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     }
   };
 
+  const handleAddCustomSubject = async () => {
+    const newSubject = customSubjectInputValue.trim();
+    if (!newSubject) return;
+    if (subjectsForClass.includes(newSubject)) {
+        toast({ title: 'Subject Exists', description: `The subject "${newSubject}" already exists for this class.`, variant: 'destructive' });
+        return;
+    }
+    
+    // Add the new subject to all students in the class
+    const batch = writeBatch(db);
+    studentsInClass.forEach(student => {
+        const reportRef = doc(db, 'reports', student.id);
+        const newSubjects = [...student.subjects, { subjectName: newSubject, continuousAssessment: null, examinationMark: null }];
+        batch.update(reportRef, { subjects: newSubjects });
+    });
+    
+    try {
+        await batch.commit();
+        setSubjectsForClass(prev => [...prev, newSubject].sort());
+        setFocusedSubject(newSubject);
+        toast({ title: 'Subject Added', description: `"${newSubject}" has been added to all students in ${selectedClass}.` });
+        onDataRefresh(); // Refresh data
+    } catch (error) {
+        console.error(error);
+        toast({ title: 'Error', description: 'Could not add the new subject.', variant: 'destructive' });
+    }
+    
+    setIsCustomSubjectDialogOpen(false);
+    setCustomSubjectInputValue('');
+  };
+
 
   return (
     <>
@@ -425,22 +459,36 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                 {availableClasses.length > 0 ? (
                                   availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
                                 ) : (
-                                  <SelectItem value="no-classes" disabled>No classes found</SelectItem>
+                                  <SelectItem value="" disabled>No classes found</SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="md:col-span-1">
                         <Label htmlFor="subject-select" className="text-xs text-muted-foreground">Select Subject for Entry</Label>
-                        <Select value={focusedSubject} onValueChange={setFocusedSubject} disabled={!selectedClass || subjectsForClass.length === 0}>
+                        <Select
+                          value={focusedSubject}
+                          onValueChange={(value) => {
+                            if (value === ADD_CUSTOM_SUBJECT_VALUE) {
+                              setIsCustomSubjectDialogOpen(true);
+                            } else {
+                              setFocusedSubject(value);
+                            }
+                          }}
+                          disabled={!selectedClass}
+                        >
                             <SelectTrigger id="subject-select" className="w-full">
                                 <SelectValue placeholder="Select a subject..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {subjectsForClass.length > 0 ? (
-                                  subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
-                                ) : (
-                                    <SelectItem value="no-subjects" disabled>No subjects for this class</SelectItem>
+                                {subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                <SelectItem value={ADD_CUSTOM_SUBJECT_VALUE}>
+                                    <div className="flex items-center gap-2 text-accent">
+                                        <PlusCircle className="h-4 w-4" /> Add New Subject...
+                                    </div>
+                                </SelectItem>
+                                {subjectsForClass.length === 0 && (
+                                    <SelectItem value="" disabled>No subjects yet</SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
@@ -641,6 +689,29 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             className={selectedClass}
         />
       )}
+       <Dialog open={isCustomSubjectDialogOpen} onOpenChange={setIsCustomSubjectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Subject</DialogTitle>
+            <DialogDescription>
+              This will add the new subject to all students in the class '{selectedClass}'.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="new-subject-name">Subject Name</Label>
+            <Input 
+              id="new-subject-name"
+              value={customSubjectInputValue} 
+              onChange={e => setCustomSubjectInputValue(e.target.value)} 
+              placeholder="e.g., General Science"
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button onClick={handleAddCustomSubject}>Add Subject</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -833,5 +904,3 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
         </Dialog>
     );
 }
-
-    
