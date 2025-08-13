@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -35,11 +35,13 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { batchUpdateStudentScoresAction, deleteReportAction } from '@/app/actions';
+import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction } from '@/app/actions';
 import * as XLSX from 'xlsx';
 import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogContent } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
+import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
+
 
 interface QuickEntryProps {
   allReports: ReportData[];
@@ -74,6 +76,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   const [isExportGradesheetDialogOpen, setIsExportGradesheetDialogOpen] = useState(false);
   const [isImportGradesheetDialogOpen, setIsImportGradesheetDialogOpen] = useState(false);
   const [isTableVisible, setIsTableVisible] = useState(false);
+  const [isGeneratingBulkInsights, setIsGeneratingBulkInsights] = useState(false);
 
 
   const availableClasses = useMemo(() => {
@@ -297,6 +300,83 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       }
       setIsImportGradesheetDialogOpen(false);
   };
+  
+    const handleGenerateBulkInsights = async () => {
+    if (studentsInClass.length === 0) {
+      toast({
+        title: "No Students",
+        description: "There are no students in the selected class to generate insights for.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingBulkInsights(true);
+    toast({
+      title: "Generating Bulk Insights...",
+      description: `Please wait while AI generates insights for ${studentsInClass.length} students. This may take a moment.`,
+    });
+
+    try {
+      const insightPromises = studentsInClass.map(student => {
+        const aiInput: GenerateReportInsightsInput = {
+          studentName: student.studentName || 'Unnamed Student',
+          className: student.className,
+          currentAcademicTerm: student.academicTerm || '',
+          daysAttended: student.daysAttended,
+          totalSchoolDays: student.totalSchoolDays,
+          subjects: student.subjects,
+        };
+        return getAiReportInsightsAction(aiInput).then(result => ({
+          studentId: student.id,
+          result,
+        }));
+      });
+
+      const results = await Promise.all(insightPromises);
+
+      const successfulInsights = results.filter(r => r.result.success);
+      const failedInsights = results.filter(r => !r.result.success);
+
+      if (successfulInsights.length > 0) {
+        const batch = writeBatch(db);
+        successfulInsights.forEach(({ studentId, result }) => {
+          const reportRef = doc(db, 'reports', studentId);
+          batch.update(reportRef, {
+            performanceSummary: result.insights?.performanceSummary || '',
+            strengths: result.insights?.strengths || '',
+            areasForImprovement: result.insights?.areasForImprovement || '',
+            updatedAt: serverTimestamp(),
+          });
+        });
+        await batch.commit();
+
+        toast({
+          title: "Bulk Insights Complete",
+          description: `${successfulInsights.length} student reports have been updated with AI-generated insights.`,
+        });
+      }
+
+      if (failedInsights.length > 0) {
+        toast({
+          title: "Some Insights Failed",
+          description: `Could not generate insights for ${failedInsights.length} students. Please check your connection and API key.`,
+          variant: "destructive",
+        });
+        console.error("Failed insights:", failedInsights);
+      }
+      onDataRefresh(); // Refresh data from parent
+    } catch (error) {
+      console.error("Error generating bulk insights:", error);
+      toast({
+        title: "An Error Occurred",
+        description: "A network or server error occurred during the bulk generation process.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingBulkInsights(false);
+    }
+  };
 
 
   return (
@@ -447,10 +527,9 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                   Add
               </Button>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto self-end">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto self-end justify-end">
               <Button 
                 variant="outline" 
-                className="flex-1 sm:flex-initial"
                 onClick={() => setIsImportGradesheetDialogOpen(true)}
                 disabled={studentsInClass.length === 0}
               >
@@ -459,12 +538,24 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
               </Button>
               <Button 
                 variant="outline" 
-                className="flex-1 sm:flex-initial"
                 onClick={() => setIsExportGradesheetDialogOpen(true)}
                 disabled={studentsInClass.length === 0}
               >
                   <Download className="mr-2 h-4 w-4" />
                   Export
+              </Button>
+               <Button
+                variant="outline"
+                onClick={handleGenerateBulkInsights}
+                disabled={isGeneratingBulkInsights || studentsInClass.length === 0}
+                title="Generate AI insights for all students in the current class"
+              >
+                {isGeneratingBulkInsights ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Wand2 className="mr-2 h-4 w-4" />
+                )}
+                Generate Bulk AI Insights
               </Button>
             </div>
         </CardFooter>
