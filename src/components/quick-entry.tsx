@@ -35,7 +35,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { deleteReportAction, batchUpdateStudentScoresAction } from '@/app/actions';
+import { batchUpdateStudentScoresAction, deleteReportAction } from '@/app/actions';
 import * as XLSX from 'xlsx';
 import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogContent } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
@@ -429,8 +429,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             </div>
           )}
         </CardContent>
-        <CardFooter className="border-t pt-6 flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex items-end gap-4 w-full sm:w-auto flex-grow">
+        <CardFooter className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 flex-grow w-full sm:w-auto">
               <div className="flex-grow">
                 <Label htmlFor="new-student-name" className="text-xs text-muted-foreground">Add New Student to "{selectedClass || '...'}"</Label>
                 <Input
@@ -442,29 +442,29 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                   disabled={!selectedClass || isAddingStudent}
                 />
               </div>
-              <Button onClick={handleAddNewStudent} disabled={!selectedClass || !newStudentName.trim() || isAddingStudent}>
+              <Button onClick={handleAddNewStudent} disabled={!selectedClass || !newStudentName.trim() || isAddingStudent} className="self-end">
                   {isAddingStudent ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                  Add Student
+                  Add
               </Button>
             </div>
-            <div className="w-full sm:w-auto flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto self-end">
               <Button 
                 variant="outline" 
-                className="w-full"
+                className="flex-1 sm:flex-initial"
                 onClick={() => setIsImportGradesheetDialogOpen(true)}
                 disabled={studentsInClass.length === 0}
               >
                   <FileUp className="mr-2 h-4 w-4" />
-                  Import Gradesheet
+                  Import
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full"
+                className="flex-1 sm:flex-initial"
                 onClick={() => setIsExportGradesheetDialogOpen(true)}
                 disabled={studentsInClass.length === 0}
               >
                   <Download className="mr-2 h-4 w-4" />
-                  Export Blank Gradesheet
+                  Export
               </Button>
             </div>
         </CardFooter>
@@ -501,7 +501,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         <ImportGradesheetDialog
             isOpen={isImportGradesheetDialogOpen}
             onOpenChange={setIsImportGradesheetDialogOpen}
-            studentsInClass={studentsInClass}
             onImport={handleImportedData}
             className={selectedClass}
         />
@@ -541,7 +540,6 @@ function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, clas
             worksheet['!protect'] = {
                 sheet: false, // unprotected
             };
-            worksheet['!ref'] = `A1:Z${students.length + 1}`;
         }
         
         const workbook = XLSX.utils.book_new();
@@ -597,7 +595,7 @@ function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, clas
     );
 }
 
-function ImportGradesheetDialog({ isOpen, onOpenChange, studentsInClass, onImport, className }: { isOpen: boolean, onOpenChange: (open: boolean) => void, studentsInClass: ReportData[], onImport: (data: any[]) => void, className: string }) {
+function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onImport: (data: any[]) => void, className: string }) {
     const [file, setFile] = useState<File | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
