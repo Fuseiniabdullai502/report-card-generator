@@ -362,7 +362,7 @@ const CreateInviteActionInputSchema = z.object({
 
 export async function createInviteAction(
   data: z.infer<typeof CreateInviteActionInputSchema>,
-  currentUser: CustomUser
+  currentUser: PlainUser
 ): Promise<{ success: boolean; message: string }> {
   try {
     // Guard clause for extra safety
@@ -484,7 +484,7 @@ const UpdateInviteActionSchema = z.object({
 
 export async function updateInviteAction(
   data: z.infer<typeof UpdateInviteActionSchema>,
-  currentUser: CustomUser
+  currentUser: PlainUser
 ): Promise<{ success: boolean; message: string }> {
   try {
     if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
@@ -563,7 +563,7 @@ const DeleteUserActionInputSchema = z.object({
 
 export async function deleteUserAction(
   data: { userId: string },
-  currentUser: CustomUser
+  currentUser: PlainUser
 ): Promise<{ success: boolean; message: string }> {
   if (currentUser.role !== 'super-admin') {
       throw new Error("You do not have permission to perform this action.");
@@ -619,6 +619,16 @@ export async function updateUserStatusAction(
   }
 }
 
+// A serializable, plain object for the user
+export interface PlainUser {
+  uid: string;
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  district?: string | null;
+  schoolName?: string | null;
+  region?: string | null;
+  circuit?: string | null;
+}
+
 
 // Action for updating a user's role and scope
 const UpdateUserRoleAndScopeActionSchema = z.object({
@@ -633,7 +643,7 @@ const UpdateUserRoleAndScopeActionSchema = z.object({
 
 export async function updateUserRoleAndScopeAction(
   data: z.infer<typeof UpdateUserRoleAndScopeActionSchema>,
-  currentUser: CustomUser
+  currentUser: PlainUser
 ): Promise<{ success: boolean; message: string }> {
   try {
     if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
@@ -743,7 +753,7 @@ interface InviteForAdmin {
 }
 
 
-export async function getUsersAction(currentUser: CustomUser): Promise<{ success: boolean; users?: UserForAdmin[]; error?: string }> {
+export async function getUsersAction(currentUser: PlainUser): Promise<{ success: boolean; users?: UserForAdmin[]; error?: string }> {
   try {
     if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
       throw new Error("You do not have permission to view this data.");
@@ -800,7 +810,7 @@ export async function getUsersAction(currentUser: CustomUser): Promise<{ success
 }
 
 
-export async function getInvitesAction(currentUser: CustomUser): Promise<{ success: boolean; invites?: InviteForAdmin[]; error?: string }> {
+export async function getInvitesAction(currentUser: PlainUser): Promise<{ success: boolean; invites?: InviteForAdmin[]; error?: string }> {
    if (!currentUser.role || !['super-admin', 'big-admin', 'admin'].includes(currentUser.role)) {
       throw new Error("You do not have permission to view this data.");
     }
@@ -836,7 +846,7 @@ export async function getInvitesAction(currentUser: CustomUser): Promise<{ succe
 }
 
 
-export async function getReportsForAdminAction(user: CustomUser): Promise<{ success: boolean; reports?: ReportData[], error?: string }> {
+export async function getReportsForAdminAction(user: PlainUser): Promise<{ success: boolean; reports?: ReportData[], error?: string }> {
   try {
     if (!user || !user.role || !['super-admin', 'big-admin'].includes(user.role)) {
       throw new Error("You do not have permission to view this data.");
@@ -1223,6 +1233,7 @@ export async function batchUpdateStudentScoresAction(
       
 
     
+
 
 
 

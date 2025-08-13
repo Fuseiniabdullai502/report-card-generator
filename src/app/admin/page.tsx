@@ -2,16 +2,51 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { useAuth, type CustomUser, type PlainUser } from '@/components/auth-provider';
+import { useAuth, type CustomUser } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { Loader2, Shield, ArrowLeft } from 'lucide-react';
-import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction, getSystemWideStatsAction, getReportsForAdminAction, type PopulationStats } from '@/app/actions';
+import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction, getSystemWideStatsAction, getReportsForAdminAction, type PlainUser } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import type { ReportData } from '@/lib/schemas';
-import type { UserData, InviteData } from '@/types';
+import { ReportData } from '@/lib/schemas';
+
+// Define types locally for state
+interface UserData {
+  id: string;
+  email: string;
+  name?: string | null;
+  telephone?: string | null;
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  status: 'active' | 'inactive';
+  region?: string | null;
+  district?: string | null;
+  circuit?: string | null;
+  schoolName?: string | null;
+  classNames?: string[] | null;
+  createdAt: Date | null;
+}
+
+interface InviteData {
+  id: string;
+  email: string;
+  status: 'pending' | 'completed';
+  role?: 'big-admin' | 'admin' | 'user';
+  region?: string | null;
+  district?: string | null;
+  circuit?: string | null;
+  schoolName?: string | null;
+  classNames?: string[] | null;
+  createdAt: Date | null;
+}
+
+interface PopulationStats {
+  schoolCount: number;
+  maleCount: number;
+  femaleCount: number;
+  totalStudents: number;
+}
 
 interface SchoolStats {
   classCount: number;
@@ -52,8 +87,6 @@ export default function AdminPage() {
       schoolName: currentUser.schoolName,
       region: currentUser.region,
       circuit: currentUser.circuit,
-      schoolLevels: currentUser.schoolLevels,
-      schoolCategory: currentUser.schoolCategory,
     };
     
     try {
@@ -72,17 +105,13 @@ export default function AdminPage() {
       ]);
 
       if (usersResult.success && usersResult.users) {
-        setUsers(usersResult.users);
+        setUsers(usersResult.users.map(u => ({...u, name: u.name, telephone: u.telephone, classNames: u.classNames, createdAt: u.createdAt ? new Date(u.createdAt) : null } as UserData)));
       } else {
         toast({ title: 'Error Fetching Users', description: usersResult.error, variant: 'destructive' });
       }
 
       if (invitesResult.success && invitesResult.invites) {
-<<<<<<< HEAD
-        setInvites(invitesResult.invites);
-=======
         setInvites(invitesResult.invites.map(i => ({...i, role: i.role || undefined, region: i.region, district: i.district, circuit: i.circuit, schoolName: i.schoolName, classNames: i.classNames, createdAt: i.createdAt ? new Date(i.createdAt) : null } as InviteData)));
->>>>>>> 6e01f493 (Add a fallback for dynamic imports: import dynamic from 'next/dynamic';)
       } else {
         toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
       }

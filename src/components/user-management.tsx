@@ -49,6 +49,7 @@ import {
     createInviteAction,
     updateInviteAction,
     getDistrictClassRankingAction,
+    type PlainUser,
 } from '@/app/actions';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import type { CustomUser } from './auth-provider';
@@ -281,7 +282,14 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
     setIsDeletingUser(true);
-    const result = await deleteUserAction({ userId: userToDelete.id }, user);
+    
+    // Create plain user object for server action
+    const plainUser: PlainUser = {
+      uid: user.uid,
+      role: user.role,
+    };
+    
+    const result = await deleteUserAction({ userId: userToDelete.id }, plainUser);
     if (result.success) {
       toast({ title: 'User Deleted', description: `The user ${userToDelete.email} has been permanently removed.` });
       onDataRefresh();
@@ -660,10 +668,20 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
     };
 
     const onSubmit = async (data: InviteFormValues) => {
+        // Create plain user object for server action
+        const plainUser: PlainUser = {
+            uid: currentUser.uid,
+            role: currentUser.role,
+            region: currentUser.region,
+            district: currentUser.district,
+            schoolName: currentUser.schoolName,
+            circuit: currentUser.circuit,
+        };
+
         const result = await createInviteAction({
             ...data,
             role: data.role || undefined, // Ensure null/empty string becomes undefined
-        }, currentUser);
+        }, plainUser);
 
         if(result.success) {
             toast({ title: "Invite Created", description: result.message });
@@ -767,6 +785,16 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
 
     const handleSave = async () => {
         setIsSaving(true);
+        // Create plain user object for server action
+        const plainUser: PlainUser = {
+            uid: currentUser.uid,
+            role: currentUser.role,
+            region: currentUser.region,
+            district: currentUser.district,
+            schoolName: currentUser.schoolName,
+            circuit: currentUser.circuit,
+        };
+
         const result = await updateUserRoleAndScopeAction({
             userId: user.id,
             role: role as 'big-admin' | 'admin' | 'user',
@@ -775,7 +803,7 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
             circuit,
             schoolName,
             classNames,
-        }, currentUser);
+        }, plainUser);
 
         if(result.success) {
             toast({ title: "User Updated", description: result.message });
@@ -883,6 +911,16 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
             return;
         }
         setIsSaving(true);
+        // Create plain user object for server action
+        const plainUser: PlainUser = {
+            uid: currentUser.uid,
+            role: currentUser.role,
+            region: currentUser.region,
+            district: currentUser.district,
+            schoolName: currentUser.schoolName,
+            circuit: currentUser.circuit,
+        };
+
         const result = await updateInviteAction({
             inviteId: invite.id,
             role: role as 'big-admin' | 'admin' | 'user',
@@ -891,7 +929,7 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
             circuit,
             schoolName,
             classNames,
-        }, currentUser);
+        }, plainUser);
 
         if(result.success) {
             toast({ title: "Invite Updated", description: result.message });
