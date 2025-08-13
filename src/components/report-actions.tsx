@@ -72,16 +72,26 @@ export default function ReportActions({
     <div className="p-3 mb-2 border border-dashed border-primary/50 rounded-md bg-primary/5 shadow-sm no-print">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         {/* Left Side: Search and Navigation */}
-        <div className="flex-1 w-full sm:w-auto">
-          <div className="relative">
+        <div className="flex items-center gap-2 flex-1 w-full sm:w-auto">
+           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by student name..."
+              placeholder="Search by name..."
               value={searchQuery}
               onChange={(e) => onSearchQueryChange(e.target.value)}
               className="pl-10 h-9"
             />
           </div>
+          {hasMultipleReports && (
+            <div className="flex items-center gap-1">
+              <Button onClick={onPrevious} disabled={isPreviousDisabled} variant="outline" size="icon" aria-label="Previous Report" className="h-9 w-9">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button onClick={onNext} disabled={isNextDisabled} variant="outline" size="icon" aria-label="Next Report" className="h-9 w-9">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
         
         {/* Center: Main Report Info and Actions */}
@@ -97,7 +107,7 @@ export default function ReportActions({
                 onClick={() => onEditReport(report)}
                 title="Load this report into the form for editing"
               >
-                <Edit className="mr-2 h-4 w-4" /> Edit
+                <Edit className="mr-2 h-4 w-4 text-blue-500" /> Edit
               </Button>
               <Button
                 variant="outline"
@@ -106,7 +116,7 @@ export default function ReportActions({
                 disabled={!report.parentEmail}
                 title={!report.parentEmail ? "Parent email not available" : "Email report summary to parent"}
               >
-                <Mail className="mr-2 h-4 w-4" /> Email
+                <Mail className="mr-2 h-4 w-4 text-gray-500" /> Email
               </Button>
               <Button
                 variant="outline"
@@ -115,7 +125,7 @@ export default function ReportActions({
                 disabled={!report.parentPhoneNumber}
                 title={!report.parentPhoneNumber ? "Parent phone number not available" : "Send report summary via WhatsApp"}
               >
-                <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp
+                <MessageSquare className="mr-2 h-4 w-4 text-green-500" /> WhatsApp
               </Button>
               <Button
                 variant="destructive"
@@ -128,19 +138,8 @@ export default function ReportActions({
             </div>
         </div>
 
-        {/* Right Side: Navigation */}
-        <div className="flex-1 flex justify-end w-full sm:w-auto">
-          {hasMultipleReports && (
-            <div className="flex items-center gap-2">
-              <Button onClick={onPrevious} disabled={isPreviousDisabled} variant="outline" size="icon" aria-label="Previous Report" className="h-9 w-9">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button onClick={onNext} disabled={isNextDisabled} variant="outline" size="icon" aria-label="Next Report" className="h-9 w-9">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </div>
+        {/* Right Side: Empty div for spacing */}
+        <div className="flex-1 hidden sm:block"></div>
       </div>
     </div>
   );

@@ -104,7 +104,7 @@ function AppContent({ user }: { user: CustomUser }) {
   
   const [isSessionControlsVisible, setIsSessionControlsVisible] = useState(false);
   const [isReportFormVisible, setIsReportFormVisible] = useState(false);
-  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(true);
   
   const [customClassNames, setCustomClassNames] = useState<string[]>([]);
   const [isCustomClassNameDialogOpen, setIsCustomClassNameDialogOpen] = useState(false);
@@ -931,7 +931,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 {isAdminRole && (
                     <Link href="/admin" passHref>
                         <Button variant="outline" size="sm">
-                            <Shield className="mr-2 h-4 w-4" />
+                            <Shield className="mr-2 h-4 w-4 text-primary" />
                             Admin Panel
                         </Button>
                     </Link>
@@ -946,7 +946,7 @@ function AppContent({ user }: { user: CustomUser }) {
             
             <div className="absolute top-0 right-0 flex items-center gap-2">
               <ThemeToggleButton />
-              <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4"/>Logout</Button>
+              <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4 text-destructive"/>Logout</Button>
             </div>
           </header>
           
@@ -960,8 +960,20 @@ function AppContent({ user }: { user: CustomUser }) {
             </Alert>
           )}
 
+          <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 no-print">
+              <Button variant="outline" size="icon" className="rounded-full shadow-lg h-14 w-14 bg-background/80 backdrop-blur-sm" onClick={() => setIsSessionControlsVisible(prev => !prev)} title="Toggle Session Controls">
+                  <Settings className={cn("h-7 w-7 transition-colors", isSessionControlsVisible ? "text-primary" : "text-muted-foreground")} />
+              </Button>
+               <Button variant="outline" size="icon" className="rounded-full shadow-lg h-14 w-14 bg-background/80 backdrop-blur-sm" onClick={() => setIsReportFormVisible(prev => !prev)} title="Toggle Report Form">
+                  <Edit className={cn("h-7 w-7 transition-colors", isReportFormVisible ? "text-accent" : "text-muted-foreground")} />
+              </Button>
+              <Button variant="outline" size="icon" className="rounded-full shadow-lg h-14 w-14 bg-background/80 backdrop-blur-sm" onClick={() => setIsPreviewVisible(prev => !prev)} title="Toggle Report Preview">
+                  <FileText className={cn("h-7 w-7 transition-colors", isPreviewVisible ? "text-blue-500" : "text-muted-foreground")} />
+              </Button>
+          </div>
+
           {isSessionControlsVisible && (
-            <Card className="mb-8 p-4 no-print">
+            <Card className="mb-8 p-4 no-print transition-all duration-300 animate-in fade-in-50">
               <CardHeader className="p-2 flex flex-row items-center justify-between">
                   <div>
                     <CardTitle className="text-lg flex items-center"><Settings className="mr-2 h-5 w-5 text-primary"/>Session Controls</CardTitle>
@@ -1037,7 +1049,7 @@ function AppContent({ user }: { user: CustomUser }) {
                           <Select value={sessionDefaults.className || ''} onValueChange={value => handleSessionDefaultChange('className', value === ADD_CUSTOM_CLASS_VALUE ? '' : value)} disabled={isRegularUser}>
                               <SelectTrigger id="sessionClassName"><SelectValue placeholder="Select or add class" /></SelectTrigger>
                               <SelectContent>
-                                  <SelectItem value={ADD_CUSTOM_CLASS_VALUE} onSelect={() => setIsCustomClassNameDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add New Class...</SelectItem>
+                                  <SelectItem value={ADD_CUSTOM_CLASS_VALUE} onSelect={() => setIsCustomClassNameDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4 text-accent" />Add New Class...</SelectItem>
                                   <SelectSeparator />
                                   {isRegularUser && user.classNames?.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
                                   {!isRegularUser && classLevels.map(level => <SelectItem key={level} value={level}>{level}</SelectItem>)}
@@ -1075,7 +1087,7 @@ function AppContent({ user }: { user: CustomUser }) {
                           <input type="file" id="sessionSchoolLogoUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'schoolLogoDataUri')} />
                           <Button asChild type="button" variant="outline" size="sm">
                               <span onClick={() => document.getElementById('sessionSchoolLogoUpload')?.click()} className="flex items-center gap-2 cursor-pointer">
-                                  <UploadCloud className="h-4 w-4" />Logo
+                                  <UploadCloud className="h-4 w-4 text-blue-500" />Logo
                               </span>
                           </Button>
                           {mounted && sessionDefaults.schoolLogoDataUri && (sessionDefaults.schoolLogoDataUri.startsWith('data:image') || sessionDefaults.schoolLogoDataUri.startsWith('http')) && (
@@ -1086,7 +1098,7 @@ function AppContent({ user }: { user: CustomUser }) {
                           <input type="file" id="sessionHeadMasterSignatureUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'headMasterSignatureDataUri')} />
                            <Button asChild type="button" variant="outline" size="sm">
                               <span onClick={() => document.getElementById('sessionHeadMasterSignatureUpload')?.click()} className="flex items-center gap-2 cursor-pointer">
-                                  <PenSquare className="h-4 w-4" />Signature
+                                  <PenSquare className="h-4 w-4 text-green-600" />Signature
                               </span>
                           </Button>
                           {mounted && sessionDefaults.headMasterSignatureDataUri && (sessionDefaults.headMasterSignatureDataUri.startsWith('data:image') || sessionDefaults.headMasterSignatureDataUri.startsWith('http')) && (
@@ -1100,14 +1112,14 @@ function AppContent({ user }: { user: CustomUser }) {
           
           <main className={cn("flex-grow grid grid-cols-1 gap-8", (isReportFormVisible || isPreviewVisible) && "lg:grid-cols-5")}>
              {isReportFormVisible && (
-                <div className={cn("space-y-4 no-print transition-all duration-300", 
+                <div className={cn("space-y-4 no-print transition-all duration-300 animate-in fade-in-50", 
                     isPreviewVisible ? "lg:col-span-2" : "lg:col-span-5"
                 )}>
                   <Tabs defaultValue="detailed-entry" className="w-full">
                     <div className='flex justify-between items-center mb-2'>
                         <TabsList className="grid w-full grid-cols-2 max-w-sm">
-                          <TabsTrigger value="detailed-entry"><Edit className="mr-2 h-4 w-4" />Detailed Entry</TabsTrigger>
-                          <TabsTrigger value="quick-entry"><ListTodo className="mr-2 h-4 w-4" />Quick Entry</TabsTrigger>
+                          <TabsTrigger value="detailed-entry"><Edit className="mr-2 h-4 w-4 text-accent" />Detailed Entry</TabsTrigger>
+                          <TabsTrigger value="quick-entry"><ListTodo className="mr-2 h-4 w-4 text-primary" />Quick Entry</TabsTrigger>
                         </TabsList>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsReportFormVisible(false)}>
                             <EyeOff />
@@ -1133,38 +1145,16 @@ function AppContent({ user }: { user: CustomUser }) {
                   </Tabs>
                 </div>
             )}
-            
-            {(!isSessionControlsVisible && !isReportFormVisible && !isPreviewVisible) && (
-              <Card className="col-span-full flex items-center justify-center h-64 border-2 border-dashed">
-                <div className="text-center text-muted-foreground space-y-4">
-                    <p className="font-semibold text-lg">Select an action to begin</p>
-                    <div className="flex gap-4">
-                        <Button variant="outline" size="lg" onClick={() => setIsSessionControlsVisible(true)}>
-                            <Settings className="mr-2 h-5 w-5" /> Session Controls
-                        </Button>
-                        <Button variant="outline" size="lg" onClick={() => setIsReportFormVisible(true)}>
-                            <Edit className="mr-2 h-5 w-5" /> Report Form
-                        </Button>
-                        <Button variant="outline" size="lg" onClick={() => setIsPreviewVisible(true)}>
-                            <FileText className="mr-2 h-5 w-5" /> Report Preview
-                        </Button>
-                    </div>
-                </div>
-              </Card>
-            )}
-
 
             {isPreviewVisible && (
-              <section className={cn("flex-col no-print transition-all duration-300", isReportFormVisible ? "lg:col-span-3 flex" : "lg:col-span-5 flex")}>
+              <section className={cn("flex-col no-print transition-all duration-300 animate-in fade-in-50", isReportFormVisible ? "lg:col-span-3 flex" : "lg:col-span-5 flex")}>
                 <Card className="shadow-lg flex-grow flex flex-col bg-card text-card-foreground">
                   <CardHeader>
                     <div className="flex flex-col gap-4">
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                          <div className="flex items-center gap-2">
                            <CardTitle className="font-headline text-lg md:text-xl flex items-center gap-2">
-                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsPreviewVisible(false)}>
-                                 <EyeOff />
-                             </Button>
+                             <FileText className="h-6 w-6 text-blue-500"/>
                              {reportsCount > 0 ? `Report ${currentPreviewIndex + 1} of ${reportsCount}` : `Report Print Preview`}
                            </CardTitle>
                          </div>
@@ -1205,7 +1195,7 @@ function AppContent({ user }: { user: CustomUser }) {
                               size="sm"
                               title={reportsCount > 0 ? "View AI-powered class performance dashboard" : "Add reports to list to view dashboard"}
                             >
-                            <BarChartHorizontalBig className="mr-2 h-4 w-4" />
+                            <BarChartHorizontalBig className="mr-2 h-4 w-4 text-blue-500" />
                             Class Dashboard
                           </Button>
                           {isAdminRole && (
@@ -1216,12 +1206,12 @@ function AppContent({ user }: { user: CustomUser }) {
                                   size="sm"
                                   title={reportsCount > 0 ? "View AI-powered school overview dashboard" : "Add reports to list to view dashboard"}
                               >
-                                <Building className="mr-2 h-4 w-4" />
+                                <Building className="mr-2 h-4 w-4 text-purple-500" />
                                 School Overview
                               </Button>
                           )}
                           <Button onClick={() => handleInitiatePrint(true)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Download all reports in the list as a single PDF" : "Add or filter reports to the list to enable download"}>
-                            <Download className="mr-2 h-4 w-4" />
+                            <Download className="mr-2 h-4 w-4 text-green-600" />
                             Download as PDF
                           </Button>
                           <Button onClick={() => handleInitiatePrint(false)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Print all reports in the list" : "Add or filter reports to the list to enable printing"}>
@@ -1237,7 +1227,7 @@ function AppContent({ user }: { user: CustomUser }) {
                               title="Import student data from previous term/class"
                               disabled={isLoadingReports}
                             >
-                            <Upload className="mr-2 h-4 w-4" />
+                            <Upload className="mr-2 h-4 w-4 text-indigo-500" />
                             Import Promoted Students
                           </Button>
                           <Button onClick={handleClearList} disabled={isLoadingReports && allRankedReports.length === 0} variant="destructive" size="sm">

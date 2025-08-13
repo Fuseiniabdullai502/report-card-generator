@@ -449,7 +449,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
           </div>
           <div className="flex justify-end">
             <Button variant="outline" size="sm" onClick={() => setIsTableVisible(!isTableVisible)} disabled={studentsInClass.length === 0}>
-                {isTableVisible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                {isTableVisible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4 text-primary" />}
                 {isTableVisible ? 'Hide' : 'Show'} Gradesheet ({filteredStudents.length})
             </Button>
           </div>
@@ -541,7 +541,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                 onClick={() => setIsImportGradesheetDialogOpen(true)}
                 disabled={studentsInClass.length === 0}
               >
-                  <FileUp className="mr-2 h-4 w-4" />
+                  <FileUp className="mr-2 h-4 w-4 text-blue-500" />
                   Import
               </Button>
               <Button 
@@ -550,7 +550,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                 onClick={() => setIsExportGradesheetDialogOpen(true)}
                 disabled={studentsInClass.length === 0}
               >
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="mr-2 h-4 w-4 text-green-600" />
                   Export
               </Button>
                <Button
@@ -563,7 +563,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                 {isGeneratingBulkInsights ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Wand2 className="mr-2 h-4 w-4" />
+                  <Wand2 className="mr-2 h-4 w-4 text-accent" />
                 )}
                 Bulk Insights
               </Button>

@@ -1,8 +1,10 @@
 
+
 'use client';
 
 import { type ReportData, type SubjectEntry, ReportDataSchema, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
 import React, { useState, useTransition, useEffect, useMemo, ChangeEvent, FormEvent } from 'react';
+import NextImage from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,23 +15,18 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction } from '@/app/actions';
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
-import { Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, PenSquare, Building, Smile, ChevronDown, Mail, History, ListPlus } from 'lucide-react';
+import { Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, History, ListPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { calculateOverallAverage } from '@/lib/calculations';
 import { storage } from '@/lib/firebase';
-import { ref, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
-import { getClassLevel, getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
-import { resizeImage, fileToBase64 } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-
 
 interface ReportFormProps {
   onFormUpdate: (data: ReportData) => void;
   initialData: ReportData;
-  sessionDefaults: Partial<ReportData>;
   isEditing?: boolean;
   reportPrintListForHistory?: ReportData[];
   onSaveReport: (data: ReportData) => Promise<void>;
@@ -64,13 +61,13 @@ const AiErrorDescription = ({ errorMessage }: { errorMessage: string }) => {
 };
 
 
-export default function ReportForm({ onFormUpdate, initialData, sessionDefaults, isEditing = false, reportPrintListForHistory, onSaveReport, onResetForm }: ReportFormProps) {
+export default function ReportForm({ onFormUpdate, initialData, isEditing = false, reportPrintListForHistory, onSaveReport, onResetForm }: ReportFormProps) {
   const formData = initialData; // This component is now fully controlled by the parent.
 
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
   const [isImageEditingAiLoading, startImageEditingAiTransition] = useTransition();
-  const [imageUploadProgress, setImageUploadProgress] = useState<'uploading' | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   const [customSubjects, setCustomSubjects] = useState<string[]>([]);
@@ -83,48 +80,6 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
   const [customHobbyInputValue, setCustomHobbyInputValue] = useState('');
 
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
-
-  // When form is reset (isEditing becomes false after being true) or session defaults change,
-  // automatically populate subjects based on class and program.
-  useEffect(() => {
-    // Only run this for new reports, not when editing an existing one
-    if (isEditing) return;
-
-    const className = sessionDefaults.className;
-    if (!className) return;
-
-    // Check if the className is an SHS level class
-    const isShsClass = getClassLevel(className) === 'SHS';
-    
-    // Only proceed if it is an SHS class and a program is selected
-    if (isShsClass && sessionDefaults.shsProgram) {
-      const suggestedSubjects = getSubjectsForClass(
-        className,
-        sessionDefaults.shsProgram as ShsProgram | undefined
-      );
-
-      if (suggestedSubjects.length > 0) {
-        const newSubjects: SubjectEntry[] = suggestedSubjects.map(name => ({
-          subjectName: name,
-          continuousAssessment: null,
-          examinationMark: null,
-        }));
-        // Update the form with the new subjects, preserving other form data
-        onFormUpdate({ ...formData, subjects: newSubjects });
-      }
-    } else if (!isShsClass) { // For non-SHS classes
-        const suggestedSubjects = getSubjectsForClass(className);
-        if (suggestedSubjects.length > 0) {
-          const newSubjects: SubjectEntry[] = suggestedSubjects.map(name => ({
-              subjectName: name,
-              continuousAssessment: null,
-              examinationMark: null,
-          }));
-          onFormUpdate({ ...formData, subjects: newSubjects });
-        }
-    }
-  }, [isEditing, sessionDefaults.className, sessionDefaults.shsProgram, onFormUpdate]);
-
 
   // Reset subject pager if the form is reset (detected by ID change)
   useEffect(() => {
@@ -141,7 +96,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
   , [formData.subjects]);
 
   const allAvailableSubjects = useMemo(() => {
-      return Array.from(new Set(predefinedSubjectsList.concat(customSubjects))).sort();
+      return [...new Set([...predefinedSubjectsList, ...customSubjects])].sort();
   }, [customSubjects]);
   
   const studentNameHistory = React.useMemo(() => {
@@ -158,7 +113,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
         console.error("Error reading student names from localStorage for history:", e);
       }
     }
-    return Array.from(new Set(namesFromList.concat(namesFromStorage)));
+    return [...new Set([...namesFromList, ...namesFromStorage])];
   }, [reportPrintListForHistory]);
 
   const isPromotionStatusApplicable = React.useMemo(() => {
@@ -189,27 +144,6 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
   };
 
   const handleSubjectChange = (index: number, field: keyof SubjectEntry, value: string | number | null) => {
-    const numericValue = value === '' || value === null ? null : Number(value);
-
-    // Instant validation
-    if (field === 'continuousAssessment' && numericValue !== null && numericValue > 60) {
-        toast({
-            title: "Invalid CA Mark",
-            description: "Continuous Assessment mark cannot exceed 60.",
-            variant: "destructive",
-        });
-        return; // Prevent update if invalid
-    }
-
-    if (field === 'examinationMark' && numericValue !== null && numericValue > 100) {
-        toast({
-            title: "Invalid Exam Mark",
-            description: "Examination mark cannot exceed 100.",
-            variant: "destructive",
-        });
-        return; // Prevent update if invalid
-    }
-
     if (field === 'subjectName') {
         const isDuplicate = formData.subjects.some((subject, i) => i !== index && subject.subjectName === value);
         if (isDuplicate) {
@@ -253,48 +187,85 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
       onFormUpdate({ ...formData, hobbies: newHobbies });
   };
 
+  const dataUriToBlob = (dataUri: string): { blob: Blob, mimeType: string } => {
+    const byteString = atob(dataUri.split(',')[1]);
+    const mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    return { blob: new Blob([ab], { type: mimeString }), mimeType: mimeString };
+  };
+
   const handleAiEditImage = async (photoUrl: string, editPrompt: string) => {
     if (!photoUrl) return;
 
+    let photoDataUri = photoUrl;
+    if (!photoUrl.startsWith('data:')) {
+      try {
+        const response = await fetch(photoUrl);
+        const blob = await response.blob();
+        photoDataUri = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (error) {
+        toast({ title: "AI Edit Failed", description: "Could not fetch the image to send to the AI.", variant: "destructive" });
+        return;
+      }
+    }
+
     startImageEditingAiTransition(async () => {
-      const result = await editImageWithAiAction({ photoDataUri: photoUrl, prompt: editPrompt });
-      if (result.success && result.editedPhotoDataUri) {
-          onFormUpdate({ ...formData, studentPhotoUrl: result.editedPhotoDataUri });
-          toast({ title: "AI Image Enhancement Successful", description: "The student photo has been updated." });
-      } else {
-          toast({ 
-            title: "AI Image Edit Failed", 
+       const result = await editImageWithAiAction({ photoDataUri, prompt: editPrompt });
+       if (result.success && result.editedPhotoDataUri) {
+          try {
+            const { blob } = dataUriToBlob(result.editedPhotoDataUri);
+            const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+            await uploadBytes(storageRef, blob);
+            const downloadURL = await getDownloadURL(storageRef);
+            onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
+            toast({ title: "AI Image Enhancement Successful", description: "The student photo has been updated and saved." });
+          } catch(storageError) {
+             toast({ title: "Storage Error", description: "AI editing was successful, but the new image could not be saved to storage.", variant: "destructive" });
+          }
+       } else {
+          toast({
+            title: "AI Image Edit Failed",
             description: <AiErrorDescription errorMessage={result.error || "An unknown error occurred."} />,
             variant: "destructive",
-            duration: 30000 
+            duration: 30000
           });
-      }
+       }
     });
   };
-  
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target as HTMLInputElement;
-    let file = input.files?.[0];
+
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    fieldName: keyof Pick<ReportData, 'studentPhotoDataUri'>
+  ) => {
+    const file = event.target.files?.[0];
     if (!file) return;
   
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid File', description: 'Please select an image.', variant: 'destructive' });
-      return;
-    }
-  
-    setImageUploadProgress('uploading');
-  
+    setIsUploading(true);
+    toast({ title: "Uploading Image...", description: "Please wait while the image is being saved." });
+    
     try {
-      const resizedFile = await resizeImage(file);
-      const base64 = await fileToBase64(resizedFile);
-      onFormUpdate({ ...formData, studentPhotoUrl: base64 });
-      toast({ title: "Image Ready", description: "Image has been converted and is ready to be saved." });
+      const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+  
+      onFormUpdate({ ...formData, [fieldName]: downloadURL });
+      toast({ title: "Image Uploaded Successfully", description: "The photo is now saved." });
+  
     } catch (error) {
-      console.error("Image processing error:", error);
-      toast({ title: 'Image Processing Failed', description: 'Could not process the image.', variant: 'destructive' });
+      console.error("Error uploading image to Firebase Storage:", error);
+      toast({ title: "Upload Failed", description: "Could not save the image to cloud storage.", variant: "destructive" });
     } finally {
-      setImageUploadProgress(null);
-      if (input) input.value = '';
+       setIsUploading(false);
+       if(event.target) event.target.value = '';
     }
   };
   
@@ -416,7 +387,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
           const newSubjectName = customSubjectInputValue.trim();
           handleSubjectChange(currentCustomSubjectTargetIndex, 'subjectName', newSubjectName);
           if (!predefinedSubjectsList.includes(newSubjectName) && !customSubjects.includes(newSubjectName)) {
-              setCustomSubjects(prev => Array.from(new Set(prev).add(newSubjectName)));
+              setCustomSubjects(prev => [...new Set([...prev, newSubjectName])]);
           }
           setIsCustomSubjectDialogOpen(false);
       }
@@ -427,12 +398,11 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
       if (newHobby === '') return;
       handleHobbyChange(newHobby, true);
       if (!predefinedHobbiesList.includes(newHobby) && !customHobbies.includes(newHobby)) {
-          setCustomHobbies(prev => Array.from(new Set(prev).add(newHobby)));
+          setCustomHobbies(prev => [...new Set([...prev, newHobby])]);
       }
       setIsCustomHobbyDialogOpen(false);
   };
   
-  const isUploading = imageUploadProgress === 'uploading';
 
   return (
     <>
@@ -460,19 +430,9 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                  {/* Student Name */}
                 <div className="space-y-2">
                   <Label htmlFor="studentName" className="flex items-center"><User className="mr-2 h-4 w-4 text-primary" />Student Name</Label>
-                  <Input 
-                    id="studentName" 
-                    name="studentName" 
-                    value={formData.studentName || ''} 
-                    onChange={handleInputChange} 
-                    placeholder="e.g., Fuseini Abdullai" 
-                    list="studentNameHistoryDatalist"
-                    className={cn(
-                      !isEditing && formData.studentName === 'Fuseini Abdullai' && 'text-muted-foreground'
-                    )}
-                  />
+                  <Input id="studentName" name="studentName" value={formData.studentName || ''} onChange={handleInputChange} placeholder="e.g., Jane Doe" list="studentNameHistoryDatalist" />
                    <datalist id="studentNameHistoryDatalist">
-                    {Array.from(studentNameHistory).map((name, index) => <option key={`history-${index}`} value={name} />)}
+                    {studentNameHistory.map((name, index) => <option key={`history-${index}`} value={name} />)}
                   </datalist>
                 </div>
                 {/* Gender */}
@@ -507,7 +467,8 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
                             <ScrollArea className="h-[200px]">
-                            {Array.from(new Set([...predefinedHobbiesList, ...customHobbies])).sort().map(hobby => <DropdownMenuCheckboxItem key={hobby} checked={formData.hobbies?.includes(hobby)} onCheckedChange={checked => handleHobbyChange(hobby, checked)}>{hobby}</DropdownMenuCheckboxItem>)}
+                            {predefinedHobbiesList.map(hobby => <DropdownMenuCheckboxItem key={hobby} checked={formData.hobbies?.includes(hobby)} onCheckedChange={checked => handleHobbyChange(hobby, checked)}>{hobby}</DropdownMenuCheckboxItem>)}
+                            {customHobbies.map(hobby => <DropdownMenuCheckboxItem key={hobby} checked={formData.hobbies?.includes(hobby)} onCheckedChange={checked => handleHobbyChange(hobby, checked)}>{hobby}</DropdownMenuCheckboxItem>)}
                             </ScrollArea>
                             <DropdownMenuSeparator/>
                             <DropdownMenuItem onSelect={() => setIsCustomHobbyDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4 text-accent"/>Add New Hobby...</DropdownMenuItem>
@@ -531,28 +492,26 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                  <div className="space-y-2">
                     <Label className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />Student Photo</Label>
                     <div className="flex items-center gap-2">
-                        {/* changed to sr-only so programmatic click works reliably in browsers */}
-                        <input type="file" id="studentPhotoUpload" className="sr-only" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
+                        <input type="file" id="studentPhotoUpload" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')} disabled={isUploading} />
                         <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()} disabled={isUploading}>
                             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4 text-blue-500" />}
-                             {isUploading ? 'Processing...' : 'Upload'}
+                             {isUploading ? 'Uploading...' : 'Upload'}
                         </Button>
                         <Button 
                           type="button" 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => handleAiEditImage(formData.studentPhotoUrl!, "Brighten this photo and enhance its clarity, keeping all original features.")}
-                          disabled={!formData.studentPhotoUrl || isImageEditingAiLoading || isUploading}
+                          onClick={() => handleAiEditImage(formData.studentPhotoDataUri!, "Crop this image to a passport photo with a 3:4 aspect ratio. Apply bright, even studio lighting and remove any distracting background.")}
+                          disabled={!formData.studentPhotoDataUri || isImageEditingAiLoading || isUploading}
                           title="Enhance with AI"
                         >
                           {isImageEditingAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4 text-accent" />}
                           Enhance
                         </Button>
                     </div>
-                    {isUploading && <p className="text-xs text-blue-500">Processing image...</p>}
-                    {formData.studentPhotoUrl && !isUploading && (
-                      <div className="relative w-24 h-32 mt-2 rounded border p-1">
-                        <img src={formData.studentPhotoUrl} alt="student" className="object-cover rounded w-full h-full" />
+                    {formData.studentPhotoDataUri && (
+                      <div className="relative w-20 h-[100px] mt-2">
+                        <NextImage src={formData.studentPhotoDataUri} alt="student" layout="fill" className="rounded border object-cover"/>
                         {(isImageEditingAiLoading || isUploading) && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
                             <Loader2 className="h-6 w-6 animate-spin text-white" />
@@ -580,17 +539,16 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                         <div className="grid grid-cols-1 md:grid-cols-[3fr_1.5fr_1.5fr] gap-4 items-start">
                             <div className="space-y-2">
                                 <Label className="flex items-center"><BookOpenText className="mr-2 h-4 w-4 text-primary"/>Subject Name</Label>
-                                <Select value={formData.subjects[currentVisibleSubjectIndex].subjectName || '_placeholder_'} onValueChange={value => {
+                                <Select value={formData.subjects[currentVisibleSubjectIndex].subjectName || ''} onValueChange={value => {
                                     if(value === ADD_CUSTOM_SUBJECT_VALUE) {
                                         setCurrentCustomSubjectTargetIndex(currentVisibleSubjectIndex);
                                         setIsCustomSubjectDialogOpen(true);
                                     } else {
-                                        handleSubjectChange(currentVisibleSubjectIndex, 'subjectName', value === '_placeholder_' ? '' : value);
+                                        handleSubjectChange(currentVisibleSubjectIndex, 'subjectName', value);
                                     }
                                 }}>
                                     <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="_placeholder_" disabled>Select Subject</SelectItem>
                                         {allAvailableSubjects.map(s => (
                                           <SelectItem 
                                             key={s} 
@@ -606,12 +564,12 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary"/>CA Mark (Max: 60)</Label>
-                                <Input type="number" placeholder="-" value={formData.subjects[currentVisibleSubjectIndex].continuousAssessment ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'continuousAssessment', e.target.value)} />
+                                <Label className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary"/>CA Mark</Label>
+                                <Input type="number" placeholder="1-60" value={formData.subjects[currentVisibleSubjectIndex].continuousAssessment ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'continuousAssessment', e.target.value === '' ? null : Number(e.target.value))} />
                             </div>
                             <div className="space-y-2">
-                                <Label className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary"/>Exam Mark (Max: 100)</Label>
-                                <Input type="number" placeholder="-" value={formData.subjects[currentVisibleSubjectIndex].examinationMark ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'examinationMark', e.target.value)} />
+                                <Label className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary"/>Exam Mark</Label>
+                                <Input type="number" placeholder="1-100" value={formData.subjects[currentVisibleSubjectIndex].examinationMark ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'examinationMark', e.target.value === '' ? null : Number(e.target.value))} />
                             </div>
                         </div>
                     </div>
