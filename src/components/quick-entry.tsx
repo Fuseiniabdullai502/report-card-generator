@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -626,10 +627,10 @@ function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, clas
 
         const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
         
-        // Make worksheet editable and set focus on the first data cell
-        if (worksheet['B2']) { // Check if the first data cell exists
+        // Make worksheet editable
+        if (worksheet['B2']) {
             worksheet['!protect'] = {
-                sheet: false, // unprotected
+                sheet: false,
             };
         }
         
@@ -730,9 +731,13 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
                                     subject = { subjectName, continuousAssessment: null, examinationMark: null };
                                     subjects.push(subject);
                                 }
-                                const value = row[key] === '' ? null : Number(row[key]);
-                                if (matchCA) subject.continuousAssessment = value;
-                                if (matchExam) subject.examinationMark = value;
+                                const value = row[key] === '' || row[key] === undefined ? null : Number(row[key]);
+                                if (Number.isNaN(value)) {
+                                    // Handle non-numeric values gracefully if needed, here we just nullify
+                                } else {
+                                    if (matchCA) subject.continuousAssessment = value;
+                                    if (matchExam) subject.examinationMark = value;
+                                }
                             }
                         }
                     });
