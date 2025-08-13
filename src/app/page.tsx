@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, PenSquare, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo, SlidersHorizontal, Settings } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, PenSquare, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo, SlidersHorizontal, Settings, Search } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
@@ -31,6 +31,8 @@ import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } fro
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QuickEntry } from '@/components/quick-entry';
+import { deleteReportAction } from '@/app/actions';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 
 // Dynamically import heavy components
@@ -117,6 +119,9 @@ function AppContent({ user }: { user: CustomUser }) {
     academicYear: 'all',
     academicTerm: 'all',
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [reportToDelete, setReportToDelete] = useState<ReportData | null>(null);
+  const [isDeletingReport, setIsDeletingReport] = useState(false);
   
   const router = useRouter();
 
@@ -191,9 +196,16 @@ function AppContent({ user }: { user: CustomUser }) {
     };
   }, [allRankedReports, isRegularUser, user.classNames]);
 
-  // Apply filters based on user role
+  // Apply filters based on user role and search query
   const filteredReports = useMemo(() => {
     let reports = allRankedReports;
+
+    if (searchQuery) {
+        reports = reports.filter(report => 
+            report.studentName?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }
+    
     if (isAdminRole) {
       reports = reports.filter(report => 
         (adminFilters.schoolName === 'all' || report.schoolName === adminFilters.schoolName) &&
@@ -207,12 +219,12 @@ function AppContent({ user }: { user: CustomUser }) {
       }
     }
     return reports;
-  }, [allRankedReports, isAdminRole, adminFilters]);
+  }, [allRankedReports, isAdminRole, adminFilters, searchQuery]);
 
   // Reset preview index when filters change
   useEffect(() => {
     setCurrentPreviewIndex(0);
-  }, [adminFilters]);
+  }, [adminFilters, searchQuery]);
 
   const handleAdminFilterChange = (filterName: keyof typeof adminFilters, value: string) => {
     setAdminFilters(prev => ({ ...prev, [filterName]: value }));
@@ -620,6 +632,23 @@ function AppContent({ user }: { user: CustomUser }) {
     });
   }, [toast]);
 
+  const handleDeleteReport = async () => {
+    if (!reportToDelete) return;
+
+    setIsDeletingReport(true);
+    const result = await deleteReportAction({ reportId: reportToDelete.id });
+    if (result.success) {
+      toast({ title: 'Report Deleted', description: 'The student report has been permanently deleted.' });
+      // The onSnapshot listener will automatically update the local state.
+      // Resetting index in case the last item was deleted.
+      setCurrentPreviewIndex(prev => Math.max(0, prev - 1));
+    } else {
+      toast({ title: 'Deletion Failed', description: result.message, variant: 'destructive' });
+    }
+    setReportToDelete(null);
+    setIsDeletingReport(false);
+  };
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -885,11 +914,12 @@ function AppContent({ user }: { user: CustomUser }) {
     }, [user, adminFilters]);
 
     const noReportsFoundMessage = useMemo(() => {
+        if (searchQuery) return `No reports found for "${searchQuery}". Try a different name.`;
         if (reportsCount === 0 && allRankedReports.length > 0) {
             return 'No reports match the selected filters. Try broadening your criteria.';
         }
         return `The report card preview will appear here as you fill out the form.`;
-    }, [reportsCount, allRankedReports.length]);
+    }, [reportsCount, allRankedReports.length, searchQuery]);
 
   return (
     <>
@@ -1166,6 +1196,15 @@ function AppContent({ user }: { user: CustomUser }) {
                       </div>
 
                       <div className="flex flex-col gap-2 items-stretch">
+                        <div className="relative w-full">
+                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                           <Input 
+                               placeholder="Search reports by student name..."
+                               value={searchQuery}
+                               onChange={(e) => setSearchQuery(e.target.value)}
+                               className="pl-10"
+                           />
+                        </div>
                         <div className="flex flex-wrap gap-2 justify-start md:justify-end">
                           {isAdminRole && (
                               <Select value={adminFilters.schoolName} onValueChange={value => handleAdminFilterChange('schoolName', value)} disabled={user.role === 'admin'}>
@@ -1268,7 +1307,11 @@ function AppContent({ user }: { user: CustomUser }) {
                           <div key={reportData.id || `report-entry-${reportData.studentEntryNumber}`} className={`report-preview-item ${index === currentPreviewIndex ? 'active-preview-screen' : 'hidden-preview-screen'}`}>
                               {index === currentPreviewIndex && (
                                 <div className="report-actions-wrapper-screen no-print p-2 bg-card mb-1 rounded-t-lg">
-                                  <ReportActions report={reportData} onEditReport={handleLoadReportForEditing} />
+                                  <ReportActions 
+                                      report={reportData} 
+                                      onEditReport={handleLoadReportForEditing}
+                                      onDeleteReport={() => setReportToDelete(reportData)}
+                                  />
                                 </div>
                               )}
                               <div className="a4-page-simulation break-inside-avoid">
@@ -1324,6 +1367,24 @@ function AppContent({ user }: { user: CustomUser }) {
           <DialogFooter><Button onClick={handleAddCustomClassNameToListAndForm}>Add Class</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={!!reportToDelete} onOpenChange={(open) => !open && setReportToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the report for <strong>{reportToDelete?.studentName}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingReport}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteReport} disabled={isDeletingReport}>
+              {isDeletingReport && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {isClassDashboardOpen && (
           <ClassPerformanceDashboard
