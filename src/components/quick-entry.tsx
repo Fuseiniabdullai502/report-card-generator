@@ -78,7 +78,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   const [scoreType, setScoreType] = useState<ScoreType>('continuousAssessment');
   const [isExportGradesheetDialogOpen, setIsExportGradesheetDialogOpen] = useState(false);
   const [isImportGradesheetDialogOpen, setIsImportGradesheetDialogOpen] = useState(false);
-  const [isTableVisible, setIsTableVisible] = useState(false);
+  const [isTableVisible, setIsTableVisible] = useState(true);
   const [isGeneratingBulkInsights, setIsGeneratingBulkInsights] = useState(false);
 
 
@@ -87,7 +87,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   }, [allReports]);
 
   useEffect(() => {
-    if (availableClasses.length > 0 && !selectedClass) {
+    if (availableClasses.length > 0 && !availableClasses.includes(selectedClass)) {
       setSelectedClass(availableClasses[0]);
     } else if (availableClasses.length === 0) {
       setSelectedClass('');
@@ -152,45 +152,57 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     setSavingStatus(prev => ({ ...prev, [reportId]: 'saving' }));
     const numericValue = value === '' ? null : Number(value);
 
-    const updatedStudents = studentsInClass.map(student => {
-      if (student.id === reportId) {
-        let subjectFound = false;
-        const newSubjects = student.subjects.map(sub => {
-          if (sub.subjectName === subjectName) {
-            subjectFound = true;
-            return { ...sub, [markType]: numericValue };
-          }
-          return sub;
-        });
-
-        // If the subject doesn't exist for this student, add it.
-        if (!subjectFound) {
-            newSubjects.push({
-                subjectName: subjectName,
-                continuousAssessment: markType === 'continuousAssessment' ? numericValue : null,
-                examinationMark: markType === 'examinationMark' ? numericValue : null,
+    setStudentsInClass(prevStudents => {
+        const updatedStudents = prevStudents.map(student => {
+          if (student.id === reportId) {
+            let subjectFound = false;
+            const newSubjects = student.subjects.map(sub => {
+              if (sub.subjectName === subjectName) {
+                subjectFound = true;
+                return { ...sub, [markType]: numericValue };
+              }
+              return sub;
             });
-        }
-        return { ...student, subjects: newSubjects };
-      }
-      return student;
-    });
 
-    const studentToUpdate = updatedStudents.find(s => s.id === reportId);
-    if(studentToUpdate){
-        setStudentsInClass(updatedStudents);
-        debouncedSave(reportId, { subjects: studentToUpdate.subjects });
-    }
+            if (!subjectFound) {
+                newSubjects.push({
+                    subjectName: subjectName,
+                    continuousAssessment: markType === 'continuousAssessment' ? numericValue : null,
+                    examinationMark: markType === 'examinationMark' ? numericValue : null,
+                });
+            }
+            return { ...student, subjects: newSubjects };
+          }
+          return student;
+        });
+        
+        const studentToUpdate = updatedStudents.find(s => s.id === reportId);
+        if(studentToUpdate){
+            debouncedSave(reportId, { subjects: studentToUpdate.subjects });
+        }
+        
+        return updatedStudents;
+    });
   };
 
   const handleScoreKeyDown = (e: KeyboardEvent<HTMLInputElement>, currentIndex: number) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' || e.key === 'ArrowDown') {
         e.preventDefault();
         const nextIndex = currentIndex + 1;
         if (nextIndex < filteredStudents.length) {
             const nextStudent = filteredStudents[nextIndex];
             const nextInput = document.getElementById(`score-input-${nextStudent.id}`);
             nextInput?.focus();
+            (nextInput as HTMLInputElement)?.select();
+        }
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prevIndex = currentIndex - 1;
+        if (prevIndex >= 0) {
+            const prevStudent = filteredStudents[prevIndex];
+            const prevInput = document.getElementById(`score-input-${prevStudent.id}`);
+            prevInput?.focus();
+            (prevInput as HTMLInputElement)?.select();
         }
     }
   };
@@ -411,7 +423,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                 {availableClasses.length > 0 ? (
                                   availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
                                 ) : (
-                                  <SelectItem value="no-classes" disabled>No classes found</SelectItem>
+                                  <SelectItem value="" disabled>No classes found</SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
@@ -426,7 +438,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                 {subjectsForClass.length > 0 ? (
                                   subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
                                 ) : (
-                                  <SelectItem value="no-subjects" disabled>No subjects for this class</SelectItem>
+                                  <SelectItem value="" disabled>No subjects for this class</SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
@@ -821,3 +833,4 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
         </Dialog>
     );
 }
+
