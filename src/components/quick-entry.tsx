@@ -128,7 +128,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setSubjectsForClass([]);
       setFocusedSubject('');
     }
-  }, [selectedClass, allReports]);
+  }, [selectedClass, allReports, focusedSubject]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return studentsInClass;
@@ -459,7 +459,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                 {availableClasses.length > 0 ? (
                                   availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
                                 ) : (
-                                  <SelectItem value="" disabled>No classes found</SelectItem>
+                                  <SelectItem value="no-classes" disabled>No classes found</SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
@@ -481,15 +481,12 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                 <SelectValue placeholder="Select a subject..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                {subjectsForClass.length > 0 ? subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>) : <SelectItem value="no-subjects" disabled>No subjects for this class</SelectItem>}
                                 <SelectItem value={ADD_CUSTOM_SUBJECT_VALUE}>
                                     <div className="flex items-center gap-2 text-accent">
                                         <PlusCircle className="h-4 w-4" /> Add New Subject...
                                     </div>
                                 </SelectItem>
-                                {subjectsForClass.length === 0 && (
-                                    <SelectItem value="" disabled>No subjects yet</SelectItem>
-                                )}
                             </SelectContent>
                         </Select>
                     </div>
@@ -694,7 +691,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
           <DialogHeader>
             <DialogTitle>Add New Subject</DialogTitle>
             <DialogDescription>
-              This will add the new subject to all students in the class '{selectedClass}'.
+              This will add the new subject to all students in the class '{selectedClass || '...'}''.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
