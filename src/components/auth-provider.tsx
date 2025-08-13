@@ -105,16 +105,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.warn(`User document for ${userEmail} not found. A document should have been created on registration. Creating a fallback/initial document now.`);
               
               const isSuperAdmin = superAdminEmail && userEmail === superAdminEmail;
+<<<<<<< HEAD
               role = isSuperAdmin ? 'super-admin' : 'public_user'; // Default to public_user for new sign-ups
+=======
+              role = isSuperAdmin ? 'super-admin' : 'user';
+>>>>>>> 801e65b1 (I see this error with the app, reported by NextJS, please fix it. The er)
               status = 'active';
 
               await setDoc(userDocRef, {
                   email: firebaseUser.email,
+<<<<<<< HEAD
                   name: firebaseUser.displayName || (isSuperAdmin ? 'Super Admin' : 'New User'),
                   telephone: firebaseUser.phoneNumber || null,
                   role: role,
                   status: status,
                   country: null,
+=======
+                  name: isSuperAdmin ? (firebaseUser.displayName || 'Super Admin') : (firebaseUser.displayName || 'New User'),
+                  telephone: firebaseUser.phoneNumber || null,
+                  role: role,
+                  status: status,
+>>>>>>> 801e65b1 (I see this error with the app, reported by NextJS, please fix it. The er)
                   region: null,
                   district: null,
                   circuit: null,
