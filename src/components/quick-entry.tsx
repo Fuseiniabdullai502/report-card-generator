@@ -37,7 +37,7 @@ import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction } from '@/app/actions';
 import * as XLSX from 'xlsx';
-import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
@@ -128,7 +128,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setSubjectsForClass([]);
       setFocusedSubject('');
     }
-  }, [selectedClass, allReports, focusedSubject]);
+  }, [selectedClass, allReports]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return studentsInClass;
@@ -140,6 +140,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   const debouncedSave = useDebouncedCallback(async (reportId: string, updatedFields: Partial<ReportData>) => {
     if (reportId.startsWith('temp-')) return;
     
+    setSavingStatus(prev => ({ ...prev, [reportId]: 'saving' }));
     try {
       const reportRef = doc(db, 'reports', reportId);
       await setDoc(reportRef, updatedFields, { merge: true });
@@ -155,7 +156,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   }, 1000);
 
   const handleMarkChange = (reportId: string, subjectName: string, markType: ScoreType, value: string) => {
-    setSavingStatus(prev => ({ ...prev, [reportId]: 'saving' }));
     const numericValue = value === '' ? null : Number(value);
 
     setStudentsInClass(prevStudents => {
@@ -481,7 +481,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                 <SelectValue placeholder="Select a subject..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {subjectsForClass.length > 0 ? subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>) : <SelectItem value="no-subjects" disabled>No subjects for this class</SelectItem>}
+                                {subjectsForClass.length > 0 ? subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>) : <SelectItem value="" disabled>No subjects for this class</SelectItem>}
                                 <SelectItem value={ADD_CUSTOM_SUBJECT_VALUE}>
                                     <div className="flex items-center gap-2 text-accent">
                                         <PlusCircle className="h-4 w-4" /> Add New Subject...
@@ -691,7 +691,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
           <DialogHeader>
             <DialogTitle>Add New Subject</DialogTitle>
             <DialogDescription>
-              This will add the new subject to all students in the class '{selectedClass || '...'}''.
+              This will add the new subject to all students in the class '{selectedClass || '...'}'.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
