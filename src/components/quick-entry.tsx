@@ -90,7 +90,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   }, [allReports, user.role, user.classNames]);
 
   useEffect(() => {
-    if (availableClasses.length > 0 && !availableClasses.includes(selectedClass)) {
+    if (availableClasses.length > 0 && !selectedClass) {
       setSelectedClass(availableClasses[0]);
     } else if (availableClasses.length === 0) {
       setSelectedClass('');
@@ -114,9 +114,9 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setSubjectsForClass(sortedSubjects);
       
       // Reset focused subject if it's not in the new list of subjects
-      if (sortedSubjects.length > 0 && !sortedSubjects.includes(focusedSubject)) {
+      if (sortedSubjects.length > 0) {
         setFocusedSubject(sortedSubjects[0]);
-      } else if (sortedSubjects.length === 0) {
+      } else {
         setFocusedSubject('');
       }
 
@@ -125,7 +125,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setSubjectsForClass([]);
       setFocusedSubject('');
     }
-  }, [selectedClass, allReports, focusedSubject]);
+  }, [selectedClass, allReports]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return studentsInClass;
@@ -439,7 +439,9 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                             <SelectContent>
                                 {subjectsForClass.length > 0 ? (
                                   subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
-                                ) : null}
+                                ) : (
+                                    <SelectItem value="" disabled>No subjects for this class</SelectItem>
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
