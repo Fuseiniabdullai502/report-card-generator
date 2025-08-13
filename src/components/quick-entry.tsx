@@ -399,7 +399,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             <CardHeader>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <CardTitle>Quick Data Entry</CardTitle>
+                        <CardTitle className='text-2xl'>Quick Data Entry</CardTitle>
                         <CardDescription>
                             Rapidly enter data using different views. Changes are saved automatically.
                         </CardDescription>
@@ -833,4 +833,3 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
         </Dialog>
     );
 }
-
