@@ -26,7 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2 } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -38,10 +38,12 @@ import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction } from '@/app/actions';
 import * as XLSX from 'xlsx';
-import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogContent, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import GradesheetView from './gradesheet-view';
 
 
 interface QuickEntryProps {
@@ -85,7 +87,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   }, [allReports]);
 
   useEffect(() => {
-    if (availableClasses.length > 0 && !availableClasses.includes(selectedClass)) {
+    if (availableClasses.length > 0 && !selectedClass) {
       setSelectedClass(availableClasses[0]);
     } else if (availableClasses.length === 0) {
       setSelectedClass('');
@@ -202,6 +204,9 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
 
         setIsAddingStudent(true);
         const tempId = `temp-${Date.now()}`;
+        
+        const classTemplate = studentsInClass[0]; // Use an existing student as a template for shared fields
+        
         const newStudentData: ReportData = {
             id: tempId,
             studentName: newStudentName.trim(),
@@ -210,36 +215,31 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             studentPhotoDataUri: null,
             subjects: subjectsForClass.map(s => ({ subjectName: s, continuousAssessment: null, examinationMark: null })),
             teacherId: user.uid,
-            studentEntryNumber: (allReports[allReports.length-1]?.studentEntryNumber || 0) + 1,
-            academicYear: studentsInClass[0]?.academicYear || '',
-            academicTerm: studentsInClass[0]?.academicTerm || '',
-            schoolName: studentsInClass[0]?.schoolName || '',
-            region: studentsInClass[0]?.region || '',
-            district: studentsInClass[0]?.district || '',
-            circuit: studentsInClass[0]?.circuit || '',
+            studentEntryNumber: (allReports.reduce((max, r) => Math.max(r.studentEntryNumber || 0, max), 0) || 0) + 1,
+            academicYear: classTemplate?.academicYear || '',
+            academicTerm: classTemplate?.academicTerm || '',
+            schoolName: classTemplate?.schoolName || '',
+            region: classTemplate?.region || '',
+            district: classTemplate?.district || '',
+            circuit: classTemplate?.circuit || '',
             performanceSummary: '',
             strengths: '',
             areasForImprovement: '',
         };
         
-        setStudentsInClass(prev => [...prev, newStudentData].sort((a, b) => (a.studentName || '').localeCompare(b.studentName || '')));
-        setNewStudentName('');
-
         try {
             const { id, ...dataToSave } = newStudentData;
             const docRef = await addDoc(collection(db, 'reports'), {
                 ...dataToSave,
                 createdAt: serverTimestamp(),
             });
-
-            setStudentsInClass(prev => prev.map(s => s.id === tempId ? { ...s, id: docRef.id } : s));
-            onDataRefresh(); // Refresh parent data
             
             toast({ title: 'Student Added', description: `${newStudentData.studentName} has been added to the class.` });
+            setNewStudentName(''); // Clear input on success
+            onDataRefresh(); // Refresh parent data to get the new student with a real ID
         } catch (error) {
             console.error(error);
             toast({ title: 'Error', description: 'Could not add the new student to the database.', variant: 'destructive' });
-            setStudentsInClass(prev => prev.filter(s => s.id !== tempId));
         } finally {
             setIsAddingStudent(false);
         }
@@ -383,192 +383,213 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle>Quick Data Entry</CardTitle>
-          <CardDescription>
-            Select a subject and score type to rapidly enter data. Changes are saved automatically.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
-              <div className="md:col-span-1">
-                  <Label htmlFor="class-select" className="text-xs text-muted-foreground">Select a Class</Label>
-                  <Select value={selectedClass} onValueChange={setSelectedClass}>
-                      <SelectTrigger id="class-select" className="w-full">
-                          <SelectValue placeholder="Select a class..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                          {availableClasses.length > 0 ? (
-                            availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
-                          ) : (
-                            <SelectItem value="no-classes" disabled>No classes found</SelectItem>
-                          )}
-                      </SelectContent>
-                  </Select>
-              </div>
-               <div className="md:col-span-1">
-                  <Label htmlFor="subject-select" className="text-xs text-muted-foreground">Select Subject for Entry</Label>
-                  <Select value={focusedSubject} onValueChange={setFocusedSubject} disabled={!selectedClass || subjectsForClass.length === 0}>
-                      <SelectTrigger id="subject-select" className="w-full">
-                          <SelectValue placeholder="Select a subject..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                          {subjectsForClass.length > 0 ? (
-                            subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
-                          ) : (
-                            <SelectItem value="no-subjects" disabled>No subjects for this class</SelectItem>
-                          )}
-                      </SelectContent>
-                  </Select>
-              </div>
-              <div className="md:col-span-1">
-                  <Label htmlFor="score-type-select" className="text-xs text-muted-foreground">Select Score Type</Label>
-                  <Select value={scoreType} onValueChange={(v) => setScoreType(v as ScoreType)} disabled={!focusedSubject}>
-                      <SelectTrigger id="score-type-select" className="w-full">
-                          <SelectValue placeholder="Select score type..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                          {scoreTypeOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                      </SelectContent>
-                  </Select>
-              </div>
-              <div className="md:col-span-1">
-                  <Label htmlFor="search-student" className="text-xs text-muted-foreground">Search Student</Label>
-                   <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                          id="search-student"
-                          placeholder="Type to search by name..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10"
-                          disabled={!selectedClass}
-                      />
-                  </div>
-              </div>
-          </div>
-          <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => setIsTableVisible(!isTableVisible)} disabled={studentsInClass.length === 0}>
-                {isTableVisible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4 text-primary" />}
-                {isTableVisible ? 'Hide' : 'Show'} Gradesheet ({filteredStudents.length})
-            </Button>
-          </div>
-          {isTableVisible && (
-            <div className="overflow-x-auto relative border rounded-lg">
-                <Table>
-                    <TableHeader className="sticky top-0 bg-muted z-10">
-                        <TableRow>
-                            <TableHead className="w-[50px]">#</TableHead>
-                            <TableHead className="min-w-[200px]">Student Name</TableHead>
-                            <TableHead className="min-w-[150px] text-center">
-                              {focusedSubject ? `${focusedSubject} - ${scoreType === 'continuousAssessment' ? 'CA (60)' : 'Exam (100)'}` : 'Score'}
-                            </TableHead>
-                            <TableHead className="w-[50px] text-center">Status</TableHead>
-                            <TableHead className="w-[80px] text-center">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredStudents.map((student, index) => {
-                            const subjectData = student.subjects.find(s => s.subjectName === focusedSubject);
-                            const score = subjectData ? subjectData[scoreType] : null;
+          <Tabs defaultValue="focused-entry" className="w-full">
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <CardTitle>Quick Data Entry</CardTitle>
+                        <CardDescription>
+                            Rapidly enter data using different views. Changes are saved automatically.
+                        </CardDescription>
+                    </div>
+                    <TabsList className="grid w-full grid-cols-2 max-w-[300px]">
+                        <TabsTrigger value="focused-entry"><Edit className="mr-2 h-4 w-4 text-primary" />Focused Entry</TabsTrigger>
+                        <TabsTrigger value="gradesheet-view"><BookCopy className="mr-2 h-4 w-4 text-purple-500" />Gradesheet</TabsTrigger>
+                    </TabsList>
+                </div>
+            </CardHeader>
+            <TabsContent value="focused-entry">
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                    <div className="md:col-span-1">
+                        <Label htmlFor="class-select" className="text-xs text-muted-foreground">Select a Class</Label>
+                        <Select value={selectedClass} onValueChange={setSelectedClass}>
+                            <SelectTrigger id="class-select" className="w-full">
+                                <SelectValue placeholder="Select a class..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableClasses.length > 0 ? (
+                                  availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
+                                ) : (
+                                  <SelectItem value="no-classes" disabled>No classes found</SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="md:col-span-1">
+                        <Label htmlFor="subject-select" className="text-xs text-muted-foreground">Select Subject for Entry</Label>
+                        <Select value={focusedSubject} onValueChange={setFocusedSubject} disabled={!selectedClass || subjectsForClass.length === 0}>
+                            <SelectTrigger id="subject-select" className="w-full">
+                                <SelectValue placeholder="Select a subject..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {subjectsForClass.length > 0 ? (
+                                  subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
+                                ) : (
+                                  <SelectItem value="no-subjects" disabled>No subjects for this class</SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="md:col-span-1">
+                        <Label htmlFor="score-type-select" className="text-xs text-muted-foreground">Select Score Type</Label>
+                        <Select value={scoreType} onValueChange={(v) => setScoreType(v as ScoreType)} disabled={!focusedSubject}>
+                            <SelectTrigger id="score-type-select" className="w-full">
+                                <SelectValue placeholder="Select score type..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {scoreTypeOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="md:col-span-1">
+                        <Label htmlFor="search-student" className="text-xs text-muted-foreground">Search Student</Label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                id="search-student"
+                                placeholder="Type to search by name..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10"
+                                disabled={!selectedClass}
+                            />
+                        </div>
+                    </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" onClick={() => setIsTableVisible(!isTableVisible)} disabled={studentsInClass.length === 0}>
+                      {isTableVisible ? <EyeOff className="mr-2 h-4 w-4 text-destructive" /> : <Eye className="mr-2 h-4 w-4 text-primary" />}
+                      {isTableVisible ? 'Hide' : 'Show'} Gradesheet ({filteredStudents.length})
+                  </Button>
+                </div>
+                {isTableVisible && (
+                  <div className="overflow-x-auto relative border rounded-lg">
+                      <Table>
+                          <TableHeader className="sticky top-0 bg-muted z-10">
+                              <TableRow>
+                                  <TableHead className="w-[50px]">#</TableHead>
+                                  <TableHead className="min-w-[200px]">Student Name</TableHead>
+                                  <TableHead className="min-w-[150px] text-center">
+                                    {focusedSubject ? `${focusedSubject} - ${scoreType === 'continuousAssessment' ? 'CA (60)' : 'Exam (100)'}` : 'Score'}
+                                  </TableHead>
+                                  <TableHead className="w-[50px] text-center">Status</TableHead>
+                                  <TableHead className="w-[80px] text-center">Actions</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {filteredStudents.map((student, index) => {
+                                  const subjectData = student.subjects.find(s => s.subjectName === focusedSubject);
+                                  const score = subjectData ? subjectData[scoreType] : null;
 
-                            return (
-                                <TableRow key={student.id}>
-                                    <TableCell>{index + 1}</TableCell>
-                                    <TableCell className="font-medium">
-                                        {student.studentName || ''}
+                                  return (
+                                      <TableRow key={student.id}>
+                                          <TableCell>{index + 1}</TableCell>
+                                          <TableCell className="font-medium">
+                                              {student.studentName || ''}
+                                          </TableCell>
+                                          <TableCell>
+                                              <Input
+                                                  id={`score-input-${student.id}`}
+                                                  type="number"
+                                                  value={score ?? ''}
+                                                  onChange={(e) => handleMarkChange(student.id, focusedSubject, scoreType, e.target.value)}
+                                                  onKeyDown={(e) => handleScoreKeyDown(e, index)}
+                                                  placeholder="Enter score"
+                                                  className="text-center"
+                                                  disabled={!focusedSubject}
+                                              />
+                                          </TableCell>
+                                          <TableCell>
+                                              <div className="flex justify-center">
+                                                  {savingStatus[student.id] === 'saving' && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                                                  {savingStatus[student.id] === 'saved' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                                              </div>
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                              <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setStudentToDelete(student)}>
+                                                  <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                          </TableCell>
+                                      </TableRow>
+                                  );
+                              })}
+                              {filteredStudents.length === 0 && (
+                                  <TableRow>
+                                    <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                                      No students found. {searchQuery ? 'Try adjusting your search.' : 'Select a class or add a new student.'}
                                     </TableCell>
-                                    <TableCell>
-                                        <Input
-                                            id={`score-input-${student.id}`}
-                                            type="number"
-                                            value={score ?? ''}
-                                            onChange={(e) => handleMarkChange(student.id, focusedSubject, scoreType, e.target.value)}
-                                            onKeyDown={(e) => handleScoreKeyDown(e, index)}
-                                            placeholder="Enter score"
-                                            className="text-center"
-                                            disabled={!focusedSubject}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex justify-center">
-                                            {savingStatus[student.id] === 'saving' && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
-                                            {savingStatus[student.id] === 'saved' && <CheckCircle className="h-5 w-5 text-green-500" />}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setStudentToDelete(student)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
-                         {filteredStudents.length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
-                                No students found. {searchQuery ? 'Try adjusting your search.' : 'Select a class or add a new student.'}
-                              </TableCell>
-                            </TableRow>
-                         )}
-                    </TableBody>
-                </Table>
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="border-t pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-end gap-2 w-full sm:w-auto">
-              <div className="flex-grow">
-                <Label htmlFor="new-student-name" className="text-xs text-muted-foreground">Add New Student to "{selectedClass || '...'}"</Label>
-                <Input
-                  id="new-student-name"
-                  placeholder="Type name and press Enter..."
-                  value={newStudentName}
-                  onChange={(e) => setNewStudentName(e.target.value)}
-                  onKeyDown={handleAddStudentKeyDown}
-                  disabled={!selectedClass || isAddingStudent}
-                />
-              </div>
-              <Button onClick={handleAddNewStudent} disabled={!selectedClass || !newStudentName.trim() || isAddingStudent}>
-                  {isAddingStudent ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                  Add
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsImportGradesheetDialogOpen(true)}
-                disabled={studentsInClass.length === 0}
-              >
-                  <FileUp className="mr-2 h-4 w-4 text-blue-500" />
-                  Import
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsExportGradesheetDialogOpen(true)}
-                disabled={studentsInClass.length === 0}
-              >
-                  <Download className="mr-2 h-4 w-4 text-green-600" />
-                  Export
-              </Button>
-               <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerateBulkInsights}
-                disabled={isGeneratingBulkInsights || studentsInClass.length === 0}
-                title="Generate AI insights for all students in the current class"
-              >
-                {isGeneratingBulkInsights ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Wand2 className="mr-2 h-4 w-4 text-accent" />
+                                  </TableRow>
+                              )}
+                          </TableBody>
+                      </Table>
+                  </div>
                 )}
-                Bulk Insights
-              </Button>
-            </div>
-        </CardFooter>
+              </CardContent>
+            </TabsContent>
+            <TabsContent value="gradesheet-view">
+              <CardContent>
+                <GradesheetView 
+                    reports={studentsInClass} 
+                    subjects={subjectsForClass} 
+                    onScoreChange={handleMarkChange} 
+                />
+              </CardContent>
+            </TabsContent>
+            <CardFooter className="border-t pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-end gap-2 w-full sm:w-auto">
+                  <div className="flex-grow">
+                    <Label htmlFor="new-student-name" className="text-xs text-muted-foreground">Add New Student to "{selectedClass || '...'}"</Label>
+                    <Input
+                      id="new-student-name"
+                      placeholder="Type name and press Enter..."
+                      value={newStudentName}
+                      onChange={(e) => setNewStudentName(e.target.value)}
+                      onKeyDown={handleAddStudentKeyDown}
+                      disabled={!selectedClass || isAddingStudent}
+                    />
+                  </div>
+                  <Button onClick={handleAddNewStudent} disabled={!selectedClass || !newStudentName.trim() || isAddingStudent}>
+                      {isAddingStudent ? <Loader2 className="mr-2 h-4 w-4 animate-spin text-accent" /> : <UserPlus className="mr-2 h-4 w-4 text-accent" />}
+                      Add
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsImportGradesheetDialogOpen(true)}
+                    disabled={studentsInClass.length === 0}
+                  >
+                      <FileUp className="mr-2 h-4 w-4 text-blue-500" />
+                      Import
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsExportGradesheetDialogOpen(true)}
+                    disabled={studentsInClass.length === 0}
+                  >
+                      <Download className="mr-2 h-4 w-4 text-green-600" />
+                      Export
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateBulkInsights}
+                    disabled={isGeneratingBulkInsights || studentsInClass.length === 0}
+                    title="Generate AI insights for all students in the current class"
+                  >
+                    {isGeneratingBulkInsights ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="mr-2 h-4 w-4 text-accent" />
+                    )}
+                    Bulk Insights
+                  </Button>
+                </div>
+            </CardFooter>
+          </Tabs>
       </Card>
       
       <AlertDialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
@@ -800,4 +821,3 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
         </Dialog>
     );
 }
-
