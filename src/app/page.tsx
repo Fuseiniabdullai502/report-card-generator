@@ -323,13 +323,17 @@ function AppContent({ user }: { user: CustomUser }) {
             break;
         case 'user':
             if (user.classNames && user.classNames.length > 0) {
-                q = query(reportsCollectionRef, where('teacherId', '==', user.uid), where('className', 'in', user.classNames));
+                // Fetch all reports for the classes the user is assigned to, regardless of teacherId
+                q = query(reportsCollectionRef, where('className', 'in', user.classNames));
             } else {
-                // If user has no classes assigned, fetch reports they created, though ideally they shouldn't be able to create any without a class
-                 q = query(reportsCollectionRef, where('teacherId', '==', user.uid));
+                // If user has no classes assigned, they can see no reports.
+                // Fetching by teacherId is a fallback but might not be what's desired. Let's make it explicit.
+                // An empty query that will return nothing.
+                 q = query(reportsCollectionRef, where('teacherId', '==', 'user-has-no-classes'));
             }
             break;
         default:
+             // Default to old behavior for safety, though should be unreachable
             q = query(reportsCollectionRef, where('teacherId', '==', user.uid));
             break;
     }
@@ -410,7 +414,8 @@ function AppContent({ user }: { user: CustomUser }) {
         let indexField = 'teacherId';
         if (user.role === 'big-admin') indexField = 'district';
         if (user.role === 'admin') indexField = 'schoolName';
-        const errorMessage = `A database index is needed to filter reports. Please check your browser's developer console for a link to create it. This is a one-time setup.`;
+        if (user.role === 'user') indexField = 'className';
+        const errorMessage = `A database index is needed to filter reports. Please check your browser's developer console for a link to create the required index on the "reports" collection. This is a one-time setup.`;
         setIndexError(errorMessage);
         toast({ 
           title: "Action Required: Firestore Index Needed", 
