@@ -287,6 +287,10 @@ export default function UserManagement({ user, users, invites, populationStats, 
     const plainUser: PlainUser = {
       uid: user.uid,
       role: user.role,
+      region: user.region,
+      district: user.district,
+      schoolName: user.schoolName,
+      circuit: user.circuit,
     };
     
     const result = await deleteUserAction({ userId: userToDelete.id }, plainUser);
@@ -724,7 +728,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
                     
                     {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (
                         <>
-                          <div className="space-y-1"><Label htmlFor="circuit">Circuit</Label><Controller name="circuit" control={control} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value || ''} disabled={availableCircuits.length === 0 && !isSuperAdmin}><SelectTrigger id="circuit"><SelectValue placeholder="Select circuit" /></SelectTrigger><SelectContent>{availableCircuits.length > 0 ? availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>) : <SelectItem value="-" disabled>No circuits for this district</SelectItem>}</SelectContent></Select>)} /></div>
+                          <div className="space-y-1"><Label htmlFor="circuit">Circuit</Label><Controller name="circuit" control={control} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value || ''} disabled={!district}><SelectTrigger id="circuit"><SelectValue placeholder="Select circuit" /></SelectTrigger><SelectContent>{availableCircuits.length > 0 ? availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>) : <SelectItem value="-" disabled>No circuits for this district</SelectItem>}</SelectContent></Select>)} /></div>
                           <div className="space-y-1"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" {...register('schoolName')} placeholder="Enter school name" /></div>
                         </>
                     )}
@@ -842,13 +846,13 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
                         <>
                             <div className="space-y-2">
                                 <Label htmlFor="circuit">Circuit</Label>
-                                <Select value={circuit} onValueChange={setCircuit} disabled={availableCircuits.length === 0}>
+                                <Select value={circuit} onValueChange={setCircuit} disabled={!district}>
                                     <SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger>
                                     <SelectContent>
                                         {availableCircuits.length > 0 ? (
                                             availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
                                         ) : (
-                                            <SelectItem value="-" disabled>No circuits for this district</SelectItem>
+                                            <SelectItem value="-" disabled>Select a district first</SelectItem>
                                         )}
                                     </SelectContent>
                                 </Select>
@@ -965,7 +969,7 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
                     
                     {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (
                         <>
-                            <div className="space-y-2"><Label htmlFor="circuit">Circuit</Label><Select value={circuit} onValueChange={setCircuit} disabled={availableCircuits.length === 0}><SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger><SelectContent>{availableCircuits.length > 0 ? (availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)) : (<SelectItem value="-" disabled>No circuits for this district</SelectItem>)}</SelectContent></Select></div>
+                            <div className="space-y-2"><Label htmlFor="circuit">Circuit</Label><Select value={circuit} onValueChange={setCircuit} disabled={!district}><SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger><SelectContent>{availableCircuits.length > 0 ? (availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)) : (<SelectItem value="-" disabled>Select a district first</SelectItem>)}</SelectContent></Select></div>
                             <div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>
                         </>
                     )}
