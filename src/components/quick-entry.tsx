@@ -37,7 +37,7 @@ import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction } from '@/app/actions';
 import * as XLSX from 'xlsx';
-import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogContent, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
@@ -653,7 +653,7 @@ function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, clas
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle>Export Blank Gradesheet</DialogTitle>
-                    <CardDescription>Select the subjects to include in the Excel export.</CardDescription>
+                    <DialogDescription>Select the subjects to include in the Excel export.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
                     <Label className="font-semibold">Subjects</Label>
