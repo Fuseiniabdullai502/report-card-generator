@@ -510,27 +510,28 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             </div>
           )}
         </CardContent>
-        <CardFooter className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 flex-grow w-full sm:w-auto">
+        <CardFooter className="border-t pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-end gap-2 w-full sm:w-auto">
               <div className="flex-grow">
                 <Label htmlFor="new-student-name" className="text-xs text-muted-foreground">Add New Student to "{selectedClass || '...'}"</Label>
                 <Input
                   id="new-student-name"
-                  placeholder="Type student name and press Enter..."
+                  placeholder="Type name and press Enter..."
                   value={newStudentName}
                   onChange={(e) => setNewStudentName(e.target.value)}
                   onKeyDown={handleAddStudentKeyDown}
                   disabled={!selectedClass || isAddingStudent}
                 />
               </div>
-              <Button onClick={handleAddNewStudent} disabled={!selectedClass || !newStudentName.trim() || isAddingStudent} className="self-end">
+              <Button onClick={handleAddNewStudent} disabled={!selectedClass || !newStudentName.trim() || isAddingStudent}>
                   {isAddingStudent ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
                   Add
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto self-end justify-end">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
               <Button 
                 variant="outline" 
+                size="sm"
                 onClick={() => setIsImportGradesheetDialogOpen(true)}
                 disabled={studentsInClass.length === 0}
               >
@@ -539,6 +540,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
               </Button>
               <Button 
                 variant="outline" 
+                size="sm"
                 onClick={() => setIsExportGradesheetDialogOpen(true)}
                 disabled={studentsInClass.length === 0}
               >
@@ -547,6 +549,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
               </Button>
                <Button
                 variant="outline"
+                size="sm"
                 onClick={handleGenerateBulkInsights}
                 disabled={isGeneratingBulkInsights || studentsInClass.length === 0}
                 title="Generate AI insights for all students in the current class"
@@ -556,7 +559,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                 ) : (
                   <Wand2 className="mr-2 h-4 w-4" />
                 )}
-                Generate Bulk AI Insights
+                Bulk Insights
               </Button>
             </div>
         </CardFooter>
@@ -619,10 +622,11 @@ function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, clas
         const dataForSheet = students.map(student => ({
             'Student Name': student.studentName,
             ...selectedSubjects.reduce((acc, subject) => {
-                acc[`${subject} CA (60)`] = '';
-                acc[`${subject} Exam (100)`] = '';
+                const subjectData = student.subjects.find(s => s.subjectName === subject);
+                acc[`${subject} CA (60)`] = subjectData?.continuousAssessment ?? '';
+                acc[`${subject} Exam (100)`] = subjectData?.examinationMark ?? '';
                 return acc;
-            }, {} as Record<string, string>)
+            }, {} as Record<string, string | number>)
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
@@ -653,8 +657,8 @@ function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, clas
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Export Blank Gradesheet</DialogTitle>
-                    <DialogDescription>Select the subjects to include in the Excel export.</DialogDescription>
+                    <DialogTitle>Export Gradesheet</DialogTitle>
+                    <DialogDescription>Select the subjects to include in the Excel export for offline editing.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
                     <Label className="font-semibold">Subjects</Label>
@@ -750,6 +754,7 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
                 toast({ title: 'Import Error', description: 'Failed to read or process the Excel file. Please ensure it is in the correct format.', variant: 'destructive' });
             } finally {
                 setIsProcessing(false);
+                setFile(null); // Reset file input
             }
         };
         reader.readAsArrayBuffer(file);
@@ -789,3 +794,4 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
         </Dialog>
     );
 }
+
