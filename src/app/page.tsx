@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -1167,28 +1168,9 @@ function AppContent({ user }: { user: CustomUser }) {
                              {reportsCount > 0 ? `Report ${currentPreviewIndex + 1} of ${reportsCount}` : `Report Print Preview`}
                            </CardTitle>
                          </div>
-                        {reportsCount > 1 && (
-                          <div className="flex items-center gap-2 self-end sm:self-center">
-                            <Button onClick={handlePreviousPreview} disabled={currentPreviewIndex === 0} variant="outline" size="icon" aria-label="Previous Report">
-                              <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <Button onClick={handleNextPreview} disabled={currentPreviewIndex >= reportsCount - 1} variant="outline" size="icon" aria-label="Next Report">
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
                       </div>
 
                       <div className="flex flex-col gap-2 items-stretch">
-                        <div className="relative w-full">
-                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                           <Input 
-                               placeholder="Search reports by student name..."
-                               value={searchQuery}
-                               onChange={(e) => setSearchQuery(e.target.value)}
-                               className="pl-10"
-                           />
-                        </div>
                         <div className="flex flex-wrap gap-2 justify-start md:justify-end">
                           {isAdminRole && (
                               <Select value={adminFilters.schoolName} onValueChange={value => handleAdminFilterChange('schoolName', value)} disabled={user.role === 'admin'}>
@@ -1295,6 +1277,13 @@ function AppContent({ user }: { user: CustomUser }) {
                                       report={reportData} 
                                       onEditReport={handleLoadReportForEditing}
                                       onDeleteReport={() => setReportToDelete(reportData)}
+                                      searchQuery={searchQuery}
+                                      onSearchQueryChange={setSearchQuery}
+                                      onPrevious={handlePreviousPreview}
+                                      onNext={handleNextPreview}
+                                      isPreviousDisabled={currentPreviewIndex === 0}
+                                      isNextDisabled={currentPreviewIndex >= reportsCount - 1}
+                                      hasMultipleReports={reportsCount > 1}
                                   />
                                 </div>
                               )}
