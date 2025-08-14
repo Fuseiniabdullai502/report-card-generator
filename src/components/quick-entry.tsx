@@ -37,14 +37,14 @@ import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction } from '@/app/actions';
 import * as XLSX from 'xlsx';
-import { Dialog, DialogContent, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import GradesheetView from './gradesheet-view';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { curriculumLevels, getClassLevel } from '@/lib/curriculum';
+import { getSubjectsForClass } from '@/lib/curriculum';
 
 
 interface QuickEntryProps {
@@ -118,8 +118,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         });
       });
       
-      const classLevel = getClassLevel(selectedClass);
-      const curriculumSubjects = classLevel ? curriculumLevels[classLevel] : [];
+      const curriculumSubjects = getSubjectsForClass(selectedClass);
 
       const allPossibleSubjects = [...new Set([...curriculumSubjects, ...Array.from(subjectsFromReports)])].sort();
       setSubjectsForClass(allPossibleSubjects);
@@ -229,8 +228,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         
         // Use an existing student as a template, or fallback to the user's own scope.
         const classTemplate = studentsInClass[0]; 
-        const classLevel = getClassLevel(selectedClass);
-        const curriculumSubjects = classLevel ? curriculumLevels[classLevel] : [];
+        const curriculumSubjects = getSubjectsForClass(selectedClass);
         
         const newStudentData: Omit<ReportData, 'id'> = {
             studentName: newStudentName.trim(),
@@ -938,3 +936,4 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
         </Dialog>
     );
 }
+
