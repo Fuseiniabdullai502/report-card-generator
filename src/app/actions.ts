@@ -1230,9 +1230,41 @@ export async function batchUpdateStudentScoresAction(
     return { success: false, error: errorMessage };
   }
 }
+
+const BatchUpdateTeacherFeedbackSchema = z.object({
+    reportIds: z.array(z.string().min(1)),
+    feedback: z.string(),
+});
+
+export async function batchUpdateTeacherFeedbackAction(
+    input: z.infer<typeof BatchUpdateTeacherFeedbackSchema>
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const { reportIds, feedback } = BatchUpdateTeacherFeedbackSchema.parse(input);
+        const batch = admin.firestore().batch();
+
+        reportIds.forEach(reportId => {
+            const reportRef = admin.firestore().collection('reports').doc(reportId);
+            batch.update(reportRef, { teacherFeedback: feedback, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+
+        await batch.commit();
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error in batchUpdateTeacherFeedbackAction:", error);
+        let errorMessage = "An unexpected server error occurred during bulk feedback update.";
+        if (error instanceof z.ZodError) {
+            errorMessage = "Invalid data provided for bulk update: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        return { success: false, error: errorMessage };
+    }
+}
       
 
     
+
 
 
 

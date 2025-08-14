@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -35,9 +35,9 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction } from '@/app/actions';
+import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction, batchUpdateTeacherFeedbackAction } from '@/app/actions';
 import * as XLSX from 'xlsx';
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
@@ -52,6 +52,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { getSubjectsForClass } from '@/lib/curriculum';
+import { Textarea } from './ui/textarea';
 
 
 interface QuickEntryProps {
@@ -88,6 +89,10 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
   const [customSubjectInputValue, setCustomSubjectInputValue] = useState("");
 
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [bulkFeedback, setBulkFeedback] = useState('');
+  const [isApplyingBulkFeedback, setIsApplyingBulkFeedback] = useState(false);
+
 
   const availableClasses = useMemo(() => {
     if (user.role === 'user' && user.classNames) {
@@ -122,10 +127,11 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       
       const allPossibleSubjects = [...new Set([...curriculumSubjects, ...Array.from(subjectsFromReports)])].sort();
       setSubjectsForClass(allPossibleSubjects);
-
+      setSelectedStudentIds([]); // Reset selection when class changes
     } else {
       setStudentsInClass([]);
       setSubjectsForClass([]);
+      setSelectedStudentIds([]);
     }
   }, [selectedClass, allReports]);
 
@@ -213,32 +219,33 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         e.preventDefault();
         
         const currentInput = e.target as HTMLInputElement;
-        currentInput.blur(); // Trigger any on-blur saving logic immediately
+        currentInput.blur();
 
-        const allColumns = ['gender', 'daysAttended', ...activeSubjectsInClass.flatMap(s => [`${s}-ca`, `${s}-exam`])];
         const studentId = filteredStudents[studentIndex]?.id;
-        
         if (studentId) {
+          debouncedSave.cancel();
           const studentToUpdate = studentsInClass.find(s => s.id === studentId);
           if (studentToUpdate) {
-            const field = colId.includes('-') ? {subjects: studentToUpdate.subjects} : {[colId]: (studentToUpdate as any)[colId]};
-            debouncedSave.cancel();
-            debouncedSave(studentId, field);
+              const fieldToUpdate = colId.includes('-') 
+                  ? { subjects: studentToUpdate.subjects } 
+                  : { [colId]: (studentToUpdate as any)[colId] };
+              debouncedSave(studentId, fieldToUpdate);
           }
         }
-
+        
+        const allColumns = ['gender', 'daysAttended', ...activeSubjectsInClass.flatMap(s => [`${s}-ca`, `${s}-exam`])];
+        
         let nextStudentIndex = studentIndex + 1;
         let nextColId = colId;
 
-        // If it's the last student, move to the next column
         if (nextStudentIndex >= filteredStudents.length) {
-            nextStudentIndex = 0; // Go to the first student
+            nextStudentIndex = 0;
             const currentColIndex = allColumns.indexOf(colId);
             const nextColIndex = currentColIndex + 1;
             if (nextColIndex < allColumns.length) {
                 nextColId = allColumns[nextColIndex];
             } else {
-                nextColId = allColumns[0]; // Wrap around to the first column
+                nextColId = allColumns[0];
             }
         }
         
@@ -436,6 +443,29 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     }
   };
 
+  const handleApplyBulkFeedback = async () => {
+    if (selectedStudentIds.length === 0) {
+      toast({ title: 'No Students Selected', description: 'Please select students to apply feedback to.', variant: 'destructive' });
+      return;
+    }
+    if (!bulkFeedback.trim()) {
+      toast({ title: 'Empty Feedback', description: 'Please write a feedback message to apply.', variant: 'destructive' });
+      return;
+    }
+    
+    setIsApplyingBulkFeedback(true);
+    const result = await batchUpdateTeacherFeedbackAction({ reportIds: selectedStudentIds, feedback: bulkFeedback });
+    if (result.success) {
+      toast({ title: 'Bulk Feedback Applied', description: `Feedback updated for ${selectedStudentIds.length} students.` });
+      onDataRefresh();
+      setSelectedStudentIds([]);
+      setBulkFeedback('');
+    } else {
+      toast({ title: 'Update Failed', description: result.error, variant: 'destructive' });
+    }
+    setIsApplyingBulkFeedback(false);
+  };
+
   const handleBatchSubjectChange = async (subject: string, checked: boolean) => {
     if (studentsInClass.length === 0) return;
     
@@ -480,6 +510,20 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         }
         setCustomSubjectInputValue('');
         setIsCustomSubjectDialogOpen(false);
+    };
+
+    const handleSelectAllStudents = (checked: boolean) => {
+        if (checked) {
+            setSelectedStudentIds(filteredStudents.map(s => s.id));
+        } else {
+            setSelectedStudentIds([]);
+        }
+    };
+    
+    const handleSelectStudent = (studentId: string, checked: boolean) => {
+        setSelectedStudentIds(prev => 
+            checked ? [...prev, studentId] : prev.filter(id => id !== studentId)
+        );
     };
 
   return (
@@ -566,7 +610,13 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                 <Table>
                     <TableHeader className="sticky top-0 bg-muted z-10">
                         <TableRow>
-                            <TableHead className="w-[40px] sticky left-0 bg-muted z-20">#</TableHead>
+                            <TableHead className="w-[60px] sticky left-0 bg-muted z-20 px-2">
+                                <Checkbox 
+                                    checked={filteredStudents.length > 0 && selectedStudentIds.length === filteredStudents.length}
+                                    onCheckedChange={(checked) => handleSelectAllStudents(Boolean(checked))}
+                                    aria-label="Select all students"
+                                />
+                            </TableHead>
                             <TableHead className="min-w-[180px] sticky left-10 bg-muted z-20">Student Name</TableHead>
                             <TableHead className="min-w-[120px]"><VenetianMask className="inline-block mr-1 h-4 w-4"/>Gender</TableHead>
                             <TableHead className="min-w-[150px]"><CalendarCheck2 className="inline-block mr-1 h-4 w-4"/>Days Attended</TableHead>
@@ -596,8 +646,14 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                     <TableBody>
                         {filteredStudents.map((student, index) => {
                             return (
-                                <TableRow key={student.id}>
-                                    <TableCell className="sticky left-0 bg-background z-20">{index + 1}</TableCell>
+                                <TableRow key={student.id} data-state={selectedStudentIds.includes(student.id) ? 'selected' : 'unselected'}>
+                                    <TableCell className="sticky left-0 bg-background z-20 px-2">
+                                        <Checkbox 
+                                            checked={selectedStudentIds.includes(student.id)}
+                                            onCheckedChange={(checked) => handleSelectStudent(student.id, Boolean(checked))}
+                                            aria-label={`Select ${student.studentName}`}
+                                        />
+                                    </TableCell>
                                     <TableCell className="font-medium sticky left-10 bg-background z-20">
                                         {student.studentName || ''}
                                     </TableCell>
@@ -730,6 +786,33 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                 </Button>
               </div>
           </CardFooter>
+      </Card>
+      
+      <Card className="mt-6">
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><MessageSquare /> Bulk Teacher Feedback</CardTitle>
+            <CardDescription>Write a single feedback message and apply it to all selected students.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="space-y-2">
+                <Label htmlFor="bulk-feedback-textarea">Feedback Message</Label>
+                <Textarea 
+                    id="bulk-feedback-textarea" 
+                    placeholder="e.g., A very respectful and hardworking student. Keep it up!"
+                    value={bulkFeedback}
+                    onChange={(e) => setBulkFeedback(e.target.value)}
+                />
+            </div>
+        </CardContent>
+        <CardFooter>
+            <Button 
+                onClick={handleApplyBulkFeedback} 
+                disabled={isApplyingBulkFeedback || selectedStudentIds.length === 0 || !bulkFeedback.trim()}
+            >
+                {isApplyingBulkFeedback ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                Apply to Selected ({selectedStudentIds.length}) Students
+            </Button>
+        </CardFooter>
       </Card>
       
       <AlertDialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
