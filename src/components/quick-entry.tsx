@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -37,13 +37,13 @@ import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction } from '@/app/actions';
 import * as XLSX from 'xlsx';
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import GradesheetView from './gradesheet-view';
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { getSubjectsForClass } from '@/lib/curriculum';
 
 
@@ -58,9 +58,6 @@ const scoreTypeOptions = [
     { value: 'examinationMark', label: 'Examination Mark (Exam)' }
 ];
 type ScoreType = 'continuousAssessment' | 'examinationMark';
-const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
-const predefinedSubjectsList = ["Mathematics", "English Language", "Science", "Computing", "Religious and Moral Education", "Creative Arts", "Geography", "Economics", "Biology", "Elective Mathematics"];
-const genderOptions = ["Male", "Female"];
 
 
 export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps) {
@@ -84,8 +81,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   const [isImportGradesheetDialogOpen, setIsImportGradesheetDialogOpen] = useState(false);
   const [isTableVisible, setIsTableVisible] = useState(true);
   const [isGeneratingBulkInsights, setIsGeneratingBulkInsights] = useState(false);
-  const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
-  const [customSubjectInputValue, setCustomSubjectInputValue] = useState('');
 
 
   const availableClasses = useMemo(() => {
@@ -111,6 +106,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         .sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''));
       setStudentsInClass(reports);
 
+      const curriculumSubjects = getSubjectsForClass(selectedClass);
+      
       const subjectsFromReports = new Set<string>();
       reports.forEach(report => {
         report.subjects?.forEach(sub => {
@@ -118,8 +115,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         });
       });
       
-      const curriculumSubjects = getSubjectsForClass(selectedClass);
-
       const allPossibleSubjects = [...new Set([...curriculumSubjects, ...Array.from(subjectsFromReports)])].sort();
       setSubjectsForClass(allPossibleSubjects);
       
@@ -401,35 +396,34 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     }
   };
 
-  const handleAddCustomSubject = async () => {
-    const newSubject = customSubjectInputValue.trim();
-    if (!newSubject) return;
-    if (subjectsForClass.includes(newSubject)) {
-        toast({ title: 'Subject Exists', description: `The subject "${newSubject}" already exists for this class.`, variant: 'destructive' });
-        return;
-    }
+  const handleBatchSubjectChange = async (subject: string, checked: boolean) => {
+    if (studentsInClass.length === 0) return;
     
-    // Add the new subject to all students in the class
     const batch = writeBatch(db);
     studentsInClass.forEach(student => {
-        const reportRef = doc(db, 'reports', student.id);
-        const newSubjects = [...student.subjects, { subjectName: newSubject, continuousAssessment: null, examinationMark: null }];
+      const reportRef = doc(db, 'reports', student.id);
+      let newSubjects: SubjectEntry[];
+      if (checked) {
+        // Add subject if it doesn't exist
+        if (!student.subjects.find(s => s.subjectName === subject)) {
+          newSubjects = [...student.subjects, { subjectName: subject, continuousAssessment: null, examinationMark: null }];
+          batch.update(reportRef, { subjects: newSubjects });
+        }
+      } else {
+        // Remove subject
+        newSubjects = student.subjects.filter(s => s.subjectName !== subject);
         batch.update(reportRef, { subjects: newSubjects });
+      }
     });
-    
+
     try {
-        await batch.commit();
-        setSubjectsForClass(prev => [...prev, newSubject].sort());
-        setGradesheetSubjects(prev => [...prev, newSubject]);
-        toast({ title: 'Subject Added', description: `"${newSubject}" has been added to all students in ${selectedClass}.` });
-        onDataRefresh(); // Refresh data
+      await batch.commit();
+      toast({ title: `Subjects Updated`, description: `Successfully ${checked ? 'added' : 'removed'} "${subject}" for ${studentsInClass.length} students.` });
+      onDataRefresh();
     } catch (error) {
-        console.error(error);
-        toast({ title: 'Error', description: 'Could not add the new subject.', variant: 'destructive' });
+      console.error("Error batch updating subjects:", error);
+      toast({ title: "Update Failed", description: "Could not update subjects for the class.", variant: "destructive" });
     }
-    
-    setIsCustomSubjectDialogOpen(false);
-    setCustomSubjectInputValue('');
   };
 
   const handleGradesheetSubjectSelection = (subject: string, checked: boolean) => {
@@ -442,6 +436,17 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         return orderedSelection;
     });
   };
+
+  // Get a list of subjects that are currently assigned to at least one student in the class
+  const activeSubjectsInClass = useMemo(() => {
+    const activeSubjects = new Set<string>();
+    studentsInClass.forEach(student => {
+      student.subjects.forEach(sub => {
+        if(sub.subjectName) activeSubjects.add(sub.subjectName);
+      });
+    });
+    return Array.from(activeSubjects);
+  }, [studentsInClass]);
 
 
   return (
@@ -496,12 +501,39 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                         </div>
                     </div>
                 </div>
-                <div className="flex justify-end">
-                  <Button variant="outline" size="sm" onClick={() => setIsTableVisible(!isTableVisible)} disabled={studentsInClass.length === 0}>
-                      {isTableVisible ? <EyeOff className="mr-2 h-4 w-4 text-destructive" /> : <Eye className="mr-2 h-4 w-4 text-primary" />}
-                      {isTableVisible ? 'Hide' : 'Show'} Student List ({filteredStudents.length})
-                  </Button>
+
+                <div className="flex flex-wrap gap-2 justify-between items-center">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" disabled={!selectedClass}>
+                          <BookPlus className="mr-2 h-4 w-4 text-purple-500" />
+                          Add/Remove Subjects for Class
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                          <DropdownMenuLabel>Available Subjects</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <ScrollArea className="h-60">
+                            {subjectsForClass.map(subject => (
+                              <DropdownMenuCheckboxItem
+                                key={subject}
+                                checked={activeSubjectsInClass.includes(subject)}
+                                onCheckedChange={(checked) => handleBatchSubjectChange(subject, Boolean(checked))}
+                              >
+                                {subject}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </ScrollArea>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Button variant="outline" size="sm" onClick={() => setIsTableVisible(!isTableVisible)} disabled={studentsInClass.length === 0}>
+                        {isTableVisible ? <EyeOff className="mr-2 h-4 w-4 text-destructive" /> : <Eye className="mr-2 h-4 w-4 text-primary" />}
+                        {isTableVisible ? 'Hide' : 'Show'} Student List ({filteredStudents.length})
+                    </Button>
                 </div>
+
                 {isTableVisible && (
                   <div className="overflow-x-auto relative border rounded-lg">
                       <Table>
@@ -529,7 +561,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                                     <SelectValue placeholder="Select..."/>
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {genderOptions.map(option => <SelectItem key={option} value={option}>{option}</SelectItem>)}
+                                                    <SelectItem value="Male">Male</SelectItem>
+                                                    <SelectItem value="Female">Female</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                           </TableCell>
@@ -640,15 +673,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
-                   <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsCustomSubjectDialogOpen(true)}
-                    disabled={!selectedClass}
-                  >
-                      <PlusCircle className="mr-2 h-4 w-4 text-purple-500" />
-                      Add Subject to Class
-                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -721,29 +745,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             className={selectedClass}
         />
       )}
-       <Dialog open={isCustomSubjectDialogOpen} onOpenChange={setIsCustomSubjectDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Subject</DialogTitle>
-            <DialogDescription>
-              This will add the new subject to all students in the class '{selectedClass || '...'}'
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="new-subject-name">Subject Name</Label>
-            <Input 
-              id="new-subject-name"
-              value={customSubjectInputValue} 
-              onChange={e => setCustomSubjectInputValue(e.target.value)} 
-              placeholder="e.g., General Science"
-            />
-          </div>
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-            <Button onClick={handleAddCustomSubject}>Add Subject</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
