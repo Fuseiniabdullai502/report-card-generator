@@ -180,23 +180,41 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     });
   };
   
-    const handleFieldChange = (reportId: string, field: keyof ReportData, value: string | number | null) => {
-        setStudentsInClass(prevStudents => {
-            const updatedStudents = prevStudents.map(student => {
-                if (student.id === reportId) {
-                    return { ...student, [field]: value };
-                }
-                return student;
-            });
-
-            const studentToUpdate = updatedStudents.find(s => s.id === reportId);
-            if (studentToUpdate) {
-                debouncedSave(reportId, { [field]: value });
+  const handleFieldChange = (reportId: string, field: keyof ReportData, value: string | number | null) => {
+    setStudentsInClass(prevStudents => {
+        const updatedStudents = prevStudents.map(student => {
+            if (student.id === reportId) {
+                return { ...student, [field]: value };
             }
-
-            return updatedStudents;
+            return student;
         });
-    };
+
+        const studentToUpdate = updatedStudents.find(s => s.id === reportId);
+        if (studentToUpdate) {
+            debouncedSave(reportId, { [field]: value });
+        }
+
+        return updatedStudents;
+    });
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, reportId: string, field: keyof ReportData | {subjectName: string, markType: ScoreType}) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const studentToUpdate = studentsInClass.find(s => s.id === reportId);
+        if (studentToUpdate) {
+            let updatedFields: Partial<ReportData>;
+            if (typeof field === 'string') {
+              updatedFields = {[field]: studentToUpdate[field]};
+            } else {
+              updatedFields = {subjects: studentToUpdate.subjects};
+            }
+            // Cancel any pending debounced save and save immediately
+            debouncedSave.cancel();
+            debouncedSave(reportId, updatedFields);
+        }
+    }
+  };
 
 
     const handleAddNewStudent = async () => {
@@ -549,6 +567,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                             type="number"
                                             value={student.daysAttended ?? ''}
                                             onChange={(e) => handleFieldChange(student.id, 'daysAttended', e.target.value === '' ? null : Number(e.target.value))}
+                                            onKeyDown={(e) => handleKeyDown(e, student.id, 'daysAttended')}
                                             placeholder="e.g., 85"
                                             className="text-center h-9 w-[100px]"
                                         />
@@ -564,6 +583,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                                 className="text-center min-w-[60px] h-9"
                                                 value={subjectData?.continuousAssessment ?? ''}
                                                 onChange={(e) => handleMarkChange(student.id, subjectName, 'continuousAssessment', e.target.value)}
+                                                onKeyDown={(e) => handleKeyDown(e, student.id, { subjectName, markType: 'continuousAssessment' })}
                                               />
                                             </TableCell>
                                             <TableCell className="p-1">
@@ -573,6 +593,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                                 className="text-center min-w-[60px] h-9"
                                                 value={subjectData?.examinationMark ?? ''}
                                                 onChange={(e) => handleMarkChange(student.id, subjectName, 'examinationMark', e.target.value)}
+                                                onKeyDown={(e) => handleKeyDown(e, student.id, { subjectName, markType: 'examinationMark' })}
                                               />
                                             </TableCell>
                                           </React.Fragment>
