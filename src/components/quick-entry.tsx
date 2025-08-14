@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle, VenetianMask, CalendarCheck2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -58,6 +58,7 @@ const scoreTypeOptions = [
 type ScoreType = 'continuousAssessment' | 'examinationMark';
 const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
 const predefinedSubjectsList = ["Mathematics", "English Language", "Science", "Computing", "Religious and Moral Education", "Creative Arts", "Geography", "Economics", "Biology", "Elective Mathematics"];
+const genderOptions = ["Male", "Female"];
 
 
 export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps) {
@@ -119,7 +120,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setSubjectsForClass(allPossibleSubjects);
       
       // Set a default focused subject if none is selected or the current one is invalid
-      if (allPossibleSubjects.length > 0 && !allPossibleSubjects.includes(focusedSubject)) {
+      if (allPossibleSubjects.length > 0 && (!focusedSubject || !allPossibleSubjects.includes(focusedSubject))) {
         setFocusedSubject(allPossibleSubjects[0]);
       } else if (allPossibleSubjects.length === 0) {
         setFocusedSubject('');
@@ -130,7 +131,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setSubjectsForClass([]);
       setFocusedSubject('');
     }
-  }, [selectedClass, allReports]);
+  }, [selectedClass, allReports, focusedSubject]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return studentsInClass;
@@ -192,6 +193,25 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         return updatedStudents;
     });
   };
+  
+    const handleFieldChange = (reportId: string, field: keyof ReportData, value: string | number | null) => {
+        setStudentsInClass(prevStudents => {
+            const updatedStudents = prevStudents.map(student => {
+                if (student.id === reportId) {
+                    return { ...student, [field]: value };
+                }
+                return student;
+            });
+
+            const studentToUpdate = updatedStudents.find(s => s.id === reportId);
+            if (studentToUpdate) {
+                debouncedSave(reportId, { [field]: value });
+            }
+
+            return updatedStudents;
+        });
+    };
+
 
   const handleScoreKeyDown = (e: KeyboardEvent<HTMLInputElement>, currentIndex: number) => {
     if (e.key === 'Enter' || e.key === 'ArrowDown') {
@@ -461,7 +481,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                 {availableClasses.length > 0 ? (
                                   availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
                                 ) : (
-                                  <SelectItem value="no-classes" disabled>No classes found</SelectItem>
+                                  <SelectItem value="" disabled>No classes found</SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
@@ -533,8 +553,10 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                       <Table>
                           <TableHeader className="sticky top-0 bg-muted z-10">
                               <TableRow>
-                                  <TableHead className="w-[50px]">#</TableHead>
-                                  <TableHead className="min-w-[200px]">Student Name</TableHead>
+                                  <TableHead className="w-[40px]">#</TableHead>
+                                  <TableHead className="min-w-[180px]">Student Name</TableHead>
+                                  <TableHead className="min-w-[120px] text-center"><VenetianMask className="inline-block mr-1 h-4 w-4"/>Gender</TableHead>
+                                  <TableHead className="min-w-[150px] text-center"><CalendarCheck2 className="inline-block mr-1 h-4 w-4"/>Days Attended</TableHead>
                                   <TableHead className="min-w-[150px] text-center">
                                     {focusedSubject ? `${focusedSubject} - ${scoreType === 'continuousAssessment' ? 'CA (60)' : 'Exam (100)'}` : 'Score'}
                                   </TableHead>
@@ -554,6 +576,25 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                               {student.studentName || ''}
                                           </TableCell>
                                           <TableCell>
+                                            <Select value={student.gender || ''} onValueChange={(value) => handleFieldChange(student.id, 'gender', value)}>
+                                                <SelectTrigger className="h-9">
+                                                    <SelectValue placeholder="Select..."/>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {genderOptions.map(option => <SelectItem key={option} value={option}>{option}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                          </TableCell>
+                                          <TableCell>
+                                              <Input
+                                                  type="number"
+                                                  value={student.daysAttended ?? ''}
+                                                  onChange={(e) => handleFieldChange(student.id, 'daysAttended', e.target.value === '' ? null : Number(e.target.value))}
+                                                  placeholder="e.g., 85"
+                                                  className="text-center h-9"
+                                              />
+                                          </TableCell>
+                                          <TableCell>
                                               <Input
                                                   id={`score-input-${student.id}`}
                                                   type="number"
@@ -561,7 +602,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                                   onChange={(e) => handleMarkChange(student.id, focusedSubject, scoreType, e.target.value)}
                                                   onKeyDown={(e) => handleScoreKeyDown(e, index)}
                                                   placeholder="Enter score"
-                                                  className="text-center"
+                                                  className="text-center h-9"
                                                   disabled={!focusedSubject}
                                               />
                                           </TableCell>
@@ -581,7 +622,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                               })}
                               {filteredStudents.length === 0 && (
                                   <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                                    <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
                                       No students found. {searchQuery ? 'Try adjusting your search.' : 'Select a class or add a new student.'}
                                     </TableCell>
                                   </TableRow>
