@@ -44,6 +44,7 @@ import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performanc
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import GradesheetView from './gradesheet-view';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { curriculumLevels, getClassLevel } from '@/lib/curriculum';
 
 
 interface QuickEntryProps {
@@ -116,15 +117,18 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
           if (sub.subjectName) subjectsFromReports.add(sub.subjectName);
         });
       });
-      // Combine predefined subjects with subjects from reports for a comprehensive list
-      const allPossibleSubjects = [...new Set([...predefinedSubjectsList, ...Array.from(subjectsFromReports)])].sort();
+      
+      const classLevel = getClassLevel(selectedClass);
+      const curriculumSubjects = classLevel ? curriculumLevels[classLevel] : [];
+
+      const allPossibleSubjects = [...new Set([...curriculumSubjects, ...Array.from(subjectsFromReports)])].sort();
       setSubjectsForClass(allPossibleSubjects);
       
-      // Set a default selection of subjects if none are selected
+      // Set a default selection of subjects if none are selected or if the class changes
       if (gradesheetSubjects.length === 0 && allPossibleSubjects.length > 0) {
-        setGradesheetSubjects(allPossibleSubjects.slice(0, 5)); // Default to first 5
-      } else if (allPossibleSubjects.length === 0) {
-        setGradesheetSubjects([]);
+        setGradesheetSubjects(allPossibleSubjects);
+      } else {
+         setGradesheetSubjects(prev => prev.filter(s => allPossibleSubjects.includes(s)));
       }
 
     } else {
@@ -225,13 +229,15 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         
         // Use an existing student as a template, or fallback to the user's own scope.
         const classTemplate = studentsInClass[0]; 
+        const classLevel = getClassLevel(selectedClass);
+        const curriculumSubjects = classLevel ? curriculumLevels[classLevel] : [];
         
         const newStudentData: Omit<ReportData, 'id'> = {
             studentName: newStudentName.trim(),
             className: selectedClass,
             gender: '',
             studentPhotoDataUri: null,
-            subjects: subjectsForClass.map(s => ({ subjectName: s, continuousAssessment: null, examinationMark: null })),
+            subjects: curriculumSubjects.map(s => ({ subjectName: s, continuousAssessment: null, examinationMark: null })),
             teacherId: user.uid,
             studentEntryNumber: (allReports.reduce((max, r) => Math.max(r.studentEntryNumber || 0, max), 0) || 0) + 1,
             // Use template if available, otherwise use current user's scope for school/location data
@@ -433,7 +439,9 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         const newSelection = checked
             ? [...prev, subject]
             : prev.filter(s => s !== subject);
-        return newSelection;
+        // Preserve selection order by re-sorting based on the main subject list
+        const orderedSelection = subjectsForClass.filter(s => newSelection.includes(s));
+        return orderedSelection;
     });
   };
 
@@ -459,7 +467,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             <TabsContent value="focused-entry">
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                    <div className="lg:col-span-1">
+                    <div className="lg:col-span-2">
                         <Label htmlFor="class-select" className="text-xs text-muted-foreground">Select a Class</Label>
                         <Select value={selectedClass} onValueChange={setSelectedClass}>
                             <SelectTrigger id="class-select" className="w-full">
@@ -474,34 +482,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                             </SelectContent>
                         </Select>
                     </div>
+                    
                     <div className="lg:col-span-2">
-                        <Label htmlFor="subject-select" className="text-xs text-muted-foreground">Select Subjects for Gradesheet</Label>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="w-full justify-between" disabled={!selectedClass}>
-                                    <span className="truncate pr-2">
-                                        {gradesheetSubjects.length > 0 ? gradesheetSubjects.join(', ') : 'Select subjects...'}
-                                    </span>
-                                    <ChevronDown className="h-4 w-4 shrink-0" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                                <ScrollArea className="h-60">
-                                    {subjectsForClass.map(subject => (
-                                        <DropdownMenuCheckboxItem
-                                            key={subject}
-                                            checked={gradesheetSubjects.includes(subject)}
-                                            onCheckedChange={(checked) => handleGradesheetSubjectSelection(subject, Boolean(checked))}
-                                        >
-                                            {subject}
-                                        </DropdownMenuCheckboxItem>
-                                    ))}
-                                    {subjectsForClass.length === 0 && <div className="p-2 text-xs text-muted-foreground text-center">No subjects found.</div>}
-                                </ScrollArea>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                    <div className="lg:col-span-1">
                         <Label htmlFor="search-student" className="text-xs text-muted-foreground">Search Student</Label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -603,17 +585,17 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                            <div className="p-2">
+                            <div className="p-2 flex justify-between items-center">
                                 <Button
                                   variant="link"
-                                  className="p-0 h-auto text-xs mb-2"
+                                  className="p-0 h-auto text-xs"
                                   onClick={() => setGradesheetSubjects(subjectsForClass)}
                                 >
                                   Select All
                                 </Button>
                                 <Button
                                   variant="link"
-                                  className="p-0 h-auto text-xs mb-2 ml-4 text-destructive"
+                                  className="p-0 h-auto text-xs text-destructive"
                                   onClick={() => setGradesheetSubjects([])}
                                 >
                                   Deselect All
@@ -629,6 +611,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                         {subject}
                                     </DropdownMenuCheckboxItem>
                                 ))}
+                                {subjectsForClass.length === 0 && <div className="p-2 text-xs text-muted-foreground text-center">No subjects found.</div>}
                             </ScrollArea>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -659,6 +642,15 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                   <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsCustomSubjectDialogOpen(true)}
+                    disabled={!selectedClass}
+                  >
+                      <PlusCircle className="mr-2 h-4 w-4 text-purple-500" />
+                      Add Subject to Class
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
