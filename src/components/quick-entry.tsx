@@ -77,6 +77,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   const [isImportGradesheetDialogOpen, setIsImportGradesheetDialogOpen] = useState(false);
   const [isTableVisible, setIsTableVisible] = useState(true);
   const [isGeneratingBulkInsights, setIsGeneratingBulkInsights] = useState(false);
+  const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
+  const [customSubjectInputValue, setCustomSubjectInputValue] = useState("");
 
 
   const availableClasses = useMemo(() => {
@@ -198,20 +200,48 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     });
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, reportId: string, field: keyof ReportData | {subjectName: string, markType: ScoreType}) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, studentIndex: number, colId: string) => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        const studentToUpdate = studentsInClass.find(s => s.id === reportId);
-        if (studentToUpdate) {
-            let updatedFields: Partial<ReportData>;
-            if (typeof field === 'string') {
-              updatedFields = {[field]: studentToUpdate[field]};
-            } else {
-              updatedFields = {subjects: studentToUpdate.subjects};
-            }
-            // Cancel any pending debounced save and save immediately
+        
+        const currentInput = e.target as HTMLInputElement;
+        currentInput.blur(); // Trigger any on-blur saving logic immediately
+
+        const allColumns = ['gender', 'daysAttended', ...activeSubjectsInClass.flatMap(s => [`${s}-ca`, `${s}-exam`])];
+        const studentId = filteredStudents[studentIndex]?.id;
+        
+        if (studentId) {
+          const studentToUpdate = studentsInClass.find(s => s.id === studentId);
+          if (studentToUpdate) {
+            const field = colId.includes('-') ? {subjects: studentToUpdate.subjects} : {[colId]: (studentToUpdate as any)[colId]};
             debouncedSave.cancel();
-            debouncedSave(reportId, updatedFields);
+            debouncedSave(studentId, field);
+          }
+        }
+
+        let nextStudentIndex = studentIndex + 1;
+        let nextColId = colId;
+
+        // If it's the last student, move to the next column
+        if (nextStudentIndex >= filteredStudents.length) {
+            nextStudentIndex = 0; // Go to the first student
+            const currentColIndex = allColumns.indexOf(colId);
+            const nextColIndex = currentColIndex + 1;
+            if (nextColIndex < allColumns.length) {
+                nextColId = allColumns[nextColIndex];
+            } else {
+                nextColId = allColumns[0]; // Wrap around to the first column
+            }
+        }
+        
+        const nextStudentId = filteredStudents[nextStudentIndex]?.id;
+        if(nextStudentId){
+            const nextInputId = `${nextColId}-${nextStudentId}`;
+            const nextInput = document.getElementById(nextInputId) as HTMLInputElement | null;
+            if (nextInput) {
+                nextInput.focus();
+                nextInput.select();
+            }
         }
     }
   };
@@ -436,6 +466,13 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     return subjectsForClass.filter(s => activeSubjects.has(s));
   }, [studentsInClass, subjectsForClass]);
 
+    const handleAddCustomSubject = () => {
+        if (customSubjectInputValue.trim() && !subjectsForClass.includes(customSubjectInputValue.trim())) {
+            setSubjectsForClass(prev => [...prev, customSubjectInputValue.trim()].sort());
+        }
+        setCustomSubjectInputValue('');
+        setIsCustomSubjectDialogOpen(false);
+    };
 
   return (
     <>
@@ -445,7 +482,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                   <div>
                       <CardTitle className='text-2xl'>Quick Data Entry</CardTitle>
                       <CardDescription>
-                          Rapidly enter scores and other data. Changes are saved automatically.
+                          Rapidly enter scores and other data. Changes are saved automatically. Press Enter to move to the next student.
                       </CardDescription>
                   </div>
               </div>
@@ -492,6 +529,11 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                               </DropdownMenuCheckboxItem>
                             ))}
                           </ScrollArea>
+                          <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => setIsCustomSubjectDialogOpen(true)}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add New Subject to List...
+                            </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -553,7 +595,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                     </TableCell>
                                     <TableCell>
                                       <Select value={student.gender || ''} onValueChange={(value) => handleFieldChange(student.id, 'gender', value)}>
-                                          <SelectTrigger className="h-9 w-[100px]">
+                                          <SelectTrigger id={`gender-${student.id}`} className="h-9 w-[100px]">
                                               <SelectValue placeholder="Select..."/>
                                           </SelectTrigger>
                                           <SelectContent>
@@ -565,9 +607,10 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                     <TableCell>
                                         <Input
                                             type="number"
+                                            id={`daysAttended-${student.id}`}
                                             value={student.daysAttended ?? ''}
                                             onChange={(e) => handleFieldChange(student.id, 'daysAttended', e.target.value === '' ? null : Number(e.target.value))}
-                                            onKeyDown={(e) => handleKeyDown(e, student.id, 'daysAttended')}
+                                            onKeyDown={(e) => handleKeyDown(e, index, 'daysAttended')}
                                             placeholder="e.g., 85"
                                             className="text-center h-9 w-[100px]"
                                         />
@@ -579,21 +622,23 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                             <TableCell className="border-l p-1">
                                               <Input
                                                 type="number"
+                                                id={`${subjectName}-ca-${student.id}`}
                                                 placeholder="-"
                                                 className="text-center min-w-[60px] h-9"
                                                 value={subjectData?.continuousAssessment ?? ''}
                                                 onChange={(e) => handleMarkChange(student.id, subjectName, 'continuousAssessment', e.target.value)}
-                                                onKeyDown={(e) => handleKeyDown(e, student.id, { subjectName, markType: 'continuousAssessment' })}
+                                                onKeyDown={(e) => handleKeyDown(e, index, `${subjectName}-ca`)}
                                               />
                                             </TableCell>
                                             <TableCell className="p-1">
                                                <Input
                                                 type="number"
+                                                id={`${subjectName}-exam-${student.id}`}
                                                 placeholder="-"
                                                 className="text-center min-w-[60px] h-9"
                                                 value={subjectData?.examinationMark ?? ''}
                                                 onChange={(e) => handleMarkChange(student.id, subjectName, 'examinationMark', e.target.value)}
-                                                onKeyDown={(e) => handleKeyDown(e, student.id, { subjectName, markType: 'examinationMark' })}
+                                                onKeyDown={(e) => handleKeyDown(e, index, `${subjectName}-exam`)}
                                               />
                                             </TableCell>
                                           </React.Fragment>
@@ -696,6 +741,29 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        <Dialog open={isCustomSubjectDialogOpen} onOpenChange={setIsCustomSubjectDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add New Subject</DialogTitle>
+                    <DialogDescription>
+                        Add a new subject to the list of available subjects for class: {selectedClass || "..."}.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label htmlFor="custom-subject-input">Subject Name</Label>
+                    <Input 
+                        id="custom-subject-input"
+                        value={customSubjectInputValue}
+                        onChange={(e) => setCustomSubjectInputValue(e.target.value)}
+                        placeholder="e.g., Further Mathematics"
+                    />
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button onClick={handleAddCustomSubject}>Add Subject</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
       {isExportGradesheetDialogOpen && (
         <ExportGradesheetDialog
