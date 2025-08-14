@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle, VenetianMask, CalendarCheck2 } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -43,6 +43,7 @@ import { ScrollArea } from './ui/scroll-area';
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import GradesheetView from './gradesheet-view';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from './ui/dropdown-menu';
 
 
 interface QuickEntryProps {
@@ -76,7 +77,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   const [isDeleting, setIsDeleting] = useState(false);
 
   // New state for focused entry mode
-  const [focusedSubject, setFocusedSubject] = useState<string>('');
+  const [gradesheetSubjects, setGradesheetSubjects] = useState<string[]>([]);
   const [scoreType, setScoreType] = useState<ScoreType>('continuousAssessment');
   const [isExportGradesheetDialogOpen, setIsExportGradesheetDialogOpen] = useState(false);
   const [isImportGradesheetDialogOpen, setIsImportGradesheetDialogOpen] = useState(false);
@@ -119,19 +120,19 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       const allPossibleSubjects = [...new Set([...predefinedSubjectsList, ...Array.from(subjectsFromReports)])].sort();
       setSubjectsForClass(allPossibleSubjects);
       
-      // Set a default focused subject if none is selected or the current one is invalid
-      if (allPossibleSubjects.length > 0 && (!focusedSubject || !allPossibleSubjects.includes(focusedSubject))) {
-        setFocusedSubject(allPossibleSubjects[0]);
+      // Set a default selection of subjects if none are selected
+      if (gradesheetSubjects.length === 0 && allPossibleSubjects.length > 0) {
+        setGradesheetSubjects(allPossibleSubjects.slice(0, 5)); // Default to first 5
       } else if (allPossibleSubjects.length === 0) {
-        setFocusedSubject('');
+        setGradesheetSubjects([]);
       }
 
     } else {
       setStudentsInClass([]);
       setSubjectsForClass([]);
-      setFocusedSubject('');
+      setGradesheetSubjects([]);
     }
-  }, [selectedClass, allReports, focusedSubject]);
+  }, [selectedClass, allReports]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return studentsInClass;
@@ -212,28 +213,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         });
     };
 
-
-  const handleScoreKeyDown = (e: KeyboardEvent<HTMLInputElement>, currentIndex: number) => {
-    if (e.key === 'Enter' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        const nextIndex = currentIndex + 1;
-        if (nextIndex < filteredStudents.length) {
-            const nextStudent = filteredStudents[nextIndex];
-            const nextInput = document.getElementById(`score-input-${nextStudent.id}`);
-            nextInput?.focus();
-            (nextInput as HTMLInputElement)?.select();
-        }
-    } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        const prevIndex = currentIndex - 1;
-        if (prevIndex >= 0) {
-            const prevStudent = filteredStudents[prevIndex];
-            const prevInput = document.getElementById(`score-input-${prevStudent.id}`);
-            prevInput?.focus();
-            (prevInput as HTMLInputElement)?.select();
-        }
-    }
-  };
 
     const handleAddNewStudent = async () => {
         if (!newStudentName.trim()) return;
@@ -437,7 +416,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     try {
         await batch.commit();
         setSubjectsForClass(prev => [...prev, newSubject].sort());
-        setFocusedSubject(newSubject);
+        setGradesheetSubjects(prev => [...prev, newSubject]);
         toast({ title: 'Subject Added', description: `"${newSubject}" has been added to all students in ${selectedClass}.` });
         onDataRefresh(); // Refresh data
     } catch (error) {
@@ -447,6 +426,15 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     
     setIsCustomSubjectDialogOpen(false);
     setCustomSubjectInputValue('');
+  };
+
+  const handleGradesheetSubjectSelection = (subject: string, checked: boolean) => {
+    setGradesheetSubjects(prev => {
+        const newSelection = checked
+            ? [...prev, subject]
+            : prev.filter(s => s !== subject);
+        return newSelection;
+    });
   };
 
 
@@ -470,8 +458,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             </CardHeader>
             <TabsContent value="focused-entry">
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
-                    <div className="md:col-span-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                    <div className="lg:col-span-1">
                         <Label htmlFor="class-select" className="text-xs text-muted-foreground">Select a Class</Label>
                         <Select value={selectedClass} onValueChange={setSelectedClass}>
                             <SelectTrigger id="class-select" className="w-full">
@@ -486,48 +474,34 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="md:col-span-1">
-                        <Label htmlFor="subject-select" className="text-xs text-muted-foreground">Select Subject for Entry</Label>
-                        <Select
-                          value={focusedSubject}
-                          onValueChange={(value) => {
-                            if (value === ADD_CUSTOM_SUBJECT_VALUE) {
-                              setIsCustomSubjectDialogOpen(true);
-                            } else {
-                              setFocusedSubject(value);
-                            }
-                          }}
-                          disabled={!selectedClass}
-                        >
-                            <SelectTrigger id="subject-select" className="w-full">
-                                <SelectValue placeholder="Select a subject..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {subjectsForClass.length > 0 ? (
-                                    subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
-                                ) : (
-                                    <SelectItem value="" disabled>No subjects for this class</SelectItem>
-                                )}
-                                <SelectItem value={ADD_CUSTOM_SUBJECT_VALUE}>
-                                    <div className="flex items-center gap-2 text-accent">
-                                        <PlusCircle className="h-4 w-4" /> Add New Subject...
-                                    </div>
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                    <div className="lg:col-span-2">
+                        <Label htmlFor="subject-select" className="text-xs text-muted-foreground">Select Subjects for Gradesheet</Label>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="w-full justify-between" disabled={!selectedClass}>
+                                    <span className="truncate pr-2">
+                                        {gradesheetSubjects.length > 0 ? gradesheetSubjects.join(', ') : 'Select subjects...'}
+                                    </span>
+                                    <ChevronDown className="h-4 w-4 shrink-0" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                                <ScrollArea className="h-60">
+                                    {subjectsForClass.map(subject => (
+                                        <DropdownMenuCheckboxItem
+                                            key={subject}
+                                            checked={gradesheetSubjects.includes(subject)}
+                                            onCheckedChange={(checked) => handleGradesheetSubjectSelection(subject, Boolean(checked))}
+                                        >
+                                            {subject}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                    {subjectsForClass.length === 0 && <div className="p-2 text-xs text-muted-foreground text-center">No subjects found.</div>}
+                                </ScrollArea>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
-                    <div className="md:col-span-1">
-                        <Label htmlFor="score-type-select" className="text-xs text-muted-foreground">Select Score Type</Label>
-                        <Select value={scoreType} onValueChange={(v) => setScoreType(v as ScoreType)} disabled={!focusedSubject}>
-                            <SelectTrigger id="score-type-select" className="w-full">
-                                <SelectValue placeholder="Select score type..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {scoreTypeOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="md:col-span-1">
+                    <div className="lg:col-span-1">
                         <Label htmlFor="search-student" className="text-xs text-muted-foreground">Search Student</Label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -545,7 +519,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                 <div className="flex justify-end">
                   <Button variant="outline" size="sm" onClick={() => setIsTableVisible(!isTableVisible)} disabled={studentsInClass.length === 0}>
                       {isTableVisible ? <EyeOff className="mr-2 h-4 w-4 text-destructive" /> : <Eye className="mr-2 h-4 w-4 text-primary" />}
-                      {isTableVisible ? 'Hide' : 'Show'} Gradesheet ({filteredStudents.length})
+                      {isTableVisible ? 'Hide' : 'Show'} Student List ({filteredStudents.length})
                   </Button>
                 </div>
                 {isTableVisible && (
@@ -557,18 +531,12 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                   <TableHead className="min-w-[180px]">Student Name</TableHead>
                                   <TableHead className="min-w-[120px] text-center"><VenetianMask className="inline-block mr-1 h-4 w-4"/>Gender</TableHead>
                                   <TableHead className="min-w-[150px] text-center"><CalendarCheck2 className="inline-block mr-1 h-4 w-4"/>Days Attended</TableHead>
-                                  <TableHead className="min-w-[150px] text-center">
-                                    {focusedSubject ? `${focusedSubject} - ${scoreType === 'continuousAssessment' ? 'CA (60)' : 'Exam (100)'}` : 'Score'}
-                                  </TableHead>
                                   <TableHead className="w-[50px] text-center">Status</TableHead>
                                   <TableHead className="w-[80px] text-center">Actions</TableHead>
                               </TableRow>
                           </TableHeader>
                           <TableBody>
                               {filteredStudents.map((student, index) => {
-                                  const subjectData = student.subjects.find(s => s.subjectName === focusedSubject);
-                                  const score = subjectData ? subjectData[scoreType] : null;
-
                                   return (
                                       <TableRow key={student.id}>
                                           <TableCell>{index + 1}</TableCell>
@@ -595,18 +563,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                               />
                                           </TableCell>
                                           <TableCell>
-                                              <Input
-                                                  id={`score-input-${student.id}`}
-                                                  type="number"
-                                                  value={score ?? ''}
-                                                  onChange={(e) => handleMarkChange(student.id, focusedSubject, scoreType, e.target.value)}
-                                                  onKeyDown={(e) => handleScoreKeyDown(e, index)}
-                                                  placeholder="Enter score"
-                                                  className="text-center h-9"
-                                                  disabled={!focusedSubject}
-                                              />
-                                          </TableCell>
-                                          <TableCell>
                                               <div className="flex justify-center">
                                                   {savingStatus[student.id] === 'saving' && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
                                                   {savingStatus[student.id] === 'saved' && <CheckCircle className="h-5 w-5 text-green-500" />}
@@ -622,7 +578,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                               })}
                               {filteredStudents.length === 0 && (
                                   <TableRow>
-                                    <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+                                    <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                                       No students found. {searchQuery ? 'Try adjusting your search.' : 'Select a class or add a new student.'}
                                     </TableCell>
                                   </TableRow>
@@ -635,9 +591,51 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             </TabsContent>
             <TabsContent value="gradesheet-view">
               <CardContent>
+                 <div className="mb-4">
+                    <Label htmlFor="gradesheet-subject-select" className="text-xs text-muted-foreground">Select Subjects to Display on Gradesheet</Label>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full justify-between mt-1" disabled={!selectedClass}>
+                                <span className="truncate pr-2">
+                                    {gradesheetSubjects.length > 0 ? gradesheetSubjects.join(', ') : 'Select subjects...'}
+                                </span>
+                                <ChevronDown className="h-4 w-4 shrink-0" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                            <div className="p-2">
+                                <Button
+                                  variant="link"
+                                  className="p-0 h-auto text-xs mb-2"
+                                  onClick={() => setGradesheetSubjects(subjectsForClass)}
+                                >
+                                  Select All
+                                </Button>
+                                <Button
+                                  variant="link"
+                                  className="p-0 h-auto text-xs mb-2 ml-4 text-destructive"
+                                  onClick={() => setGradesheetSubjects([])}
+                                >
+                                  Deselect All
+                                </Button>
+                            </div>
+                            <ScrollArea className="h-60">
+                                {subjectsForClass.map(subject => (
+                                    <DropdownMenuCheckboxItem
+                                        key={subject}
+                                        checked={gradesheetSubjects.includes(subject)}
+                                        onCheckedChange={(checked) => handleGradesheetSubjectSelection(subject, Boolean(checked))}
+                                    >
+                                        {subject}
+                                    </DropdownMenuCheckboxItem>
+                                ))}
+                            </ScrollArea>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                 </div>
                 <GradesheetView 
                     reports={studentsInClass} 
-                    subjects={subjectsForClass} 
+                    subjects={gradesheetSubjects} 
                     onScoreChange={handleMarkChange} 
                 />
               </CardContent>
