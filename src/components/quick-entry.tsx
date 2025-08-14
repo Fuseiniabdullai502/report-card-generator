@@ -57,6 +57,7 @@ const scoreTypeOptions = [
 ];
 type ScoreType = 'continuousAssessment' | 'examinationMark';
 const ADD_CUSTOM_SUBJECT_VALUE = "--add-custom-subject--";
+const predefinedSubjectsList = ["Mathematics", "English Language", "Science", "Computing", "Religious and Moral Education", "Creative Arts", "Geography", "Economics", "Biology", "Elective Mathematics"];
 
 
 export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps) {
@@ -107,19 +108,20 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         .sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''));
       setStudentsInClass(reports);
 
-      const subjects = new Set<string>();
+      const subjectsFromReports = new Set<string>();
       reports.forEach(report => {
         report.subjects?.forEach(sub => {
-          if (sub.subjectName) subjects.add(sub.subjectName);
+          if (sub.subjectName) subjectsFromReports.add(sub.subjectName);
         });
       });
-      const sortedSubjects = Array.from(subjects).sort();
-      setSubjectsForClass(sortedSubjects);
+      // Combine predefined subjects with subjects from reports for a comprehensive list
+      const allPossibleSubjects = [...new Set([...predefinedSubjectsList, ...Array.from(subjectsFromReports)])].sort();
+      setSubjectsForClass(allPossibleSubjects);
       
-      // Reset focused subject if it's not in the new list of subjects
-      if (sortedSubjects.length > 0 && (!focusedSubject || !sortedSubjects.includes(focusedSubject))) {
-        setFocusedSubject(sortedSubjects[0]);
-      } else if (sortedSubjects.length === 0) {
+      // Set a default focused subject if none is selected or the current one is invalid
+      if (allPossibleSubjects.length > 0 && !allPossibleSubjects.includes(focusedSubject)) {
+        setFocusedSubject(allPossibleSubjects[0]);
+      } else if (allPossibleSubjects.length === 0) {
         setFocusedSubject('');
       }
 
@@ -128,7 +130,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setSubjectsForClass([]);
       setFocusedSubject('');
     }
-  }, [selectedClass, allReports, focusedSubject]);
+  }, [selectedClass, allReports]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return studentsInClass;
@@ -481,7 +483,11 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                 <SelectValue placeholder="Select a subject..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                {subjectsForClass.length > 0 ? (
+                                    subjectsForClass.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
+                                ) : (
+                                    <SelectItem value="" disabled>No subjects for this class</SelectItem>
+                                )}
                                 <SelectItem value={ADD_CUSTOM_SUBJECT_VALUE}>
                                     <div className="flex items-center gap-2 text-accent">
                                         <PlusCircle className="h-4 w-4" /> Add New Subject...
