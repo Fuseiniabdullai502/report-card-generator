@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -56,7 +55,7 @@ export async function generateBulkStudentFeedback(
 
 const generateBulkStudentFeedbackPrompt = ai.definePrompt({
   name: 'generateBulkStudentFeedbackPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-1.5-flash-latest',
   input: {schema: GenerateBulkStudentFeedbackInputSchema},
   output: {schema: GenerateBulkStudentFeedbackOutputSchema},
   prompt: `You are a helpful and efficient teacher providing feedback to a group of students.
@@ -84,7 +83,7 @@ const generateBulkStudentFeedbackFlow = ai.defineFlow(
     inputSchema: GenerateBulkStudentFeedbackInputSchema,
     outputSchema: GenerateBulkStudentFeedbackOutputSchema,
   },
-  async (input: GenerateBulkStudentFeedbackInput) => {
+  async (input) => {
     const {output} = await generateBulkStudentFeedbackPrompt(input);
     if (!output?.feedbacks) {
       return {

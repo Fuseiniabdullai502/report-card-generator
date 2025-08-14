@@ -19,6 +19,11 @@ import {
   type GenerateSchoolInsightsInput,
   type GenerateSchoolInsightsOutput,
 } from '@/ai/flows/generate-school-insights-flow';
+import {
+  generateBulkStudentFeedback,
+  type GenerateBulkStudentFeedbackInput,
+  type GenerateBulkStudentFeedbackOutput,
+} from '@/ai/flows/generate-bulk-student-feedback-flow';
 import { z } from 'zod';
 import admin from '@/lib/firebase-admin';
 import type { Query, DocumentData } from 'firebase-admin/firestore';
@@ -221,6 +226,53 @@ export async function getAiSchoolInsightsAction(
     return { success: false, error: errorMessage };
   }
 }
+
+// Schemas for Bulk AI Feedback
+const ActionStudentFeedbackDataSchema = z.object({
+  studentId: z.string(),
+  studentName: z.string(),
+  className: z.string(),
+  performanceSummary: z.string(),
+  areasForImprovement: z.string(),
+  strengths: z.string(),
+});
+
+const GenerateBulkStudentFeedbackActionInputSchema = z.object({
+  students: z.array(ActionStudentFeedbackDataSchema),
+});
+
+export async function getBulkAiTeacherFeedbackAction(
+  input: GenerateBulkStudentFeedbackInput
+): Promise<{ success: boolean; feedbacks?: GenerateBulkStudentFeedbackOutput['feedbacks']; error?: string }> {
+  try {
+    const validatedInput = GenerateBulkStudentFeedbackActionInputSchema.parse(input);
+    const result = await generateBulkStudentFeedback(validatedInput);
+    
+    if (result.feedbacks && result.feedbacks.length > 0) {
+      const batch = admin.firestore().batch();
+      result.feedbacks.forEach(({ studentId, feedback }) => {
+        const reportRef = admin.firestore().collection('reports').doc(studentId);
+        batch.update(reportRef, { 
+          teacherFeedback: feedback, 
+          updatedAt: admin.firestore.FieldValue.serverTimestamp() 
+        });
+      });
+      await batch.commit();
+    }
+    
+    return { success: true, feedbacks: result.feedbacks };
+  } catch (error) {
+    console.error("Error in getBulkAiTeacherFeedbackAction:", error);
+    let errorMessage = "Failed to generate or apply bulk AI feedback.";
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for bulk AI feedback: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
+
 
 // Updated registerUserAction: now reads role and scope from the invite
 export async function registerUserAction(data: {
@@ -1264,6 +1316,7 @@ export async function batchUpdateTeacherFeedbackAction(
       
 
     
+
 
 
 
