@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus, MessageSquare } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus, MessageSquare, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -35,7 +35,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction, batchUpdateTeacherFeedbackAction, getBulkAiTeacherFeedbackAction } from '@/app/actions';
+import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction, batchUpdateTeacherFeedbackAction, getBulkAiTeacherFeedbackAction, editImageWithAiAction } from '@/app/actions';
 import * as XLSX from 'xlsx';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
@@ -91,6 +91,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
 
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [isApplyingBulkFeedback, setIsApplyingBulkFeedback] = useState(false);
+
+  const [imageUploadStatus, setImageUploadStatus] = useState<Record<string, 'uploading' | 'editing' | 'idle'>>({});
 
 
   const availableClasses = useMemo(() => {
@@ -558,6 +560,77 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         );
     };
 
+      const dataUriToBlob = (dataUri: string): { blob: Blob, mimeType: string } => {
+    const byteString = atob(dataUri.split(',')[1]);
+    const mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    return { blob: new Blob([ab], { type: mimeString }), mimeType: mimeString };
+  };
+
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>, studentId: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageUploadStatus(prev => ({...prev, [studentId]: 'uploading'}));
+    try {
+      const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      handleFieldChange(studentId, 'studentPhotoDataUri', downloadURL);
+    } catch (error) {
+      toast({ title: 'Upload Failed', description: 'Could not save the image.', variant: 'destructive' });
+    } finally {
+      setImageUploadStatus(prev => ({...prev, [studentId]: 'idle'}));
+      if(e.target) e.target.value = '';
+    }
+  };
+
+  const handleAiEditImage = async (student: ReportData) => {
+    const photoUrl = student.studentPhotoDataUri;
+    if (!photoUrl) return;
+
+    setImageUploadStatus(prev => ({...prev, [student.id]: 'editing'}));
+
+    let photoDataUri = photoUrl;
+    if (!photoUrl.startsWith('data:')) {
+      try {
+        const response = await fetch(photoUrl);
+        const blob = await response.blob();
+        photoDataUri = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (error) {
+        toast({ title: "AI Edit Failed", description: "Could not fetch image to send to AI.", variant: "destructive" });
+        setImageUploadStatus(prev => ({...prev, [student.id]: 'idle'}));
+        return;
+      }
+    }
+
+    const result = await editImageWithAiAction({ photoDataUri, prompt: "Crop to passport photo with a 3:4 aspect ratio. Apply bright, even studio lighting and remove distracting background." });
+    if (result.success && result.editedPhotoDataUri) {
+      try {
+        const { blob } = dataUriToBlob(result.editedPhotoDataUri);
+        const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+        await uploadBytes(storageRef, blob);
+        const downloadURL = await getDownloadURL(storageRef);
+        handleFieldChange(student.id, 'studentPhotoDataUri', downloadURL);
+      } catch (storageError) {
+        toast({ title: "Storage Error", description: "AI edit successful, but failed to save new image.", variant: "destructive" });
+      }
+    } else {
+      toast({ title: "AI Image Edit Failed", description: result.error, variant: "destructive" });
+    }
+    setImageUploadStatus(prev => ({...prev, [student.id]: 'idle'}));
+  };
+
+
   return (
     <>
       <Card>
@@ -650,6 +723,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                 />
                             </TableHead>
                             <TableHead className="min-w-[180px] sticky left-10 bg-muted z-20">Student Name</TableHead>
+                            <TableHead className="min-w-[150px]"><ImageIcon className="inline-block mr-1 h-4 w-4"/>Photo</TableHead>
                             <TableHead className="min-w-[120px]"><VenetianMask className="inline-block mr-1 h-4 w-4"/>Gender</TableHead>
                             <TableHead className="min-w-[150px]"><CalendarCheck2 className="inline-block mr-1 h-4 w-4"/>Days Attended</TableHead>
                             {activeSubjectsInClass.map(subject => (
@@ -665,6 +739,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                             <TableHead className="sticky left-10 bg-muted z-20"></TableHead>
                             <TableHead></TableHead>
                             <TableHead></TableHead>
+                            <TableHead></TableHead>
                             {activeSubjectsInClass.map(subject => (
                               <React.Fragment key={`${subject}-sub`}>
                                 <TableHead className="text-center border-l">CA (60)</TableHead>
@@ -677,6 +752,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                     </TableHeader>
                     <TableBody>
                         {filteredStudents.map((student, index) => {
+                            const isImageProcessing = imageUploadStatus[student.id] === 'uploading' || imageUploadStatus[student.id] === 'editing';
                             return (
                                 <TableRow key={student.id} data-state={selectedStudentIds.includes(student.id) ? 'selected' : 'unselected'}>
                                     <TableCell className="sticky left-0 bg-background z-20 px-2">
@@ -688,6 +764,31 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                     </TableCell>
                                     <TableCell className="font-medium sticky left-10 bg-background z-20">
                                         {student.studentName || ''}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            {student.studentPhotoDataUri ? (
+                                                <div className="relative w-12 h-16">
+                                                  <NextImage src={student.studentPhotoDataUri} alt={student.studentName || 'Student'} layout='fill' className="rounded object-cover border" />
+                                                  {isImageProcessing && (
+                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded">
+                                                      <Loader2 className="h-5 w-5 animate-spin text-white"/>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                            ) : (
+                                                <div className="w-12 h-16 bg-muted rounded flex items-center justify-center"><ImageIcon className="h-6 w-6 text-muted-foreground"/></div>
+                                            )}
+                                            <div className="flex flex-col gap-1">
+                                               <input type="file" id={`photo-upload-${student.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, student.id)} disabled={isImageProcessing} />
+                                               <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => document.getElementById(`photo-upload-${student.id}`)?.click()} disabled={isImageProcessing}>
+                                                  <Upload className="h-4 w-4"/>
+                                               </Button>
+                                               <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => handleAiEditImage(student)} disabled={!student.studentPhotoDataUri || isImageProcessing}>
+                                                  <Wand2 className="h-4 w-4"/>
+                                               </Button>
+                                            </div>
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                       <Select value={student.gender || ''} onValueChange={(value) => handleFieldChange(student.id, 'gender', value)}>
