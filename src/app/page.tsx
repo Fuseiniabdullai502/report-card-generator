@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, PenSquare, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo, SlidersHorizontal, Settings, Search } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, PenSquare, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo, SlidersHorizontal, Settings, Search, Image as ImageIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
@@ -34,6 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QuickEntry } from '@/components/quick-entry';
 import { deleteReportAction } from '@/app/actions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Slider } from '@/components/ui/slider';
 
 
 // Dynamically import heavy components
@@ -129,6 +130,49 @@ function AppContent({ user }: { user: CustomUser }) {
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const [availableCircuits, setAvailableCircuits] = useState<string[]>([]);
   const [indexError, setIndexError] = useState<string | null>(null);
+  
+  // State for appearance customization
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [textOverlay, setTextOverlay] = useState<string>('');
+  const [backgroundOpacity, setBackgroundOpacity] = useState<number>(0.1);
+  const [isAppearanceSettingsVisible, setIsAppearanceSettingsVisible] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        const savedBg = localStorage.getItem('app-background-image');
+        const savedText = localStorage.getItem('app-text-overlay');
+        const savedOpacity = localStorage.getItem('app-bg-opacity');
+        if (savedBg) setBackgroundImage(savedBg);
+        if (savedText) setTextOverlay(savedText);
+        if (savedOpacity) setBackgroundOpacity(parseFloat(savedOpacity));
+    }
+  }, []);
+
+  const handleBackgroundImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              const dataUrl = reader.result as string;
+              setBackgroundImage(dataUrl);
+              localStorage.setItem('app-background-image', dataUrl);
+          };
+          reader.readAsDataURL(file);
+      }
+      if(e.target) e.target.value = '';
+  };
+  
+  const handleTextOverlayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const text = e.target.value;
+      setTextOverlay(text);
+      localStorage.setItem('app-text-overlay', text);
+  };
+  
+  const handleBackgroundOpacityChange = (value: number[]) => {
+      const opacity = value[0];
+      setBackgroundOpacity(opacity);
+      localStorage.setItem('app-bg-opacity', String(opacity));
+  };
 
   const isSuperAdmin = user.role === 'super-admin';
   const isBigAdmin = user.role === 'big-admin';
@@ -930,7 +974,35 @@ function AppContent({ user }: { user: CustomUser }) {
   return (
     <>
       <div className="main-app-container">
-        <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground">
+        <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col font-body bg-background text-foreground relative">
+        {backgroundImage && (
+            <div 
+                className="absolute inset-0 z-0"
+                style={{
+                    backgroundImage: `url(${backgroundImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    opacity: backgroundOpacity,
+                }}
+            />
+        )}
+        {textOverlay && (
+            <div 
+                className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none"
+                style={{
+                    fontSize: 'clamp(2rem, 15vw, 10rem)',
+                    color: 'hsl(var(--foreground))',
+                    opacity: 0.05,
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    textTransform: 'uppercase',
+                }}
+            >
+                {textOverlay}
+            </div>
+        )}
+        <div className='relative z-10'>
           <header className="mb-8 text-center no-print relative">
             <div className="absolute top-0 left-0 flex items-center gap-2">
                 {isAdminRole && (
@@ -968,6 +1040,9 @@ function AppContent({ user }: { user: CustomUser }) {
           <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 no-print">
               <Button variant="outline" size="icon" className="rounded-full shadow-lg h-14 w-14 bg-background/80 backdrop-blur-sm" onClick={() => setIsSessionControlsVisible(prev => !prev)} title="Toggle Session Controls">
                   <Settings className={cn("h-7 w-7 transition-colors", isSessionControlsVisible ? "text-primary" : "text-muted-foreground")} />
+              </Button>
+              <Button variant="outline" size="icon" className="rounded-full shadow-lg h-14 w-14 bg-background/80 backdrop-blur-sm" onClick={() => setIsAppearanceSettingsVisible(prev => !prev)} title="Toggle Appearance Settings">
+                    <ImageIcon className={cn("h-7 w-7 transition-colors", isAppearanceSettingsVisible ? "text-purple-500" : "text-muted-foreground")} />
               </Button>
                <Button variant="outline" size="icon" className="rounded-full shadow-lg h-14 w-14 bg-background/80 backdrop-blur-sm" onClick={() => setIsReportFormVisible(prev => !prev)} title="Toggle Report Form">
                   <Edit className={cn("h-7 w-7 transition-colors", isReportFormVisible ? "text-accent" : "text-muted-foreground")} />
@@ -1114,6 +1189,43 @@ function AppContent({ user }: { user: CustomUser }) {
               </CardContent>
             </Card>
           )}
+
+           {isAppearanceSettingsVisible && (
+            <Card className="mb-8 p-4 no-print transition-all duration-300 animate-in fade-in-50">
+                <CardHeader className="p-2 flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle className="text-lg flex items-center"><ImageIcon className="mr-2 h-5 w-5 text-purple-500"/>Appearance</CardTitle>
+                        <CardDescription className="text-xs">Customize the look of the application.</CardDescription>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsAppearanceSettingsVisible(false)}>
+                        <EyeOff />
+                    </Button>
+                </CardHeader>
+                <CardContent className="p-2 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                        <div className="space-y-2">
+                            <Label htmlFor="bg-image-upload">Background Image</Label>
+                            <Input id="bg-image-upload" type="file" accept="image/*" onChange={handleBackgroundImageUpload} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="bg-opacity">Background Opacity</Label>
+                            <Slider
+                                id="bg-opacity"
+                                min={0}
+                                max={1}
+                                step={0.05}
+                                value={[backgroundOpacity]}
+                                onValueChange={handleBackgroundOpacityChange}
+                            />
+                        </div>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="text-overlay">Text Watermark</Label>
+                        <Input id="text-overlay" value={textOverlay} onChange={handleTextOverlayChange} placeholder="e.g., Your School Name" />
+                    </div>
+                </CardContent>
+            </Card>
+          )}
           
           <main className={cn("flex-grow grid grid-cols-1 gap-8", (isReportFormVisible || isPreviewVisible) && "lg:grid-cols-5")}>
              {isReportFormVisible && (
@@ -1153,7 +1265,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
             {isPreviewVisible && (
               <section className={cn("flex-col no-print transition-all duration-300 animate-in fade-in-50", isReportFormVisible ? "lg:col-span-3 flex" : "lg:col-span-5 flex")}>
-                <Card className="shadow-lg flex-grow flex flex-col bg-card text-card-foreground">
+                <Card className="shadow-lg flex-grow flex flex-col bg-card/95 text-card-foreground">
                   <CardHeader>
                     <div className="flex flex-col gap-4">
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
@@ -1254,7 +1366,7 @@ function AppContent({ user }: { user: CustomUser }) {
                       {reportsCount > 0 && <span className="block mt-1 text-xs italic text-primary"><BarChart3 className="inline-block mr-1 h-3 w-3" />Ranking is based on overall average within each class.</span>}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent id="report-preview-container" className={cn("flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100 dark:bg-gray-800", !isPreviewVisible && "hidden")}>
+                  <CardContent id="report-preview-container" className={cn("flex-grow rounded-b-lg overflow-auto p-0 md:p-2 bg-gray-100/80 dark:bg-gray-800/80", !isPreviewVisible && "hidden")}>
                     {isLoadingReports && allRankedReports.length === 0 ? (
                       <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
                         <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -1309,6 +1421,7 @@ function AppContent({ user }: { user: CustomUser }) {
           <footer className="text-center mt-12 py-6 text-sm text-muted-foreground border-t no-print">
             <p>&copy; {new Date().getFullYear()} Report Card Generator. Professionally designed for educators.</p>
           </footer>
+        </div>
         </div>
       </div>
 
