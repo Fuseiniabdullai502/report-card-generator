@@ -135,33 +135,35 @@ const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) =>
 const GESLogo = () => (
     <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <circle cx="50" cy="50" r="48" fill="none" stroke="#333" strokeWidth="1"/>
-      <circle cx="50" cy="50" r="44" fill="#fff"/>
-      <path id="arc" d="M 15,50 a 35,35 0 1,1 70,0" fill="none"/>
-      <text fill="#000" fontSize="12" fontWeight="bold">
+      <circle cx="50" cy="50" r="47" fill="#fff"/>
+      <path id="arc" d="M 15,65 a 35,35 0 1,1 70,0" fill="none" />
+      <text fill="#000" fontSize="10" fontWeight="bold">
           <textPath href="#arc" startOffset="50%" textAnchor="middle">
               GHANA EDUCATION SERVICE
           </textPath>
       </text>
-      <g>
-          <circle cx="38" cy="50" r="12" stroke="red" strokeWidth="2" fill="none"/>
-          <text x="38" y="55" textAnchor="middle" fontSize="14" fontWeight="bold" fill="red">G</text>
+      <g transform="translate(0, 5)">
+        <g transform="translate(45.5, 20)">
+            <path d="M 5,0 L 7.5,2.5 L 5,5 L 2.5,2.5 Z" fill="#000" />
+            <rect x="4" y="5" width="2" height="4" fill="#000"/>
+            <circle cx="5" cy="2" r="1.5" fill="#000"/>
+        </g>
+        <g>
+            <circle cx="35" cy="50" r="12" stroke="red" strokeWidth="2" fill="none"/>
+            <text x="35" y="55" textAnchor="middle" fontSize="14" fontWeight="bold" fill="red">G</text>
+        </g>
+        <g>
+            <circle cx="65" cy="50" r="12" stroke="green" strokeWidth="2" fill="none"/>
+            <text x="65" y="55" textAnchor="middle" fontSize="14" fontWeight="bold" fill="green">S</text>
+        </g>
+        <g>
+            <circle cx="50" cy="50" r="12" stroke="#FCD116" strokeWidth="2" fill="none"/>
+            <text x="50" y="55" textAnchor="middle" fontSize="14" fontWeight="bold">E</text>
+        </g>
       </g>
-      <g>
-          <circle cx="62" cy="50" r="12" stroke="green" strokeWidth="2" fill="none"/>
-          <text x="62" y="55" textAnchor="middle" fontSize="14" fontWeight="bold" fill="green">S</text>
-      </g>
-      <g>
-          <circle cx="50" cy="50" r="12" stroke="#FCD116" strokeWidth="2" fill="none"/>
-          <text x="50" y="55" textAnchor="middle" fontSize="14" fontWeight="bold">E</text>
-      </g>
-      <g transform="translate(45.5,30)">
-          <path d="M 5,0 L 7.5,2.5 L 5,5 L 2.5,2.5 Z" fill="#000" />
-          <rect x="4" y="5" width="2" height="4" fill="#000"/>
-          <circle cx="5" cy="2" r="1.5" fill="#000"/>
-      </g>
-      <text x="50" y="78" textAnchor="middle" fontSize="14" fontWeight="bold">GES</text>
-      <polygon points="30,72 32.5,77 37.5,77 33.5,80 35,85 30,82 25,85 26.5,80 22.5,77 27.5,77" fill="#FCD116"/>
-      <polygon points="70,72 72.5,77 77.5,77 73.5,80 75,85 70,82 65,85 66.5,80 62.5,77 67.5,77" fill="#FCD116"/>
+      <text x="50" y="82" textAnchor="middle" fontSize="14" fontWeight="bold">GES</text>
+      <polygon points="30,78 32.5,83 37.5,83 33.5,86 35,91 30,88 25,91 26.5,86 22.5,83 27.5,83" fill="#000"/>
+      <polygon points="70,78 72.5,83 77.5,83 73.5,86 75,91 70,88 65,91 66.5,86 62.5,83 67.5,83" fill="#000"/>
     </svg>
 );
 
