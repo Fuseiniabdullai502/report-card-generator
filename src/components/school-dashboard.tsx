@@ -3,7 +3,6 @@
 
 import React, { useEffect, useMemo, useState, useTransition, useCallback } from 'react';
 import type { ReportData } from '@/lib/schemas';
-import type { CustomUser } from './auth-provider';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -23,7 +22,7 @@ import type { GenerateSchoolInsightsOutput, GenerateSchoolInsightsInput } from '
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { calculateSubjectFinalMark, calculateOverallAverage } from '@/lib/calculations';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import Image from 'next/image';
 
 interface SchoolPerformanceDashboardProps {
   isOpen: boolean;
@@ -31,7 +30,7 @@ interface SchoolPerformanceDashboardProps {
   allReports: ReportData[];
   schoolNameProp: string;
   academicYearProp: string;
-  userRole: CustomUser['role'];
+  userRole: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
 }
 
 interface HistoricalSchoolTermData {
@@ -176,7 +175,7 @@ export default function SchoolPerformanceDashboard({
     
     const newHistoricalData = sortedTerms.map(term => {
         const termReports = reportsByTerm.get(term)!;
-        const avg = calculateOverallAverage(termReports.flatMap(r => r.subjects ?? []));
+        const avg = calculateOverallAverage(termReports.flatMap(r => r.subjects));
         const numClasses = new Set(termReports.map(r => r.className)).size;
         return {
             term: term,
@@ -202,7 +201,7 @@ export default function SchoolPerformanceDashboard({
 
         const schoolPerformances = Array.from(reportsBySchool.entries()).map(([schoolName, schoolReports]) => {
             const allAverages = schoolReports
-              .map(report => calculateOverallAverage(report.subjects ?? []))
+              .map(report => calculateOverallAverage(report.subjects))
               .filter(avg => avg !== null) as number[];
 
             const average = allAverages.length > 0
@@ -246,6 +245,12 @@ export default function SchoolPerformanceDashboard({
     }
 
   }, [isOpen, allReports, userRole]); 
+
+  useEffect(() => {
+    if (isOpen && schoolStats) {
+      fetchSchoolAiInsights();
+    }
+  }, [isOpen, schoolStats, fetchSchoolAiInsights]);
 
   const handlePrint = () => {
     if (!schoolStats || allReports.length === 0) {
@@ -383,14 +388,7 @@ export default function SchoolPerformanceDashboard({
         </CardContent>
       );
     }
-    return (
-       <CardContent className="pt-4">
-        <Button onClick={fetchSchoolAiInsights} disabled={!schoolStats || isLoadingAi}>
-          {isLoadingAi ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Brain className="mr-2 h-4 w-4" />}
-          Generate AI Insights
-        </Button>
-      </CardContent>
-    );
+    return null;
   };
 
 
@@ -400,9 +398,9 @@ export default function SchoolPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="school-dashboard-dialog-content"
-        className="max-w-7xl w-[95vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden bg-gray-100/80 dark:bg-gray-800/80 p-0"
+        className="max-w-5xl w-[95vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden"
       >
-        <ShadcnDialogHeader className="w-full shrink-0 px-4 py-3 border-b bg-background sticky top-0 z-10 dialog-header-print-hide">
+        <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
           <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
             <Building className="mr-3 h-6 w-6" />
             School Dashboard: {schoolNameProp}
@@ -414,313 +412,292 @@ export default function SchoolPerformanceDashboard({
         
         <div 
           data-testid="school-dashboard-inner-scroll-container"
-          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4"
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-6 space-y-6"
         >
-          <div className="a4-page-simulation space-y-6 relative">
-            {/* Watermark */}
-            {schoolNameProp && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden watermark-container">
-                  <p 
-                    className="font-bold text-gray-500/5 dark:text-gray-400/5 transform -rotate-45 select-none"
-                    style={{
-                        fontSize: 'clamp(2rem, 15vw, 8rem)',
-                        lineHeight: '1.2',
-                        wordBreak: 'break-word',
-                    }}
-                  >
-                      {schoolNameProp}
-                  </p>
-              </div>
-            )}
-            <div className="relative z-10">
-              <div className="school-dashboard-print-header">
-                  <div className="flex justify-center mb-2">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
-                  </div>
-                  <h2 className="text-xl font-bold">{schoolNameProp} - School Performance Dashboard</h2>
-                  <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
-              </div>
+            <div className="school-dashboard-print-header">
+                 <div className="flex justify-center mb-2">
+                    <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
+                </div>
+                <h2 className="text-xl font-bold">{schoolNameProp} - School Performance Dashboard</h2>
+                <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
+            </div>
 
-              {(isLoadingStats && !schoolStats) && (
+            {(isLoadingStats && !schoolStats) && (
+              <Card className="shadow-md">
+                <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Aggregating school statistics...
+                </CardContent>
+              </Card>
+            )}
+            {allReports.length === 0 && !isLoadingStats && (
+                 <Card className="shadow-md">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Info className="mr-2 h-5 w-5" />No Reports Available</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">There are no student reports to generate a school dashboard. Please add reports first.</p>
+                    </CardContent>
+                </Card>
+            )}
+            {!schoolStats && allReports.length > 0 && !isLoadingStats && (
+                 <Card className="shadow-md">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />Data Error</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">Could not aggregate school statistics for the most recent term. Please check report data or try again.</p>
+                    </CardContent>
+                </Card>
+            )}
+
+            {schoolStats && (
+              <>
                 <Card className="shadow-md">
-                  <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Aggregating school statistics...
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Sigma className="mr-2 h-5 w-5" />School-Wide Snapshot ({mostRecentTerm})</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Total Students</p>
+                      <p className="font-semibold text-lg">{schoolStats.totalStudentsInSchool}</p>
+                    </div>
+                     <div>
+                      <p className="text-muted-foreground">Classes Represented</p>
+                      <p className="font-semibold text-lg">{schoolStats.numberOfClassesRepresented}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Overall School Average</p>
+                      <p className="font-semibold text-lg">
+                        {schoolStats.overallSchoolAverage !== null ? `${schoolStats.overallSchoolAverage.toFixed(2)}%` : 'N/A'}
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
-              )}
-              {allReports.length === 0 && !isLoadingStats && (
-                  <Card className="shadow-md">
-                      <CardHeader className="pb-3">
-                          <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Info className="mr-2 h-5 w-5" />No Reports Available</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                          <p className="text-muted-foreground">There are no student reports to generate a school dashboard. Please add reports first.</p>
-                      </CardContent>
-                  </Card>
-              )}
-              {!schoolStats && allReports.length > 0 && !isLoadingStats && (
-                  <Card className="shadow-md">
-                      <CardHeader className="pb-3">
-                          <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />Data Error</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                          <p className="text-muted-foreground">Could not aggregate school statistics for the most recent term. Please check report data or try again.</p>
-                      </CardContent>
-                  </Card>
-              )}
+                
+                {historicalData.length > 1 && (
+                    <Card className="shadow-md">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><History className="mr-2 h-5 w-5"/>School Term-over-Term</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <Table className="border rounded-md min-w-[500px]">
+                                <ShadcnUITableHeader className="bg-muted/50">
+                                    <TableRow>
+                                        <TableHead className="font-semibold">Term</TableHead>
+                                        <TableHead className="text-center font-semibold"># Students</TableHead>
+                                        <TableHead className="text-center font-semibold"># Classes</TableHead>
+                                        <TableHead className="text-center font-semibold">School Average (%)</TableHead>
+                                    </TableRow>
+                                </ShadcnUITableHeader>
+                                <TableBody>
+                                    {historicalData.map(data => (
+                                        <TableRow key={data.term}>
+                                            <TableCell className="font-medium">{data.term}</TableCell>
+                                            <TableCell className="text-center">{data.numStudents}</TableCell>
+                                            <TableCell className="text-center">{data.numClasses}</TableCell>
+                                            <TableCell className="text-center">{data.schoolAverage?.toFixed(1) ?? 'N/A'}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                )}
 
-              {schoolStats && (
-                <>
+
+                {schoolStats.classSummariesForUI.length > 0 && (
+                    <Card className="shadow-md">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Users className="mr-2 h-5 w-5 text-indigo-600" />Class Performance ({mostRecentTerm})</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <Table className="border rounded-md bg-card min-w-[500px]">
+                                <ShadcnUITableHeader className="bg-muted/50">
+                                    <TableRow>
+                                        <TableHead className="font-semibold py-2 px-3">Class Name</TableHead>
+                                        <TableHead className="text-center font-semibold py-2 px-3"># Students</TableHead>
+                                        <TableHead className="text-center font-semibold py-2 px-3">Class Avg (%)</TableHead>
+                                    </TableRow>
+                                </ShadcnUITableHeader>
+                                <TableBody>
+                                    {schoolStats.classSummariesForUI.sort((a,b) => (b.classAverage || 0) - (a.classAverage || 0)).map(cs => (
+                                        <TableRow key={cs.className}>
+                                            <TableCell className="font-medium py-2 px-3">{cs.className}</TableCell>
+                                            <TableCell className="text-center py-2 px-3">{cs.numberOfStudents}</TableCell>
+                                            <TableCell className="text-center py-2 px-3">{cs.classAverage?.toFixed(1) || 'N/A'}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {userRole === 'super-admin' && rankedSchools.length > 1 && (
+                    <Card className="shadow-md">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
+                                <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
+                                School Performance Ranking
+                            </CardTitle>
+                            <CardDescription className="text-xs text-muted-foreground pt-1">
+                                Ranking of all schools in the system based on their overall student average for the most recent term.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <Table className="border rounded-md bg-card min-w-[500px]">
+                                <ShadcnUITableHeader className="bg-muted/50">
+                                    <TableRow>
+                                        <TableHead className="font-semibold py-2 px-3 w-[80px]">Rank</TableHead>
+                                        <TableHead className="font-semibold py-2 px-3">School Name</TableHead>
+                                        <TableHead className="text-center font-semibold py-2 px-3">Students</TableHead>
+                                        <TableHead className="text-right font-semibold py-2 px-3">Avg (%)</TableHead>
+                                    </TableRow>
+                                </ShadcnUITableHeader>
+                                <TableBody>
+                                    {rankedSchools.map(school => (
+                                        <TableRow key={school.schoolName}>
+                                            <TableCell className="font-bold text-lg py-2 px-3">{school.rank}</TableCell>
+                                            <TableCell className="font-medium py-2 px-3">{school.schoolName}</TableCell>
+                                            <TableCell className="text-center py-2 px-3">{school.studentCount}</TableCell>
+                                            <TableCell className="text-right font-semibold py-2 px-3">{school.average.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {schoolStats.overallSubjectStatsForSchoolUI.length > 0 && (
                   <Card className="shadow-md">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Sigma className="mr-2 h-5 w-5" />School-Wide Snapshot ({mostRecentTerm})</CardTitle>
+                      <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><BookOpen className="mr-2 h-5 w-5 text-green-600" />School-Wide Subject Performance ({mostRecentTerm})</CardTitle>
+                      <CardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject across the entire school.</CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Total Students</p>
-                        <p className="font-semibold text-lg">{schoolStats.totalStudentsInSchool}</p>
+                    <CardContent className="pt-4">
+                      <div data-testid="school-subject-barchart-container" className="h-[300px] min-w-[600px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={schoolSubjectPerformanceChartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                            <XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{ fontSize: 10 }} />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
+                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', fillOpacity: 0.3 }} />
+                            <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
+                            <Bar dataKey="Below Average (<40%)" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} barSize={15} />
+                            <Bar dataKey="Average (40-59%)" fill="hsl(var(--primary) / 0.7)" radius={[4, 4, 0, 0]} barSize={15} />
+                            <Bar dataKey="Above Average (>=60%)" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} barSize={15} />
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Classes Represented</p>
-                        <p className="font-semibold text-lg">{schoolStats.numberOfClassesRepresented}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Overall School Average</p>
-                        <p className="font-semibold text-lg">
-                          {schoolStats.overallSchoolAverage !== null ? `${schoolStats.overallSchoolAverage.toFixed(2)}%` : 'N/A'}
-                        </p>
-                      </div>
+                       <Table className="mt-6 border rounded-md bg-card min-w-[700px]">
+                        <ShadcnUITableHeader className="bg-muted/50">
+                          <TableRow>
+                            <TableHead className="font-semibold py-2 px-3">Subject</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3">School Avg (%)</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3 text-red-600 dark:text-red-400">Below Avg (&lt;40%)</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3 text-blue-600 dark:text-blue-400">Average (40-59%)</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3 text-green-600 dark:text-green-400">Above Avg (&ge;60%)</TableHead>
+                          </TableRow>
+                        </ShadcnUITableHeader>
+                        <TableBody>
+                          {schoolStats.overallSubjectStatsForSchoolUI.map(s => (
+                            <TableRow key={s.subjectName}>
+                              <TableCell className="font-medium py-2 px-3">{s.subjectName}</TableCell>
+                              <TableCell className="text-center py-2 px-3">{s.schoolAverageForSubject?.toFixed(1) || 'N/A'}</TableCell>
+                              <TableCell className="text-center py-2 px-3">{s.numBelowAverage}</TableCell>
+                              <TableCell className="text-center py-2 px-3">{s.numAverage}</TableCell>
+                              <TableCell className="text-center py-2 px-3">{s.numAboveAverage}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </CardContent>
                   </Card>
-                  
-                  {historicalData.length > 1 && (
-                      <Card className="shadow-md">
-                          <CardHeader className="pb-3">
-                              <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><History className="mr-2 h-5 w-5"/>School Term-over-Term</CardTitle>
-                          </CardHeader>
-                          <CardContent className="pt-4">
-                              <Table className="border rounded-md min-w-[500px]">
-                                  <ShadcnUITableHeader className="bg-muted/50">
-                                      <TableRow>
-                                          <TableHead className="font-semibold">Term</TableHead>
-                                          <TableHead className="text-center font-semibold"># Students</TableHead>
-                                          <TableHead className="text-center font-semibold"># Classes</TableHead>
-                                          <TableHead className="text-center font-semibold">School Average (%)</TableHead>
-                                      </TableRow>
-                                  </ShadcnUITableHeader>
-                                  <TableBody>
-                                      {historicalData.map(data => (
-                                          <TableRow key={data.term}>
-                                              <TableCell className="font-medium">{data.term}</TableCell>
-                                              <TableCell className="text-center">{data.numStudents}</TableCell>
-                                              <TableCell className="text-center">{data.numClasses}</TableCell>
-                                              <TableCell className="text-center">{data.schoolAverage?.toFixed(1) ?? 'N/A'}</TableCell>
-                                          </TableRow>
-                                      ))}
-                                  </TableBody>
-                              </Table>
-                          </CardContent>
-                      </Card>
-                  )}
+                )}
 
-
-                  {schoolStats.classSummariesForUI.length > 0 && (
-                      <Card className="shadow-md">
-                          <CardHeader className="pb-3">
-                              <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Users className="mr-2 h-5 w-5 text-indigo-600" />Class Performance ({mostRecentTerm})</CardTitle>
-                          </CardHeader>
-                          <CardContent className="pt-4">
-                              <Table className="border rounded-md bg-card min-w-[500px]">
-                                  <ShadcnUITableHeader className="bg-muted/50">
-                                      <TableRow>
-                                          <TableHead className="font-semibold py-2 px-3">Class Name</TableHead>
-                                          <TableHead className="text-center font-semibold py-2 px-3"># Students</TableHead>
-                                          <TableHead className="text-center font-semibold py-2 px-3">Class Avg (%)</TableHead>
-                                      </TableRow>
-                                  </ShadcnUITableHeader>
-                                  <TableBody>
-                                      {schoolStats.classSummariesForUI.sort((a,b) => (b.classAverage || 0) - (a.classAverage || 0)).map(cs => (
-                                          <TableRow key={cs.className}>
-                                              <TableCell className="font-medium py-2 px-3">{cs.className}</TableCell>
-                                              <TableCell className="text-center py-2 px-3">{cs.numberOfStudents}</TableCell>
-                                              <TableCell className="text-center py-2 px-3">{cs.classAverage?.toFixed(1) || 'N/A'}</TableCell>
-                                          </TableRow>
-                                      ))}
-                                  </TableBody>
-                              </Table>
-                          </CardContent>
-                      </Card>
-                  )}
-
-                  {userRole === 'super-admin' && rankedSchools.length > 1 && (
-                      <Card className="shadow-md">
-                          <CardHeader className="pb-3">
-                              <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center">
-                                  <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
-                                  School Performance Ranking
-                              </CardTitle>
-                              <CardDescription className="text-xs text-muted-foreground pt-1">
-                                  Ranking of all schools in the system based on their overall student average for the most recent term.
-                              </CardDescription>
-                          </CardHeader>
-                          <CardContent className="pt-4">
-                              <Table className="border rounded-md bg-card min-w-[500px]">
-                                  <ShadcnUITableHeader className="bg-muted/50">
-                                      <TableRow>
-                                          <TableHead className="font-semibold py-2 px-3 w-[80px]">Rank</TableHead>
-                                          <TableHead className="font-semibold py-2 px-3">School Name</TableHead>
-                                          <TableHead className="text-center font-semibold py-2 px-3">Students</TableHead>
-                                          <TableHead className="text-right font-semibold py-2 px-3">Avg (%)</TableHead>
-                                      </TableRow>
-                                  </ShadcnUITableHeader>
-                                  <TableBody>
-                                      {rankedSchools.map(school => (
-                                          <TableRow key={school.schoolName}>
-                                              <TableCell className="font-bold text-lg py-2 px-3">{school.rank}</TableCell>
-                                              <TableCell className="font-medium py-2 px-3">{school.schoolName}</TableCell>
-                                              <TableCell className="text-center py-2 px-3">{school.studentCount}</TableCell>
-                                              <TableCell className="text-right font-semibold py-2 px-3">{school.average.toFixed(2)}</TableCell>
-                                          </TableRow>
-                                      ))}
-                                  </TableBody>
-                              </Table>
-                          </CardContent>
-                      </Card>
-                  )}
-
-                  {schoolStats.overallSubjectStatsForSchoolUI.length > 0 && (
-                    <Card className="shadow-md">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><BookOpen className="mr-2 h-5 w-5 text-green-600" />School-Wide Subject Performance ({mostRecentTerm})</CardTitle>
-                        <CardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject across the entire school.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="pt-4">
-                        <div data-testid="school-subject-barchart-container" className="h-[300px] min-w-[600px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={schoolSubjectPerformanceChartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                              <XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{ fontSize: 10 }} />
-                              <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-                              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', fillOpacity: 0.3 }} />
-                              <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
-                              <Bar dataKey="Below Average (&lt;40%)" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} barSize={15} />
-                              <Bar dataKey="Average (40-59%)" fill="hsl(var(--primary) / 0.7)" radius={[4, 4, 0, 0]} barSize={15} />
-                              <Bar dataKey="Above Average (&ge;60%)" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} barSize={15} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <Table className="mt-6 border rounded-md bg-card min-w-[700px]">
-                          <ShadcnUITableHeader className="bg-muted/50">
-                            <TableRow>
-                              <TableHead className="font-semibold py-2 px-3">Subject</TableHead>
-                              <TableHead className="text-center font-semibold py-2 px-3">School Avg (%)</TableHead>
-                              <TableHead className="text-center font-semibold py-2 px-3 text-red-600 dark:text-red-400">Below Avg (&lt;40%)</TableHead>
-                              <TableHead className="text-center font-semibold py-2 px-3 text-blue-600 dark:text-blue-400">Average (40-59%)</TableHead>
-                              <TableHead className="text-center font-semibold py-2 px-3 text-green-600 dark:text-green-400">Above Avg (&ge;60%)</TableHead>
-                            </TableRow>
-                          </ShadcnUITableHeader>
-                          <TableBody>
-                            {schoolStats.overallSubjectStatsForSchoolUI.map(s => (
-                              <TableRow key={s.subjectName}>
-                                <TableCell className="font-medium py-2 px-3">{s.subjectName}</TableCell>
-                                <TableCell className="text-center py-2 px-3">{s.schoolAverageForSubject?.toFixed(1) || 'N/A'}</TableCell>
-                                <TableCell className="text-center py-2 px-3">{s.numBelowAverage}</TableCell>
-                                <TableCell className="text-center py-2 px-3">{s.numAverage}</TableCell>
-                                <TableCell className="text-center py-2 px-3">{s.numAboveAverage}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {schoolStats.overallGenderStatsForSchoolUI.length > 0 && (
-                  <Card className="shadow-md">
-                      <CardHeader className="pb-3">
-                          <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />School-Wide Gender Statistics ({mostRecentTerm})</CardTitle>
-                          <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender across the school.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center">
-                          <div data-testid="school-gender-piechart-container" className="h-[250px] min-w-[300px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                              <RechartsPieChart>
-                              <Pie
-                                  data={schoolGenderChartData}
-                                  cx="50%"
-                                  cy="50%"
-                                  labelLine={false}
-                                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
-                                      const RADIAN = Math.PI / 180;
-                                      const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
-                                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                                      if (percent * 100 < 5) return null; 
-                                      return (
-                                      <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="11px" fontWeight="medium">
-                                          {`${name} (${(percent * 100).toFixed(0)}%)`}
-                                      </text>
-                                      );
-                                  }}
-                                  outerRadius={100}
-                                  fill="#8884d8"
-                                  dataKey="value"
-                                  nameKey="name"
-                              >
-                                  {schoolGenderChartData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
-                                  ))}
-                              </Pie>
-                              <Tooltip content={<CustomTooltip />} />
-                              <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
-                              </RechartsPieChart>
-                          </ResponsiveContainer>
-                          </div>
-                          <Table className="border rounded-md bg-card min-w-[300px]">
-                          <ShadcnUITableHeader className="bg-muted/50">
-                              <TableRow>
-                              <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
-                              <TableHead className="text-center font-semibold py-2 px-3">Count</TableHead>
-                              <TableHead className="text-center font-semibold py-2 px-3">Overall Avg (%)</TableHead>
-                              </TableRow>
-                          </ShadcnUITableHeader>
-                          <TableBody>
-                              {schoolStats.overallGenderStatsForSchoolUI.map(g => (
-                              <TableRow key={g.gender}>
-                                  <TableCell className="font-medium py-2 px-3">{g.gender}</TableCell>
-                                  <TableCell className="text-center py-2 px-3">{g.count}</TableCell>
-                                  <TableCell className="text-center py-2 px-3">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell>
-                              </TableRow>
-                              ))}
-                          </TableBody>
-                          </Table>
-                      </CardContent>
-                      </Card>
-                  )}
-                  
-                  <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50")}>
+                {schoolStats.overallGenderStatsForSchoolUI.length > 0 && (
+                 <Card className="shadow-md">
                     <CardHeader className="pb-3">
-                      <div className="flex justify-between items-center border-b pb-2">
-                        <CardTitle className="text-lg font-semibold text-primary flex items-center">
-                            {isLoadingAi && !aiSchoolAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
-                            School-Level Insights &amp; Advice ({mostRecentTerm})
-                        </CardTitle>
-                        
-                          <Button variant="outline" size="sm" onClick={fetchSchoolAiInsights} disabled={isLoadingAi || !schoolStats}>
-                            <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingAi ? 'animate-spin' : ''}`} />
-                            {aiSchoolAdvice ? 'Regenerate' : 'Generate'}
-                          </Button>
-                        
-                      </div>
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />School-Wide Gender Statistics ({mostRecentTerm})</CardTitle>
+                         <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender across the school.</CardDescription>
                     </CardHeader>
-                    {renderAiSchoolInsights()}
-                  </Card>
-                </>
-              )}
-            </div>
+                    <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center">
+                        <div data-testid="school-gender-piechart-container" className="h-[250px] min-w-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RechartsPieChart>
+                            <Pie
+                                data={schoolGenderChartData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
+                                    const RADIAN = Math.PI / 180;
+                                    const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+                                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                    if (percent * 100 < 5) return null; 
+                                    return (
+                                    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="11px" fontWeight="medium">
+                                        {`${name} (${(percent * 100).toFixed(0)}%)`}
+                                    </text>
+                                    );
+                                }}
+                                outerRadius={100}
+                                fill="#8884d8"
+                                dataKey="value"
+                                nameKey="name"
+                            >
+                                {schoolGenderChartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
+                            </RechartsPieChart>
+                        </ResponsiveContainer>
+                        </div>
+                        <Table className="border rounded-md bg-card min-w-[300px]">
+                        <ShadcnUITableHeader className="bg-muted/50">
+                            <TableRow>
+                            <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3">Count</TableHead>
+                            <TableHead className="text-center font-semibold py-2 px-3">Overall Avg (%)</TableHead>
+                            </TableRow>
+                        </ShadcnUITableHeader>
+                        <TableBody>
+                            {schoolStats.overallGenderStatsForSchoolUI.map(g => (
+                            <TableRow key={g.gender}>
+                                <TableCell className="font-medium py-2 px-3">{g.gender}</TableCell>
+                                <TableCell className="text-center py-2 px-3">{g.count}</TableCell>
+                                <TableCell className="text-center py-2 px-3">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                        </Table>
+                    </CardContent>
+                    </Card>
+                )}
+                
+                <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50")}>
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <CardTitle className="text-lg font-semibold text-primary flex items-center">
+                          {isLoadingAi && !aiSchoolAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
+                          School-Level Insights &amp; Advice ({mostRecentTerm})
+                      </CardTitle>
+                      <Button variant="outline" size="sm" onClick={fetchSchoolAiInsights} disabled={isLoadingAi || !schoolStats}>
+                        <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingAi ? 'animate-spin' : ''}`} />
+                        Reload
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  {renderAiSchoolInsights()}
+                </Card>
+              </>
+            )}
           </div>
-        </div>
 
-        <ShadcnDialogFooter className="w-full shrink-0 border-t px-4 py-3 bg-background sticky bottom-0 z-10 dialog-footer-print-hide flex-row justify-end space-x-2">
+        <ShadcnDialogFooter className="w-full shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide flex-row justify-end space-x-2">
           <Button variant="outline" onClick={handlePrint} disabled={!schoolStats || allReports.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print School Dashboard
           </Button>
@@ -738,16 +715,14 @@ function aggregateSchoolDataForTerm(reports: ReportData[]): SchoolStatistics | n
 
     const totalStudentsInSchool = reports.length;
 
-    const schoolWideAverage = calculateOverallAverage(reports.flatMap(r => r.subjects ?? []));
+    const schoolWideAverage = calculateOverallAverage(reports.flatMap(r => r.subjects));
 
     const classDataMap: Map<string, ReportData[]> = new Map();
     reports.forEach(report => {
-        if (report.className) {
-            if (!classDataMap.has(report.className)) {
-                classDataMap.set(report.className, []);
-            }
-            classDataMap.get(report.className)!.push(report);
+        if (!classDataMap.has(report.className)) {
+            classDataMap.set(report.className, []);
         }
+        classDataMap.get(report.className)!.push(report);
     });
     
     const numberOfClassesRepresented = classDataMap.size;
@@ -755,12 +730,12 @@ function aggregateSchoolDataForTerm(reports: ReportData[]): SchoolStatistics | n
     const classSummariesForUI = Array.from(classDataMap.entries()).map(([className, classReports]) => ({
       className,
       numberOfStudents: classReports.length,
-      classAverage: calculateOverallAverage(classReports.flatMap(r => r.subjects ?? [])),
+      classAverage: calculateOverallAverage(classReports.flatMap(r => r.subjects)),
     }));
 
     const schoolSubjectScoresMap: Map<string, number[]> = new Map();
     reports.forEach(report => {
-        (report.subjects ?? []).forEach(subject => {
+        report.subjects.forEach(subject => {
             if (subject.subjectName && subject.subjectName.trim() !== '') {
                 const finalMark = calculateSubjectFinalMark(subject);
                 if (finalMark !== null && !Number.isNaN(finalMark)) {
@@ -787,9 +762,8 @@ function aggregateSchoolDataForTerm(reports: ReportData[]): SchoolStatistics | n
         if (!schoolGenderMap.has(gender)) {
             schoolGenderMap.set(gender, { scores: [], count: 0 });
         }
-        const studentAverage = calculateOverallAverage(report.subjects ?? []);
-        if (studentAverage !== null) {
-          schoolGenderMap.get(gender)!.scores.push(studentAverage);
+        if (report.overallAverage !== undefined && report.overallAverage !== null && !Number.isNaN(report.overallAverage)) {
+            schoolGenderMap.get(gender)!.scores.push(report.overallAverage);
         }
         schoolGenderMap.get(gender)!.count++;
     });

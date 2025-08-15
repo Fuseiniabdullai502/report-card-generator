@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { calculateSubjectFinalMark, calculateOverallAverage } from '@/lib/calculations';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import Image from 'next/image';
 
 interface DistrictPerformanceDashboardProps {
   isOpen: boolean;
@@ -243,6 +244,9 @@ export default function DistrictPerformanceDashboard({
         </ShadcnDialogHeader>
         <div data-testid="school-dashboard-inner-scroll-container" className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
           <div className="dashboard-print-header">
+                <div className="flex justify-center mb-2">
+                    <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
+                </div>
                 <h2 className="text-xl font-bold">{districtName} District - Performance Dashboard</h2>
                 <p className="text-sm">Academic Session: {selectedYear === 'all' ? 'All Years' : selectedYear}, {selectedTerm === 'all' ? 'All Terms' : selectedTerm} | Generated on: {new Date().toLocaleDateString()}</p>
           </div>
