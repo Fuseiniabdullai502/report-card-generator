@@ -134,24 +134,34 @@ const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) =>
 
 const GESLogo = () => (
     <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="50" r="48" fill="white" stroke="#333" strokeWidth="1"/>
-        <circle cx="50" cy="50" r="44" fill="white" stroke="#006837" strokeWidth="3"/>
-
-        <g stroke="#333" strokeWidth="1.5">
-            <line x1="50" y1="12" x2="50" y2="35"/>
-            <line x1="50" y1="88" x2="50" y2="65"/>
-            <line x1="12" y1="50" x2="35" y2="50"/>
-            <line x1="88" y1="50" x2="65" y2="50"/>
-            <line x1="24" y1="24" x2="40" y2="40"/>
-            <line x1="76" y1="76" x2="60" y2="60"/>
-            <line x1="24" y1="76" x2="40" y2="60"/>
-            <line x1="76" y1="24" x2="60" y2="40"/>
-        </g>
-        
-        <circle cx="50" cy="50" r="16" fill="#FDB913" stroke="#333" strokeWidth="1"/>
-        <text x="50" y="55" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" textAnchor="middle" fill="#333">GES</text>
-        
-        <text x="50" y="75" fontFamily="Arial, sans-serif" fontSize="8" fontWeight="bold" textAnchor="middle" fill="#006837">SERVICE</text>
+      <circle cx="50" cy="50" r="48" fill="none" stroke="#333" strokeWidth="1"/>
+      <circle cx="50" cy="50" r="44" fill="#fff"/>
+      <path id="arc" d="M 15,50 a 35,35 0 1,1 70,0" fill="none"/>
+      <text fill="#000" fontSize="12" fontWeight="bold">
+          <textPath href="#arc" startOffset="50%" textAnchor="middle">
+              GHANA EDUCATION SERVICE
+          </textPath>
+      </text>
+      <g>
+          <circle cx="38" cy="50" r="12" stroke="red" strokeWidth="2" fill="none"/>
+          <text x="38" y="55" textAnchor="middle" fontSize="14" fontWeight="bold" fill="red">G</text>
+      </g>
+      <g>
+          <circle cx="62" cy="50" r="12" stroke="green" strokeWidth="2" fill="none"/>
+          <text x="62" y="55" textAnchor="middle" fontSize="14" fontWeight="bold" fill="green">S</text>
+      </g>
+      <g>
+          <circle cx="50" cy="50" r="12" stroke="#FCD116" strokeWidth="2" fill="none"/>
+          <text x="50" y="55" textAnchor="middle" fontSize="14" fontWeight="bold">E</text>
+      </g>
+      <g transform="translate(45.5,30)">
+          <path d="M 5,0 L 7.5,2.5 L 5,5 L 2.5,2.5 Z" fill="#000" />
+          <rect x="4" y="5" width="2" height="4" fill="#000"/>
+          <circle cx="5" cy="2" r="1.5" fill="#000"/>
+      </g>
+      <text x="50" y="78" textAnchor="middle" fontSize="14" fontWeight="bold">GES</text>
+      <polygon points="30,72 32.5,77 37.5,77 33.5,80 35,85 30,82 25,85 26.5,80 22.5,77 27.5,77" fill="#FCD116"/>
+      <polygon points="70,72 72.5,77 77.5,77 73.5,80 75,85 70,82 65,85 66.5,80 62.5,77 67.5,77" fill="#FCD116"/>
     </svg>
 );
 
@@ -222,7 +232,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
           <h1 className={cn(templateStyles.mainHeaderTextClass, "report-main-header print:mt-1 print:text-2xl")}>Student Report Card</h1>
         </header>
         
-        <section className="mb-2 print:mb-1 flex justify-between items-start gap-4">
+        <section className="mb-4 print:mb-2 flex justify-between items-start gap-4">
             <div className="flex-grow grid grid-cols-[max-content_1fr_max-content_1fr] gap-x-4 gap-y-0.5 text-xs">
                  <InfoRow label="Student Name" value={data.studentName} />
                  <InfoRow label="Class" value={data.className} />
@@ -259,7 +269,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 
 
         {data.subjects && data.subjects.length > 0 && (
-          <section className="mb-2 print:mb-1">
+          <section className="mb-3 print:mb-1.5">
             <h3 className={templateStyles.sectionTitleClass}>Subject Performance</h3>
             <Table className={cn("border rounded-md text-xs report-subjects-table", templateStyles.overallReportBorderClass)}>
               <TableHeader>
@@ -293,7 +303,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
           </section>
         )}
 
-        <div className="space-y-1.5 print:space-y-1 flex-grow text-xs">
+        <div className="space-y-2 print:space-y-1.5 flex-grow text-xs">
           {data.performanceSummary && (
             <ReportSection title="Overall Performance Summary" templateStyles={templateStyles}>
               <p className="text-gray-700 leading-tight print:leading-tight whitespace-pre-wrap">{data.performanceSummary}</p>
