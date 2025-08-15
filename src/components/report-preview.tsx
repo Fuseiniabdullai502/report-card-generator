@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 
 interface ReportPreviewProps {
   data: ReportData;
+  classTotal?: number;
 }
 
 interface TemplateStyles {
@@ -132,7 +133,7 @@ const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) =>
     </div>
 );
 
-export default function ReportPreview({ data }: ReportPreviewProps) {
+export default function ReportPreview({ data, classTotal }: ReportPreviewProps) {
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -192,7 +193,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
               )}
             </div>
              <div className="object-contain" style={{width: 80, height: 80}}>
-               {/* GES Logo Removed */}
+               
              </div>
           </div>
           <h1 className={cn(templateStyles.mainHeaderTextClass, "report-main-header print:mt-1 print:text-2xl")}>Student Report Card</h1>
@@ -202,6 +203,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
             <div className="flex-grow grid grid-cols-[max-content_1fr_max-content_1fr] gap-x-4 gap-y-0.5 text-xs">
                  <InfoRow label="Student Name" value={data.studentName} />
                  <InfoRow label="Class" value={data.className} />
+                 <InfoRow label="Class Total" value={classTotal} />
                  <InfoRow label="Gender" value={data.gender} />
                  <InfoRow label="Attendance" value={attendanceString} />
                  <InfoRow label="Position" value={data.rank} />

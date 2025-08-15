@@ -656,18 +656,25 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div className="lg:col-span-1">
                     <Label htmlFor="class-select" className="text-xs text-muted-foreground">Select a Class</Label>
-                    <Select value={selectedClass} onValueChange={setSelectedClass}>
-                        <SelectTrigger id="class-select" className="w-full">
-                            <SelectValue placeholder="Select a class..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availableClasses.length > 0 ? (
-                              availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
-                            ) : (
-                              <SelectItem value="" disabled>No classes found</SelectItem>
-                            )}
-                        </SelectContent>
-                    </Select>
+                    <div className='flex items-center gap-2'>
+                        <Select value={selectedClass} onValueChange={setSelectedClass}>
+                            <SelectTrigger id="class-select" className="w-full">
+                                <SelectValue placeholder="Select a class..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableClasses.length > 0 ? (
+                                  availableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
+                                ) : (
+                                  <SelectItem value="" disabled>No classes found</SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                        {selectedClass && (
+                            <div className="text-sm font-bold text-primary whitespace-nowrap">
+                                (Total: {studentsInClass.length})
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="lg:col-span-1">
@@ -1191,3 +1198,4 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
 
 
     
+

@@ -987,6 +987,10 @@ function AppContent({ user }: { user: CustomUser }) {
       return null;
   }, [user]);
 
+  const getClassTotal = (className: string) => {
+    return allRankedReports.filter(r => r.className === className).length;
+  };
+
   return (
     <>
       <div className="main-app-container">
@@ -1407,7 +1411,7 @@ function AppContent({ user }: { user: CustomUser }) {
                                 </div>
                               )}
                               <div className="a4-page-simulation break-inside-avoid">
-                                <ReportPreview data={reportData} />
+                                <ReportPreview data={reportData} classTotal={getClassTotal(reportData.className)} />
                               </div>
                           </div>
                         ))}
@@ -1415,7 +1419,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
                         // This is the LIVE preview of the report being edited in the form
                         <div className="a4-page-simulation break-inside-avoid">
-                          <ReportPreview data={currentEditingReport} />
+                          <ReportPreview data={currentEditingReport} classTotal={getClassTotal(currentEditingReport.className)} />
                         </div>
                     ) : (
                       <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
@@ -1442,12 +1446,12 @@ function AppContent({ user }: { user: CustomUser }) {
         {reportsCount > 0 ? (
           filteredReports.map((reportData) => (
             <div key={`print-${reportData.id}`} className="a4-page-simulation">
-              <ReportPreview data={reportData} />
+              <ReportPreview data={reportData} classTotal={getClassTotal(reportData.className)} />
             </div>
           ))
         ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
           <div className="a4-page-simulation">
-            <ReportPreview data={currentEditingReport} />
+            <ReportPreview data={currentEditingReport} classTotal={getClassTotal(currentEditingReport.className)} />
           </div>
         ) : null}
       </div>
