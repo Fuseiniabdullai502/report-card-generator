@@ -31,7 +31,7 @@ import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
 import { db, storage } from '@/lib/firebase';
 import { doc, setDoc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -776,8 +776,15 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                                </Button>
                                             </div>
                                         </div>
-                                        {typeof uploadProgress === 'number' && (
-                                            <Progress value={uploadProgress} className="h-2 w-full" />
+                                        {imageUploadStatus[student.id] != null && (
+                                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                            <div
+                                              className="h-full bg-blue-500 transition-all duration-300 ease-in-out relative"
+                                              style={{ width: `${imageUploadStatus[student.id]}%` }}
+                                            >
+                                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                                            </div>
+                                          </div>
                                         )}
                                       </div>
                                     </TableCell>
