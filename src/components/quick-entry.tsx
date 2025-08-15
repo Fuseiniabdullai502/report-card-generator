@@ -695,8 +695,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                 <Table>
                     <TableHeader className="sticky top-0 bg-muted z-10">
                         <TableRow>
-                            <TableHead className="min-w-[180px] sticky left-0 bg-muted z-20">Student Name</TableHead>
-                            <TableHead className="min-w-[150px]"><ImageIcon className="inline-block mr-1 h-4 w-4"/>Photo</TableHead>
+                            <TableHead className="min-w-[150px] sticky left-0 bg-muted z-20"><ImageIcon className="inline-block mr-1 h-4 w-4"/>Photo</TableHead>
+                            <TableHead className="min-w-[180px]">Student Name</TableHead>
                             <TableHead className="min-w-[120px]"><VenetianMask className="inline-block mr-1 h-4 w-4"/>Gender</TableHead>
                             <TableHead className="min-w-[150px]"><CalendarCheck2 className="inline-block mr-1 h-4 w-4"/>Days Attended</TableHead>
                             {activeSubjectsInClass.map(subject => (
@@ -727,10 +727,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                             const isImageProcessing = imageUploadStatus[student.id] === 'uploading' || imageUploadStatus[student.id] === 'editing';
                             return (
                                 <TableRow key={student.id}>
-                                    <TableCell className="font-medium sticky left-0 bg-background z-20">
-                                        {student.studentName || ''}
-                                    </TableCell>
-                                    <TableCell>
+                                    <TableCell className="sticky left-0 bg-background z-20">
                                         <div className="flex items-center gap-2">
                                             {student.studentPhotoDataUri ? (
                                                 <div className="relative w-12 h-16">
@@ -754,6 +751,9 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                                </Button>
                                             </div>
                                         </div>
+                                    </TableCell>
+                                    <TableCell className="font-medium">
+                                        {student.studentName || ''}
                                     </TableCell>
                                     <TableCell>
                                       <Select value={student.gender || ''} onValueChange={(value) => handleFieldChange(student.id, 'gender', value)}>
