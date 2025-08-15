@@ -202,23 +202,23 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
     if (!photoUrl) return;
 
     let photoDataUri = photoUrl;
-    if (!photoUrl.startsWith('data:')) {
-      try {
-        const response = await fetch(photoUrl);
-        const blob = await response.blob();
-        photoDataUri = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-      } catch (error) {
-        toast({ title: "AI Edit Failed", description: "Could not fetch the image to send to the AI.", variant: "destructive" });
-        return;
-      }
-    }
-
     startImageEditingAiTransition(async () => {
+      if (!photoUrl.startsWith('data:')) {
+        try {
+          const response = await fetch(photoUrl);
+          const blob = await response.blob();
+          photoDataUri = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (error) {
+          toast({ title: "AI Edit Failed", description: "Could not fetch the image to send to the AI.", variant: "destructive" });
+          return;
+        }
+      }
+
        const result = await editImageWithAiAction({ photoDataUri, prompt: editPrompt });
        if (result.success && result.editedPhotoDataUri) {
           try {
@@ -232,8 +232,8 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
              toast({ title: "Storage Error", description: "AI editing was successful, but the new image could not be saved to storage.", variant: "destructive" });
           }
        } else {
-          toast({
-            title: "AI Image Edit Failed",
+          toast({ 
+            title: "AI Image Edit Failed", 
             description: <AiErrorDescription errorMessage={result.error || "An unknown error occurred."} />,
             variant: "destructive",
             duration: 30000
@@ -517,7 +517,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
                     </div>
                     {formData.studentPhotoDataUri && (
                       <div className="relative w-24 h-32 mt-2 rounded border p-1">
-                        <NextImage src={formData.studentPhotoDataUri} alt="student" layout="fill" className="rounded object-cover"/>
+                        <NextImage src={formData.studentPhotoDataUri} alt="student" layout="fill" className="object-cover rounded" />
                         {(isImageEditingAiLoading || isUploading) && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
                             <Loader2 className="h-6 w-6 animate-spin text-white" />
