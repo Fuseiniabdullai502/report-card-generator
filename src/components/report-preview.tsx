@@ -1,19 +1,14 @@
 
 'use client';
 
-import * as React from 'react';
 import type {ReportData, SubjectEntry} from '@/lib/schemas';
+import Image from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Award, Medal, User as UserIcon } from 'lucide-react'; // For rank display, Medal for promotion
+import { Award, Medal } from 'lucide-react'; // For rank display, Medal for promotion
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
 
 interface ReportPreviewProps {
   data: ReportData;
-  classTotal?: number;
-  subjectOrder?: string[];
-  sessionLogo?: string | null;
-  sessionSignature?: string | null;
 }
 
 interface TemplateStyles {
@@ -107,8 +102,8 @@ const getGradeAndRemarks = (
     return { grade: 'N/A', remarks: 'Not available', finalMark: '-' };
   }
 
-  const scaledCaMark = (caMarkInput !== null && caMarkInput !== undefined) ? (caMarkInput / 60) * 50 : 0;
-  const scaledExamMark = (examMarkInput !== null && examMarkInput !== undefined) ? (examMarkInput / 100) * 50 : 0;
+  const scaledCaMark = (caMarkInput !== null && caMarkInput !== undefined) ? (caMarkInput / 60) * 40 : 0;
+  const scaledExamMark = (examMarkInput !== null && examMarkInput !== undefined) ? (examMarkInput / 100) * 60 : 0;
 
   let finalPercentageMark: number;
   finalPercentageMark = scaledCaMark + scaledExamMark;
@@ -130,14 +125,7 @@ const tertiaryLevelClassesList = [
   "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"
 ];
 
-const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) => (
-    <div className='contents'>
-      <div className="font-semibold text-gray-600">{label}:</div>
-      <div className="font-bold text-gray-800">{value || 'N/A'}</div>
-    </div>
-);
-
-export default function ReportPreview({ data, classTotal, subjectOrder, sessionLogo, sessionSignature }: ReportPreviewProps) {
+export default function ReportPreview({ data }: ReportPreviewProps) {
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -156,38 +144,20 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
   
   const templateStyles = getTemplateSpecificStyles(data.selectedTemplateId);
 
-  const highlightColorForTeacherFeedback = cn(
-    data.selectedTemplateId === 'elegantGreen' ? 'bg-green-50 print:bg-green-50' :
-    data.selectedTemplateId === 'professionalBlue' ? 'bg-blue-50 print:bg-blue-50' :
-    data.selectedTemplateId === 'creativeTeal' ? 'bg-teal-50 print:bg-teal-50' :
-    'bg-green-50 print:bg-green-50' // Default highlight
-  );
-
-  const orderedSubjects = React.useMemo(() => {
-    if (!subjectOrder || subjectOrder.length === 0) {
-      return data.subjects;
-    }
-    const subjectMap = new Map(data.subjects.map(s => [s.subjectName, s]));
-    return subjectOrder
-      .map(subjectName => subjectMap.get(subjectName))
-      .filter((s): s is SubjectEntry => !!s);
-  }, [data.subjects, subjectOrder]);
-  
-  const logoToUse = data.schoolLogoDataUri || sessionLogo;
-  const signatureToUse = data.headMasterSignatureDataUri || sessionSignature;
-
+  const highlightColorForTeacherFeedback = data.selectedTemplateId === 'elegantGreen' ? 'bg-green-50 print:bg-green-50' 
+                                      : data.selectedTemplateId === 'professionalBlue' ? 'bg-blue-50 print:bg-blue-50'
+                                      : data.selectedTemplateId === 'creativeTeal' ? 'bg-teal-50 print:bg-teal-50'
+                                      : 'bg-green-50 print:bg-green-50'; // Default highlight
 
   return (
     <div id="printable-report-area" className={cn("a4-page-simulation flex flex-col text-sm relative", templateStyles.overallReportBorderClass)}>
       {/* Watermark */}
       {data.schoolName && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden watermark-container">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
               <p 
-                className="font-bold text-gray-500/5 dark:text-gray-400/5 transform -rotate-45 select-none"
+                className="text-[8rem] font-bold text-gray-500/10 dark:text-gray-400/10 transform -rotate-45 whitespace-nowrap select-none"
                 style={{
-                    fontSize: 'clamp(2rem, 15vw, 8rem)',
-                    lineHeight: '1.2',
-                    wordBreak: 'break-word',
+                    WebkitTextStroke: '1px rgba(0,0,0,0.05)',
                 }}
               >
                   {data.schoolName}
@@ -198,94 +168,98 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
       {/* Main Content */}
       <div className="relative z-10 flex flex-col h-full">
         <header className={cn("mb-2 print:mb-1", templateStyles.headerContainerClass)}>
-          <div className="flex justify-between items-center">
-             {data.country === 'Ghana' ? (
-                <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg"
-                    alt="Ghana Coat of Arms"
-                    width={80}
-                    height={80}
-                    data-ai-hint="ghana coat of arms"
-                    className="object-contain"
-                />
-             ) : (
-                <div style={{width: 80, height: 80}} />
-             )}
-            <div className="text-center">
+          <div className="flex justify-between items-start">
+            <div>
               <h2 className={templateStyles.headerTitleClass}>{data.schoolName || 'School Name'}</h2>
               <p className={templateStyles.headerSubtitleClass}>{data.academicYear || 'Academic Year'} - {data.academicTerm || 'Term/Semester'}</p>
               {data.studentEntryNumber && (
                 <p className="text-xs text-gray-500 mt-0.5 font-semibold">Entry #: {data.studentEntryNumber}</p>
               )}
             </div>
-             <div className="object-contain" style={{width: 80, height: 80}}>
-               {logoToUse && (
-                  <img
-                      src={logoToUse}
-                      alt={`${data.schoolName || 'School'} Logo`}
-                      width={80}
-                      height={80}
-                      className="object-contain"
-                      data-ai-hint="school logo"
-                  />
-                )}
-             </div>
+            {data.schoolLogoDataUri && (
+              <Image
+                src={data.schoolLogoDataUri}
+                alt="School Logo"
+                width={120}
+                height={60}
+                data-ai-hint="school logo"
+                className="object-contain"
+              />
+            )}
           </div>
           <h1 className={cn(templateStyles.mainHeaderTextClass, "report-main-header print:mt-1 print:text-2xl")}>Student Report Card</h1>
         </header>
         
-        <section className="mb-4 print:mb-2 flex justify-between items-start gap-4">
-            <div className="flex-grow grid grid-cols-[max-content_1fr_max-content_1fr] gap-x-4 gap-y-0.5 text-xs">
-                 <InfoRow label="Student Name" value={data.studentName} />
-                 <InfoRow label="Class" value={data.className} />
-                 <InfoRow label="Class Total" value={classTotal} />
-                 <InfoRow label="Gender" value={data.gender} />
-                 <InfoRow label="Attendance" value={attendanceString} />
-                 <InfoRow label="Position" value={data.rank} />
-                 <InfoRow label="Overall Avg" value={data.overallAverage !== undefined && data.overallAverage !== null ? `${data.overallAverage.toFixed(2)}%` : 'N/A'} />
-                 {isPromotionStatusRelevant && data.promotionStatus && (
-                    <InfoRow 
-                        label="Promotion" 
-                        value={
-                            <div className="flex items-center gap-2">
-                                {data.promotionStatus === 'Promoted' && <Award className="h-4 w-4 text-green-600" />}
-                                <span>{data.promotionStatus}</span>
-                            </div>
-                        } 
+        <section className="mb-2 print:mb-1 flex justify-between items-start gap-4">
+            <div className="flex-grow">
+                <table className="w-full text-xs report-student-info-table">
+                    <tbody>
+                        <tr>
+                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Student Name:</td>
+                            <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0" colSpan={3}>{data.studentName || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Class:</td>
+                            <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0">{data.className || 'N/A'}</td>
+                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Gender:</td>
+                            <td className="text-gray-800 pr-4 pb-0.5 print:pb-0">{data.gender || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Attendance:</td>
+                            <td className="text-gray-800 pb-0.5 print:pb-0">{attendanceString}</td>
+                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Position:</td>
+                            <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0">{data.rank || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Overall Avg:</td>
+                            <td className="font-bold text-gray-800 pb-0.5 print:pb-0">{data.overallAverage !== undefined && data.overallAverage !== null ? `${data.overallAverage.toFixed(2)}%` : 'N/A'}</td>
+                            {isPromotionStatusRelevant && data.promotionStatus ? (
+                            <>
+                                <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Promotion:</td>
+                                <td className="font-bold text-gray-800 pb-0.5 print:pb-0">
+                                  <div className="flex items-center gap-2">
+                                    {data.promotionStatus === 'Promoted' && <Award className="h-4 w-4 text-green-600" />}
+                                    <span>{data.promotionStatus}</span>
+                                  </div>
+                                </td>
+                            </>
+                            ) : <td colSpan={2}></td>}
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {data.studentPhotoDataUri && (
+                <div className="flex-shrink-0 text-center">
+                    <Image
+                        src={data.studentPhotoDataUri}
+                        alt={`${data.studentName || 'Student'}'s photo`}
+                        width={80}
+                        height={100}
+                        className="object-cover rounded border border-gray-300 shadow-sm"
+                        data-ai-hint="student portrait"
                     />
-                 )}
-            </div>
-            
-            <div className="flex-shrink-0 text-center student-photo-container">
-              <img
-                  src={data.studentPhotoUrl || `https://placehold.co/80x100/F0F4F7/7F9Cf5?text=${data.studentName?.charAt(0) || 'S'}&font=raleway`}
-                  alt={`${data.studentName || 'Student'}'s photo`}
-                  width={80}
-                  height={100}
-                  className="object-cover rounded border border-gray-300 shadow-sm"
-                  data-ai-hint="student portrait"
-              />
-              <p className="text-xs text-gray-700 mt-1">{data.studentName}</p>
-            </div>
+                    <p className="text-xs text-gray-700 mt-1 font-medium">{data.studentName}</p>
+                </div>
+            )}
         </section>
 
 
-        {orderedSubjects && orderedSubjects.length > 0 && (
-          <section className="mb-3 print:mb-1.5">
+        {data.subjects && data.subjects.length > 0 && (
+          <section className="mb-1.5 print:mb-1">
             <h3 className={templateStyles.sectionTitleClass}>Subject Performance</h3>
             <Table className={cn("border rounded-md text-xs report-subjects-table", templateStyles.overallReportBorderClass)}>
               <TableHeader>
                 <TableRow className={templateStyles.tableHeaderClass}>
                   <TableHead className="font-semibold text-gray-600 w-[28%] py-0.5 px-2 print:px-1.5">Subject</TableHead>
-                  <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">CA (50)</TableHead>
-                  <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">Exam (50)</TableHead>
+                  <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">CA (60)</TableHead>
+                  <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">Exam (100)</TableHead>
                   <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">Final (100)</TableHead>
                   <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">Grade</TableHead>
                   <TableHead className="font-semibold text-gray-600 w-[25%] py-0.5 px-2 print:px-1.5">Remarks</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orderedSubjects.map((subject, index) => {
+                {data.subjects.map((subject, index) => {
                   if (!subject.subjectName || subject.subjectName.trim() === '') return null; 
                   const { grade, remarks, finalMark } = getGradeAndRemarks(subject.continuousAssessment, subject.examinationMark);
 
@@ -305,7 +279,7 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
           </section>
         )}
 
-        <div className="space-y-2 print:space-y-1.5 flex-grow text-xs">
+        <div className="space-y-1.5 print:space-y-1 flex-grow text-xs">
           {data.performanceSummary && (
             <ReportSection title="Overall Performance Summary" templateStyles={templateStyles}>
               <p className="text-gray-700 leading-tight print:leading-tight whitespace-pre-wrap">{data.performanceSummary}</p>
@@ -341,16 +315,15 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
           <div className="flex justify-between items-end">
             <div>
               <p><span className="font-semibold">Date Issued:</span> {currentDate}</p>
-              {data.reopeningDate && <p className="mt-0.5 print:mt-0"><span className="font-semibold">Reopening Date:</span> {format(new Date(data.reopeningDate), "PPP")}</p>}
               {data.instructorContact && (
                 <p className="mt-0.5 print:mt-0"><span className="font-semibold">Instructor Contact:</span> {data.instructorContact}</p>
               )}
             </div>
             <div className="text-center">
-              {signatureToUse && (
+              {data.headMasterSignatureDataUri && (
                 <div className="mb-0.5">
-                  <img
-                    src={signatureToUse}
+                  <Image
+                    src={data.headMasterSignatureDataUri}
                     alt="Head Master's Signature"
                     width={120}
                     height={40}
@@ -389,5 +362,3 @@ function ReportSection({ title, children, templateStyles, highlightColor }: Repo
     </div>
   );
 }
-
-    
