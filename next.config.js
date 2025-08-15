@@ -1,7 +1,5 @@
-
-import type {NextConfig} from 'next';
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   /* config options here */
   images: {
     remotePatterns: [
@@ -11,7 +9,7 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
-       {
+      {
         protocol: 'https',
         hostname: 'upload.wikimedia.org',
         port: '',
@@ -21,4 +19,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
