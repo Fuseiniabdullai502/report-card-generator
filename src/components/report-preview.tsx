@@ -132,6 +132,27 @@ const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) =>
     </div>
 );
 
+const GESLogo = () => (
+    <svg width="80" height="80" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="95" fill="#fff" stroke="#000" strokeWidth="2"/>
+        <circle cx="100" cy="100" r="85" fill="#fff" stroke="#348e47" strokeWidth="4"/>
+        <path d="M100 20 L100 60" stroke="#000" strokeWidth="3"/>
+        <path d="M100 180 L100 140" stroke="#000" strokeWidth="3"/>
+        <path d="M20 100 L60 100" stroke="#000" strokeWidth="3"/>
+        <path d="M180 100 L140 100" stroke="#000" strokeWidth="3"/>
+        <path d="M42 42 L72 72" stroke="#000" strokeWidth="3"/>
+        <path d="M158 158 L128 128" stroke="#000" strokeWidth="3"/>
+        <path d="M42 158 L72 128" stroke="#000" strokeWidth="3"/>
+        <path d="M158 42 L128 72" stroke="#000" strokeWidth="3"/>
+        <circle cx="100" cy="100" r="30" fill="#f9d700" stroke="#000" strokeWidth="2"/>
+        <text x="100" y="110" fontFamily="Arial, sans-serif" fontSize="30" textAnchor="middle" fill="#000" fontWeight="bold">G</text>
+        <text x="80" y="110" fontFamily="Arial, sans-serif" fontSize="30" textAnchor="middle" fill="#000" fontWeight="bold">E</text>
+        <text x="120" y="110" fontFamily="Arial, sans-serif" fontSize="30" textAnchor="middle" fill="#000" fontWeight="bold">S</text>
+        <text x="100" y="145" fontFamily="Arial, sans-serif" fontSize="16" textAnchor="middle" fill="#348e47" fontWeight="bold">SERVICE</text>
+    </svg>
+);
+
+
 export default function ReportPreview({ data }: ReportPreviewProps) {
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -191,14 +212,9 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
                 <p className="text-xs text-gray-500 mt-0.5 font-semibold">Entry #: {data.studentEntryNumber}</p>
               )}
             </div>
-             <Image
-                src="https://upload.wikimedia.org/wikipedia/en/2/23/Ghana_Education_Service_logo.png"
-                alt="GES Logo"
-                width={80}
-                height={80}
-                data-ai-hint="GES logo"
-                className="object-contain"
-            />
+             <div className="object-contain" style={{width: 80, height: 80}}>
+               <GESLogo />
+             </div>
           </div>
           <h1 className={cn(templateStyles.mainHeaderTextClass, "report-main-header print:mt-1 print:text-2xl")}>Student Report Card</h1>
         </header>
@@ -357,5 +373,3 @@ function ReportSection({ title, children, templateStyles, highlightColor }: Repo
     </div>
   );
 }
-
-    
