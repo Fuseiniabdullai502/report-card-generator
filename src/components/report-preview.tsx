@@ -174,7 +174,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 
       {/* Main Content */}
       <div className="relative z-10 flex flex-col h-full">
-        <header className={cn("mb-2 print:mb-1", templateStyles.headerContainerClass)}>
+        <header className={cn("mb-4 print:mb-2", templateStyles.headerContainerClass)}>
           <div className="flex justify-between items-center">
              <Image
                 src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg"
@@ -203,7 +203,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
           <h1 className={cn(templateStyles.mainHeaderTextClass, "report-main-header print:mt-1 print:text-2xl")}>Student Report Card</h1>
         </header>
         
-        <section className="mb-2 print:mb-1 flex justify-between items-start gap-4">
+        <section className="mb-4 print:mb-2 flex justify-between items-start gap-4">
             <div className="flex-grow grid grid-cols-[max-content_1fr_max-content_1fr] gap-x-4 gap-y-0.5 text-xs">
                  <InfoRow label="Student Name" value={data.studentName} />
                  <InfoRow label="Class" value={data.className} />
@@ -240,7 +240,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
 
 
         {data.subjects && data.subjects.length > 0 && (
-          <section className="mb-1.5 print:mb-1">
+          <section className="mb-3 print:mb-2">
             <h3 className={templateStyles.sectionTitleClass}>Subject Performance</h3>
             <Table className={cn("border rounded-md text-xs report-subjects-table", templateStyles.overallReportBorderClass)}>
               <TableHeader>
@@ -274,7 +274,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
           </section>
         )}
 
-        <div className="space-y-1.5 print:space-y-1 flex-grow text-xs">
+        <div className="space-y-2 print:space-y-1.5 flex-grow text-xs">
           {data.performanceSummary && (
             <ReportSection title="Overall Performance Summary" templateStyles={templateStyles}>
               <p className="text-gray-700 leading-tight print:leading-tight whitespace-pre-wrap">{data.performanceSummary}</p>
