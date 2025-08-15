@@ -21,7 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { calculateOverallAverage } from '@/lib/calculations';
 import { storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ReportFormProps {
@@ -67,7 +67,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
   const [isImageEditingAiLoading, startImageEditingAiTransition] = useTransition();
-  const [isUploading, setIsUploading] = useState(false);
+  const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
   const { toast } = useToast();
 
   const [customSubjects, setCustomSubjects] = useState<string[]>([]);
@@ -224,7 +224,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
           try {
             const { blob } = dataUriToBlob(result.editedPhotoDataUri);
             const storageRef = ref(storage, `student_photos/${uuidv4()}`);
-            await uploadBytes(storageRef, blob);
+            await uploadBytesResumable(storageRef, blob);
             const downloadURL = await getDownloadURL(storageRef);
             onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
             toast({ title: "AI Image Enhancement Successful", description: "The student photo has been updated and saved." });
@@ -241,38 +241,58 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
        }
     });
   };
-
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    toast({ title: "Uploading Image...", description: "Please wait while the image is being saved." });
-
-    try {
-        const storageRef = ref(storage, `student_photos/${uuidv4()}`);
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
-        onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
-        toast({ title: "Image Uploaded Successfully", description: "The photo is now saved and linked to the report." });
-    } catch (error) {
-        console.error("Error uploading image to Firebase Storage:", error);
-        let errorMessage = "Could not save the image to cloud storage.";
-        if (error instanceof Error && 'code' in error) {
-            const firebaseError = error as { code: string; message: string };
-            if (firebaseError.code === 'storage/unauthorized') {
-                errorMessage = "Upload failed: Permission denied. Please check your Firebase Storage security rules to allow writes.";
-            } else if (firebaseError.code === 'storage/canceled') {
-                errorMessage = "Upload canceled.";
-            } else {
-                errorMessage = `Upload failed with error: ${firebaseError.message}`;
-            }
-        }
-        toast({ title: "Upload Failed", description: errorMessage, variant: "destructive" });
-    } finally {
-        setIsUploading(false);
-        if (event.target) event.target.value = ''; // Reset file input
+    if (!file.type.startsWith('image/')) {
+        toast({ title: 'Invalid File', description: 'Please select an image.', variant: 'destructive' });
+        return;
     }
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({ title: 'File Too Large', description: 'Image must be under 2MB.', variant: 'destructive' });
+        return;
+    }
+
+    const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    setImageUploadProgress(0);
+
+    uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setImageUploadProgress(progress);
+        },
+        async (error) => {
+            console.error('Image upload error:', error);
+            try { await deleteObject(storageRef); } catch {}
+            let errorMessage = "Could not save the image.";
+            if ('code' in error) {
+                switch (error.code) {
+                    case 'storage/unauthorized':
+                        errorMessage = "Permission denied. Check your Firebase Storage rules.";
+                        break;
+                    case 'storage/canceled':
+                        errorMessage = "Upload was canceled.";
+                        break;
+                }
+            }
+            toast({ title: 'Upload Failed', description: errorMessage, variant: 'destructive' });
+            setImageUploadProgress(null);
+            input.value = '';
+        },
+        async () => {
+            const downloadURL = await getDownloadURL(storageRef);
+            onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
+            toast({ title: "Image Uploaded Successfully" });
+            setImageUploadProgress(null);
+            input.value = '';
+        }
+    );
   };
   
   const handleSubmit = (e: FormEvent) => {
@@ -409,6 +429,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
       setIsCustomHobbyDialogOpen(false);
   };
   
+  const isUploading = typeof imageUploadProgress === 'number';
 
   return (
     <>
@@ -515,7 +536,17 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
                           Enhance
                         </Button>
                     </div>
-                    {formData.studentPhotoDataUri && (
+                    {isUploading && (
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mt-2">
+                          <div
+                              className="h-full bg-blue-500 transition-all duration-300 ease-in-out relative"
+                              style={{ width: `${imageUploadProgress}%` }}
+                          >
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                          </div>
+                      </div>
+                    )}
+                    {formData.studentPhotoDataUri && !isUploading && (
                       <div className="relative w-24 h-32 mt-2 rounded border p-1">
                         <NextImage src={formData.studentPhotoDataUri} alt="student" layout="fill" className="object-cover rounded" />
                         {(isImageEditingAiLoading || isUploading) && (
