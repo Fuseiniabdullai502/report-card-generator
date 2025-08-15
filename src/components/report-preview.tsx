@@ -132,42 +132,6 @@ const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) =>
     </div>
 );
 
-const GESLogo = () => (
-    <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="50" cy="50" r="48" fill="none" stroke="#333" strokeWidth="1"/>
-      <circle cx="50" cy="50" r="47" fill="#fff"/>
-      <path id="arc" d="M 15,65 a 35,35 0 1,1 70,0" fill="none" />
-      <text fill="#000" fontSize="10" fontWeight="bold">
-          <textPath href="#arc" startOffset="50%" textAnchor="middle">
-              GHANA EDUCATION SERVICE
-          </textPath>
-      </text>
-      <g transform="translate(0, 5)">
-        <g transform="translate(45.5, 20)">
-            <path d="M 5,0 L 7.5,2.5 L 5,5 L 2.5,2.5 Z" fill="#000" />
-            <rect x="4" y="5" width="2" height="4" fill="#000"/>
-            <circle cx="5" cy="2" r="1.5" fill="#000"/>
-        </g>
-        <g>
-            <circle cx="35" cy="50" r="12" stroke="red" strokeWidth="2" fill="none"/>
-            <text x="35" y="55" textAnchor="middle" fontSize="14" fontWeight="bold" fill="red">G</text>
-        </g>
-        <g>
-            <circle cx="65" cy="50" r="12" stroke="green" strokeWidth="2" fill="none"/>
-            <text x="65" y="55" textAnchor="middle" fontSize="14" fontWeight="bold" fill="green">S</text>
-        </g>
-        <g>
-            <circle cx="50" cy="50" r="12" stroke="#FCD116" strokeWidth="2" fill="none"/>
-            <text x="50" y="55" textAnchor="middle" fontSize="14" fontWeight="bold">E</text>
-        </g>
-      </g>
-      <text x="50" y="82" textAnchor="middle" fontSize="14" fontWeight="bold">GES</text>
-      <polygon points="30,78 32.5,83 37.5,83 33.5,86 35,91 30,88 25,91 26.5,86 22.5,83 27.5,83" fill="#000"/>
-      <polygon points="70,78 72.5,83 77.5,83 73.5,86 75,91 70,88 65,91 66.5,86 62.5,83 67.5,83" fill="#000"/>
-    </svg>
-);
-
-
 export default function ReportPreview({ data }: ReportPreviewProps) {
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -228,7 +192,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
               )}
             </div>
              <div className="object-contain" style={{width: 80, height: 80}}>
-               <GESLogo />
+               {/* GES Logo Removed */}
              </div>
           </div>
           <h1 className={cn(templateStyles.mainHeaderTextClass, "report-main-header print:mt-1 print:text-2xl")}>Student Report Card</h1>
