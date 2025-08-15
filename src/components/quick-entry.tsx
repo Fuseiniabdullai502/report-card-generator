@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookCopy, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus, MessageSquare, Image as ImageIcon } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookPlus, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus as BookPlusIcon, MessageSquare, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -89,7 +89,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
   const [customSubjectInputValue, setCustomSubjectInputValue] = useState("");
 
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [isApplyingBulkFeedback, setIsApplyingBulkFeedback] = useState(false);
 
   const [imageUploadStatus, setImageUploadStatus] = useState<Record<string, 'uploading' | 'editing' | 'idle'>>({});
@@ -128,11 +127,9 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       
       const allPossibleSubjects = [...new Set([...curriculumSubjects, ...Array.from(subjectsFromReports)])].sort();
       setSubjectsForClass(allPossibleSubjects);
-      setSelectedStudentIds([]); // Reset selection when class changes
     } else {
       setStudentsInClass([]);
       setSubjectsForClass([]);
-      setSelectedStudentIds([]);
     }
   }, [selectedClass, allReports]);
 
@@ -445,57 +442,54 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
   };
 
   const handleApplyBulkAIFeedback = async () => {
-    if (selectedStudentIds.length === 0) {
-        toast({ title: 'No Students Selected', description: 'Please select students to generate AI feedback for.', variant: 'destructive' });
-        return;
+    if (studentsInClass.length === 0) {
+      toast({ title: 'No Students in Class', description: 'There are no students in the selected class to generate AI feedback for.', variant: 'destructive' });
+      return;
     }
-    
-    setIsApplyingBulkFeedback(true);
-    toast({ title: "Generating Bulk AI Feedback...", description: `Please wait while AI generates feedback for ${selectedStudentIds.length} selected students.` });
 
-    const studentsToProcess = studentsInClass.filter(s => selectedStudentIds.includes(s.id));
-    
-    // Generate insights for students who don't have them yet
+    setIsApplyingBulkFeedback(true);
+    toast({ title: "Generating Bulk AI Feedback...", description: `Please wait while AI generates feedback for ${studentsInClass.length} students.` });
+
+    const studentsToProcess = [...studentsInClass];
+
     const studentsNeedingInsights = studentsToProcess.filter(s => !s.performanceSummary || !s.strengths || !s.areasForImprovement);
     if (studentsNeedingInsights.length > 0) {
-        toast({ title: "Generating Prerequisite Insights...", description: `AI is generating performance summaries for ${studentsNeedingInsights.length} students first.` });
-        
-        await Promise.all(studentsNeedingInsights.map(async (student) => {
-            const insightsResult = await getAiReportInsightsAction({
-                studentName: student.studentName,
-                className: student.className,
-                currentAcademicTerm: student.academicTerm || '',
-                subjects: student.subjects,
-            });
-            if (insightsResult.success && insightsResult.insights) {
-                // Update local state to be used in the next step
-                student.performanceSummary = insightsResult.insights.performanceSummary || '';
-                student.strengths = insightsResult.insights.strengths || '';
-                student.areasForImprovement = insightsResult.insights.areasForImprovement || '';
-            }
-        }));
+      toast({ title: "Generating Prerequisite Insights...", description: `AI is generating performance summaries for ${studentsNeedingInsights.length} students first.` });
+
+      await Promise.all(studentsNeedingInsights.map(async (student) => {
+        const insightsResult = await getAiReportInsightsAction({
+          studentName: student.studentName,
+          className: student.className,
+          currentAcademicTerm: student.academicTerm || '',
+          subjects: student.subjects,
+        });
+        if (insightsResult.success && insightsResult.insights) {
+          student.performanceSummary = insightsResult.insights.performanceSummary || '';
+          student.strengths = insightsResult.insights.strengths || '';
+          student.areasForImprovement = insightsResult.insights.areasForImprovement || '';
+        }
+      }));
     }
 
     const feedbackInput = {
-        students: studentsToProcess.map(s => ({
-            studentId: s.id,
-            studentName: s.studentName,
-            className: s.className,
-            performanceSummary: s.performanceSummary,
-            strengths: s.strengths,
-            areasForImprovement: s.areasForImprovement,
-        })),
+      students: studentsToProcess.map(s => ({
+        studentId: s.id,
+        studentName: s.studentName,
+        className: s.className,
+        performanceSummary: s.performanceSummary,
+        strengths: s.strengths,
+        areasForImprovement: s.areasForImprovement,
+      })),
     };
-    
+
     const result = await getBulkAiTeacherFeedbackAction(feedbackInput);
     if (result.success) {
-        toast({ title: 'Bulk AI Feedback Complete', description: `AI-generated feedback has been applied to ${result.feedbacks?.length || 0} students.` });
-        onDataRefresh();
-        setSelectedStudentIds([]);
+      toast({ title: 'Bulk AI Feedback Complete', description: `AI-generated feedback has been applied to ${result.feedbacks?.length || 0} students.` });
+      onDataRefresh();
     } else {
-        toast({ title: 'Bulk AI Feedback Failed', description: result.error, variant: 'destructive' });
+      toast({ title: 'Bulk AI Feedback Failed', description: result.error, variant: 'destructive' });
     }
-    
+
     setIsApplyingBulkFeedback(false);
   };
 
@@ -544,20 +538,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         }
         setCustomSubjectInputValue('');
         setIsCustomSubjectDialogOpen(false);
-    };
-
-    const handleSelectAllStudents = (checked: boolean) => {
-        if (checked) {
-            setSelectedStudentIds(filteredStudents.map(s => s.id));
-        } else {
-            setSelectedStudentIds([]);
-        }
-    };
-    
-    const handleSelectStudent = (studentId: string, checked: boolean) => {
-        setSelectedStudentIds(prev => 
-            checked ? [...prev, studentId] : prev.filter(id => id !== studentId)
-        );
     };
 
       const dataUriToBlob = (dataUri: string): { blob: Blob, mimeType: string } => {
@@ -667,7 +647,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="w-full" disabled={!selectedClass}>
-                          <BookPlus className="mr-2 h-4 w-4 text-purple-500" />
+                          <BookPlusIcon className="mr-2 h-4 w-4 text-purple-500" />
                           Manage Subjects
                           <ChevronDown className="ml-auto h-4 w-4" />
                         </Button>
@@ -715,14 +695,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                 <Table>
                     <TableHeader className="sticky top-0 bg-muted z-10">
                         <TableRow>
-                            <TableHead className="w-[60px] sticky left-0 bg-muted z-20 px-2">
-                                <Checkbox 
-                                    checked={filteredStudents.length > 0 && selectedStudentIds.length === filteredStudents.length}
-                                    onCheckedChange={(checked) => handleSelectAllStudents(Boolean(checked))}
-                                    aria-label="Select all students"
-                                />
-                            </TableHead>
-                            <TableHead className="min-w-[180px] sticky left-10 bg-muted z-20">Student Name</TableHead>
+                            <TableHead className="min-w-[180px] sticky left-0 bg-muted z-20">Student Name</TableHead>
                             <TableHead className="min-w-[150px]"><ImageIcon className="inline-block mr-1 h-4 w-4"/>Photo</TableHead>
                             <TableHead className="min-w-[120px]"><VenetianMask className="inline-block mr-1 h-4 w-4"/>Gender</TableHead>
                             <TableHead className="min-w-[150px]"><CalendarCheck2 className="inline-block mr-1 h-4 w-4"/>Days Attended</TableHead>
@@ -736,7 +709,6 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                         </TableRow>
                          <TableRow>
                             <TableHead className="sticky left-0 bg-muted z-20"></TableHead>
-                            <TableHead className="sticky left-10 bg-muted z-20"></TableHead>
                             <TableHead></TableHead>
                             <TableHead></TableHead>
                             <TableHead></TableHead>
@@ -754,15 +726,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                         {filteredStudents.map((student, index) => {
                             const isImageProcessing = imageUploadStatus[student.id] === 'uploading' || imageUploadStatus[student.id] === 'editing';
                             return (
-                                <TableRow key={student.id} data-state={selectedStudentIds.includes(student.id) ? 'selected' : 'unselected'}>
-                                    <TableCell className="sticky left-0 bg-background z-20 px-2">
-                                        <Checkbox 
-                                            checked={selectedStudentIds.includes(student.id)}
-                                            onCheckedChange={(checked) => handleSelectStudent(student.id, Boolean(checked))}
-                                            aria-label={`Select ${student.studentName}`}
-                                        />
-                                    </TableCell>
-                                    <TableCell className="font-medium sticky left-10 bg-background z-20">
+                                <TableRow key={student.id}>
+                                    <TableCell className="font-medium sticky left-0 bg-background z-20">
                                         {student.studentName || ''}
                                     </TableCell>
                                     <TableCell>
@@ -924,15 +889,15 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
        <Card className="mt-6">
         <CardHeader>
             <CardTitle className="flex items-center gap-2"><Wand2 className="text-accent"/> Bulk AI Teacher Feedback</CardTitle>
-            <CardDescription>Select students from the table above, then click the button below to generate and apply unique, AI-powered feedback for each one based on their performance data.</CardDescription>
+            <CardDescription>Click the button to generate and apply unique, AI-powered feedback for each student in the class based on their performance data.</CardDescription>
         </CardHeader>
         <CardFooter>
             <Button 
                 onClick={handleApplyBulkAIFeedback} 
-                disabled={isApplyingBulkFeedback || selectedStudentIds.length === 0}
+                disabled={isApplyingBulkFeedback || studentsInClass.length === 0}
             >
                 {isApplyingBulkFeedback ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                Generate & Apply AI Feedback to Selected ({selectedStudentIds.length})
+                Generate & Apply AI Feedback to All Students
             </Button>
         </CardFooter>
       </Card>
