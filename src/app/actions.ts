@@ -1124,22 +1124,27 @@ export interface SchoolRankingData {
 const DistrictClassRankingInputSchema = z.object({
   district: z.string().min(1, "District is required."),
   className: z.string().min(1, "Class name is required."),
+  academicTerm: z.string().optional().nullable(),
   subjectName: z.string().optional().nullable(),
 });
 
 // Action for fetching district-class-level ranking
-export async function getDistrictClassRankingAction(input: { district: string; className: string; subjectName?: string | null; }): Promise<{
+export async function getDistrictClassRankingAction(input: { district: string; className: string; academicTerm?: string | null; subjectName?: string | null; }): Promise<{
   success: boolean;
   ranking?: SchoolRankingData[];
   error?: string;
 }> {
   try {
-    const { district, className, subjectName } = DistrictClassRankingInputSchema.parse(input);
+    const { district, className, academicTerm, subjectName } = DistrictClassRankingInputSchema.parse(input);
     
     const reportsRef = admin.firestore().collection('reports');
-    const reportsQuery = reportsRef
+    let reportsQuery: Query = reportsRef
       .where('district', '==', district)
       .where('className', '==', className);
+    
+    if (academicTerm) {
+      reportsQuery = reportsQuery.where('academicTerm', '==', academicTerm);
+    }
     
     const reportsSnapshot = await reportsQuery.get();
     
@@ -1211,7 +1216,7 @@ export async function getDistrictClassRankingAction(input: { district: string; c
     console.error('Error fetching district-class ranking:', error);
     let errorMessage = "An unexpected error occurred while fetching the ranking.";
     if (error.code === 'failed-precondition' && error.message.includes('index')) {
-        errorMessage = `A database index is needed. Please check the browser's developer console for a link to create the required index on the 'reports' collection for fields 'district' and 'className'.`;
+        errorMessage = `A database index is needed. Please check the browser's developer console for a link to create the required index on the 'reports' collection for fields 'district', 'className', and 'academicTerm'.`;
     } else if (error instanceof z.ZodError) {
         errorMessage = "Invalid input: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
     } else if (error.message) {
@@ -1316,6 +1321,7 @@ export async function batchUpdateTeacherFeedbackAction(
       
 
     
+
 
 
 

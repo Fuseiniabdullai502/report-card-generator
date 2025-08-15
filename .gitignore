@@ -64,3 +64,8 @@ firestore-debug.log
 .env
 .env.local
 .env.production
+
+# Logs
+firebase-debug.log
+firestore-debug.log
+*.log

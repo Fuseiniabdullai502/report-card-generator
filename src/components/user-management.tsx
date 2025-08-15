@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch, TrendingUp, Trophy as TrophyIcon } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch, TrendingUp, Trophy as TrophyIcon, BookMarked } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -59,6 +59,7 @@ import { ReportData, SubjectEntry } from '@/lib/schemas';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
+const academicTermOptions = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
 
 interface UserData {
   id: string;
@@ -133,6 +134,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [editingInvite, setEditingInvite] = useState<InviteData | null>(null);
 
   const [selectedRankingClass, setSelectedRankingClass] = useState<string>('');
+  const [selectedRankingTerm, setSelectedRankingTerm] = useState<string>('all_terms');
   const [selectedRankingSubject, setSelectedRankingSubject] = useState<string>('overall');
   const [isFetchingRanking, setIsFetchingRanking] = useState(false);
   const [rankingData, setRankingData] = useState<SchoolRankingData[] | null>(null);
@@ -142,6 +144,10 @@ export default function UserManagement({ user, users, invites, populationStats, 
 
   const allAvailableClasses = useMemo(() => {
     return [...new Set(allReports.map(r => r.className).filter(Boolean))].sort();
+  }, [allReports]);
+
+  const allAvailableTerms = useMemo(() => {
+    return [...new Set(allReports.map(r => r.academicTerm).filter(Boolean) as string[])].sort();
   }, [allReports]);
 
   const classPerformanceRanking = useMemo(() => {
@@ -226,6 +232,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
     const result = await getDistrictClassRankingAction({ 
         district: user.district, 
         className: selectedRankingClass, 
+        academicTerm: selectedRankingTerm === 'all_terms' ? null : selectedRankingTerm,
         subjectName: selectedRankingSubject === 'overall' ? null : selectedRankingSubject, 
     });
     if (result.success && result.ranking) {
@@ -382,37 +389,57 @@ export default function UserManagement({ user, users, invites, populationStats, 
                 <CardDescription>Compare the performance of a class (and optionally, a specific subject) across all schools in your district.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row gap-4 items-end">
-                <div className="w-full sm:w-auto flex-grow">
-                    <Label htmlFor="class-ranking-select">Select Class Level</Label>
-                    <Select value={selectedRankingClass} onValueChange={setSelectedRankingClass}>
-                    <SelectTrigger id="class-ranking-select">
-                        <SelectValue placeholder="Select a class..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {classLevels.map(level => (
-                        <SelectItem key={level} value={level}>{level}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                </div>
-                <div className="w-full sm:w-auto flex-grow">
-                    <Label htmlFor="subject-ranking-select">Select Subject (Optional)</Label>
-                    <Select value={selectedRankingSubject} onValueChange={setSelectedRankingSubject} disabled={!selectedRankingClass || availableSubjectsForClass.length === 0}>
-                    <SelectTrigger id="subject-ranking-select">
-                        <SelectValue placeholder="Overall / Select Subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="overall">Overall Performance</SelectItem>
-                        {availableSubjectsForClass.map(subject => (
-                        <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                </div>
-                <Button onClick={handleGenerateRanking} disabled={isFetchingRanking || !selectedRankingClass}>
-                    {isFetchingRanking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSearch className="mr-2 h-4 w-4" />}
-                    Generate Report
-                </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
+                    <div className="w-full">
+                        <Label htmlFor="class-ranking-select">Select Class Level</Label>
+                        <Select value={selectedRankingClass} onValueChange={setSelectedRankingClass}>
+                        <SelectTrigger id="class-ranking-select">
+                            <SelectValue placeholder="Select a class..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {classLevels.map(level => (
+                            <SelectItem key={level} value={level}>{level}</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="w-full">
+                        <Label htmlFor="term-ranking-select">Select Term</Label>
+                        <Select value={selectedRankingTerm} onValueChange={setSelectedRankingTerm}>
+                        <SelectTrigger id="term-ranking-select">
+                            <SelectValue placeholder="Select a term..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all_terms">All Terms</SelectItem>
+                            {allAvailableTerms.map(term => (
+                              <SelectItem key={term} value={term}>{term}</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="w-full">
+                        <Label htmlFor="subject-ranking-select">Select Subject</Label>
+                        <Select value={selectedRankingSubject} onValueChange={setSelectedRankingSubject} disabled={!selectedRankingClass}>
+                        <SelectTrigger id="subject-ranking-select">
+                            <SelectValue placeholder="Overall / Select Subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="overall">Overall Performance</SelectItem>
+                            {availableSubjectsForClass.length > 0 ? (
+                                availableSubjectsForClass.map(subject => (
+                                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                                ))
+                            ) : (
+                                <SelectItem value="no_subjects" disabled>No subjects for this class</SelectItem>
+                            )}
+                        </SelectContent>
+                        </Select>
+                    </div>
+                  </div>
+                  <Button onClick={handleGenerateRanking} disabled={isFetchingRanking || !selectedRankingClass}>
+                      {isFetchingRanking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSearch className="mr-2 h-4 w-4" />}
+                      Generate Report
+                  </Button>
                 </CardContent>
             </Card>
         </div>
@@ -594,6 +621,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
           rankingData={rankingData}
           districtName={user.district || ''}
           className={selectedRankingClass}
+          academicTerm={selectedRankingTerm === 'all_terms' ? null : selectedRankingTerm}
           subjectName={selectedRankingSubject === 'overall' ? null : selectedRankingSubject}
         />
       )}
