@@ -133,22 +133,25 @@ const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) =>
 );
 
 const GESLogo = () => (
-    <svg width="80" height="80" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="100" cy="100" r="95" fill="#fff" stroke="#000" strokeWidth="2"/>
-        <circle cx="100" cy="100" r="85" fill="#fff" stroke="#348e47" strokeWidth="4"/>
-        <path d="M100 20 L100 60" stroke="#000" strokeWidth="3"/>
-        <path d="M100 180 L100 140" stroke="#000" strokeWidth="3"/>
-        <path d="M20 100 L60 100" stroke="#000" strokeWidth="3"/>
-        <path d="M180 100 L140 100" stroke="#000" strokeWidth="3"/>
-        <path d="M42 42 L72 72" stroke="#000" strokeWidth="3"/>
-        <path d="M158 158 L128 128" stroke="#000" strokeWidth="3"/>
-        <path d="M42 158 L72 128" stroke="#000" strokeWidth="3"/>
-        <path d="M158 42 L128 72" stroke="#000" strokeWidth="3"/>
-        <circle cx="100" cy="100" r="30" fill="#f9d700" stroke="#000" strokeWidth="2"/>
-        <text x="100" y="110" fontFamily="Arial, sans-serif" fontSize="30" textAnchor="middle" fill="#000" fontWeight="bold">G</text>
-        <text x="80" y="110" fontFamily="Arial, sans-serif" fontSize="30" textAnchor="middle" fill="#000" fontWeight="bold">E</text>
-        <text x="120" y="110" fontFamily="Arial, sans-serif" fontSize="30" textAnchor="middle" fill="#000" fontWeight="bold">S</text>
-        <text x="100" y="145" fontFamily="Arial, sans-serif" fontSize="16" textAnchor="middle" fill="#348e47" fontWeight="bold">SERVICE</text>
+    <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="48" fill="white" stroke="#333" strokeWidth="1"/>
+        <circle cx="50" cy="50" r="44" fill="white" stroke="#006837" strokeWidth="3"/>
+
+        <g stroke="#333" strokeWidth="1.5">
+            <line x1="50" y1="12" x2="50" y2="35"/>
+            <line x1="50" y1="88" x2="50" y2="65"/>
+            <line x1="12" y1="50" x2="35" y2="50"/>
+            <line x1="88" y1="50" x2="65" y2="50"/>
+            <line x1="24" y1="24" x2="40" y2="40"/>
+            <line x1="76" y1="76" x2="60" y2="60"/>
+            <line x1="24" y1="76" x2="40" y2="60"/>
+            <line x1="76" y1="24" x2="60" y2="40"/>
+        </g>
+        
+        <circle cx="50" cy="50" r="16" fill="#FDB913" stroke="#333" strokeWidth="1"/>
+        <text x="50" y="55" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" textAnchor="middle" fill="#333">GES</text>
+        
+        <text x="50" y="75" fontFamily="Arial, sans-serif" fontSize="8" fontWeight="bold" textAnchor="middle" fill="#006837">SERVICE</text>
     </svg>
 );
 
