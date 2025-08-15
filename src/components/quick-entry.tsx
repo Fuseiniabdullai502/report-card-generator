@@ -31,7 +31,7 @@ import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
 import { db, storage } from '@/lib/firebase';
 import { doc, setDoc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -53,6 +53,7 @@ import {
 } from './ui/dropdown-menu';
 import { getSubjectsForClass } from '@/lib/curriculum';
 import { Textarea } from './ui/textarea';
+import { Progress } from './ui/progress';
 
 
 interface QuickEntryProps {
@@ -91,7 +92,8 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
 
   const [isApplyingBulkFeedback, setIsApplyingBulkFeedback] = useState(false);
 
-  const [imageUploadStatus, setImageUploadStatus] = useState<Record<string, 'uploading' | 'editing' | 'idle'>>({});
+  const [imageUploadStatus, setImageUploadStatus] = useState<Record<string, number | null>>({});
+  const [isAiEditing, setIsAiEditing] = useState<Record<string, boolean>>({});
 
 
   const availableClasses = useMemo(() => {
@@ -551,29 +553,55 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     return { blob: new Blob([ab], { type: mimeString }), mimeType: mimeString };
   };
 
-  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>, studentId: string) => {
-    const file = e.target.files?.[0];
+  const handleImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    studentId: string
+  ) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (!file) return;
 
-    setImageUploadStatus(prev => ({...prev, [studentId]: 'uploading'}));
-    try {
-      const storageRef = ref(storage, `student_photos/${uuidv4()}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      handleFieldChange(studentId, 'studentPhotoDataUri', downloadURL);
-    } catch (error) {
-      toast({ title: 'Upload Failed', description: 'Could not save the image.', variant: 'destructive' });
-    } finally {
-      setImageUploadStatus(prev => ({...prev, [studentId]: 'idle'}));
-      if(e.target) e.target.value = '';
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid File', description: 'Please select an image.', variant: 'destructive' });
+      return;
     }
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      toast({ title: 'File Too Large', description: 'Image must be under 2MB.', variant: 'destructive' });
+      return;
+    }
+
+    const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    setImageUploadStatus(prev => ({ ...prev, [studentId]: 0 }));
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setImageUploadStatus(prev => ({ ...prev, [studentId]: progress }));
+      },
+      async (error) => {
+        console.error('Image upload error:', error);
+        try { await deleteObject(storageRef); } catch {}
+        toast({ title: 'Upload Failed', description: 'Could not save the image.', variant: 'destructive' });
+        setImageUploadStatus(prev => ({ ...prev, [studentId]: null }));
+        input.value = '';
+      },
+      async () => {
+        const downloadURL = await getDownloadURL(storageRef);
+        handleFieldChange(studentId, 'studentPhotoDataUri', downloadURL);
+        setImageUploadStatus(prev => ({ ...prev, [studentId]: null }));
+        input.value = '';
+      }
+    );
   };
 
   const handleAiEditImage = async (student: ReportData) => {
     const photoUrl = student.studentPhotoDataUri;
     if (!photoUrl) return;
 
-    setImageUploadStatus(prev => ({...prev, [student.id]: 'editing'}));
+    setIsAiEditing(prev => ({...prev, [student.id]: true}));
 
     let photoDataUri = photoUrl;
     if (!photoUrl.startsWith('data:')) {
@@ -588,7 +616,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         });
       } catch (error) {
         toast({ title: "AI Edit Failed", description: "Could not fetch image to send to AI.", variant: "destructive" });
-        setImageUploadStatus(prev => ({...prev, [student.id]: 'idle'}));
+        setIsAiEditing(prev => ({...prev, [student.id]: false}));
         return;
       }
     }
@@ -607,7 +635,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     } else {
       toast({ title: "AI Image Edit Failed", description: result.error, variant: "destructive" });
     }
-    setImageUploadStatus(prev => ({...prev, [student.id]: 'idle'}));
+    setIsAiEditing(prev => ({...prev, [student.id]: false}));
   };
 
 
@@ -724,19 +752,16 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                     </TableHeader>
                     <TableBody>
                         {filteredStudents.map((student, index) => {
-                            const isImageProcessing = imageUploadStatus[student.id] === 'uploading' || imageUploadStatus[student.id] === 'editing';
+                            const uploadProgress = imageUploadStatus[student.id];
+                            const isImageProcessing = isAiEditing[student.id] || (typeof uploadProgress === 'number');
                             return (
                                 <TableRow key={student.id}>
                                     <TableCell className="sticky left-0 bg-background z-20">
+                                      <div className="flex flex-col gap-2">
                                         <div className="flex items-center gap-2">
                                             {student.studentPhotoDataUri ? (
                                                 <div className="relative w-12 h-16">
                                                   <NextImage src={student.studentPhotoDataUri} alt={student.studentName || 'Student'} layout='fill' className="rounded object-cover border" />
-                                                  {isImageProcessing && (
-                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded">
-                                                      <Loader2 className="h-5 w-5 animate-spin text-white"/>
-                                                    </div>
-                                                  )}
                                                 </div>
                                             ) : (
                                                 <div className="w-12 h-16 bg-muted rounded flex items-center justify-center"><ImageIcon className="h-6 w-6 text-muted-foreground"/></div>
@@ -747,10 +772,14 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                                   <Upload className="h-4 w-4"/>
                                                </Button>
                                                <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => handleAiEditImage(student)} disabled={!student.studentPhotoDataUri || isImageProcessing}>
-                                                  <Wand2 className="h-4 w-4"/>
+                                                  {isAiEditing[student.id] ? <Loader2 className="h-4 w-4 animate-spin"/> : <Wand2 className="h-4 w-4"/>}
                                                </Button>
                                             </div>
                                         </div>
+                                        {typeof uploadProgress === 'number' && (
+                                            <Progress value={uploadProgress} className="h-2 w-full" />
+                                        )}
+                                      </div>
                                     </TableCell>
                                     <TableCell className="font-medium">
                                         {student.studentName || ''}
