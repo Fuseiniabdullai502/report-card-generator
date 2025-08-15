@@ -23,6 +23,7 @@ import type { GenerateDistrictInsightsOutput, GenerateDistrictInsightsInput } fr
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { calculateSubjectFinalMark, calculateOverallAverage } from '@/lib/calculations';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface DistrictPerformanceDashboardProps {
   isOpen: boolean;
@@ -60,10 +61,33 @@ export default function DistrictPerformanceDashboard({
   const [aiError, setAiError] = useState<string | null>(null);
   const { toast } = useToast();
   
-  const [mostRecentTerm, setMostRecentTerm] = useState<string>('');
-  const [historicalData, setHistoricalData] = useState<HistoricalDistrictTermData[]>([]);
   const districtName = user.district || 'District';
-  const academicYear = useMemo(() => allReports[0]?.academicYear || new Date().getFullYear().toString(), [allReports]);
+
+  const allAvailableYears = useMemo(() => ['all', ...[...new Set(allReports.map(r => r.academicYear).filter(Boolean) as string[])].sort()], [allReports]);
+  const allAvailableTerms = useMemo(() => ['all', ...[...new Set(allReports.map(r => r.academicTerm).filter(Boolean) as string[])].sort()], [allReports]);
+
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedTerm, setSelectedTerm] = useState<string>('all');
+
+  const filteredReports = useMemo(() => {
+    return allReports.filter(report => 
+      (selectedYear === 'all' || report.academicYear === selectedYear) &&
+      (selectedTerm === 'all' || report.academicTerm === selectedTerm)
+    );
+  }, [allReports, selectedYear, selectedTerm]);
+
+  const handlePrint = () => {
+    if (!districtStats) {
+      toast({title: "Nothing to Print", description: "Dashboard data is not available.", variant: "destructive"});
+      return;
+    }
+    const body = document.body;
+    body.classList.add('dashboard-printing-active');
+    setTimeout(() => {
+      window.print();
+      body.classList.remove('dashboard-printing-active');
+    }, 300);
+  };
 
 
   const fetchDistrictAiInsights = useCallback(async () => {
@@ -75,7 +99,7 @@ export default function DistrictPerformanceDashboard({
       try {
         const sanitizedAiInput: GenerateDistrictInsightsInput = {
           districtName,
-          academicTerm: mostRecentTerm,
+          academicTerm: selectedTerm === 'all' ? 'All Terms' : selectedTerm,
           overallDistrictAverage: districtStats.overallDistrictAverage ?? null,
           totalStudentsInDistrict: districtStats.totalStudentsInDistrict,
           numberOfSchoolsRepresented: districtStats.numberOfSchoolsRepresented,
@@ -108,53 +132,22 @@ export default function DistrictPerformanceDashboard({
         toast({ title: "AI District Insights Request Failed", description: `Client error: ${errorMessage}`, variant: "destructive" });
       }
     });
-  }, [districtStats, districtName, mostRecentTerm, toast]);
+  }, [districtStats, districtName, selectedTerm, toast]);
 
   useEffect(() => {
-    if (!isOpen || allReports.length === 0) {
+    if (!isOpen || filteredReports.length === 0) {
       setDistrictStats(null);
       setAiDistrictAdvice(null);
       setAiError(null);
-      setMostRecentTerm('');
-      setHistoricalData([]);
       return;
     }
 
     setIsLoadingStats(true);
-
-    const reportsByTerm = new Map<string, ReportData[]>();
-    allReports.forEach(report => {
-        const term = report.academicTerm || 'Unknown Term';
-        if (!reportsByTerm.has(term)) reportsByTerm.set(term, []);
-        reportsByTerm.get(term)!.push(report);
-    });
-
-    const termOrder = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
-    const sortedTerms = Array.from(reportsByTerm.keys()).sort((a, b) => termOrder.indexOf(a) - termOrder.indexOf(b));
-
-    const newMostRecentTerm = sortedTerms[sortedTerms.length - 1] || '';
-    setMostRecentTerm(newMostRecentTerm);
-
-    const reportsForCurrentTerm = reportsByTerm.get(newMostRecentTerm) || [];
-    
-    const newStats = aggregateDistrictDataForTerm(reportsForCurrentTerm);
+    const newStats = aggregateDistrictDataForTerm(filteredReports);
     setDistrictStats(newStats);
     setIsLoadingStats(false);
     
-    const newHistoricalData = sortedTerms.map(term => {
-        const termReports = reportsByTerm.get(term)!;
-        const avg = calculateOverallAverage(termReports.flatMap(r => r.subjects));
-        const numSchools = new Set(termReports.map(r => r.schoolName)).size;
-        return {
-            term,
-            numStudents: termReports.length,
-            numSchools,
-            districtAverage: avg
-        };
-    });
-    setHistoricalData(newHistoricalData);
-
-  }, [isOpen, allReports]); 
+  }, [isOpen, filteredReports]); 
 
   useEffect(() => {
     if (isOpen && districtStats) {
@@ -229,13 +222,33 @@ export default function DistrictPerformanceDashboard({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-[95vw] h-[calc(100vh-4rem)] flex flex-col">
-        <ShadcnDialogHeader className="shrink-0"><ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center"><Building className="mr-3 h-6 w-6" />District Dashboard: {districtName}</ShadcnDialogTitle><ShadcnDialogDescription>Analysis for {academicYear}, {mostRecentTerm}</ShadcnDialogDescription></ShadcnDialogHeader>
-        <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
-          {isLoadingStats ? <Card><CardContent className="pt-6 flex justify-center"><Loader2 className="mr-2 h-5 w-5 animate-spin"/> Loading stats...</CardContent></Card> : !districtStats ? <Card><CardContent className="pt-6 text-center text-muted-foreground">No reports found for this district.</CardContent></Card> : (
+      <DialogContent id="school-dashboard-dialog-content" className="max-w-6xl w-[95vw] h-[calc(100vh-4rem)] flex flex-col">
+        <ShadcnDialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10 dialog-header-print-hide">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                <div>
+                    <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center"><Building className="mr-3 h-6 w-6" />District Dashboard: {districtName}</ShadcnDialogTitle>
+                    <ShadcnDialogDescription>Analysis for {selectedYear === 'all' ? 'All Years' : selectedYear}, {selectedTerm === 'all' ? 'All Terms' : selectedTerm}</ShadcnDialogDescription>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger className="w-full sm:w-[180px]"><SelectValue/></SelectTrigger>
+                        <SelectContent>{allAvailableYears.map(y => <SelectItem key={y} value={y}>{y === 'all' ? 'All Years' : y}</SelectItem>)}</SelectContent>
+                    </Select>
+                     <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+                        <SelectTrigger className="w-full sm:w-[180px]"><SelectValue/></SelectTrigger>
+                        <SelectContent>{allAvailableTerms.map(t => <SelectItem key={t} value={t}>{t === 'all' ? 'All Terms' : t}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+            </div>
+        </ShadcnDialogHeader>
+        <div data-testid="school-dashboard-inner-scroll-container" className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
+          <div className="dashboard-print-header">
+                <h2 className="text-xl font-bold">{districtName} District - Performance Dashboard</h2>
+                <p className="text-sm">Academic Session: {selectedYear === 'all' ? 'All Years' : selectedYear}, {selectedTerm === 'all' ? 'All Terms' : selectedTerm} | Generated on: {new Date().toLocaleDateString()}</p>
+          </div>
+          {isLoadingStats ? <Card><CardContent className="pt-6 flex justify-center"><Loader2 className="mr-2 h-5 w-5 animate-spin"/> Loading stats...</CardContent></Card> : !districtStats ? <Card><CardContent className="pt-6 text-center text-muted-foreground">No reports found for the selected period.</CardContent></Card> : (
             <>
               <Card><CardHeader><CardTitle className="flex items-center"><Sigma className="mr-2"/>District Snapshot</CardTitle></CardHeader><CardContent className="grid md:grid-cols-4 gap-4"><div className="text-center"><p className="text-sm text-muted-foreground">Total Students</p><p className="text-2xl font-bold">{districtStats.totalStudentsInDistrict}</p></div><div className="text-center"><p className="text-sm text-muted-foreground">Schools Represented</p><p className="text-2xl font-bold">{districtStats.numberOfSchoolsRepresented}</p></div><div className="text-center"><p className="text-sm text-muted-foreground">District Average</p><p className="text-2xl font-bold">{districtStats.overallDistrictAverage?.toFixed(2)}%</p></div></CardContent></Card>
-              {historicalData.length > 1 && <Card><CardHeader><CardTitle className="flex items-center"><History className="mr-2"/>Term-over-Term</CardTitle></CardHeader><CardContent><Table><ShadcnUITableHeader><TableRow><TableHead>Term</TableHead><TableHead className="text-center">Students</TableHead><TableHead className="text-center">Schools</TableHead><TableHead className="text-center">District Avg</TableHead></TableRow></ShadcnUITableHeader><TableBody>{historicalData.map(data => <TableRow key={data.term}><TableCell>{data.term}</TableCell><TableCell className="text-center">{data.numStudents}</TableCell><TableCell className="text-center">{data.numSchools}</TableCell><TableCell className="text-center">{data.districtAverage?.toFixed(1) ?? 'N/A'}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>}
               <Card><CardHeader><CardTitle className="flex items-center"><Building className="mr-2"/>School Performance</CardTitle></CardHeader><CardContent><Table><ShadcnUITableHeader><TableRow><TableHead>School</TableHead><TableHead className="text-center">Students</TableHead><TableHead className="text-center">Avg (%)</TableHead></TableRow></ShadcnUITableHeader><TableBody>{districtStats.schoolSummariesForUI.sort((a,b) => (b.schoolAverage || 0) - (a.schoolAverage || 0)).map(s => <TableRow key={s.schoolName}><TableCell>{s.schoolName}</TableCell><TableCell className="text-center">{s.numberOfStudents}</TableCell><TableCell className="text-center">{s.schoolAverage?.toFixed(1) || 'N/A'}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
               <Card><CardHeader><CardTitle className="flex items-center"><BookOpen className="mr-2"/>Subject Performance</CardTitle></CardHeader><CardContent><div className="h-[300px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={districtSubjectPerformanceChartData}><XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{fontSize:10}}/><YAxis/><Tooltip content={<CustomTooltip/>}/><Legend/><Bar dataKey="Below Average (<40%)" fill="hsl(var(--destructive))"/><Bar dataKey="Average (40-59%)" fill="hsl(var(--primary))"/><Bar dataKey="Above Average (>=60%)" fill="hsl(var(--accent))"/></BarChart></ResponsiveContainer></div></CardContent></Card>
               <Card><CardHeader><CardTitle className="flex items-center"><LucidePieChart className="mr-2"/>Gender Statistics</CardTitle></CardHeader><CardContent className="grid md:grid-cols-2 gap-6 items-center"><div className="h-[250px]"><ResponsiveContainer width="100%" height="100%"><RechartsPieChart><Pie data={districtGenderChartData} dataKey="value" nameKey="name" label>{districtGenderChartData.map((e,i) => <Cell key={`cell-${i}`} fill={GENDER_COLORS[i % GENDER_COLORS.length]}/>)}</Pie><Tooltip content={<CustomTooltip/>}/><Legend/></RechartsPieChart></ResponsiveContainer></div><Table><ShadcnUITableHeader><TableRow><TableHead>Gender</TableHead><TableHead className="text-center">Count</TableHead><TableHead className="text-center">Avg (%)</TableHead></TableRow></ShadcnUITableHeader><TableBody>{districtStats.overallGenderStatsForDistrictUI.map(g => <TableRow key={g.gender}><TableCell>{g.gender}</TableCell><TableCell className="text-center">{g.count}</TableCell><TableCell className="text-center">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
@@ -243,7 +256,14 @@ export default function DistrictPerformanceDashboard({
             </>
           )}
         </div>
-        <ShadcnDialogFooter className="shrink-0 border-t pt-4 flex-row justify-end"><DialogClose asChild><Button>Close</Button></DialogClose></ShadcnDialogFooter>
+        <ShadcnDialogFooter className="shrink-0 border-t pt-4 flex-row justify-end dialog-footer-print-hide">
+            <Button variant="outline" onClick={handlePrint} disabled={!districtStats}>
+                <Printer className="mr-2 h-4 w-4" /> Print Dashboard
+            </Button>
+            <DialogClose asChild>
+                <Button>Close</Button>
+            </DialogClose>
+        </ShadcnDialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -293,8 +313,10 @@ function aggregateDistrictDataForTerm(reports: ReportData[]): DistrictStatistics
     reports.forEach(report => {
         const gender = report.gender || 'Unknown';
         if (!districtGenderMap.has(gender)) districtGenderMap.set(gender, { scores: [], count: 0 });
-        if (report.overallAverage !== null && report.overallAverage !== undefined) {
-          districtGenderMap.get(gender)!.scores.push(report.overallAverage);
+        
+        const studentAverage = calculateOverallAverage(report.subjects);
+        if (studentAverage !== null) {
+          districtGenderMap.get(gender)!.scores.push(studentAverage);
         }
         districtGenderMap.get(gender)!.count++;
     });
