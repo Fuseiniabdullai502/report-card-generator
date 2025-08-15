@@ -1,30 +1,26 @@
 
 import type {Metadata, Viewport} from 'next';
-import { Inter } from 'next/font/google'; // Import the font
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { Providers } from '@/components/providers'; // Import the new Providers component
-
-// Initialize the font with desired weights and subsets
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+import { Providers } from '@/components/providers'; 
 
 const APP_NAME = 'Report Card Generator';
 const APP_DESCRIPTION = 'Easily create, customize, rank, and print student terminal reports. An AI-powered tool for educators.';
-const APP_URL = 'https://your-app-url.com'; // Replace with your actual app URL once deployed
-const OG_IMAGE_URL = 'https://placehold.co/1200x630.png'; // Replace with your actual OG image URL
+const APP_URL = 'https://your-app-url.com'; 
+const OG_IMAGE_URL = 'https://placehold.co/1200x630.png'; 
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
   title: {
     default: APP_NAME,
-    template: `%s | ${APP_NAME}`, // For specific pages that might set their own title
+    template: `%s | ${APP_NAME}`, 
   },
   description: APP_DESCRIPTION,
   keywords: ['report card', 'student reports', 'school', 'education', 'teacher tool', 'ai report generator', 'terminal report', 'gradebook'],
-  manifest: '/manifest.json', // Assuming you might add a PWA manifest later
-  authors: [{ name: 'Firebase Studio App Prototyper' }], // You can change this
-  creator: 'Firebase Studio App Prototyper', // You can change this
-  publisher: 'Firebase Studio App Prototyper', // You can change this
+  manifest: '/manifest.json', 
+  authors: [{ name: 'Firebase Studio App Prototyper' }], 
+  creator: 'Firebase Studio App Prototyper', 
+  publisher: 'Firebase Studio App Prototyper', 
   
   openGraph: {
     type: 'website',
@@ -82,8 +78,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      {/* The <head> tag can be removed as next/font handles it */}
-      <body className={`${inter.variable} font-body antialiased`}>
+      <body>
         <Providers>
           {children}
           <Toaster />
