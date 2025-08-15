@@ -170,7 +170,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         <header className={cn("mb-2 print:mb-1", templateStyles.headerContainerClass)}>
           <div className="flex justify-between items-center">
             <Image
-                src="https://placehold.co/100x100.png"
+                src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg"
                 alt="Ghana Coat of Arms"
                 width={80}
                 height={80}
@@ -185,7 +185,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
               )}
             </div>
             <Image
-                src="https://placehold.co/100x100.png"
+                src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Ghana_Education_Service_logo.png"
                 alt="GES Logo"
                 width={80}
                 height={80}
