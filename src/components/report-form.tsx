@@ -236,7 +236,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
             title: "AI Image Edit Failed", 
             description: <AiErrorDescription errorMessage={result.error || "An unknown error occurred."} />,
             variant: "destructive",
-            duration: 30000
+            duration: 30000 
           });
        }
     });

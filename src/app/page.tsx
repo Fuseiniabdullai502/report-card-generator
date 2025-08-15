@@ -262,10 +262,6 @@ function AppContent({ user }: { user: CustomUser }) {
     setCurrentPreviewIndex(0);
   }, [adminFilters, searchQuery]);
 
-  const handleAdminFilterChange = (filterName: keyof typeof adminFilters, value: string) => {
-    setAdminFilters(prev => ({ ...prev, [filterName]: value }));
-  };
-
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
     if (listToProcess.length === 0) {
         setAllRankedReports([]);
@@ -391,6 +387,7 @@ function AppContent({ user }: { user: CustomUser }) {
             subjects: data.subjects || [],
             hobbies: data.hobbies || [],
             createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : undefined,
+            updatedAt: data.updatedAt ? (data.updatedAt as Timestamp).toDate() : undefined,
         });
         if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
             maxEntryNum = data.studentEntryNumber;
