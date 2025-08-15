@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -58,6 +58,8 @@ import type { SchoolRankingData } from '@/app/actions';
 import DistrictClassRankingDialog from '@/components/district-class-ranking';
 import { ReportData, SubjectEntry } from '@/lib/schemas';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
+
+const DistrictPerformanceDashboard = lazy(() => import('@/components/district-dashboard'));
 
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 const academicTermOptions = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
@@ -125,6 +127,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const { toast } = useToast();
   
   const [isCreateInviteDialogOpen, setIsCreateInviteDialogOpen] = useState(false);
+  const [isDistrictDashboardOpen, setIsDistrictDashboardOpen] = useState(false);
   
   const [inviteToDelete, setInviteToDelete] = useState<InviteData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -373,24 +376,18 @@ export default function UserManagement({ user, users, invites, populationStats, 
 
         {user.role === 'big-admin' && !isLoading && (
         <div className="space-y-8">
-            <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4">District Role Overview</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                    <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {bigAdminRoleCounts?.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {bigAdminRoleCounts?.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
-                    <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {bigAdminRoleCounts?.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {bigAdminRoleCounts?.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
-                </div>
-            </div>
-            {populationStats && (
-                <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-4">District Educational Data</h3>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Schools in District</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div><p className="text-xs text-muted-foreground">Total schools with reports</p></CardContent></Card>
-                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.totalStudents}</div><p className="text-xs text-muted-foreground">Overall student population</p></CardContent></Card>
-                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</p></CardContent></Card>
-                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.femaleCount}</div><p className="text-xs text-muted-foreground">Female population</p></CardContent></Card>
-                    </div>
-                </div>
-            )}
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><BarChart /> District Performance Dashboard</CardTitle>
+                    <CardDescription>Get a high-level overview of your district's performance with AI-powered analysis.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button onClick={() => setIsDistrictDashboardOpen(true)} disabled={allReports.length === 0}>
+                        <TrendingUp className="mr-2 h-4 w-4" /> Open District Dashboard
+                    </Button>
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                 <CardTitle className="flex items-center gap-2"><BarChart /> District-Wide Class & Subject Analysis</CardTitle>
@@ -648,6 +645,16 @@ export default function UserManagement({ user, users, invites, populationStats, 
           subjectName={selectedRankingSubject === 'overall' ? null : selectedRankingSubject}
         />
       )}
+       <Suspense fallback={<div className="flex justify-center items-center h-screen w-screen bg-background"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+        {isDistrictDashboardOpen && (
+            <DistrictPerformanceDashboard
+                isOpen={isDistrictDashboardOpen}
+                onOpenChange={setIsDistrictDashboardOpen}
+                allReports={allReports}
+                user={user}
+            />
+        )}
+      </Suspense>
     </>
   );
 }
@@ -895,19 +902,7 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
                     
                     {(isSuperAdmin || isBigAdmin) && (role === 'admin' || role === 'user') && (
                         <>
-                            <div className="space-y-2">
-                                <Label htmlFor="circuit">Circuit</Label>
-                                <Select value={circuit} onValueChange={setCircuit} disabled={!district}>
-                                    <SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger>
-                                    <SelectContent>
-                                        {availableCircuits.length > 0 ? (
-                                            availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
-                                        ) : (
-                                            <SelectItem value="-" disabled>Select a district first</SelectItem>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            <div className="space-y-2"><Label htmlFor="circuit">Circuit</Label><Select value={circuit} onValueChange={setCircuit} disabled={!district}><SelectTrigger id="circuit"><SelectValue placeholder="Select a circuit"/></SelectTrigger><SelectContent>{availableCircuits.length > 0 ? (availableCircuits.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)) : (<SelectItem value="-" disabled>Select a district first</SelectItem>)}</SelectContent></Select></div>
                             <div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>
                         </>
                     )}

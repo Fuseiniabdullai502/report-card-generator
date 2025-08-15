@@ -20,6 +20,11 @@ import {
   type GenerateSchoolInsightsOutput,
 } from '@/ai/flows/generate-school-insights-flow';
 import {
+  generateDistrictInsights,
+  type GenerateDistrictInsightsInput,
+  type GenerateDistrictInsightsOutput,
+} from '@/ai/flows/generate-district-insights-flow';
+import {
   generateBulkStudentFeedback,
   type GenerateBulkStudentFeedbackInput,
   type GenerateBulkStudentFeedbackOutput,
@@ -220,6 +225,57 @@ export async function getAiSchoolInsightsAction(
     let errorMessage = "Failed to generate AI school insights. Please try again.";
     if (error instanceof z.ZodError) {
       errorMessage = "Invalid input for AI school insights: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Schemas for AI District Insights
+const ActionDistrictSubjectPerformanceStatSchema = z.object({
+  subjectName: z.string(),
+  numBelowAverage: z.number(),
+  numAverage: z.number(),
+  numAboveAverage: z.number(),
+  districtAverageForSubject: z.number().nullable(),
+});
+
+const ActionDistrictGenderPerformanceStatSchema = z.object({
+  gender: z.string(),
+  count: z.number(),
+  averageScore: z.number().nullable(),
+});
+
+const ActionDistrictSchoolSummarySchema = z.object({
+  schoolName: z.string(),
+  schoolAverage: z.number().nullable(),
+  numberOfStudents: z.number(),
+});
+
+const GenerateDistrictInsightsActionInputSchema = z.object({
+  districtName: z.string(),
+  academicTerm: z.string(),
+  overallDistrictAverage: z.number().nullable(),
+  totalStudentsInDistrict: z.number(),
+  numberOfSchoolsRepresented: z.number(),
+  schoolSummaries: z.array(ActionDistrictSchoolSummarySchema),
+  overallSubjectStatsForDistrict: z.array(ActionDistrictSubjectPerformanceStatSchema),
+  overallGenderStatsForDistrict: z.array(ActionDistrictGenderPerformanceStatSchema),
+});
+
+export async function getAiDistrictInsightsAction(
+  input: GenerateDistrictInsightsInput
+): Promise<{ success: boolean; insights?: GenerateDistrictInsightsOutput; error?: string }> {
+  try {
+    const validatedInput = GenerateDistrictInsightsActionInputSchema.parse(input);
+    const result = await generateDistrictInsights(validatedInput);
+    return { success: true, insights: result };
+  } catch (error) {
+    console.error("Error generating AI district insights:", error);
+    let errorMessage = "Failed to generate AI district insights. Please try again.";
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid input for AI district insights: " + error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ');
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
@@ -1325,6 +1381,7 @@ export async function batchUpdateTeacherFeedbackAction(
       
 
     
+
 
 
 

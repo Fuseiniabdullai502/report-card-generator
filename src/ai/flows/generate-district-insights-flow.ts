@@ -54,7 +54,7 @@ export async function generateDistrictInsights(input: GenerateDistrictInsightsIn
 
 const prompt = ai.definePrompt({
   name: 'generateDistrictInsightsPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-1.5-flash-latest',
   input: { schema: GenerateDistrictInsightsInputSchema },
   output: { schema: GenerateDistrictInsightsOutputSchema },
   prompt: `You are an expert educational director and data analyst providing a district-level performance review for the {{{districtName}}} district.
@@ -123,7 +123,7 @@ const generateDistrictInsightsFlow = ai.defineFlow(
       overallDistrictAssessment: output.overallDistrictAssessment || '',
       keyStrengthsDistrictWide: output.keyStrengthsDistrictWide || [],
       areasForConcernDistrictWide: output.areasForConcernDistrictWide || [],
-      actionableAdviceForDistrict: output.actionableAdviceForDistrict || [],
+      actionableAdviceForDistrict: output.actionableAdviceForSchool || [], // Mapped from old prompt if present
       interSchoolObservations: output.interSchoolObservations || [],
     };
   }
