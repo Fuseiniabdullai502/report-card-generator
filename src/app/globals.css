@@ -1,28 +1,14 @@
-/* stylelint-disable at-rule-no-unknown */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom utility classes */
-@layer utilities {
-  .header-safe {
-    @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2;
-  }
-  .header-side {
-    @apply flex flex-wrap items-center gap-2;
-  }
-  .header-title-wrap {
-    @apply min-w-0 text-center;
-  }
+body {
+  font-family: 'Inter', sans-serif;
 }
-
-/* Import fonts after Tailwind directives */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --font-inter: 'Inter', sans-serif;
-
     --background: 208 27% 95%; /* Light gray #F0F4F7 */
     --foreground: 210 10% 23%; /* Dark Gray */
 
@@ -119,45 +105,30 @@
   }
   
   * {
-    border-color: hsl(var(--border));
+    @apply border-border;
   }
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-family: var(--font-inter), sans-serif;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-inter), sans-serif;
+    @apply bg-background text-foreground;
   }
 }
 
 /* For on-screen A4-like preview */
 @media screen {
+  /* Hide the dedicated print-only block on screen */
   .print-only-reports {
     display: none;
   }
-  
-  body[data-preview-mode="a4"] #report-preview-container .report-preview-item > :last-child {
-    width: 21cm;
-    min-height: 29.7cm;
-    padding: 1.5cm;
+
+  .a4-page-simulation {
+    width: 21cm; 
+    min-height: 29.7cm; 
+    padding: 1.5cm; 
     margin-left: auto;
     margin-right: auto;
-    border: 1px solid #D3D3D3;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
-    background: white;
+    border: 1px solid #D3D3D3; 
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); 
+    background: white; 
     box-sizing: border-box;
-  }
-
-  body[data-preview-mode="card"] #report-preview-container .report-preview-item > :last-child {
-    width: 100%;
-    max-width: 420px;
-    margin: 0.75rem auto;
-    padding: 1rem;
-    border-radius: 0.75rem;
-    border: 1px solid #e0e0e0;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    background: white;
   }
 
   .active-preview-screen {
@@ -195,21 +166,6 @@
     background: transparent !important;
     color: black !important;
     box-shadow: none !important;
-  }
-
-  img,
-  .a4-page-simulation .student-photo-container img {
-    display: inline-block !important;
-    max-width: 100% !important;
-    height: auto !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    visibility: visible !important;
-  }
-
-  /* Main watermark style for printing */
-  .watermark-container > p {
-    color: #f0f0f0 !important; /* Very light gray for the watermark text */
   }
 
   /* Hide the main application view when printing */
@@ -255,14 +211,6 @@
     box-shadow: none !important;
     line-height: 1.1 !important;
   }
-
-  .a4-page-simulation .student-photo-container,
-  .a4-page-simulation .student-photo-container > * {
-    display: block !important;
-    visibility: visible !important;
-    page-break-inside: avoid !important;
-  }
-
   .a4-page-simulation .bg-green-50 { 
      background-color: #f0fff4 !important; 
   }
@@ -283,12 +231,25 @@
       margin-top: 0 !important;
   }
 
+  .a4-page-simulation .report-student-info-table {
+      font-size: 7pt !important;
+  }
+
   .a4-page-simulation .report-student-info-table td {
       padding-bottom: 0px !important;
       padding-top: 0px !important;
   }
 
-  .a4-page-simulation textarea {
+  .a4-page-simulation .print\\:mb-1 { margin-bottom: 0.1rem !important; }
+  .a4-page-simulation .print\\:p-1.5 { padding: 0.2rem !important; }
+
+  .a4-page-simulation img {
+    max-width: 100% !important; 
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+
+   .a4-page-simulation textarea {
     border: none !important;
     resize: none !important;
     padding: 0 !important;
@@ -318,6 +279,10 @@
   .a4-page-simulation tr {
     page-break-inside: avoid; 
   }
+  .a4-page-simulation .py-0\\.5 {
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+  }
   
   .a4-page-simulation .report-subjects-table th, .a4-page-simulation .report-subjects-table td {
     padding-top: 0px !important;
@@ -342,61 +307,59 @@
   }
 
   /* Styles for printing Dialogs (Class & School Dashboards) */
-  .dashboard-print-header,
+  body.dashboard-printing-active #report-preview-container {
+    display: none !important;
+  }
+  
+  .dashboard-print-header, 
   .school-dashboard-print-header,
   .ranking-print-header { 
     display: none;
   }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
   
   body.dashboard-printing-active {
     overflow: visible !important;
-    background: white !important;
   }
-
-  /* This ensures the fixed watermark is visible when printing the dashboard */
-  body.dashboard-printing-active .watermark-container {
-    position: fixed !important;
-    color: #f0f0f0 !important;
-  }
-
-  body.dashboard-printing-active #report-preview-container {
-    display: none !important;
-  }
-
+  
   body.dashboard-printing-active #class-dashboard-dialog-content,
   body.dashboard-printing-active #school-dashboard-dialog-content,
   body.dashboard-printing-active #ranking-print-content {
-    display: block !important;
-    position: static !important;
-    inset: auto !important;
+    position: static !important; 
+    display: block !important; 
     width: 100% !important;
-    height: auto !important;
     max-width: 100% !important;
-    max-height: none !important;
-    min-height: 0 !important;
-    transform: none !important;
+    height: auto !important; 
+    min-height: 0 !important; 
+    max-height: none !important; 
+    transform: none !important; 
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 0 !important; 
     border: none !important;
     box-shadow: none !important;
-    border-radius: 0 !important;
-    background: white !important;
+    background-color: white !important;
     color: black !important;
-    overflow: visible !important;
+    overflow: visible !important; 
+    border-radius: 0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    font-size: 8pt !important; /* Base font size for dashboards */
   }
   
-  body.dashboard-printing-active [data-testid="dashboard-inner-scroll-container"] > .a4-page-simulation,
-  body.dashboard-printing-active [data-testid="school-dashboard-inner-scroll-container"] > .a4-page-simulation {
-    page-break-after: auto !important; /* No page breaks inside the dialog */
-    min-height: 0 !important;
+  body.dashboard-printing-active [data-testid="dashboard-inner-scroll-container"],
+  body.dashboard-printing-active [data-testid="school-dashboard-inner-scroll-container"],
+  body.dashboard-printing-active #ranking-print-content {
+    overflow: visible !important; /* Allow content to flow across pages */
+    height: auto !important;
+    max-height: none !important;
+    padding: 10mm !important; 
+    box-sizing: border-box !important;
   }
-  
-  body.dashboard-printing-active .watermark-container > p {
-    color: #f0f0f0 !important;
-  }
-  
+
   body.dashboard-printing-active * {
     color: black !important;
     border-color: #ccc !important; 
@@ -405,27 +368,31 @@
   
   body.dashboard-printing-active .card {
     background-color: white !important; 
+  }
+  
+  body.dashboard-printing-active .card {
     page-break-inside: avoid !important;
     margin-bottom: 6px !important;
     box-shadow: none !important;
   }
-  
-  /* Allow the AI insights card to break across pages */
-  body.dashboard-printing-active #class-dashboard-insights-card {
-    page-break-inside: auto !important;
+  body.dashboard-printing-active .card-header {
+    padding: 6px !important; 
+  }
+  body.dashboard-printing-active .card-title {
+    font-size: 10pt !important; 
+  }
+  body.dashboard-printing-active .card-description {
+    font-size: 7pt !important; 
+  }
+  body.dashboard-printing-active .card-content {
+    padding: 6px !important; 
   }
 
-  body.dashboard-printing-active .card-header { padding: 6px !important; }
-  body.dashboard-printing-active .card-title { font-size: 10pt !important; }
-  body.dashboard-printing-active .card-description { font-size: 7pt !important; }
-  body.dashboard-printing-active .card-content { padding: 6px !important; }
-  body.dashboard-printing-active .card-content .table-container { padding-left: 0 !important; padding-right: 0 !important; }
-
-  body.dashboard-printing-active .text-primary { color: #2c5282 !important; }
-  body.dashboard-printing-active .text-accent { color: #276749 !important; }
-  body.dashboard-printing-active .text-muted-foreground { color: #4a5568 !important; }
+   body.dashboard-printing-active .text-primary { color: #2c5282 !important; }
+   body.dashboard-printing-active .text-accent { color: #276749 !important; }
+   body.dashboard-printing-active .text-muted-foreground { color: #4a5568 !important; }
   
-  body.dashboard-printing-active [class~="bg-accent\\/10"] { 
+  body.dashboard-printing-active [class~="bg-accent/10"] { 
     background-color: #f0fff4 !important; 
     border: 1px solid #a7f3d0 !important; 
   }
@@ -455,7 +422,7 @@
   .ranking-print-header p,
   .school-dashboard-print-header p {
     font-size: 0.875rem; 
-    color: black !important; 
+    color: black !important;
   }
   
   body.dashboard-printing-active .dialog-footer-print-hide,
@@ -475,8 +442,7 @@
   }
 
   body[data-print-target="dashboard"] .student-ranking-card,
-  body[data-print-target="dashboard"] .ranking-print-header,
-  body[data-print-target="dashboard"] .print-hide-on-dashboard {
+  body[data-print-target="dashboard"] .ranking-print-header {
     display: none !important;
   }
   
@@ -493,7 +459,7 @@
       page-break-inside: avoid;
   }
   
-  body.dashboard-printing-active .table { min-width: 0 !important; width: 100% !important; table-layout: auto !important; }
+  body.dashboard-printing-active .table { min-width: 0 !important; width: 100% !important; table-layout: fixed !important; }
   body.dashboard-printing-active .table th,
   body.dashboard-printing-active .table td { word-break: break-word !important; padding: 2px 3px !important; white-space: normal !important; font-size: 7pt !important; }
   body.dashboard-printing-active .table th { font-size: 7pt !important; }
@@ -507,7 +473,7 @@
   body.dashboard-printing-active [data-testid="school-gender-piechart-container"] {
     min-width: 0 !important;
     width: 100% !important;
-    height: 200px !important; 
+    height: 120px !important; 
     margin-top: 4px !important;
     margin-bottom: 8px !important;
   }
@@ -522,159 +488,9 @@
   
   #school-ranking-card { border: none !important; box-shadow: none !important; }
   #school-ranking-card .card-header { display: none !important; }
-  .school-ranking-print-header { 
-      display: block !important; 
-      text-align: center; 
-      margin-bottom: 1rem; 
-      padding-bottom: 0.5rem; 
-      border-bottom: 1px solid #ccc; 
-  }
-  .school-ranking-print-header h2 { 
-      font-size: 1.25rem; 
-      font-weight: bold; 
-      color: black !important; 
-  }
-  .school-ranking-print-header p { 
-      font-size: 0.875rem; 
-      color: black !important; 
-  }
+  .school-ranking-print-header { display: block !important; text-align: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #ccc; }
+  .school-ranking-print-header h2 { font-size: 1.25rem; font-weight: bold; color: black !important; }
+  .school-ranking-print-header p { font-size: 0.875rem; color: black !important; }
+  #school-ranking-card .table th, #school-ranking-card .table td { padding: 4px 6px !important; font-size: 9pt !important; }
 }
-
-/* ========== Animation Utilities ========== */
-@layer utilities {
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.4s ease-in-out;
-  }
-}
-
-/* ========== Responsive Report Card Preview ========== */
-@media (max-width: 768px) {
-  body[data-preview-mode="a4"] #report-preview-container .report-preview-item > :last-child,
-  body[data-preview-mode="card"] #report-preview-container .report-preview-item > :last-child {
-    width: 100% !important;
-    min-height: auto !important;
-    padding: 1rem !important;
-    margin: 0.75rem auto !important;
-    border-radius: 0.75rem;
-    border: 1px solid #e0e0e0 !important;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    background: white !important;
-    overflow: hidden !important;
-  }
-
-  .a4-page-simulation h1 { font-size: 1.25rem !important; }
-  .a4-page-simulation h2 { font-size: 1.1rem !important; }
-  .a4-page-simulation h3 { font-size: 1rem !important; }
-
-  .a4-page-simulation table {
-    width: 100% !important;
-    font-size: 0.85rem !important;
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .a4-page-simulation .report-section-container {
-    padding: 0.75rem !important;
-    margin-bottom: 0.75rem !important;
-    border-radius: 0.5rem;
-    border: 1px solid #ddd !important;
-    background: #fafafa !important;
-  }
-
-  .a4-page-simulation .report-footer {
-    font-size: 0.75rem !important;
-    padding: 0.5rem 0 !important;
-  }
-
-  .a4-page-simulation .student-photo-container img {
-    max-width: 80px !important;
-    height: auto !important;
-    border-radius: 6px;
-  }
-}
-
-/* ===== District Dashboard: Print Styles ===== */
-
-@page {
-  size: A4;
-  margin: 12mm;
-}
-
-@media print {
-  /* Make sure everything fits and scrollbars don't show */
-  html, body {
-    height: auto !important;
-    overflow: visible !important;
-    background: #fff !important;
-  }
-
-  /* Print exact colors for Tailwind utilities (bg-muted, etc.) */
-  * {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  /* Hide dialog header/footer controls and any poppers/overlays */
-  .dialog-header-print-hide,
-  .dialog-footer-print-hide,
-  [data-radix-popper-content-wrapper],
-  [data-state="open"][data-radix-portal] .fixed,
-  [role="dialog"][data-state="open"] ~ * .DialogOverlay,
-  .react-aria-DialogOverlay,
-  .radix-DialogOverlay {
-    display: none !important;
-  }
-
-  /* Strip drop-shadows/rounded from the printable container */
-  #school-dashboard-dialog-content {
-    box-shadow: none !important;
-    border: 0 !important;
-    background: transparent !important;
-  }
-
-  /* A4 page simulation container */
-  .a4-page-simulation {
-    width: 210mm;
-    min-height: 297mm;
-    margin: 0 auto;
-  }
-
-  /* Avoid breaking inside key blocks */
-  .a4-page-simulation > *,
-  .card,
-  .card *:not(p),       /* paragraphs can break, components shouldn't */
-  .recharts-wrapper,
-  .recharts-legend-wrapper {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  /* Tables: keep headers on each page */
-  table { page-break-inside: auto; }
-  thead { display: table-header-group; }
-  tfoot { display: table-footer-group; }
-  tr, img { break-inside: avoid; page-break-inside: avoid; }
-
-  /* Recharts: prevent overflow */
-  .recharts-surface {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-
-  /* Watermark: keep but soften */
-  .watermark-container { opacity: 0.06 !important; }
-
-  /* Utility to hide any element explicitly on print */
-  .no-print { display: none !important; }
-}
-
-/* Optional: when you add the class before window.print() */
-body.dashboard-printing-active {
-  cursor: progress;
-}
+    
