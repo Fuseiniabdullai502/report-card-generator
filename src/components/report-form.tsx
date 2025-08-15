@@ -510,8 +510,8 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
                         </Button>
                     </div>
                     {formData.studentPhotoDataUri && (
-                      <div className="relative w-20 h-[100px] mt-2">
-                        <NextImage src={formData.studentPhotoDataUri} alt="student" layout="fill" className="rounded border object-cover"/>
+                      <div className="relative w-24 h-32 mt-2 rounded border p-1">
+                        <NextImage src={formData.studentPhotoDataUri} alt="student" layout="fill" className="rounded object-cover"/>
                         {(isImageEditingAiLoading || isUploading) && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
                             <Loader2 className="h-6 w-6 animate-spin text-white" />
