@@ -1019,7 +1019,7 @@ function AppContent({ user }: { user: CustomUser }) {
             <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
             <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
             </div>
-            <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.email} ({user.role})</p>
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.name || user.email} ({user.role})</p>
             
             <div className="absolute top-0 right-0 flex items-center gap-2">
               <ThemeToggleButton />
