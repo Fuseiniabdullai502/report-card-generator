@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -29,6 +30,7 @@ interface DistrictClassRankingDialogProps {
   rankingData: SchoolRankingData[];
   districtName: string;
   className: string;
+  academicYear?: string | null;
   academicTerm?: string | null;
   subjectName?: string | null;
 }
@@ -39,6 +41,7 @@ export default function DistrictClassRankingDialog({
   rankingData,
   districtName,
   className,
+  academicYear,
   academicTerm,
   subjectName,
 }: DistrictClassRankingDialogProps) {
@@ -61,10 +64,11 @@ export default function DistrictClassRankingDialog({
     : `School Performance Ranking for ${className}`;
     
   const reportDescription = subjectName
-    ? `Ranking of schools in ${districtName} based on average performance in '${subjectName}' for students in '${className}' for the selected term.`
-    : `Ranking of schools in ${districtName} based on the overall average performance of students in '${className}' for the selected term.`;
+    ? `Ranking of schools in ${districtName} based on average performance in '${subjectName}' for students in '${className}'.`
+    : `Ranking of schools in ${districtName} based on the overall average performance of students in '${className}'.`;
 
   const termDisplay = academicTerm || "All Terms";
+  const yearDisplay = academicYear || "All Years";
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -73,14 +77,14 @@ export default function DistrictClassRankingDialog({
           <DialogHeader>
             <div className="school-ranking-print-header">
                 <h2>{districtName} District - {reportTitle}</h2>
-                <p>Academic Term: {termDisplay} | Generated on: {new Date().toLocaleDateString()}</p>
+                <p>Academic Session: {yearDisplay}, {termDisplay} | Generated on: {new Date().toLocaleDateString()}</p>
             </div>
             <DialogTitle className="flex items-center text-primary dialog-header-print-hide">
               <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
               {reportTitle}
             </DialogTitle>
             <DialogDescription className="dialog-header-print-hide">
-              {reportDescription} ({termDisplay})
+              {reportDescription} ({yearDisplay}, {termDisplay})
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -110,7 +114,7 @@ export default function DistrictClassRankingDialog({
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold">No Data Found</h3>
                   <p className="text-muted-foreground">
-                      No reports were found for '{className}' {academicTerm ? `in '${academicTerm}'` : ''} {subjectName ? `with the subject '${subjectName}'` : ''} in the {districtName} district to generate a ranking.
+                      No reports were found matching your filter criteria to generate a ranking.
                   </p>
               </div>
             )}

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -25,7 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch, TrendingUp, Trophy as TrophyIcon, BookMarked } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch, TrendingUp, Trophy as TrophyIcon, BookMarked, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -60,6 +61,7 @@ import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calcul
 
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 const academicTermOptions = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
+const academicYearOptions = ["2024/2025", "2025/2026", "2026/2027", "2027/2028", "2028/2029", "2029/2030"];
 
 interface UserData {
   id: string;
@@ -134,6 +136,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [editingInvite, setEditingInvite] = useState<InviteData | null>(null);
 
   const [selectedRankingClass, setSelectedRankingClass] = useState<string>('');
+  const [selectedRankingYear, setSelectedRankingYear] = useState<string>('all_years');
   const [selectedRankingTerm, setSelectedRankingTerm] = useState<string>('all_terms');
   const [selectedRankingSubject, setSelectedRankingSubject] = useState<string>('overall');
   const [isFetchingRanking, setIsFetchingRanking] = useState(false);
@@ -144,6 +147,10 @@ export default function UserManagement({ user, users, invites, populationStats, 
 
   const allAvailableClasses = useMemo(() => {
     return [...new Set(allReports.map(r => r.className).filter(Boolean))].sort();
+  }, [allReports]);
+
+  const allAvailableYears = useMemo(() => {
+    return [...new Set(allReports.map(r => r.academicYear).filter(Boolean) as string[])].sort();
   }, [allReports]);
 
   const allAvailableTerms = useMemo(() => {
@@ -231,7 +238,8 @@ export default function UserManagement({ user, users, invites, populationStats, 
     setRankingData(null);
     const result = await getDistrictClassRankingAction({ 
         district: user.district, 
-        className: selectedRankingClass, 
+        className: selectedRankingClass,
+        academicYear: selectedRankingYear === 'all_years' ? null : selectedRankingYear,
         academicTerm: selectedRankingTerm === 'all_terms' ? null : selectedRankingTerm,
         subjectName: selectedRankingSubject === 'overall' ? null : selectedRankingSubject, 
     });
@@ -389,7 +397,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                 <CardDescription>Compare the performance of a class (and optionally, a specific subject) across all schools in your district.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row gap-4 items-end">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-grow">
                     <div className="w-full">
                         <Label htmlFor="class-ranking-select">Select Class Level</Label>
                         <Select value={selectedRankingClass} onValueChange={setSelectedRankingClass}>
@@ -399,6 +407,20 @@ export default function UserManagement({ user, users, invites, populationStats, 
                         <SelectContent>
                             {classLevels.map(level => (
                             <SelectItem key={level} value={level}>{level}</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="w-full">
+                        <Label htmlFor="year-ranking-select">Select Academic Year</Label>
+                        <Select value={selectedRankingYear} onValueChange={setSelectedRankingYear}>
+                        <SelectTrigger id="year-ranking-select">
+                            <SelectValue placeholder="Select a year..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all_years">All Years</SelectItem>
+                            {allAvailableYears.map(year => (
+                              <SelectItem key={year} value={year}>{year}</SelectItem>
                             ))}
                         </SelectContent>
                         </Select>
@@ -621,6 +643,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
           rankingData={rankingData}
           districtName={user.district || ''}
           className={selectedRankingClass}
+          academicYear={selectedRankingYear === 'all_years' ? null : selectedRankingYear}
           academicTerm={selectedRankingTerm === 'all_terms' ? null : selectedRankingTerm}
           subjectName={selectedRankingSubject === 'overall' ? null : selectedRankingSubject}
         />
@@ -1013,3 +1036,4 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
         </Dialog>
     );
 }
+
