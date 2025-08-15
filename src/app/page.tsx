@@ -942,26 +942,27 @@ function AppContent({ user }: { user: CustomUser }) {
     };
     
     const filterDescription = useMemo(() => {
-        const activeFilters = Object.entries(adminFilters)
-            .filter(([, value]) => value !== 'all')
-            .map(([key, value]) => `${prettyFilterKey(key)}: ${value}`)
-            .join(', ');
-            
-        if (user.role === 'super-admin') {
+    const activeFilters = Object.entries(adminFilters)
+        .filter(([, value]) => value !== 'all')
+        .map(([key, value]) => `${prettyFilterKey(key)}: ${value}`)
+        .join(', ');
+
+    switch (user.role) {
+        case 'super-admin':
             return activeFilters ? `Filtering by: ${activeFilters}` : 'Showing all reports in the system.';
-        }
-        if (user.role === 'big-admin') {
-             return `Viewing District: ${user.district}. ${activeFilters ? `Filtering by: ${activeFilters}` : 'Showing all reports in your district.'}`;
-        }
-        if (user.role === 'admin') {
-             return `Viewing School: ${user.schoolName}. ${activeFilters ? `Filtering by: ${activeFilters}` : 'Showing all reports in your school.'}`;
-        }
-        // User role
-        if (!user.classNames || user.classNames.length === 0) {
-            return 'You are not assigned to any classes. Please contact an administrator.';
-        }
-        return `Showing reports for: ${adminFilters.className === 'all' ? 'All My Classes' : adminFilters.className}.`;
-    }, [user, adminFilters]);
+        case 'big-admin':
+            return `Viewing District: ${user.district || 'N/A'}. ${activeFilters ? `Filtering by: ${activeFilters}` : 'Showing all reports in your district.'}`;
+        case 'admin':
+            return `Viewing School: ${user.schoolName || 'N/A'}. ${activeFilters ? `Filtering by: ${activeFilters}` : 'Showing all reports in your school.'}`;
+        case 'user':
+            if (!user.classNames || user.classNames.length === 0) {
+                return 'You are not assigned to any classes. Please contact an administrator.';
+            }
+            return `Showing reports for: ${adminFilters.className === 'all' ? 'All My Classes' : adminFilters.className}.`;
+        default:
+            return '';
+    }
+}, [user, adminFilters]);
 
     const noReportsFoundMessage = useMemo(() => {
         if (searchQuery) return `No reports found for "${searchQuery}". Try a different name.`;
