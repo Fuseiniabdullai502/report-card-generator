@@ -125,6 +125,13 @@ const tertiaryLevelClassesList = [
   "LEVEL 100", "LEVEL 200", "LEVEL 300", "LEVEL 400", "LEVEL 500", "LEVEL 600", "LEVEL 700"
 ];
 
+const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) => (
+    <>
+      <div className="font-semibold text-gray-600">{label}:</div>
+      <div className="font-bold text-gray-800">{value || 'N/A'}</div>
+    </>
+);
+
 export default function ReportPreview({ data }: ReportPreviewProps) {
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -169,7 +176,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
       <div className="relative z-10 flex flex-col h-full">
         <header className={cn("mb-2 print:mb-1", templateStyles.headerContainerClass)}>
           <div className="flex justify-between items-center">
-            <Image
+             <Image
                 src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg"
                 alt="Ghana Coat of Arms"
                 width={80}
@@ -184,7 +191,7 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
                 <p className="text-xs text-gray-500 mt-0.5 font-semibold">Entry #: {data.studentEntryNumber}</p>
               )}
             </div>
-            <Image
+             <Image
                 src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Ghana_Education_Service_logo.png"
                 alt="GES Logo"
                 width={80}
@@ -197,42 +204,24 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
         </header>
         
         <section className="mb-2 print:mb-1 flex justify-between items-start gap-4">
-            <div className="flex-grow">
-                <table className="w-full text-xs report-student-info-table">
-                    <tbody>
-                        <tr>
-                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Student Name:</td>
-                            <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0" colSpan={3}>{data.studentName || 'N/A'}</td>
-                        </tr>
-                        <tr>
-                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Class:</td>
-                            <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0">{data.className || 'N/A'}</td>
-                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Gender:</td>
-                            <td className="text-gray-800 pr-4 pb-0.5 print:pb-0">{data.gender || 'N/A'}</td>
-                        </tr>
-                        <tr>
-                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Attendance:</td>
-                            <td className="text-gray-800 pb-0.5 print:pb-0">{attendanceString}</td>
-                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Position:</td>
-                            <td className="font-bold text-gray-800 pr-4 pb-0.5 print:pb-0">{data.rank || 'N/A'}</td>
-                        </tr>
-                        <tr>
-                            <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Overall Avg:</td>
-                            <td className="font-bold text-gray-800 pb-0.5 print:pb-0">{data.overallAverage !== undefined && data.overallAverage !== null ? `${data.overallAverage.toFixed(2)}%` : 'N/A'}</td>
-                            {isPromotionStatusRelevant && data.promotionStatus ? (
-                            <>
-                                <td className="font-semibold text-gray-600 pr-2 pb-0.5 print:pb-0">Promotion:</td>
-                                <td className="font-bold text-gray-800 pb-0.5 print:pb-0">
-                                  <div className="flex items-center gap-2">
-                                    {data.promotionStatus === 'Promoted' && <Award className="h-4 w-4 text-green-600" />}
-                                    <span>{data.promotionStatus}</span>
-                                  </div>
-                                </td>
-                            </>
-                            ) : <td colSpan={2}></td>}
-                        </tr>
-                    </tbody>
-                </table>
+            <div className="flex-grow grid grid-cols-[max-content_1fr_max-content_1fr] gap-x-4 gap-y-0.5 text-xs">
+                 <InfoRow label="Student Name" value={data.studentName} />
+                 <InfoRow label="Class" value={data.className} />
+                 <InfoRow label="Gender" value={data.gender} />
+                 <InfoRow label="Attendance" value={attendanceString} />
+                 <InfoRow label="Position" value={data.rank} />
+                 <InfoRow label="Overall Avg" value={data.overallAverage !== undefined && data.overallAverage !== null ? `${data.overallAverage.toFixed(2)}%` : 'N/A'} />
+                 {isPromotionStatusRelevant && data.promotionStatus && (
+                    <InfoRow 
+                        label="Promotion" 
+                        value={
+                            <div className="flex items-center gap-2">
+                                {data.promotionStatus === 'Promoted' && <Award className="h-4 w-4 text-green-600" />}
+                                <span>{data.promotionStatus}</span>
+                            </div>
+                        } 
+                    />
+                 )}
             </div>
             {data.studentPhotoDataUri && (
                 <div className="flex-shrink-0 text-center">
@@ -368,4 +357,3 @@ function ReportSection({ title, children, templateStyles, highlightColor }: Repo
     </div>
   );
 }
-
