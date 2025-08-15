@@ -168,24 +168,30 @@ export default function ReportPreview({ data }: ReportPreviewProps) {
       {/* Main Content */}
       <div className="relative z-10 flex flex-col h-full">
         <header className={cn("mb-2 print:mb-1", templateStyles.headerContainerClass)}>
-          <div className="flex justify-between items-start">
-            <div>
+          <div className="flex justify-between items-center">
+            <Image
+                src="https://placehold.co/100x100.png"
+                alt="Ghana Coat of Arms"
+                width={80}
+                height={80}
+                data-ai-hint="ghana coat of arms"
+                className="object-contain"
+            />
+            <div className="text-center">
               <h2 className={templateStyles.headerTitleClass}>{data.schoolName || 'School Name'}</h2>
               <p className={templateStyles.headerSubtitleClass}>{data.academicYear || 'Academic Year'} - {data.academicTerm || 'Term/Semester'}</p>
               {data.studentEntryNumber && (
                 <p className="text-xs text-gray-500 mt-0.5 font-semibold">Entry #: {data.studentEntryNumber}</p>
               )}
             </div>
-            {data.schoolLogoDataUri && (
-              <Image
-                src={data.schoolLogoDataUri}
-                alt="School Logo"
-                width={120}
-                height={60}
-                data-ai-hint="school logo"
+            <Image
+                src="https://placehold.co/100x100.png"
+                alt="GES Logo"
+                width={80}
+                height={80}
+                data-ai-hint="GES logo"
                 className="object-contain"
-              />
-            )}
+            />
           </div>
           <h1 className={cn(templateStyles.mainHeaderTextClass, "report-main-header print:mt-1 print:text-2xl")}>Student Report Card</h1>
         </header>
@@ -362,3 +368,4 @@ function ReportSection({ title, children, templateStyles, highlightColor }: Repo
     </div>
   );
 }
+
