@@ -133,17 +133,14 @@ function AppContent({ user }: { user: CustomUser }) {
   
   // State for appearance customization
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
-  const [textOverlay, setTextOverlay] = useState<string>('');
   const [backgroundOpacity, setBackgroundOpacity] = useState<number>(0.1);
   const [isAppearanceSettingsVisible, setIsAppearanceSettingsVisible] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
         const savedBg = localStorage.getItem('app-background-image');
-        const savedText = localStorage.getItem('app-text-overlay');
         const savedOpacity = localStorage.getItem('app-bg-opacity');
         if (savedBg) setBackgroundImage(savedBg);
-        if (savedText) setTextOverlay(savedText);
         if (savedOpacity) setBackgroundOpacity(parseFloat(savedOpacity));
     }
   }, []);
@@ -160,12 +157,6 @@ function AppContent({ user }: { user: CustomUser }) {
           reader.readAsDataURL(file);
       }
       if(e.target) e.target.value = '';
-  };
-  
-  const handleTextOverlayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const text = e.target.value;
-      setTextOverlay(text);
-      localStorage.setItem('app-text-overlay', text);
   };
   
   const handleBackgroundOpacityChange = (value: number[]) => {
@@ -989,6 +980,13 @@ function AppContent({ user }: { user: CustomUser }) {
         return <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />;
     }, [user.role]);
 
+  const schoolNameWatermark = useMemo(() => {
+      if ((user.role === 'admin' || user.role === 'user') && user.schoolName) {
+          return user.schoolName;
+      }
+      return null;
+  }, [user]);
+
   return (
     <>
       <div className="main-app-container">
@@ -1005,7 +1003,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 }}
             />
         )}
-        {textOverlay && (
+        {schoolNameWatermark && (
             <div 
                 className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none"
                 style={{
@@ -1017,7 +1015,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     textTransform: 'uppercase',
                 }}
             >
-                {textOverlay}
+                {schoolNameWatermark}
             </div>
         )}
         <div className='relative z-10'>
@@ -1236,10 +1234,6 @@ function AppContent({ user }: { user: CustomUser }) {
                                 onValueChange={handleBackgroundOpacityChange}
                             />
                         </div>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="text-overlay">Text Watermark</Label>
-                        <Input id="text-overlay" value={textOverlay} onChange={handleTextOverlayChange} placeholder="e.g., Your School Name" />
                     </div>
                 </CardContent>
             </Card>
@@ -1538,5 +1532,3 @@ export default function Home() {
   
   return <AppContent user={user} />;
 }
-
-    
