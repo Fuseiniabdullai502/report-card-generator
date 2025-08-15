@@ -972,6 +972,23 @@ function AppContent({ user }: { user: CustomUser }) {
         return `The report card preview will appear here as you fill out the form.`;
     }, [reportsCount, allRankedReports.length, searchQuery]);
 
+    const headerTitle = useMemo(() => {
+      if (user.role === 'admin' || user.role === 'user') {
+          return user.schoolName || 'Report Card Generator';
+      }
+      if (user.role === 'big-admin') {
+          return user.district ? `${user.district} District` : 'Report Card Generator';
+      }
+      return 'Report Card Generator';
+    }, [user]);
+
+    const headerIcon = useMemo(() => {
+        if (user.role === 'admin' || user.role === 'user' || user.role === 'big-admin') {
+            return <Building className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />;
+        }
+        return <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />;
+    }, [user.role]);
+
   return (
     <>
       <div className="main-app-container">
@@ -1004,7 +1021,7 @@ function AppContent({ user }: { user: CustomUser }) {
             </div>
         )}
         <div className='relative z-10'>
-          <header className="mb-8 text-center no-print relative">
+           <header className="mb-8 text-center no-print relative">
             <div className="absolute top-0 left-0 flex items-center gap-2">
                 {isAdminRole && (
                     <Link href="/admin" passHref>
@@ -1017,8 +1034,8 @@ function AppContent({ user }: { user: CustomUser }) {
             </div>
 
             <div className="flex items-center justify-center gap-3">
-            <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-            <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary">Report Card Generator</h1>
+                {headerIcon}
+                <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary">{headerTitle}</h1>
             </div>
             <p className="text-muted-foreground mt-2 text-sm sm:text-base">Welcome, {user.name || user.email} ({user.role})</p>
             
