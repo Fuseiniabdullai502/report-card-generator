@@ -242,30 +242,36 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
     });
   };
 
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-    fieldName: keyof Pick<ReportData, 'studentPhotoDataUri'>
-  ) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-  
+
     setIsUploading(true);
     toast({ title: "Uploading Image...", description: "Please wait while the image is being saved." });
-    
+
     try {
-      const storageRef = ref(storage, `student_photos/${uuidv4()}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-  
-      onFormUpdate({ ...formData, [fieldName]: downloadURL });
-      toast({ title: "Image Uploaded Successfully", description: "The photo is now saved." });
-  
+        const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+        onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
+        toast({ title: "Image Uploaded Successfully", description: "The photo is now saved and linked to the report." });
     } catch (error) {
-      console.error("Error uploading image to Firebase Storage:", error);
-      toast({ title: "Upload Failed", description: "Could not save the image to cloud storage.", variant: "destructive" });
+        console.error("Error uploading image to Firebase Storage:", error);
+        let errorMessage = "Could not save the image to cloud storage.";
+        if (error instanceof Error && 'code' in error) {
+            const firebaseError = error as { code: string; message: string };
+            if (firebaseError.code === 'storage/unauthorized') {
+                errorMessage = "Upload failed: Permission denied. Please check your Firebase Storage security rules to allow writes.";
+            } else if (firebaseError.code === 'storage/canceled') {
+                errorMessage = "Upload canceled.";
+            } else {
+                errorMessage = `Upload failed with error: ${firebaseError.message}`;
+            }
+        }
+        toast({ title: "Upload Failed", description: errorMessage, variant: "destructive" });
     } finally {
-       setIsUploading(false);
-       if(event.target) event.target.value = '';
+        setIsUploading(false);
+        if (event.target) event.target.value = ''; // Reset file input
     }
   };
   
@@ -492,7 +498,7 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
                  <div className="space-y-2">
                     <Label className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />Student Photo</Label>
                     <div className="flex items-center gap-2">
-                        <input type="file" id="studentPhotoUpload" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleImageUpload(e, 'studentPhotoDataUri')} disabled={isUploading} />
+                        <input type="file" id="studentPhotoUpload" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleImageUpload} disabled={isUploading} />
                         <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()} disabled={isUploading}>
                             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4 text-blue-500" />}
                              {isUploading ? 'Uploading...' : 'Upload'}
