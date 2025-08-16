@@ -326,27 +326,30 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
         async (error) => {
             console.error('Image upload error:', error);
             try { await deleteObject(storageRef); } catch {}
-            let errorMessage = "Could not save the image.";
-            if ('code' in error) {
+            let errorMessage = "Could not save the image. This can happen if the network connection is interrupted.";
+            if (typeof error === 'object' && error !== null && 'code' in error) {
                 switch (error.code) {
                     case 'storage/unauthorized':
-                        errorMessage = "Permission denied. Check your Firebase Storage rules.";
+                        errorMessage = "Permission denied. Please check your Firebase Storage security rules to allow writes.";
                         break;
                     case 'storage/canceled':
                         errorMessage = "Upload was canceled.";
+                        break;
+                    case 'storage/unknown':
+                        errorMessage = "An unknown storage error occurred. Please check the server logs.";
                         break;
                 }
             }
             toast({ title: 'Upload Failed', description: errorMessage, variant: 'destructive' });
             setImageUploadProgress(null);
-            input.value = '';
+            if (input) input.value = '';
         },
         async () => {
             const downloadURL = await getDownloadURL(storageRef);
             onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
             toast({ title: "Image Uploaded Successfully" });
             setImageUploadProgress(null);
-            input.value = '';
+            if (input) input.value = '';
         }
     );
   };
@@ -747,5 +750,3 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     </>
   );
 }
-
-    

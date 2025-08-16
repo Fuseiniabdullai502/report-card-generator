@@ -618,15 +618,29 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
       async (error) => {
         console.error('Image upload error:', error);
         try { await deleteObject(storageRef); } catch {}
-        toast({ title: 'Upload Failed', description: 'Could not save the image.', variant: 'destructive' });
+        let errorMessage = "Could not save the image. This can happen if the network connection is interrupted.";
+        if (typeof error === 'object' && error !== null && 'code' in error) {
+            switch (error.code) {
+                case 'storage/unauthorized':
+                    errorMessage = "Permission denied. Please check your Firebase Storage security rules to allow writes.";
+                    break;
+                case 'storage/canceled':
+                    errorMessage = "Upload was canceled.";
+                    break;
+                case 'storage/unknown':
+                    errorMessage = "An unknown storage error occurred. Please check the server logs.";
+                    break;
+            }
+        }
+        toast({ title: 'Upload Failed', description: errorMessage, variant: 'destructive' });
         setImageUploadStatus(prev => ({ ...prev, [studentId]: null }));
-        input.value = '';
+        if (input) input.value = '';
       },
       async () => {
         const downloadURL = await getDownloadURL(storageRef);
         handleFieldChange(studentId, 'studentPhotoDataUri', downloadURL);
         setImageUploadStatus(prev => ({ ...prev, [studentId]: null }));
-        input.value = '';
+        if (input) input.value = '';
       }
     );
   };
@@ -1326,10 +1340,3 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
         </Dialog>
     );
 }
-
-
-    
-    
-
-
-
