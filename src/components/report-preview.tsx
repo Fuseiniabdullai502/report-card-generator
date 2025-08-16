@@ -2,6 +2,7 @@
 
 'use client';
 
+import * as React from 'react';
 import type {ReportData, SubjectEntry} from '@/lib/schemas';
 import Image from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -155,10 +156,12 @@ export default function ReportPreview({ data, classTotal, subjectOrder }: Report
   
   const templateStyles = getTemplateSpecificStyles(data.selectedTemplateId);
 
-  const highlightColorForTeacherFeedback = data.selectedTemplateId === 'elegantGreen' ? 'bg-green-50 print:bg-green-50' 
-                                      : data.selectedTemplateId === 'professionalBlue' ? 'bg-blue-50 print:bg-blue-50'
-                                      : data.selectedTemplateId === 'creativeTeal' ? 'bg-teal-50 print:bg-teal-50'
-                                      : 'bg-green-50 print:bg-green-50'; // Default highlight
+  const highlightColorForTeacherFeedback = cn(
+    data.selectedTemplateId === 'elegantGreen' ? 'bg-green-50 print:bg-green-50' :
+    data.selectedTemplateId === 'professionalBlue' ? 'bg-blue-50 print:bg-blue-50' :
+    data.selectedTemplateId === 'creativeTeal' ? 'bg-teal-50 print:bg-teal-50' :
+    'bg-green-50 print:bg-green-50' // Default highlight
+  );
 
   const orderedSubjects = React.useMemo(() => {
     if (!subjectOrder || subjectOrder.length === 0) {
