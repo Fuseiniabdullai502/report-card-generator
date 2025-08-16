@@ -748,6 +748,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                             : subjectOrder.filter(s => s !== subject);
                                         handleSubjectOrderChange(newOrder);
                                     }}
+                                    onSelect={(e) => e.preventDefault()}
                                 >
                                     {subject}
                                 </DropdownMenuCheckboxItem>
@@ -898,6 +899,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                                             key={hobby}
                                                             checked={student.hobbies?.includes(hobby)}
                                                             onCheckedChange={checked => handleHobbyChange(student.id, hobby, Boolean(checked))}
+                                                            onSelect={(e) => e.preventDefault()}
                                                         >
                                                             {hobby}
                                                         </DropdownMenuCheckboxItem>
@@ -905,7 +907,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                                 </ScrollArea>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem onSelect={() => openCustomHobbyDialog(student.id)}>
-                                                    <PlusCircle className="mr-2 h-4 w-4" />Add New Hobby...
+                                                    <PlusCircle className="mr-2 h-4 w-4 text-accent"/>Add New Hobby...
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
