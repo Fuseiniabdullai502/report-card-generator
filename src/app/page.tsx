@@ -35,13 +35,10 @@ import { QuickEntry } from '@/components/quick-entry';
 import { deleteReportAction } from '@/app/actions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Slider } from '@/components/ui/slider';
+import ClassPerformanceDashboard from '@/components/class-dashboard';
 
 
 // Dynamically import heavy components
-const ClassPerformanceDashboard = dynamic(() => import('@/components/class-dashboard'), { 
-    ssr: false,
-    loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> 
-});
 const SchoolPerformanceDashboard = dynamic(() => import('@/components/school-dashboard'), { 
     ssr: false,
     loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> 
