@@ -94,7 +94,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     const isShsClass = sessionDefaults.className && getClassLevel(sessionDefaults.className) === 'SHS';
     
     // Only proceed if it is an SHS class and a program is selected
-    if (isShsClass && sessionDefaults.shsProgram) {
+    if (isShsClass && sessionDefaults.shsProgram && sessionDefaults.className) {
       const suggestedSubjects = getSubjectsForClass(
         sessionDefaults.className,
         sessionDefaults.shsProgram as ShsProgram | undefined
