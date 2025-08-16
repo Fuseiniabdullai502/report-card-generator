@@ -23,7 +23,7 @@ import { calculateOverallAverage } from '@/lib/calculations';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
-import { getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
+import { getClassLevel, getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
 
 
 interface ReportFormProps {
@@ -87,17 +87,26 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
   // When form is reset (isEditing becomes false after being true) or session defaults change,
   // automatically populate subjects based on class and program.
   useEffect(() => {
-    if (!isEditing && sessionDefaults.className) {
+    // Only run this for new reports, not when editing an existing one
+    if (isEditing) return;
+
+    // Check if the className is an SHS level class
+    const isShsClass = sessionDefaults.className && getClassLevel(sessionDefaults.className) === 'SHS';
+    
+    // Only proceed if it is an SHS class and a program is selected
+    if (isShsClass && sessionDefaults.shsProgram) {
       const suggestedSubjects = getSubjectsForClass(
         sessionDefaults.className,
         sessionDefaults.shsProgram as ShsProgram | undefined
       );
+
       if (suggestedSubjects.length > 0) {
         const newSubjects: SubjectEntry[] = suggestedSubjects.map(name => ({
           subjectName: name,
           continuousAssessment: null,
           examinationMark: null,
         }));
+        // Update the form with the new subjects, preserving other form data
         onFormUpdate({ ...formData, subjects: newSubjects });
       }
     }

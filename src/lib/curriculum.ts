@@ -1,4 +1,5 @@
 
+
 // src/lib/curriculum.ts
 
 export const curriculumLevels = {
@@ -117,7 +118,7 @@ export const curriculumLevels = {
   ],
 };
 
-export type ClassLevel = keyof typeof curriculumLevels | 'SHS' | null;
+export type ClassLevel = keyof typeof curriculumLevels | 'SHS' | 'TERTIARY' | null;
 export type ShsProgram = keyof Omit<typeof curriculumLevels, 'NURSERY' | 'KG' | 'PRIMARY' | 'JHS' | 'SHS_CORE'>;
 
 export const shsProgramOptions: { value: ShsProgram, label: string }[] = [
@@ -139,6 +140,8 @@ export const getClassLevel = (className: string): ClassLevel => {
     if (upperClassName.startsWith('CLASS') || upperClassName.startsWith('PRIMARY') || upperClassName.startsWith('BASIC')) return 'PRIMARY';
     if (upperClassName.startsWith('JHS') || upperClassName.includes('JUNIOR HIGH')) return 'JHS';
     if (upperClassName.startsWith('SHS') || upperClassName.includes('SENIOR HIGH')) return 'SHS';
+    if (upperClassName.startsWith('LEVEL')) return 'TERTIARY';
+
 
     return null;
 };
