@@ -24,8 +24,7 @@ const nextConfig = {
     if (isServer) {
       // These packages are required by Genkit, but cause trouble with webpack.
       // Mark them as external so they're not packaged.
-      config.externals.push('dtrace-provider');
-      config.externals.push('opentelemetry-instrumentation-grpc');
+      config.externals.push('dtrace-provider', 'opentelemetry-instrumentation-grpc');
     }
     
     return config
