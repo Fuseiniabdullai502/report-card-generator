@@ -130,15 +130,19 @@ function AppContent({ user }: { user: CustomUser }) {
   // State for subject order, lifted from QuickEntry
   const [subjectOrder, setSubjectOrder] = useState<string[]>([]);
 
+  // User-specific localStorage keys
+  const bgImageKey = `app-background-image-${user.uid}`;
+  const bgOpacityKey = `app-bg-opacity-${user.uid}`;
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        const savedBg = localStorage.getItem('app-background-image');
-        const savedOpacity = localStorage.getItem('app-bg-opacity');
+        const savedBg = localStorage.getItem(bgImageKey);
+        const savedOpacity = localStorage.getItem(bgOpacityKey);
         if (savedBg) setBackgroundImage(savedBg);
         if (savedOpacity) setBackgroundOpacity(parseFloat(savedOpacity));
     }
-  }, []);
+  }, [user.uid, bgImageKey, bgOpacityKey]);
 
   const handleBackgroundImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -147,7 +151,7 @@ function AppContent({ user }: { user: CustomUser }) {
           reader.onloadend = () => {
               const dataUrl = reader.result as string;
               setBackgroundImage(dataUrl);
-              localStorage.setItem('app-background-image', dataUrl);
+              localStorage.setItem(bgImageKey, dataUrl);
           };
           reader.readAsDataURL(file);
       }
@@ -157,7 +161,7 @@ function AppContent({ user }: { user: CustomUser }) {
   const handleBackgroundOpacityChange = (value: number[]) => {
       const opacity = value[0];
       setBackgroundOpacity(opacity);
-      localStorage.setItem('app-bg-opacity', String(opacity));
+      localStorage.setItem(bgOpacityKey, String(opacity));
   };
 
   const isSuperAdmin = user.role === 'super-admin';
