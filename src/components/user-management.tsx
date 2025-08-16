@@ -26,7 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch, TrendingUp, Trophy as TrophyIcon, BookMarked, Calendar } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch, TrendingUp, Trophy as TrophyIcon, BookMarked, Calendar, Home, School } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -100,10 +100,13 @@ interface InviteData {
 }
 
 interface PopulationStats {
-  schoolCount: number;
+  totalStudents: number;
   maleCount: number;
   femaleCount: number;
-  totalStudents: number;
+  schoolCount: number;
+  publicSchoolCount: number;
+  privateSchoolCount: number;
+  schoolLevelCounts: Record<string, number>;
 }
 
 interface SchoolStats {
@@ -369,12 +372,26 @@ export default function UserManagement({ user, users, invites, populationStats, 
             {populationStats && (
                 <div>
                     <h3 className="text-lg font-semibold text-foreground mb-4">System-Wide Educational Data</h3>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Schools</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div><p className="text-xs text-muted-foreground">Schools with student reports</p></CardContent></Card>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Schools</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div>
+                        <div className="text-xs text-muted-foreground flex justify-around mt-1">
+                            <span className='flex items-center gap-1'><Home className="h-3 w-3"/> Public: <b>{populationStats.publicSchoolCount}</b> ({populationStats.schoolCount > 0 ? (populationStats.publicSchoolCount / populationStats.schoolCount * 100).toFixed(0) : 0}%)</span>
+                            <span className='flex items-center gap-1'><School className="h-3 w-3"/> Private: <b>{populationStats.privateSchoolCount}</b> ({populationStats.schoolCount > 0 ? (populationStats.privateSchoolCount / populationStats.schoolCount * 100).toFixed(0) : 0}%)</span>
+                        </div>
+                        </CardContent></Card>
                         <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.totalStudents}</div><p className="text-xs text-muted-foreground">Across all schools</p></CardContent></Card>
-                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.maleCount}</div><p className="text-xs text-muted-foreground">Male population</p></CardContent></Card>
-                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.femaleCount}</div><p className="text-xs text-muted-foreground">Female population</p></CardContent></Card>
                     </div>
+                    <Card className="mt-4">
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">School Levels Breakdown</CardTitle></CardHeader>
+                        <CardContent className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                            {Object.entries(populationStats.schoolLevelCounts).map(([level, count]) => (
+                                <div key={level} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                                    <span className="font-semibold">{level}:</span>
+                                    <span className="text-primary font-bold">{count}</span>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
                 </div>
             )}
         </div>
@@ -385,12 +402,26 @@ export default function UserManagement({ user, users, invites, populationStats, 
              {populationStats && (
                 <div>
                     <h3 className="text-lg font-semibold text-foreground mb-4">District Data Overview: {user.district}</h3>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Schools</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div></CardContent></Card>
-                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.totalStudents}</div></CardContent></Card>
-                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Male Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.maleCount}</div><p className="text-xs text-muted-foreground">{populationStats.totalStudents > 0 ? `${((populationStats.maleCount / populationStats.totalStudents) * 100).toFixed(1)}%` : '0%'}</p></CardContent></Card>
-                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Female Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.femaleCount}</div><p className="text-xs text-muted-foreground">{populationStats.totalStudents > 0 ? `${((populationStats.femaleCount / populationStats.totalStudents) * 100).toFixed(1)}%` : '0%'}</p></CardContent></Card>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                         <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Schools</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.schoolCount}</div>
+                        <div className="text-xs text-muted-foreground flex justify-around mt-1">
+                            <span className='flex items-center gap-1'><Home className="h-3 w-3"/> Public: <b>{populationStats.publicSchoolCount}</b> ({populationStats.schoolCount > 0 ? (populationStats.publicSchoolCount / populationStats.schoolCount * 100).toFixed(0) : 0}%)</span>
+                            <span className='flex items-center gap-1'><School className="h-3 w-3"/> Private: <b>{populationStats.privateSchoolCount}</b> ({populationStats.schoolCount > 0 ? (populationStats.privateSchoolCount / populationStats.schoolCount * 100).toFixed(0) : 0}%)</span>
+                        </div>
+                        </CardContent></Card>
+                        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Students</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{populationStats.totalStudents}</div><p className="text-xs text-muted-foreground">Across the district</p></CardContent></Card>
                     </div>
+                     <Card className="mt-4">
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">District School Levels</CardTitle></CardHeader>
+                        <CardContent className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                             {Object.entries(populationStats.schoolLevelCounts).map(([level, count]) => (
+                                <div key={level} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                                    <span className="font-semibold">{level}:</span>
+                                    <span className="text-primary font-bold">{count}</span>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
                 </div>
             )}
              <Card>

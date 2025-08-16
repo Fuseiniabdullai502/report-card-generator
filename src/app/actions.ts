@@ -1036,10 +1036,13 @@ export async function getReportsForAdminAction(user: PlainUser): Promise<{ succe
 export async function getDistrictStatsAction(district: string): Promise<{
   success: boolean;
   stats?: {
-    schoolCount: number;
+    totalStudents: number;
     maleCount: number;
     femaleCount: number;
-    totalStudents: number;
+    schoolCount: number;
+    publicSchoolCount: number;
+    privateSchoolCount: number;
+    schoolLevelCounts: Record<string, number>;
   };
   error?: string;
 }> {
@@ -1048,45 +1051,66 @@ export async function getDistrictStatsAction(district: string): Promise<{
       throw new Error("District is required to fetch stats.");
     }
     
+    // Fetch reports to get student counts
     const reportsRef = admin.firestore().collection('reports');
     const reportsQuery = reportsRef.where('district', '==', district);
     const reportsSnapshot = await reportsQuery.get();
     
-    if (reportsSnapshot.empty) {
-        return { success: true, stats: { schoolCount: 0, maleCount: 0, femaleCount: 0, totalStudents: 0 } };
-    }
-
-    const schoolNames = new Set<string>();
     let maleCount = 0;
     let femaleCount = 0;
-    
     reportsSnapshot.forEach((doc: DocumentData) => {
       const data = doc.data();
-      if (data.schoolName) {
-        schoolNames.add(data.schoolName);
-      }
-      if (data.gender === 'Male') {
-        maleCount++;
-      } else if (data.gender === 'Female') {
-        femaleCount++;
-      }
+      if (data.gender === 'Male') maleCount++;
+      else if (data.gender === 'Female') femaleCount++;
     });
-    
+
+    // Fetch admin users to get school counts and properties
+    const usersRef = admin.firestore().collection('users');
+    const adminsQuery = usersRef.where('role', '==', 'admin').where('district', '==', district);
+    const adminsSnapshot = await adminsQuery.get();
+
+    const uniqueSchools = new Map<string, { category?: string, levels?: string[] }>();
+    adminsSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.schoolName && !uniqueSchools.has(data.schoolName)) {
+            uniqueSchools.set(data.schoolName, {
+                category: data.schoolCategory,
+                levels: data.schoolLevels
+            });
+        }
+    });
+
+    let publicSchoolCount = 0;
+    let privateSchoolCount = 0;
+    const schoolLevelCounts: Record<string, number> = {};
+
+    uniqueSchools.forEach(school => {
+        if (school.category === 'public') publicSchoolCount++;
+        if (school.category === 'private') privateSchoolCount++;
+        if (school.levels) {
+            school.levels.forEach(level => {
+                schoolLevelCounts[level] = (schoolLevelCounts[level] || 0) + 1;
+            });
+        }
+    });
+
     const stats = {
-      schoolCount: schoolNames.size,
+      totalStudents: reportsSnapshot.size,
       maleCount,
       femaleCount,
-      totalStudents: reportsSnapshot.size,
+      schoolCount: uniqueSchools.size,
+      publicSchoolCount,
+      privateSchoolCount,
+      schoolLevelCounts
     };
     
     return { success: true, stats };
 
   } catch (error: any) {
     console.error('Error fetching district stats:', error);
-    // Provide a more user-friendly error
     let errorMessage = "An unexpected error occurred while fetching district statistics.";
     if (error.code === 'failed-precondition' && error.message.includes('index')) {
-        errorMessage = `A database index is needed to query reports by 'district'. Please check the browser's developer console for a link to create it. This is a one-time setup.`;
+        errorMessage = `A database index is needed. Please check the browser's developer console for a link to create the required indexes. This is a one-time setup.`;
     } else if (error.message) {
         errorMessage = error.message;
     }
@@ -1160,42 +1184,64 @@ export async function getSchoolStatsAction(schoolName: string): Promise<{
 export async function getSystemWideStatsAction(): Promise<{
   success: boolean;
   stats?: {
-    schoolCount: number;
+    totalStudents: number;
     maleCount: number;
     femaleCount: number;
-    totalStudents: number;
+    schoolCount: number;
+    publicSchoolCount: number;
+    privateSchoolCount: number;
+    schoolLevelCounts: Record<string, number>;
   };
   error?: string;
 }> {
   try {
+    // Fetch reports for student counts
     const reportsRef = admin.firestore().collection('reports');
     const reportsSnapshot = await reportsRef.get();
-    
-    if (reportsSnapshot.empty) {
-        return { success: true, stats: { schoolCount: 0, maleCount: 0, femaleCount: 0, totalStudents: 0 } };
-    }
-
-    const schoolNames = new Set<string>();
     let maleCount = 0;
     let femaleCount = 0;
-    
     reportsSnapshot.forEach((doc: DocumentData) => {
       const data = doc.data();
-      if (data.schoolName) {
-        schoolNames.add(data.schoolName);
-      }
-      if (data.gender === 'Male') {
-        maleCount++;
-      } else if (data.gender === 'Female') {
-        femaleCount++;
-      }
+      if (data.gender === 'Male') maleCount++;
+      else if (data.gender === 'Female') femaleCount++;
+    });
+
+    // Fetch admin users for school counts and properties
+    const usersRef = admin.firestore().collection('users');
+    const adminsSnapshot = await usersRef.where('role', '==', 'admin').get();
+    const uniqueSchools = new Map<string, { category?: string, levels?: string[] }>();
+    adminsSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.schoolName && !uniqueSchools.has(data.schoolName)) {
+            uniqueSchools.set(data.schoolName, {
+                category: data.schoolCategory,
+                levels: data.schoolLevels
+            });
+        }
+    });
+
+    let publicSchoolCount = 0;
+    let privateSchoolCount = 0;
+    const schoolLevelCounts: Record<string, number> = {};
+
+    uniqueSchools.forEach(school => {
+        if (school.category === 'public') publicSchoolCount++;
+        if (school.category === 'private') privateSchoolCount++;
+        if (school.levels) {
+            school.levels.forEach(level => {
+                schoolLevelCounts[level] = (schoolLevelCounts[level] || 0) + 1;
+            });
+        }
     });
     
     const stats = {
-      schoolCount: schoolNames.size,
+      totalStudents: reportsSnapshot.size,
       maleCount,
       femaleCount,
-      totalStudents: reportsSnapshot.size,
+      schoolCount: uniqueSchools.size,
+      publicSchoolCount,
+      privateSchoolCount,
+      schoolLevelCounts
     };
     
     return { success: true, stats };
