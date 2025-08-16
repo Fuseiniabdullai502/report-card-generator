@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookPlus, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus as BookPlusIcon, MessageSquare, Image as ImageIcon } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookPlus, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus as BookPlusIcon, MessageSquare, Image as ImageIcon, Smile } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -68,6 +68,8 @@ const scoreTypeOptions = [
 ];
 type ScoreType = 'continuousAssessment' | 'examinationMark';
 
+const predefinedHobbiesList = ["Reading", "Sports (General)", "Music", "Art & Craft", "Debating", "Coding/Programming", "Gardening", "Volunteering", "Cooking/Baking", "Drama/Theater"];
+const ADD_CUSTOM_HOBBY_VALUE = "--add-custom-hobby--";
 
 export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps) {
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -94,6 +96,11 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
 
   const [imageUploadStatus, setImageUploadStatus] = useState<Record<string, number | null>>({});
   const [isAiEditing, setIsAiEditing] = useState<Record<string, boolean>>({});
+
+  const [customHobbies, setCustomHobbies] = useState<string[]>([]);
+  const [isCustomHobbyDialogOpen, setIsCustomHobbyDialogOpen] = useState(false);
+  const [customHobbyInputValue, setCustomHobbyInputValue] = useState('');
+  const [currentHobbyTargetStudentId, setCurrentHobbyTargetStudentId] = useState<string | null>(null);
 
 
   const availableClasses = useMemo(() => {
@@ -196,7 +203,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     });
   };
   
-  const handleFieldChange = (reportId: string, field: keyof ReportData, value: string | number | null) => {
+  const handleFieldChange = (reportId: string, field: keyof ReportData, value: string | number | null | string[]) => {
     setStudentsInClass(prevStudents => {
         const updatedStudents = prevStudents.map(student => {
             if (student.id === reportId) {
@@ -638,6 +645,39 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
     setIsAiEditing(prev => ({...prev, [student.id]: false}));
   };
 
+  const handleHobbyChange = (studentId: string, hobby: string, checked: boolean) => {
+    const student = studentsInClass.find(s => s.id === studentId);
+    if (!student) return;
+
+    const currentHobbies = student.hobbies || [];
+    const newHobbies = checked
+      ? [...currentHobbies, hobby]
+      : currentHobbies.filter(h => h !== hobby);
+    
+    handleFieldChange(studentId, 'hobbies', newHobbies);
+  };
+
+    const handleAddCustomHobby = () => {
+        if (!currentHobbyTargetStudentId || !customHobbyInputValue.trim()) {
+            setIsCustomHobbyDialogOpen(false);
+            return;
+        }
+
+        const newHobby = customHobbyInputValue.trim();
+        handleHobbyChange(currentHobbyTargetStudentId, newHobby, true);
+        if (!predefinedHobbiesList.includes(newHobby) && !customHobbies.includes(newHobby)) {
+            setCustomHobbies(prev => [...new Set([...prev, newHobby])]);
+        }
+
+        setIsCustomHobbyDialogOpen(false);
+        setCustomHobbyInputValue('');
+        setCurrentHobbyTargetStudentId(null);
+    };
+
+    const openCustomHobbyDialog = (studentId: string) => {
+        setCurrentHobbyTargetStudentId(studentId);
+        setIsCustomHobbyDialogOpen(true);
+    };
 
   return (
     <>
@@ -734,6 +774,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                             <TableHead className="min-w-[180px]">Student Name</TableHead>
                             <TableHead className="min-w-[120px]"><VenetianMask className="inline-block mr-1 h-4 w-4"/>Gender</TableHead>
                             <TableHead className="min-w-[150px]"><CalendarCheck2 className="inline-block mr-1 h-4 w-4"/>Days Attended</TableHead>
+                             <TableHead className="min-w-[180px]"><Smile className="inline-block mr-1 h-4 w-4"/>Hobbies</TableHead>
                             {activeSubjectsInClass.map(subject => (
                               <TableHead key={subject} colSpan={2} className="text-center border-l min-w-[150px]">
                                 {subject}
@@ -744,6 +785,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                         </TableRow>
                          <TableRow>
                             <TableHead className="sticky left-0 bg-muted z-20"></TableHead>
+                            <TableHead></TableHead>
                             <TableHead></TableHead>
                             <TableHead></TableHead>
                             <TableHead></TableHead>
@@ -820,6 +862,33 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                                             className="text-center h-9 w-[100px]"
                                         />
                                     </TableCell>
+                                    <TableCell>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" className="h-9 w-full justify-between">
+                                                    <span className="truncate">{student.hobbies?.join(', ') || 'Select...'}</span>
+                                                    <ChevronDown className="ml-2 h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-[200px]">
+                                                <ScrollArea className="h-60">
+                                                    {[...predefinedHobbiesList, ...customHobbies].map(hobby => (
+                                                        <DropdownMenuCheckboxItem
+                                                            key={hobby}
+                                                            checked={student.hobbies?.includes(hobby)}
+                                                            onCheckedChange={checked => handleHobbyChange(student.id, hobby, Boolean(checked))}
+                                                        >
+                                                            {hobby}
+                                                        </DropdownMenuCheckboxItem>
+                                                    ))}
+                                                </ScrollArea>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onSelect={() => openCustomHobbyDialog(student.id)}>
+                                                    <PlusCircle className="mr-2 h-4 w-4" />Add New Hobby...
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
                                      {activeSubjectsInClass.map(subjectName => {
                                         const subjectData = student.subjects.find(s => s.subjectName === subjectName);
                                         return (
@@ -865,7 +934,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                         })}
                         {filteredStudents.length === 0 && (
                             <TableRow>
-                              <TableCell colSpan={activeSubjectsInClass.length * 2 + 6} className="text-center h-24 text-muted-foreground">
+                              <TableCell colSpan={activeSubjectsInClass.length * 2 + 7} className="text-center h-24 text-muted-foreground">
                                 No students found. {searchQuery ? 'Try adjusting your search.' : 'Select a class or add a new student.'}
                               </TableCell>
                             </TableRow>
@@ -982,6 +1051,26 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
                     <Button onClick={handleAddCustomSubject}>Add Subject</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        <Dialog open={isCustomHobbyDialogOpen} onOpenChange={setIsCustomHobbyDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add New Hobby</DialogTitle>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label htmlFor="custom-hobby-input">Hobby Name</Label>
+                    <Input 
+                        id="custom-hobby-input"
+                        value={customHobbyInputValue}
+                        onChange={(e) => setCustomHobbyInputValue(e.target.value)}
+                        placeholder="e.g., Chess Club"
+                    />
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button onClick={handleAddCustomHobby}>Add Hobby</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1198,4 +1287,4 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
 
 
     
-
+    
