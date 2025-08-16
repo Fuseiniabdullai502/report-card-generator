@@ -69,10 +69,10 @@ function getOrdinalSuffix(n: number): string {
   return s[(v - 20) % 10] || s[v] || s[0];
 }
 
-function formatRankString(rankNumber: number, isTie: boolean): string {
+function formatRankString(rankNumber: number): string {
   if (rankNumber <= 0) return 'N/A';
   const suffix = getOrdinalSuffix(rankNumber);
-  return `${isTie ? 'T-' : ''}${rankNumber}${suffix}`;
+  return `${rankNumber}${suffix}`;
 }
 
 function AppContent({ user }: { user: CustomUser }) {
@@ -297,13 +297,10 @@ function AppContent({ user }: { user: CustomUser }) {
         if (report.rankNumber <= 0) {
           return { ...report, rank: 'N/A' };
         }
-        const isTiedWithNext = index < sortedReports.length - 1 && report.overallAverage === sortedReports[index + 1].overallAverage;
-        const isTiedWithPrev = index > 0 && report.overallAverage === sortedReports[index - 1].overallAverage;
-        const isTie = isTiedWithNext || isTiedWithPrev;
         
         return {
           ...report,
-          rank: formatRankString(report.rankNumber, isTie),
+          rank: formatRankString(report.rankNumber),
         };
       });
 
