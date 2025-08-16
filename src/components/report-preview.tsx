@@ -382,3 +382,4 @@ function ReportSection({ title, children, templateStyles, highlightColor }: Repo
     </div>
   );
 }
+

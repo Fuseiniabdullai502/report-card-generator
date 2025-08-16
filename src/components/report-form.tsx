@@ -213,7 +213,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     }
 
     const updatedSubjects = [...formData.subjects];
-    updatedSubjects[index] = { ...updatedSubjects[index], [field]: numericValue }; // Use numericValue
+    updatedSubjects[index] = { ...updatedSubjects[index], [field]: value };
     onFormUpdate({ ...formData, subjects: updatedSubjects });
   };
 
@@ -658,11 +658,11 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                             </div>
                             <div className="space-y-2">
                                 <Label className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary"/>CA Mark (Max: 60)</Label>
-                                <Input type="number" placeholder="1-60" value={formData.subjects[currentVisibleSubjectIndex].continuousAssessment ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'continuousAssessment', e.target.value)} />
+                                <Input type="number" placeholder="-" value={formData.subjects[currentVisibleSubjectIndex].continuousAssessment ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'continuousAssessment', e.target.value)} />
                             </div>
                             <div className="space-y-2">
                                 <Label className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary"/>Exam Mark (Max: 100)</Label>
-                                <Input type="number" placeholder="1-100" value={formData.subjects[currentVisibleSubjectIndex].examinationMark ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'examinationMark', e.target.value)} />
+                                <Input type="number" placeholder="-" value={formData.subjects[currentVisibleSubjectIndex].examinationMark ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'examinationMark', e.target.value)} />
                             </div>
                         </div>
                     </div>

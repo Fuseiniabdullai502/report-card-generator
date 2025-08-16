@@ -188,7 +188,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
   }, 1000);
 
   const handleMarkChange = (reportId: string, subjectName: string, markType: ScoreType, value: string) => {
-    const numericValue = value === '' ? null : Number(value);
+    const numericValue = value === '' || value === '-' ? null : Number(value);
 
     // Instant validation
     if (markType === 'continuousAssessment' && numericValue !== null && numericValue > 60) {
@@ -1330,5 +1330,6 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
 
     
     
+
 
 
