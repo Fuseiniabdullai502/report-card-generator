@@ -35,6 +35,8 @@ import { QuickEntry } from '@/components/quick-entry';
 import { deleteReportAction } from '@/app/actions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Slider } from '@/components/ui/slider';
+import { DatePicker } from '@/components/ui/datepicker';
+import { format } from 'date-fns';
 
 
 // Dynamically import heavy components
@@ -286,23 +288,24 @@ function AppContent({ user }: { user: CustomUser }) {
     reportsByClass.forEach((classReports) => {
       const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
       
-      let rank = 1;
-      let lastRank = 1;
+      let rank = 0;
+      let lastRank = 0;
+      let lastScore = -1;
+  
       const reportsWithRankNumbers = sortedReports.map((report, index) => {
         if (report.overallAverage === null || typeof report.overallAverage === 'undefined') {
           return { ...report, rankNumber: -1 };
         }
   
-        if (index > 0 && report.overallAverage < sortedReports[index - 1].overallAverage) {
+        if (report.overallAverage < lastScore) {
           rank = index + 1;
-        } else if (index > 0 && report.overallAverage === sortedReports[index - 1].overallAverage) {
-            // It's a tie, use the same rank as the previous one
-            rank = lastRank;
+        } else if (report.overallAverage === lastScore) {
+          rank = lastRank;
         } else {
-            // First student or score is not a tie
-            rank = index + 1;
+          rank = index + 1;
         }
   
+        lastScore = report.overallAverage;
         lastRank = rank;
         return { ...report, rankNumber: rank };
       });
@@ -514,6 +517,7 @@ function AppContent({ user }: { user: CustomUser }) {
       className: currentEditingReport.className,
       academicYear: currentEditingReport.academicYear,
       academicTerm: currentEditingReport.academicTerm,
+      reopeningDate: currentEditingReport.reopeningDate,
       selectedTemplateId: currentEditingReport.selectedTemplateId,
       totalSchoolDays: currentEditingReport.totalSchoolDays,
       headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
@@ -558,6 +562,7 @@ function AppContent({ user }: { user: CustomUser }) {
       schoolLogoDataUri: formDataFromForm.schoolLogoDataUri || null,
       academicYear: formDataFromForm.academicYear || '',
       academicTerm: formDataFromForm.academicTerm || '',
+      reopeningDate: formDataFromForm.reopeningDate || null,
       selectedTemplateId: formDataFromForm.selectedTemplateId ?? 'default',
       daysAttended: formDataFromForm.daysAttended === undefined || formDataFromForm.daysAttended === null ? null : Number(formDataFromForm.daysAttended),
       totalSchoolDays: formDataFromForm.totalSchoolDays === undefined || formDataFromForm.totalSchoolDays === null ? null : Number(formDataFromForm.totalSchoolDays),
@@ -638,6 +643,7 @@ function AppContent({ user }: { user: CustomUser }) {
       className: reportToSaveForFirestore.className,
       academicYear: reportToSaveForFirestore.academicYear,
       academicTerm: reportToSaveForFirestore.academicTerm ?? '',
+      reopeningDate: reportToSaveForFirestore.reopeningDate ?? null,
       selectedTemplateId: reportToSaveForFirestore.selectedTemplateId ?? 'default',
       totalSchoolDays: reportToSaveForFirestore.totalSchoolDays,
       headMasterSignatureDataUri: reportToSaveForFirestore.headMasterSignatureDataUri,
@@ -660,6 +666,7 @@ function AppContent({ user }: { user: CustomUser }) {
       className: reportToEdit.className,
       academicYear: reportToEdit.academicYear,
       academicTerm: reportToEdit.academicTerm,
+      reopeningDate: reportToEdit.reopeningDate,
       selectedTemplateId: reportToEdit.selectedTemplateId,
       totalSchoolDays: reportToEdit.totalSchoolDays,
       headMasterSignatureDataUri: reportToEdit.headMasterSignatureDataUri,
@@ -856,6 +863,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? null,
                     academicYear: sessionDefaults.academicYear,
                     academicTerm: sessionDefaults.academicTerm,
+                    reopeningDate: sessionDefaults.reopeningDate ?? null,
                     selectedTemplateId: sessionDefaults.selectedTemplateId,
                     totalSchoolDays: sessionDefaults.totalSchoolDays ?? null,
                     headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? '',
@@ -893,6 +901,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 className: destinationClass,
                 academicYear: sessionDefaults.academicYear,
                 academicTerm: sessionDefaults.academicTerm,
+                reopeningDate: sessionDefaults.reopeningDate ?? null,
                 selectedTemplateId: sessionDefaults.selectedTemplateId,
                 totalSchoolDays: sessionDefaults.totalSchoolDays ?? null,
                 headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? '',
@@ -1135,6 +1144,13 @@ function AppContent({ user }: { user: CustomUser }) {
                       <div className="space-y-1 md:col-span-2">
                           <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
                           <Input id="sessionSchoolName" value={sessionDefaults.schoolName ?? ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={!isSuperAdmin && !isBigAdmin}/>
+                      </div>
+                       <div className="space-y-1">
+                          <Label htmlFor="sessionReopeningDate" className="text-sm font-medium">Reopening Date</Label>
+                           <DatePicker 
+                              value={sessionDefaults.reopeningDate ? new Date(sessionDefaults.reopeningDate) : null}
+                              onChange={(date) => handleSessionDefaultChange('reopeningDate', date ? format(date, 'yyyy-MM-dd') : null)}
+                          />
                       </div>
                       <div className="space-y-1">
                           <Label htmlFor="sessionAcademicYear" className="text-sm font-medium">Academic Year</Label>

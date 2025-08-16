@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Award, Medal } from 'lucide-react'; // For rank display, Medal for promotion
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface ReportPreviewProps {
   data: ReportData;
@@ -167,7 +168,8 @@ export default function ReportPreview({ data, classTotal }: ReportPreviewProps) 
                 style={{
                     fontSize: 'clamp(2rem, 15vw, 8rem)',
                     WebkitTextStroke: '1px rgba(0,0,0,0.05)',
-                    lineHeight: '1',
+                    lineHeight: '1.2',
+                    wordBreak: 'break-word',
                 }}
               >
                   {data.schoolName}
@@ -309,6 +311,7 @@ export default function ReportPreview({ data, classTotal }: ReportPreviewProps) 
           <div className="flex justify-between items-end">
             <div>
               <p><span className="font-semibold">Date Issued:</span> {currentDate}</p>
+              {data.reopeningDate && <p className="mt-0.5 print:mt-0"><span className="font-semibold">Reopening Date:</span> {format(new Date(data.reopeningDate), "PPP")}</p>}
               {data.instructorContact && (
                 <p className="mt-0.5 print:mt-0"><span className="font-semibold">Instructor Contact:</span> {data.instructorContact}</p>
               )}
