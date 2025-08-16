@@ -32,12 +32,15 @@ const nextConfig = {
       config.externals.push(
         'handlebars',
         'express',
+        'firebase-admin',
+        'long',
         '@opentelemetry/api',
+        '@opentelemetry/core',
+        '@opentelemetry/instrumentation',
+        '@opentelemetry/resources',
         '@opentelemetry/sdk-trace-base',
         '@opentelemetry/sdk-trace-node',
-        '@opentelemetry/semantic-conventions',
-        'firebase-admin',
-        'long'
+        '@opentelemetry/semantic-conventions'
       );
     }
     return config
