@@ -35,7 +35,6 @@ import { QuickEntry } from '@/components/quick-entry';
 import { deleteReportAction } from '@/app/actions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Slider } from '@/components/ui/slider';
-import ClassPerformanceDashboard from '@/components/class-dashboard';
 
 
 // Dynamically import heavy components
@@ -44,6 +43,10 @@ const SchoolPerformanceDashboard = dynamic(() => import('@/components/school-das
     loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> 
 });
 const ImportStudentsDialog = dynamic(() => import('@/components/import-students-dialog'), { 
+    ssr: false,
+    loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> 
+});
+const ClassPerformanceDashboard = dynamic(() => import('@/components/class-dashboard'), { 
     ssr: false,
     loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> 
 });
@@ -264,12 +267,12 @@ function AppContent({ user }: { user: CustomUser }) {
       setAllRankedReports([]);
       return;
     }
-
+  
     const reportsWithAverages = listToProcess.map(report => ({
       ...report,
       overallAverage: calculateOverallAverage(report.subjects) ?? undefined,
     }));
-
+  
     const reportsByClass = new Map<string, ReportData[]>();
     reportsWithAverages.forEach(report => {
       const className = report.className || 'Unclassified';
@@ -278,32 +281,42 @@ function AppContent({ user }: { user: CustomUser }) {
       }
       reportsByClass.get(className)!.push(report as ReportData);
     });
-
+  
     const allClassRankedReports: ReportData[] = [];
     reportsByClass.forEach((classReports) => {
       const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
       
+      let rank = 1;
+      let lastRank = 1;
       const reportsWithRankNumbers = sortedReports.map((report, index) => {
         if (report.overallAverage === null || typeof report.overallAverage === 'undefined') {
           return { ...report, rankNumber: -1 };
         }
-        if (index > 0 && report.overallAverage === sortedReports[index - 1].overallAverage) {
-          return { ...report, rankNumber: (sortedReports[index - 1] as any).rankNumber };
+  
+        if (index > 0 && report.overallAverage < sortedReports[index - 1].overallAverage) {
+          rank = index + 1;
+        } else if (index > 0 && report.overallAverage === sortedReports[index - 1].overallAverage) {
+            // It's a tie, use the same rank as the previous one
+            rank = lastRank;
+        } else {
+            // First student or score is not a tie
+            rank = index + 1;
         }
-        return { ...report, rankNumber: index + 1 };
+  
+        lastRank = rank;
+        return { ...report, rankNumber: rank };
       });
-
-      const finalFormattedReports = reportsWithRankNumbers.map((report, index) => {
+  
+      const finalFormattedReports = reportsWithRankNumbers.map(report => {
         if (report.rankNumber <= 0) {
           return { ...report, rank: 'N/A' };
         }
-        
         return {
           ...report,
           rank: formatRankString(report.rankNumber),
         };
       });
-
+  
       allClassRankedReports.push(...finalFormattedReports);
     });
     
