@@ -246,12 +246,6 @@ export default function SchoolPerformanceDashboard({
 
   }, [isOpen, allReports, userRole]); 
 
-  useEffect(() => {
-    if (isOpen && schoolStats) {
-      fetchSchoolAiInsights();
-    }
-  }, [isOpen, schoolStats, fetchSchoolAiInsights]);
-
   const handlePrint = () => {
     if (!schoolStats || allReports.length === 0) {
       toast({title: "Nothing to Print", description: "School dashboard data is not available.", variant: "destructive"});
@@ -388,7 +382,13 @@ export default function SchoolPerformanceDashboard({
         </CardContent>
       );
     }
-    return null;
+    return (
+       <CardContent className="pt-4">
+        <Button onClick={fetchSchoolAiInsights} disabled={isLoadingAi || !schoolStats}>
+          <Brain className="mr-2 h-4 w-4" /> Generate AI Insights
+        </Button>
+      </CardContent>
+    );
   };
 
 
@@ -685,10 +685,17 @@ export default function SchoolPerformanceDashboard({
                           {isLoadingAi && !aiSchoolAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
                           School-Level Insights &amp; Advice ({mostRecentTerm})
                       </CardTitle>
-                      <Button variant="outline" size="sm" onClick={fetchSchoolAiInsights} disabled={isLoadingAi || !schoolStats}>
-                        <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingAi ? 'animate-spin' : ''}`} />
-                        Reload
-                      </Button>
+                      {!aiSchoolAdvice && !isLoadingAi && (
+                        <Button variant="outline" size="sm" onClick={fetchSchoolAiInsights} disabled={!schoolStats}>
+                           <Brain className="mr-2 h-4 w-4" /> Generate
+                        </Button>
+                      )}
+                      {aiSchoolAdvice && (
+                         <Button variant="outline" size="sm" onClick={fetchSchoolAiInsights} disabled={isLoadingAi || !schoolStats}>
+                          <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingAi ? 'animate-spin' : ''}`} />
+                          Regenerate
+                        </Button>
+                      )}
                     </div>
                   </CardHeader>
                   {renderAiSchoolInsights()}
