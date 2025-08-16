@@ -50,14 +50,17 @@ import {
     createInviteAction,
     updateInviteAction,
     getDistrictClassRankingAction,
+    getSchoolProgramRankingAction,
     type PlainUser,
 } from '@/app/actions';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import type { CustomUser } from './auth-provider';
-import type { SchoolRankingData } from '@/app/actions';
+import type { SchoolRankingData, StudentRankingData } from '@/app/actions';
 import DistrictClassRankingDialog from '@/components/district-class-ranking';
+import SchoolProgramRankingDialog from '@/components/school-program-ranking';
 import { ReportData, SubjectEntry } from '@/lib/schemas';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
+import { shsProgramOptions } from '@/lib/curriculum';
 
 const DistrictPerformanceDashboard = lazy(() => import('@/components/district-dashboard'));
 
@@ -157,6 +160,13 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [isRankingDialogOpen, setIsRankingDialogOpen] = useState(false);
 
   const [subjectAnalysisClass, setSubjectAnalysisClass] = useState<string>('');
+
+  // State for school program ranking
+  const [isSchoolProgramRankingDialogOpen, setIsSchoolProgramRankingDialogOpen] = useState(false);
+  const [schoolProgramRankingData, setSchoolProgramRankingData] = useState<StudentRankingData[] | null>(null);
+  const [isFetchingSchoolProgramRanking, setIsFetchingSchoolProgramRanking] = useState(false);
+  const [selectedSchoolRankingClass, setSelectedSchoolRankingClass] = useState<string>('');
+  const [selectedSchoolRankingProgram, setSelectedSchoolRankingProgram] = useState<string>('');
 
   const allAvailableClasses = useMemo(() => {
     return [...new Set(allReports.map(r => r.className).filter(Boolean))].sort();
@@ -264,6 +274,31 @@ export default function UserManagement({ user, users, invites, populationStats, 
       toast({ title: 'Error Generating Report', description: result.error, variant: 'destructive' });
     }
     setIsFetchingRanking(false);
+  };
+  
+  const handleGenerateSchoolProgramRanking = async () => {
+    if (!selectedSchoolRankingClass || !selectedSchoolRankingProgram) {
+      toast({ title: 'Selection Missing', description: 'Please select a class and SHS program.', variant: 'destructive' });
+      return;
+    }
+    if (!user.schoolName) {
+      toast({ title: 'Configuration Error', description: 'Your admin account is not assigned to a school.', variant: 'destructive' });
+      return;
+    }
+    setIsFetchingSchoolProgramRanking(true);
+    setSchoolProgramRankingData(null);
+    const result = await getSchoolProgramRankingAction({
+      schoolName: user.schoolName,
+      className: selectedSchoolRankingClass,
+      shsProgram: selectedSchoolRankingProgram,
+    });
+    if (result.success && result.ranking) {
+      setSchoolProgramRankingData(result.ranking);
+      setIsSchoolProgramRankingDialogOpen(true);
+    } else {
+      toast({ title: 'Error Generating Ranking', description: result.error, variant: 'destructive' });
+    }
+    setIsFetchingSchoolProgramRanking(false);
   };
 
   const roleCounts = useMemo(() => {
@@ -603,6 +638,36 @@ export default function UserManagement({ user, users, invites, populationStats, 
                     </div>
                 </div>
                 )}
+                {user.schoolLevels?.includes('SHS') && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><TrophyIcon /> SHS Program Performance Ranking</CardTitle>
+                            <CardDescription>Rank students within a specific SHS program and class.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col sm:flex-row gap-4 items-end">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow">
+                                <div className="space-y-1">
+                                    <Label htmlFor="school-class-ranking-select">Class Level</Label>
+                                    <Select value={selectedSchoolRankingClass} onValueChange={setSelectedSchoolRankingClass}>
+                                        <SelectTrigger id="school-class-ranking-select"><SelectValue placeholder="Select SHS class..." /></SelectTrigger>
+                                        <SelectContent>{['SHS1', 'SHS2', 'SHS3'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="school-program-ranking-select">SHS Program</Label>
+                                    <Select value={selectedSchoolRankingProgram} onValueChange={setSelectedSchoolRankingProgram}>
+                                        <SelectTrigger id="school-program-ranking-select"><SelectValue placeholder="Select program..." /></SelectTrigger>
+                                        <SelectContent>{shsProgramOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <Button onClick={handleGenerateSchoolProgramRanking} disabled={isFetchingSchoolProgramRanking || !selectedSchoolRankingClass || !selectedSchoolRankingProgram}>
+                                {isFetchingSchoolProgramRanking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSearch className="mr-2 h-4 w-4" />}
+                                Rank Program
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><TrophyIcon /> Class Performance Ranking</CardTitle>
@@ -741,6 +806,16 @@ export default function UserManagement({ user, users, invites, populationStats, 
           academicYear={selectedRankingYear === 'all_years' ? null : selectedRankingYear}
           academicTerm={selectedRankingTerm === 'all_terms' ? null : selectedRankingTerm}
           subjectName={selectedRankingSubject === 'overall' ? null : selectedRankingSubject}
+        />
+      )}
+      {isSchoolProgramRankingDialogOpen && schoolProgramRankingData && (
+        <SchoolProgramRankingDialog
+          isOpen={isSchoolProgramRankingDialogOpen}
+          onOpenChange={setIsSchoolProgramRankingDialogOpen}
+          rankingData={schoolProgramRankingData}
+          schoolName={user.schoolName || ''}
+          className={selectedSchoolRankingClass}
+          programName={shsProgramOptions.find(p => p.value === selectedSchoolRankingProgram)?.label || selectedSchoolRankingProgram}
         />
       )}
        <Suspense fallback={<div className="flex justify-center items-center h-screen w-screen bg-background"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>

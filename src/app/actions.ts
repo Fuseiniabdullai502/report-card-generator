@@ -1467,6 +1467,77 @@ export async function batchUpdateTeacherFeedbackAction(
         return { success: false, error: errorMessage };
     }
 }
+
+export interface StudentRankingData {
+  studentName: string;
+  average: number;
+  rank: string;
+}
+
+const SchoolProgramRankingInputSchema = z.object({
+  schoolName: z.string().min(1, "School name is required."),
+  className: z.string().min(1, "Class name is required."),
+  shsProgram: z.string().min(1, "SHS program is required."),
+  academicYear: z.string().optional().nullable(),
+  academicTerm: z.string().optional().nullable(),
+});
+
+export async function getSchoolProgramRankingAction(
+  input: z.infer<typeof SchoolProgramRankingInputSchema>
+): Promise<{ success: boolean; ranking?: StudentRankingData[]; error?: string }> {
+  try {
+    const { schoolName, className, shsProgram, academicYear, academicTerm } = SchoolProgramRankingInputSchema.parse(input);
+
+    let q: Query = admin.firestore().collection('reports')
+      .where('schoolName', '==', schoolName)
+      .where('className', '==', className)
+      .where('shsProgram', '==', shsProgram);
+
+    if (academicYear) q = q.where('academicYear', '==', academicYear);
+    if (academicTerm) q = q.where('academicTerm', '==', academicTerm);
+
+    const snapshot = await q.get();
+
+    if (snapshot.empty) {
+      return { success: true, ranking: [] };
+    }
+
+    const students = snapshot.docs.map(doc => {
+      const data = doc.data() as ReportData;
+      return {
+        studentName: data.studentName,
+        average: calculateOverallAverage(data.subjects),
+      };
+    }).filter(s => s.average !== null) as { studentName: string; average: number }[];
+
+    const sortedStudents = students
+      .sort((a, b) => b.average - a.average)
+      .map((student, index, arr) => {
+        const rankNumber = (index > 0 && student.average === arr[index - 1].average)
+          ? (arr[index - 1] as any).rankNumber
+          : index + 1;
+        return { ...student, rankNumber };
+      });
+      
+    const getOrdinalSuffix = (n: number): string => {
+        const s = ['th', 'st', 'nd', 'rd'];
+        const v = n % 100;
+        return s[(v - 20) % 10] || s[v] || s[0];
+    };
+
+    const finalRankedStudents = sortedStudents.map((student, index, arr) => {
+        const { rankNumber } = student;
+        const isTied = (index > 0 && arr[index - 1].rankNumber === rankNumber) || (index < arr.length - 1 && arr[index + 1].rankNumber === rankNumber);
+        const rankString = `${isTied ? 'T-' : ''}${rankNumber}${getOrdinalSuffix(rankNumber)}`;
+        return { studentName: student.studentName, average: student.average, rank: rankString };
+    });
+
+    return { success: true, ranking: finalRankedStudents };
+  } catch (error: any) {
+    console.error('Error fetching school program ranking:', error);
+    return { success: false, error: "An unexpected server error occurred." };
+  }
+}
       
 
     
@@ -1485,3 +1556,4 @@ export async function batchUpdateTeacherFeedbackAction(
 
 
   
+
