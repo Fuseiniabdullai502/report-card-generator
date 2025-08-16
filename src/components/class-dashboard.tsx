@@ -411,8 +411,9 @@ export default function ClassPerformanceDashboard({
     }
     return (
       <CardContent className="pt-4">
-        <Button onClick={fetchAiInsights} disabled={!classStats}>
-          <Brain className="mr-2 h-4 w-4" /> Generate AI Insights
+        <Button onClick={fetchAiInsights} disabled={!classStats || isLoadingAi}>
+          {isLoadingAi ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Brain className="mr-2 h-4 w-4" />}
+           Generate AI Insights
         </Button>
       </CardContent>
     );
@@ -425,7 +426,7 @@ export default function ClassPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="class-dashboard-dialog-content"
-        className="max-w-4xl w-[90vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden"
+        className="max-w-5xl w-[90vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden"
       >
         <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10 dialog-header-print-hide">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
