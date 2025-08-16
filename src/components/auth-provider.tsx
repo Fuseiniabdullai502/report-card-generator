@@ -18,6 +18,8 @@ export interface CustomUser extends User {
   circuit?: string | null;
   schoolName?: string | null;
   classNames?: string[] | null;
+  schoolLevels?: string[] | null;
+  schoolCategory?: 'public' | 'private' | null;
 }
 
 interface AuthContextType {
@@ -52,6 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           let circuit: CustomUser['circuit'] = null;
           let schoolName: CustomUser['schoolName'] = null;
           let classNames: CustomUser['classNames'] = null;
+          let schoolLevels: CustomUser['schoolLevels'] = null;
+          let schoolCategory: CustomUser['schoolCategory'] = null;
 
           if (userDocSnap.exists()) {
               const userData = userDocSnap.data();
@@ -65,6 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               schoolName = userData.schoolName ?? null;
               const rawClassNames = userData.classNames ?? null;
               classNames = Array.isArray(rawClassNames) ? rawClassNames : (rawClassNames ? [rawClassNames] : null);
+              schoolLevels = userData.schoolLevels ?? null;
+              schoolCategory = userData.schoolCategory ?? null;
 
               // Override role if the user is the designated super admin
               if (superAdminEmail && userEmail === superAdminEmail) {
@@ -94,16 +100,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   circuit: null,
                   schoolName: null,
                   classNames: null,
+                  schoolLevels: null,
+                  schoolCategory: null,
                   createdAt: serverTimestamp(),
               }, { merge: true });
           }
           
           console.log(`📄 Firestore data: Name: ${name}, Tel: ${telephone}, Role: ${role}, Status: ${status}, Region: ${region}, District: ${district}, Circuit: ${circuit}, School: ${schoolName}, Classes: ${classNames?.join(', ')}`);
-          setUser({ ...firebaseUser, id: firebaseUser.uid, name, telephone, role, status, region, district, circuit, schoolName, classNames });
+          setUser({ ...firebaseUser, id: firebaseUser.uid, name, telephone, role, status, region, district, circuit, schoolName, classNames, schoolLevels, schoolCategory });
 
         } catch (error) {
           console.error('Error in AuthProvider while fetching/setting user role:', error);
-          setUser({ ...firebaseUser, id: firebaseUser.uid, role: 'user', status: 'active', name: null, telephone: null, region: null, district: null, circuit: null, schoolName: null, classNames: null }); // Fallback on error
+          setUser({ ...firebaseUser, id: firebaseUser.uid, role: 'user', status: 'active', name: null, telephone: null, region: null, district: null, circuit: null, schoolName: null, classNames: null, schoolLevels: null, schoolCategory: null }); // Fallback on error
         }
       } else {
         // User is not logged in.
@@ -138,3 +146,4 @@ export const useAuth = () => {
 };
 
     
+  

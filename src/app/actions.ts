@@ -351,6 +351,8 @@ export async function registerUserAction(data: {
       circuit: null,
       schoolName: null,
       classNames: null,
+      schoolLevels: null,
+      schoolCategory: null,
     };
     let inviteDocId: string | null = null;
 
@@ -389,6 +391,8 @@ export async function registerUserAction(data: {
         circuit: inviteData.circuit ?? null,
         schoolName: inviteData.schoolName ?? null,
         classNames: inviteData.classNames ?? null,
+        schoolLevels: inviteData.schoolLevels ?? null,
+        schoolCategory: inviteData.schoolCategory ?? null,
       };
 
     } else {
@@ -465,6 +469,8 @@ const CreateInviteActionInputSchema = z.object({
   circuit: z.string().optional().nullable(),
   schoolName: z.string().optional().nullable(),
   classNames: z.array(z.string()).optional().nullable(),
+  schoolLevels: z.array(z.string()).optional().nullable(),
+  schoolCategory: z.enum(['public', 'private']).optional().nullable(),
 });
 
 
@@ -522,11 +528,11 @@ export async function createInviteAction(
     if (role) { 
         if (currentUser.role === 'super-admin') {
             if (role === 'big-admin') {
-                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: null, schoolName: null, classNames: null };
+                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: null, schoolName: null, classNames: null, schoolLevels: null, schoolCategory: null };
             } else if (role === 'admin') {
-                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: null };
+                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: null, schoolLevels: scopesFromClient.schoolLevels || null, schoolCategory: scopesFromClient.schoolCategory || null };
             } else { // user
-                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: scopesFromClient.classNames || null };
+                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: scopesFromClient.classNames || null, schoolLevels: null, schoolCategory: null };
             }
         } else if (currentUser.role === 'big-admin') {
             if (!currentUser.region || !currentUser.district) throw new Error("Your account ('big-admin') is not configured with a region and district.");
@@ -536,6 +542,8 @@ export async function createInviteAction(
                 circuit: (role === 'admin' || role === 'user') ? (scopesFromClient.circuit || null) : null,
                 schoolName: (role === 'admin' || role === 'user') ? (scopesFromClient.schoolName || null) : null,
                 classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
+                schoolLevels: role === 'admin' ? (scopesFromClient.schoolLevels || null) : null,
+                schoolCategory: role === 'admin' ? (scopesFromClient.schoolCategory || null) : null,
             };
         } else if (currentUser.role === 'admin') {
             if (!currentUser.schoolName) throw new Error("Your account ('admin') is not configured with a school name.");
@@ -545,6 +553,8 @@ export async function createInviteAction(
                 circuit: currentUser.circuit,
                 schoolName: currentUser.schoolName,
                 classNames: role === 'user' ? (scopesFromClient.classNames || null) : null,
+                schoolLevels: currentUser.schoolLevels,
+                schoolCategory: currentUser.schoolCategory,
             };
         }
     }
@@ -588,6 +598,8 @@ const UpdateInviteActionSchema = z.object({
   circuit: z.string().optional().nullable(),
   schoolName: z.string().optional().nullable(),
   classNames: z.array(z.string()).optional().nullable(),
+  schoolLevels: z.array(z.string()).optional().nullable(),
+  schoolCategory: z.enum(['public', 'private']).optional().nullable(),
 });
 
 export async function updateInviteAction(
@@ -610,19 +622,24 @@ export async function updateInviteAction(
     const updateData: any = { role };
     // Scope enforcement logic (same as create/update user actions)
     if (currentUser.role === 'super-admin') {
-      if (role === 'big-admin') { updateData.region = scopes.region; updateData.district = scopes.district; updateData.schoolName = null; updateData.circuit = null; updateData.classNames = null; }
-      else if (role === 'admin') { updateData.region = scopes.region; updateData.district = scopes.district; updateData.circuit = scopes.circuit; updateData.schoolName = scopes.schoolName; updateData.classNames = null; }
-      else { updateData.region = scopes.region; updateData.district = scopes.district; updateData.circuit = scopes.circuit; updateData.schoolName = scopes.schoolName; updateData.classNames = scopes.classNames; }
+      if (role === 'big-admin') { updateData.region = scopes.region; updateData.district = scopes.district; updateData.schoolName = null; updateData.circuit = null; updateData.classNames = null; updateData.schoolLevels = null; updateData.schoolCategory = null; }
+      else if (role === 'admin') { updateData.region = scopes.region; updateData.district = scopes.district; updateData.circuit = scopes.circuit; updateData.schoolName = scopes.schoolName; updateData.classNames = null; updateData.schoolLevels = scopes.schoolLevels; updateData.schoolCategory = scopes.schoolCategory; }
+      else { updateData.region = scopes.region; updateData.district = scopes.district; updateData.circuit = scopes.circuit; updateData.schoolName = scopes.schoolName; updateData.classNames = scopes.classNames; updateData.schoolLevels = null; updateData.schoolCategory = null; }
     } else if (currentUser.role === 'big-admin') {
       if (!currentUser.region || !currentUser.district) throw new Error("Current user ('big-admin') has an incomplete scope.");
       updateData.region = currentUser.region; updateData.district = currentUser.district;
       updateData.schoolName = (role === 'admin' || role === 'user') ? scopes.schoolName : null;
       updateData.circuit = (role === 'admin' || role === 'user') ? scopes.circuit : null;
       updateData.classNames = role === 'user' ? scopes.classNames : null;
+      updateData.schoolLevels = role === 'admin' ? scopes.schoolLevels : null;
+      updateData.schoolCategory = role === 'admin' ? scopes.schoolCategory : null;
     } else if (currentUser.role === 'admin') {
       if (!currentUser.schoolName) throw new Error("Current user ('admin') has an incomplete scope.");
       updateData.region = currentUser.region; updateData.district = currentUser.district; updateData.circuit = currentUser.circuit; updateData.schoolName = currentUser.schoolName;
       updateData.classNames = role === 'user' ? scopes.classNames : null;
+      // An admin cannot change the levels or category, it's inherited
+      updateData.schoolLevels = currentUser.schoolLevels;
+      updateData.schoolCategory = currentUser.schoolCategory;
     }
     
     await inviteDocRef.update(updateData);
@@ -735,6 +752,8 @@ export interface PlainUser {
   schoolName?: string | null;
   region?: string | null;
   circuit?: string | null;
+  schoolLevels?: string[] | null;
+  schoolCategory?: 'public' | 'private' | null;
 }
 
 
@@ -747,6 +766,8 @@ const UpdateUserRoleAndScopeActionSchema = z.object({
   circuit: z.string().optional().nullable(),
   schoolName: z.string().optional().nullable(),
   classNames: z.array(z.string()).optional().nullable(),
+  schoolLevels: z.array(z.string()).optional().nullable(),
+  schoolCategory: z.enum(['public', 'private']).optional().nullable(),
 });
 
 export async function updateUserRoleAndScopeAction(
@@ -781,6 +802,8 @@ export async function updateUserRoleAndScopeAction(
       updateData.schoolName = (role === 'admin' || role === 'user') ? scopes.schoolName : null;
       updateData.circuit = (role === 'admin' || role === 'user') ? scopes.circuit : null;
       updateData.classNames = role === 'user' ? scopes.classNames : null;
+      updateData.schoolLevels = role === 'admin' ? scopes.schoolLevels : null;
+      updateData.schoolCategory = role === 'admin' ? scopes.schoolCategory : null;
 
     } else if (currentUser.role === 'admin') {
       if (!currentUser.schoolName) throw new Error("Current user ('admin') has an incomplete scope.");
@@ -789,6 +812,9 @@ export async function updateUserRoleAndScopeAction(
       updateData.circuit = currentUser.circuit;
       updateData.schoolName = currentUser.schoolName;
       updateData.classNames = role === 'user' ? scopes.classNames : null;
+      // An admin cannot change the levels or category, it's inherited from their own scope
+      updateData.schoolLevels = currentUser.schoolLevels;
+      updateData.schoolCategory = currentUser.schoolCategory;
 
     } else { // super-admin
       if (role === 'big-admin') {
@@ -799,6 +825,8 @@ export async function updateUserRoleAndScopeAction(
         updateData.schoolName = null;
         updateData.circuit = null;
         updateData.classNames = null;
+        updateData.schoolLevels = null;
+        updateData.schoolCategory = null;
       } else if (role === 'admin') {
         if (!scopes.schoolName?.trim()) throw new Error("A school name must be specified for an 'admin'.");
         updateData.region = scopes.region;
@@ -806,12 +834,16 @@ export async function updateUserRoleAndScopeAction(
         updateData.circuit = scopes.circuit;
         updateData.schoolName = scopes.schoolName;
         updateData.classNames = null;
+        updateData.schoolLevels = scopes.schoolLevels;
+        updateData.schoolCategory = scopes.schoolCategory;
       } else { // 'user' role
         updateData.region = scopes.region;
         updateData.district = scopes.district;
         updateData.circuit = scopes.circuit;
         updateData.schoolName = scopes.schoolName;
         updateData.classNames = scopes.classNames;
+        updateData.schoolLevels = null;
+        updateData.schoolCategory = null;
       }
     }
     
@@ -844,6 +876,8 @@ interface UserForAdmin {
   circuit?: string | null;
   schoolName?: string | null;
   classNames?: string[] | null;
+  schoolLevels?: string[] | null;
+  schoolCategory?: 'public' | 'private' | null;
   createdAt: string | null;
 }
 
@@ -857,6 +891,8 @@ interface InviteForAdmin {
   circuit?: string | null;
   schoolName?: string | null;
   classNames?: string[] | null;
+  schoolLevels?: string[] | null;
+  schoolCategory?: 'public' | 'private' | null;
   createdAt: string | null;
 }
 
@@ -901,6 +937,8 @@ export async function getUsersAction(currentUser: PlainUser): Promise<{ success:
           circuit: data.circuit,
           schoolName: data.schoolName,
           classNames: data.classNames,
+          schoolLevels: data.schoolLevels,
+          schoolCategory: data.schoolCategory,
           createdAt: data.createdAt?.toDate().toISOString() ?? null,
         };
       })
@@ -937,6 +975,8 @@ export async function getInvitesAction(currentUser: PlainUser): Promise<{ succes
         circuit: data.circuit,
         schoolName: data.schoolName,
         classNames: data.classNames,
+        schoolLevels: data.schoolLevels,
+        schoolCategory: data.schoolCategory,
         createdAt: data.createdAt?.toDate().toISOString() ?? null,
       };
     })
@@ -1393,3 +1433,6 @@ export async function batchUpdateTeacherFeedbackAction(
 
 
 
+
+
+  

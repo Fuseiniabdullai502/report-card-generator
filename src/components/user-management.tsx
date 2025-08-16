@@ -64,6 +64,8 @@ const DistrictPerformanceDashboard = lazy(() => import('@/components/district-da
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
 const academicTermOptions = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
 const academicYearOptions = ["2024/2025", "2025/2026", "2026/2027", "2027/2028", "2028/2029", "2029/2030"];
+const schoolLevels = ['Nursery', 'KG', 'Primary', 'JHS', 'SHS'];
+const schoolCategories = [{ value: 'public', label: 'Public School' }, { value: 'private', label: 'Private School' }];
 
 interface UserData {
   id: string;
@@ -77,6 +79,8 @@ interface UserData {
   circuit?: string | null;
   schoolName?: string | null;
   classNames?: string[] | null;
+  schoolLevels?: string[] | null;
+  schoolCategory?: 'public' | 'private' | null;
   createdAt: Date | null;
 }
 
@@ -90,6 +94,8 @@ interface InviteData {
   circuit?: string | null;
   schoolName?: string | null;
   classNames?: string[] | null;
+  schoolLevels?: string[] | null;
+  schoolCategory?: 'public' | 'private' | null;
   createdAt: Date | null;
 }
 
@@ -594,7 +600,12 @@ export default function UserManagement({ user, users, invites, populationStats, 
                             <span className={`capitalize font-semibold ${u.role === 'super-admin' ? 'text-red-500' : u.role === 'big-admin' ? 'text-purple-600' : u.role === 'admin' ? 'text-blue-600' : 'text-green-600'}`}>Role: {u.role}</span>
                             <span className={`capitalize font-semibold ${u.status === 'active' ? 'text-green-500' : 'text-destructive'}`}>Status: {u.status}</span>
                             {u.role === 'big-admin' && u.district && <span className="text-xs text-muted-foreground">District: {u.district} ({u.region})</span>}
-                            {u.role === 'admin' && u.schoolName && <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district} / {u.circuit})</span>}
+                            {u.role === 'admin' && (
+                              <>
+                                <span className="text-xs text-muted-foreground">School: {u.schoolName} ({u.region} / {u.district})</span>
+                                {u.schoolLevels && <span className="text-xs text-muted-foreground">Levels: {u.schoolLevels.join(', ')} ({u.schoolCategory})</span>}
+                              </>
+                            )}
                             {u.role === 'user' && <span className="text-xs text-muted-foreground">Scope: {[u.region, u.district, u.circuit, u.schoolName, u.classNames?.join(', ')].filter(Boolean).join(' / ')}</span>}
                         </div>
                         </TableCell>
@@ -616,6 +627,9 @@ export default function UserManagement({ user, users, invites, populationStats, 
                             ) : (
                                 <span className="flex items-center gap-1 font-semibold text-destructive"><AlertCircle className="h-3 w-3" />Role Not Assigned</span>
                             )}
+                             {invite.role === 'admin' && invite.schoolLevels && (
+                                <span className="text-xs text-muted-foreground">{invite.schoolLevels.join(', ')} ({invite.schoolCategory})</span>
+                             )}
                             </div>
                         </TableCell>
                         <TableCell className="text-right space-x-2">
@@ -678,6 +692,8 @@ const inviteFormSchema = z.object({
   circuit: z.string().optional(),
   schoolName: z.string().optional(),
   classNames: z.array(z.string()).optional(),
+  schoolLevels: z.array(z.string()).optional(),
+  schoolCategory: z.enum(['public', 'private']).optional(),
 });
 type InviteFormValues = z.infer<typeof inviteFormSchema>;
 
@@ -694,6 +710,8 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
             circuit: '',
             schoolName: '',
             classNames: [],
+            schoolLevels: [],
+            schoolCategory: undefined,
         }
     });
 
@@ -731,17 +749,17 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
     }, [district]);
 
     useEffect(() => {
-        if (role === 'big-admin') { setValue('schoolName', ''); setValue('circuit', ''); setValue('classNames', []); }
+        if (role === 'big-admin') { setValue('schoolName', ''); setValue('circuit', ''); setValue('classNames', []); setValue('schoolLevels', []); setValue('schoolCategory', undefined); }
         else if (role === 'admin') { setValue('classNames', []); }
+        else if (role === 'user') { setValue('schoolLevels', []); setValue('schoolCategory', undefined); }
     }, [role, setValue]);
 
-    const handleClassNamesChange = (className: string, checked: boolean, currentClassNames: string[] = []) => {
-        const newClassNames = checked ? [...currentClassNames, className] : currentClassNames.filter(c => c !== className);
-        setValue('classNames', newClassNames, { shouldValidate: true });
+    const handleMultiSelectChange = (item: string, checked: boolean, field: 'classNames' | 'schoolLevels', currentValues: string[] = []) => {
+        const newValues = checked ? [...currentValues, item] : currentValues.filter(c => c !== item);
+        setValue(field, newValues, { shouldValidate: true });
     };
 
     const onSubmit = async (data: InviteFormValues) => {
-        // Create plain user object for server action
         const plainUser: PlainUser = {
             uid: currentUser.uid,
             role: currentUser.role,
@@ -749,11 +767,13 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
             district: currentUser.district,
             schoolName: currentUser.schoolName,
             circuit: currentUser.circuit,
+            schoolLevels: currentUser.schoolLevels,
+            schoolCategory: currentUser.schoolCategory,
         };
 
         const result = await createInviteAction({
             ...data,
-            role: data.role || undefined, // Ensure null/empty string becomes undefined
+            role: data.role || undefined,
         }, plainUser);
 
         if(result.success) {
@@ -802,8 +822,15 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
                         </>
                     )}
 
+                    {role === 'admin' && (isSuperAdmin || isBigAdmin) && (
+                        <>
+                            <div className="space-y-1"><Label>School Levels</Label><Controller name="schoolLevels" control={control} render={({ field }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{field.value && field.value.length > 0 ? field.value.join(', ') : 'Select school levels'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{schoolLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={field.value?.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'schoolLevels', field.value)}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu>)} /></div>
+                            <div className="space-y-1"><Label>School Category</Label><Controller name="schoolCategory" control={control} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value || ''}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select>)} /></div>
+                        </>
+                    )}
+
                     {role === 'user' && (
-                      <div className="space-y-1"><Label>Class Names</Label><Controller name="classNames" control={control} render={({ field }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{field.value && field.value.length > 0 ? field.value.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={field.value?.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked), field.value)}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu>)} /></div>
+                      <div className="space-y-1"><Label>Class Names</Label><Controller name="classNames" control={control} render={({ field }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{field.value && field.value.length > 0 ? field.value.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={field.value?.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'classNames', field.value)}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu>)} /></div>
                     )}
                   </div>
                 </div>
@@ -825,6 +852,8 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
     const [circuit, setCircuit] = useState(user.circuit || '');
     const [schoolName, setSchoolName] = useState(user.schoolName || '');
     const [classNames, setClassNames] = useState<string[]>(user.classNames || []);
+    const [schoolLevels, setSchoolLevels] = useState<string[]>(user.schoolLevels || []);
+    const [schoolCategory, setSchoolCategory] = useState<'public' | 'private' | undefined>(user.schoolCategory || undefined);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
@@ -840,25 +869,23 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
     }, [region]);
 
     useEffect(() => {
-        if (district) {
-            setAvailableCircuits(ghanaDistrictsAndCircuits[district]?.sort() || []);
-        } else {
-            setAvailableCircuits([]);
-        }
+        if (district) setAvailableCircuits(ghanaDistrictsAndCircuits[district]?.sort() || []);
+        else setAvailableCircuits([]);
     }, [district]);
 
     useEffect(() => {
-        if (role === 'big-admin') { setSchoolName(''); setCircuit(''); setClassNames([]); }
+        if (role === 'big-admin') { setSchoolName(''); setCircuit(''); setClassNames([]); setSchoolLevels([]); setSchoolCategory(undefined); }
         else if (role === 'admin') { setClassNames([]); }
+        else if (role === 'user') { setSchoolLevels([]); setSchoolCategory(undefined); }
     }, [role]);
     
-    const handleClassNamesChange = (className: string, checked: boolean) => {
-        setClassNames(prev => checked ? [...prev, className] : prev.filter(c => c !== className));
+    const handleMultiSelectChange = (item: string, checked: boolean, field: 'classNames' | 'schoolLevels') => {
+        const setFunction = field === 'classNames' ? setClassNames : setSchoolLevels;
+        setFunction(prev => checked ? [...prev, item] : prev.filter(c => c !== item));
     };
 
     const handleSave = async () => {
         setIsSaving(true);
-        // Create plain user object for server action
         const plainUser: PlainUser = {
             uid: currentUser.uid,
             role: currentUser.role,
@@ -866,6 +893,8 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
             district: currentUser.district,
             schoolName: currentUser.schoolName,
             circuit: currentUser.circuit,
+            schoolLevels: currentUser.schoolLevels,
+            schoolCategory: currentUser.schoolCategory,
         };
 
         const result = await updateUserRoleAndScopeAction({
@@ -876,6 +905,8 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
             circuit,
             schoolName,
             classNames,
+            schoolLevels,
+            schoolCategory
         }, plainUser);
 
         if(result.success) {
@@ -904,7 +935,6 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
                 </DialogHeader>
                 <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
                   <div className="space-y-4 py-4">
-                    {/* Inherited Scope Display */}
                     {isBigAdmin && (<div className="p-2 bg-muted rounded-md text-sm"><p className="font-semibold">Editing within your scope:</p><p>Region: {currentUser.region}, District: {currentUser.district}</p></div>)}
                     
                     <div className="space-y-2"><Label htmlFor="role">Role</Label><Select value={role} onValueChange={(value) => setRole(value as UserData['role'])}><SelectTrigger id="role"><SelectValue /></SelectTrigger><SelectContent>{availableRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent></Select></div>
@@ -917,8 +947,15 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
                             <div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>
                         </>
                     )}
+                     
+                    {role === 'admin' && (isSuperAdmin || isBigAdmin) && (
+                        <>
+                            <div className="space-y-1"><Label>School Levels</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{schoolLevels.length > 0 ? schoolLevels.join(', ') : 'Select school levels'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{schoolLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={schoolLevels.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'schoolLevels')}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>
+                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory} onValueChange={val => setSchoolCategory(val as 'public' | 'private' | undefined)}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
+                        </>
+                    )}
                     
-                    {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
+                    {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'classNames')}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
                   </div>
                 </div>
                 <DialogFooter className="shrink-0 pt-4 border-t mt-4">
@@ -938,6 +975,8 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
     const [circuit, setCircuit] = useState(invite.circuit || '');
     const [schoolName, setSchoolName] = useState(invite.schoolName || '');
     const [classNames, setClassNames] = useState<string[]>(invite.classNames || []);
+    const [schoolLevels, setSchoolLevels] = useState<string[]>(invite.schoolLevels || []);
+    const [schoolCategory, setSchoolCategory] = useState<'public' | 'private' | undefined>(invite.schoolCategory || undefined);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
@@ -958,13 +997,16 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
     }, [district]);
 
     useEffect(() => {
-        if (role === 'big-admin') { setSchoolName(''); setCircuit(''); setClassNames([]); }
+        if (role === 'big-admin') { setSchoolName(''); setCircuit(''); setClassNames([]); setSchoolLevels([]); setSchoolCategory(undefined); }
         else if (role === 'admin') { setClassNames([]); }
+        else if (role === 'user') { setSchoolLevels([]); setSchoolCategory(undefined); }
     }, [role]);
 
-    const handleClassNamesChange = (className: string, checked: boolean) => {
-        setClassNames(prev => checked ? [...prev, className] : prev.filter(c => c !== className));
+    const handleMultiSelectChange = (item: string, checked: boolean, field: 'classNames' | 'schoolLevels') => {
+        const setFunction = field === 'classNames' ? setClassNames : setSchoolLevels;
+        setFunction(prev => checked ? [...prev, item] : prev.filter(c => c !== item));
     };
+
 
     const handleSave = async () => {
         if (!role) {
@@ -972,7 +1014,6 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
             return;
         }
         setIsSaving(true);
-        // Create plain user object for server action
         const plainUser: PlainUser = {
             uid: currentUser.uid,
             role: currentUser.role,
@@ -980,6 +1021,8 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
             district: currentUser.district,
             schoolName: currentUser.schoolName,
             circuit: currentUser.circuit,
+            schoolLevels: currentUser.schoolLevels,
+            schoolCategory: currentUser.schoolCategory,
         };
 
         const result = await updateInviteAction({
@@ -990,6 +1033,8 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
             circuit,
             schoolName,
             classNames,
+            schoolLevels,
+            schoolCategory,
         }, plainUser);
 
         if(result.success) {
@@ -1030,8 +1075,15 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
                             <div className="space-y-2"><Label htmlFor="schoolName">School Name</Label><Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Enter school name" /></div>
                         </>
                     )}
+
+                    {role === 'admin' && (isSuperAdmin || isBigAdmin) && (
+                        <>
+                            <div className="space-y-1"><Label>School Levels</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{schoolLevels.length > 0 ? schoolLevels.join(', ') : 'Select school levels'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{schoolLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={schoolLevels.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'schoolLevels')}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>
+                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory} onValueChange={val => setSchoolCategory(val as 'public' | 'private' | undefined)}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
+                        </>
+                    )}
                     
-                    {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleClassNamesChange(c, Boolean(checked))}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
+                    {role === 'user' && (<div className="space-y-2"><Label htmlFor="user-classNames">Class Names</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{classNames.length > 0 ? classNames.join(', ') : 'Select classes'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{classLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={classNames.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'classNames')}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>)}
                   </div>
                 </div>
                 <DialogFooter className="shrink-0 pt-4 border-t mt-4">
@@ -1043,3 +1095,4 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
     );
 }
 
+  
