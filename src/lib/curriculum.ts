@@ -38,7 +38,7 @@ export const curriculumLevels = {
     'Religious and Moral Education (R.M.E)',
     'Career Technology (B.D.T)',
     'Computing',
-    'French', 
+    'French',
     'Arabic',
   ],
   SHS_CORE: [
@@ -53,6 +53,7 @@ export const curriculumLevels = {
     'Animal Husbandry',
     'Chemistry',
     'Physics',
+    'ICT (Elective)',
   ],
   SHS_BUSINESS: [
     'Business Management',
@@ -60,6 +61,8 @@ export const curriculumLevels = {
     'Principles of Costing',
     'Economics',
     'Elective Mathematics',
+    'ICT (Elective)',
+    'Clerical Office Duties',
   ],
   SHS_VISUAL_ARTS: [
     'General Knowledge in Art',
@@ -69,6 +72,7 @@ export const curriculumLevels = {
     'Textiles',
     'Ceramics',
     'Leatherwork',
+    'ICT (Elective)',
   ],
   SHS_HOME_ECONOMICS: [
     'Management in Living',
@@ -77,6 +81,7 @@ export const curriculumLevels = {
     'General Knowledge in Art',
     'Biology',
     'Chemistry',
+    'ICT (Elective)',
   ],
   SHS_TECHNICAL: [
     'Technical Drawing',
@@ -86,6 +91,7 @@ export const curriculumLevels = {
     'Applied Electricity',
     'Electronics',
     'Auto Mechanics',
+    'ICT (Elective)',
   ],
   SHS_GENERAL_ARTS: [
     'Literature-in-English',
@@ -95,9 +101,11 @@ export const curriculumLevels = {
     'Geography',
     'History',
     'Government',
-    'Religious Studies',
+    'Christian Religious Studies',
+    'Islamic Religious Studies',
     'Music',
     'Elective Mathematics',
+    'ICT (Elective)',
   ],
   SHS_GENERAL_SCIENCE: [
     'Elective Mathematics',
@@ -105,6 +113,7 @@ export const curriculumLevels = {
     'Chemistry',
     'Biology',
     'Geography',
+    'ICT (Elective)',
   ],
 };
 
