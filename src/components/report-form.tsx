@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { type ReportData, type SubjectEntry, ReportDataSchema, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
@@ -15,7 +14,7 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getAiFeedbackAction, getAiReportInsightsAction, editImageWithAiAction } from '@/app/actions';
 import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
-import { Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, Signature, Building, Smile, ChevronDown, Mail, History, ListPlus } from 'lucide-react';
+import { Loader2, Sparkles, Wand2, User, Users, ClipboardList, ThumbsUp, Activity, CheckSquare, BookOpenText, ListChecks, FileOutput, PlusCircle, Trash2, Edit, Bot, CalendarCheck2, CalendarDays, VenetianMask, Type, Medal, ImageUp, UploadCloud, X, Phone, ChevronLeft, ChevronRight, PenSquare, Building, Smile, ChevronDown, Mail, History, ListPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -90,13 +89,16 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     // Only run this for new reports, not when editing an existing one
     if (isEditing) return;
 
+    const className = sessionDefaults.className;
+    if (!className) return;
+
     // Check if the className is an SHS level class
-    const isShsClass = sessionDefaults.className && getClassLevel(sessionDefaults.className) === 'SHS';
+    const isShsClass = getClassLevel(className) === 'SHS';
     
     // Only proceed if it is an SHS class and a program is selected
-    if (isShsClass && sessionDefaults.shsProgram && sessionDefaults.className) {
+    if (isShsClass && sessionDefaults.shsProgram) {
       const suggestedSubjects = getSubjectsForClass(
-        sessionDefaults.className,
+        className,
         sessionDefaults.shsProgram as ShsProgram | undefined
       );
 
@@ -110,7 +112,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
         onFormUpdate({ ...formData, subjects: newSubjects });
       }
     }
-  }, [isEditing, sessionDefaults.className, sessionDefaults.shsProgram]);
+  }, [isEditing, sessionDefaults.className, sessionDefaults.shsProgram, onFormUpdate, formData]);
 
 
   // Reset subject pager if the form is reset (detected by ID change)
@@ -723,3 +725,5 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     </>
   );
 }
+
+    
