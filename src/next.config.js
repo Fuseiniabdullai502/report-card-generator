@@ -1,13 +1,6 @@
-
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '2mb',
-      maxDuration: 120, // Increase timeout to 120 seconds
-    },
-  },
+  /* config options here */
   images: {
     remotePatterns: [
       {
@@ -17,19 +10,26 @@ const nextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https' ,
+        protocol: 'https',
         hostname: 'upload.wikimedia.org',
         port: '',
         pathname: '/**',
       },
-      {
-        protocol: "https",
-        hostname: "firebasestorage.googleapis.com",
-        port: "",
-        pathname: "/**",
-      },
     ],
   },
+   webpack: (
+    config,
+    { isServer }
+  ) => {
+    if (isServer) {
+      // These packages are required by Genkit, but cause trouble with webpack.
+      // Mark them as external so they're not packaged.
+      config.externals.push('dtrace-provider');
+      config.externals.push('opentelemetry-instrumentation-grpc');
+    }
+    
+    return config
+  }
 };
 
-export default nextConfig;
+module.exports = nextConfig;
