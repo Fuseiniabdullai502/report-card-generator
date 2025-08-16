@@ -428,7 +428,7 @@ export default function ClassPerformanceDashboard({
         id="class-dashboard-dialog-content"
         className="max-w-7xl w-[95vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden bg-gray-100/80 dark:bg-gray-800/80 p-0"
       >
-        <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10 dialog-header-print-hide">
+        <ShadcnDialogHeader className="w-full shrink-0 px-4 py-3 border-b bg-background sticky top-0 z-10 dialog-header-print-hide">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
               <BarChart3 className="mr-3 h-6 w-6" />
@@ -728,7 +728,7 @@ export default function ClassPerformanceDashboard({
           </div>
         </div>
 
-        <ShadcnDialogFooter className="w-full shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide flex flex-row justify-end space-x-2">
+        <ShadcnDialogFooter className="w-full shrink-0 border-t px-4 py-3 bg-background sticky bottom-0 z-10 dialog-footer-print-hide flex flex-row justify-end space-x-2">
           <Button variant="outline" onClick={() => handlePrint('dashboard')} disabled={!classStats || reportsForClass.length === 0}>
             <Printer className="mr-2 h-4 w-4" /> Print Dashboard
           </Button>
@@ -740,3 +740,4 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
+
