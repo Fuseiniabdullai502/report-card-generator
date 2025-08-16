@@ -163,9 +163,11 @@ export default function ReportPreview({ data, classTotal }: ReportPreviewProps) 
       {data.schoolName && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
               <p 
-                className="text-[8rem] font-bold text-gray-500/10 dark:text-gray-400/10 transform -rotate-45 select-none"
+                className="font-bold text-gray-500/10 dark:text-gray-400/10 transform -rotate-45 select-none"
                 style={{
+                    fontSize: 'clamp(2rem, 15vw, 8rem)',
                     WebkitTextStroke: '1px rgba(0,0,0,0.05)',
+                    lineHeight: '1',
                 }}
               >
                   {data.schoolName}
