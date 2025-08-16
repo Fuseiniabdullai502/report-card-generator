@@ -190,6 +190,25 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
   const handleMarkChange = (reportId: string, subjectName: string, markType: ScoreType, value: string) => {
     const numericValue = value === '' ? null : Number(value);
 
+    // Instant validation
+    if (markType === 'continuousAssessment' && numericValue !== null && numericValue > 60) {
+        toast({
+            title: "Invalid CA Mark",
+            description: `Continuous Assessment mark for ${subjectName} cannot exceed 60.`,
+            variant: "destructive",
+        });
+        return; // Prevent update if invalid
+    }
+
+    if (markType === 'examinationMark' && numericValue !== null && numericValue > 100) {
+        toast({
+            title: "Invalid Exam Mark",
+            description: `Examination mark for ${subjectName} cannot exceed 100.`,
+            variant: "destructive",
+        });
+        return; // Prevent update if invalid
+    }
+
     setStudentsInClass(prevStudents => {
         const updatedStudents = prevStudents.map(student => {
           if (student.id === reportId) {
@@ -816,7 +835,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                             {subjectOrder.map(subject => (
                               <React.Fragment key={`${subject}-sub`}>
                                 <TableHead className="text-center border-l">CA (60)</TableHead>
-                                <TableHead className="text-center">Exam (100)</TableHead>
+                                <TableHead className="text-center border-l">Exam (100)</TableHead>
                               </React.Fragment>
                             ))}
                             <TableHead></TableHead>
@@ -929,7 +948,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                                 onKeyDown={(e) => handleKeyDown(e, index, `${subjectName}-ca`)}
                                               />
                                             </TableCell>
-                                            <TableCell className="p-1">
+                                            <TableCell className="border-l p-1">
                                                <Input
                                                 type="number"
                                                 id={`${subjectName}-exam-${student.id}`}
@@ -1311,4 +1330,5 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
 
     
     
+
 

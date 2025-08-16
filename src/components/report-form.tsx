@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { type ReportData, type SubjectEntry, ReportDataSchema, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
@@ -178,6 +179,27 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
   };
 
   const handleSubjectChange = (index: number, field: keyof SubjectEntry, value: string | number | null) => {
+    const numericValue = value === '' || value === null ? null : Number(value);
+
+    // Instant validation
+    if (field === 'continuousAssessment' && numericValue !== null && numericValue > 60) {
+        toast({
+            title: "Invalid CA Mark",
+            description: "Continuous Assessment mark cannot exceed 60.",
+            variant: "destructive",
+        });
+        return; // Prevent update if invalid
+    }
+
+    if (field === 'examinationMark' && numericValue !== null && numericValue > 100) {
+        toast({
+            title: "Invalid Exam Mark",
+            description: "Examination mark cannot exceed 100.",
+            variant: "destructive",
+        });
+        return; // Prevent update if invalid
+    }
+
     if (field === 'subjectName') {
         const isDuplicate = formData.subjects.some((subject, i) => i !== index && subject.subjectName === value);
         if (isDuplicate) {
@@ -191,7 +213,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     }
 
     const updatedSubjects = [...formData.subjects];
-    updatedSubjects[index] = { ...updatedSubjects[index], [field]: value };
+    updatedSubjects[index] = { ...updatedSubjects[index], [field]: numericValue }; // Use numericValue
     onFormUpdate({ ...formData, subjects: updatedSubjects });
   };
 
@@ -635,12 +657,12 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary"/>CA Mark</Label>
-                                <Input type="number" placeholder="1-60" value={formData.subjects[currentVisibleSubjectIndex].continuousAssessment ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'continuousAssessment', e.target.value === '' ? null : Number(e.target.value))} />
+                                <Label className="flex items-center"><ListChecks className="mr-2 h-4 w-4 text-primary"/>CA Mark (Max: 60)</Label>
+                                <Input type="number" placeholder="1-60" value={formData.subjects[currentVisibleSubjectIndex].continuousAssessment ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'continuousAssessment', e.target.value)} />
                             </div>
                             <div className="space-y-2">
-                                <Label className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary"/>Exam Mark</Label>
-                                <Input type="number" placeholder="1-100" value={formData.subjects[currentVisibleSubjectIndex].examinationMark ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'examinationMark', e.target.value === '' ? null : Number(e.target.value))} />
+                                <Label className="flex items-center"><FileOutput className="mr-2 h-4 w-4 text-primary"/>Exam Mark (Max: 100)</Label>
+                                <Input type="number" placeholder="1-100" value={formData.subjects[currentVisibleSubjectIndex].examinationMark ?? ''} onChange={e => handleSubjectChange(currentVisibleSubjectIndex, 'examinationMark', e.target.value)} />
                             </div>
                         </div>
                     </div>
