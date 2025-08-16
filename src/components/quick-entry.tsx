@@ -318,6 +318,8 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
             performanceSummary: '',
             strengths: '',
             areasForImprovement: '',
+            selectedTemplateId: classTemplate?.selectedTemplateId || 'default',
+            hobbies: [],
         };
         
         try {
@@ -1147,9 +1149,7 @@ function ExportGradesheetDialog({ isOpen, onOpenChange, subjects, students, clas
         const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
         
         if (worksheet['B2']) {
-            worksheet['!protect'] = {
-                sheet: false,
-            };
+             worksheet['!protect'] = {};
         }
         
         const workbook = XLSX.utils.book_new();
@@ -1311,3 +1311,4 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
 
     
     
+
