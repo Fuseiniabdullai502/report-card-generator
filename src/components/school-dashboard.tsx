@@ -400,7 +400,7 @@ export default function SchoolPerformanceDashboard({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
         id="school-dashboard-dialog-content"
-        className="max-w-7xl w-[95vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden"
+        className="max-w-7xl w-[95vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden bg-gray-100/80 dark:bg-gray-800/80 p-0"
       >
         <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10 dialog-header-print-hide">
           <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
@@ -414,8 +414,9 @@ export default function SchoolPerformanceDashboard({
         
         <div 
           data-testid="school-dashboard-inner-scroll-container"
-          className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-6 space-y-6"
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4"
         >
+          <div className="a4-page-simulation space-y-6">
             <div className="school-dashboard-print-header">
                  <div className="flex justify-center mb-2">
                     <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
@@ -700,6 +701,7 @@ export default function SchoolPerformanceDashboard({
               </>
             )}
           </div>
+        </div>
 
         <ShadcnDialogFooter className="w-full shrink-0 border-t px-6 pb-6 pt-4 bg-background sticky bottom-0 z-10 dialog-footer-print-hide flex-row justify-end space-x-2">
           <Button variant="outline" onClick={handlePrint} disabled={!schoolStats || allReports.length === 0}>

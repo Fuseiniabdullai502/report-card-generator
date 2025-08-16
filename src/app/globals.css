@@ -227,10 +227,6 @@
       margin-top: 0 !important;
   }
 
-  .a4-page-simulation .report-student-info-table {
-      font-size: 7pt !important;
-  }
-
   .a4-page-simulation .report-student-info-table td {
       padding-bottom: 0px !important;
       padding-top: 0px !important;
@@ -320,40 +316,37 @@
   
   body.dashboard-printing-active {
     overflow: visible !important;
+    background: white !important;
   }
   
   body.dashboard-printing-active #class-dashboard-dialog-content,
   body.dashboard-printing-active #school-dashboard-dialog-content,
   body.dashboard-printing-active #ranking-print-content {
-    position: static !important; 
-    display: block !important; 
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
     width: 100% !important;
+    height: auto !important;
     max-width: 100% !important;
-    height: auto !important; 
-    min-height: 0 !important; 
-    max-height: none !important; 
-    transform: none !important; 
+    max-height: none !important;
+    min-height: 0 !important;
+    transform: none !important;
     margin: 0 !important;
-    padding: 0 !important; 
+    padding: 0 !important;
     border: none !important;
     box-shadow: none !important;
-    background-color: white !important;
-    color: black !important;
-    overflow: visible !important; 
     border-radius: 0 !important;
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    font-size: 8pt !important; /* Base font size for dashboards */
   }
   
-  body.dashboard-printing-active [data-testid="dashboard-inner-scroll-container"],
-  body.dashboard-printing-active [data-testid="school-dashboard-inner-scroll-container"],
-  body.dashboard-printing-active #ranking-print-content {
-    overflow: visible !important; /* Allow content to flow across pages */
-    height: auto !important;
-    max-height: none !important;
-    padding: 10mm !important; 
-    box-sizing: border-box !important;
+  body.dashboard-printing-active [data-testid="dashboard-inner-scroll-container"] > .a4-page-simulation,
+  body.dashboard-printing-active [data-testid="school-dashboard-inner-scroll-container"] > .a4-page-simulation {
+    page-break-after: auto !important; /* No page breaks inside the dialog */
+    min-height: 0 !important;
   }
 
   body.dashboard-printing-active * {
