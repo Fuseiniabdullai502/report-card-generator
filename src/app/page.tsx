@@ -261,61 +261,58 @@ function AppContent({ user }: { user: CustomUser }) {
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
     if (listToProcess.length === 0) {
-        setAllRankedReports([]);
-        return;
+      setAllRankedReports([]);
+      return;
     }
 
-    const reportsWithAverages = listToProcess.map(report => {
-        const overallAverage = calculateOverallAverage(report.subjects);
-        return { ...report, overallAverage: overallAverage ?? undefined };
-    });
+    const reportsWithAverages = listToProcess.map(report => ({
+      ...report,
+      overallAverage: calculateOverallAverage(report.subjects) ?? undefined,
+    }));
 
     const reportsByClass = new Map<string, ReportData[]>();
     reportsWithAverages.forEach(report => {
-        const className = report.className || 'Unclassified';
-        if (!reportsByClass.has(className)) {
-            reportsByClass.set(className, []);
-        }
-        reportsByClass.get(className)!.push(report as ReportData);
+      const className = report.className || 'Unclassified';
+      if (!reportsByClass.has(className)) {
+        reportsByClass.set(className, []);
+      }
+      reportsByClass.get(className)!.push(report as ReportData);
     });
 
     const allClassRankedReports: ReportData[] = [];
     reportsByClass.forEach((classReports) => {
-        const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
+      const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
+      
+      const reportsWithRankNumbers = sortedReports.map((report, index) => {
+        if (report.overallAverage === null || typeof report.overallAverage === 'undefined') {
+          return { ...report, rankNumber: -1 };
+        }
+        if (index > 0 && report.overallAverage === sortedReports[index - 1].overallAverage) {
+          return { ...report, rankNumber: (sortedReports[index - 1] as any).rankNumber };
+        }
+        return { ...report, rankNumber: index + 1 };
+      });
 
-        const reportsWithRankNumbers = sortedReports.map((report, index) => {
-            if (report.overallAverage === null || report.overallAverage === undefined) {
-                return { ...report, rank: 'N/A' };
-            }
-            if (index === 0) {
-                return { ...report, rank: '1' };
-            }
-            const prevReport = sortedReports[index - 1];
-            if (report.overallAverage === prevReport.overallAverage) {
-                return { ...report, rank: prevReport.rank! };
-            } else {
-                return { ...report, rank: (index + 1).toString() };
-            }
-        });
+      const finalFormattedReports = reportsWithRankNumbers.map((report, index) => {
+        if (report.rankNumber <= 0) {
+          return { ...report, rank: 'N/A' };
+        }
+        const isTiedWithNext = index < sortedReports.length - 1 && report.overallAverage === sortedReports[index + 1].overallAverage;
+        const isTiedWithPrev = index > 0 && report.overallAverage === sortedReports[index - 1].overallAverage;
+        const isTie = isTiedWithNext || isTiedWithPrev;
         
-        const finalFormattedReports = reportsWithRankNumbers.map((report, index, arr) => {
-            if (report.rank === 'N/A' || !report.rank) return { ...report, rank: 'N/A' };
-            const rankNumber = parseInt(report.rank, 10);
-            if (isNaN(rankNumber)) return { ...report, rank: 'N/A' };
-            
-            const isTiedWithNext = index < arr.length - 1 && arr[index + 1].rank === report.rank;
-            const isTiedWithPrev = index > 0 && arr[index - 1].rank === report.rank;
-            const isTie = isTiedWithNext || isTiedWithPrev;
+        return {
+          ...report,
+          rank: formatRankString(report.rankNumber, isTie),
+        };
+      });
 
-            return { ...report, rank: formatRankString(rankNumber, isTie) };
-        });
-
-        allClassRankedReports.push(...finalFormattedReports);
+      allClassRankedReports.push(...finalFormattedReports);
     });
-
-    // Restore original sort order for consistency
-    setAllRankedReports(allClassRankedReports.sort((a, b) => (a.className || '').localeCompare(b.className || '') || (a.studentEntryNumber || 0) - (b.studentEntryNumber || 0)));
-}, []);
+    
+    // Restore original sort order for consistency in the list view
+    setAllRankedReports(allClassRankedReports.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0)));
+  }, []);
 
 
   const fetchData = useCallback(() => {
@@ -1290,26 +1287,26 @@ function AppContent({ user }: { user: CustomUser }) {
                       <div className="flex flex-col gap-2 items-stretch">
                         <div className="flex flex-wrap gap-2 justify-start md:justify-end">
                           {isAdminRole && (
-                              <Select value={adminFilters.schoolName} onValueChange={value => handleAdminFilterChange('schoolName', value)} disabled={user.role === 'admin'}>
+                              <Select value={adminFilters.schoolName} onValueChange={value => setAdminFilters(prev => ({...prev, schoolName: value}))} disabled={user.role === 'admin'}>
                                   <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by school">
                                       <div className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by school..." /></div>
                                   </SelectTrigger>
                                   <SelectContent>{allFilterOptions.schools.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Schools' : s}</SelectItem>)}</SelectContent>
                               </Select>
                           )}
-                          <Select value={adminFilters.className} onValueChange={value => handleAdminFilterChange('className', value)}>
+                          <Select value={adminFilters.className} onValueChange={value => setAdminFilters(prev => ({...prev, className: value}))}>
                               <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by class">
                                   <div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by class..." /></div>
                               </SelectTrigger>
                               <SelectContent>{allFilterOptions.classes.map(c => <SelectItem key={c} value={c}>{c === 'all' ? 'All My Classes' : c}</SelectItem>)}</SelectContent>
                           </Select>
-                          <Select value={adminFilters.academicYear} onValueChange={value => handleAdminFilterChange('academicYear', value)}>
+                          <Select value={adminFilters.academicYear} onValueChange={value => setAdminFilters(prev => ({...prev, academicYear: value}))}>
                               <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by year">
                                   <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by year..." /></div>
                               </SelectTrigger>
                               <SelectContent>{allFilterOptions.years.map(y => <SelectItem key={y} value={y}>{y === 'all' ? 'All Years' : y}</SelectItem>)}</SelectContent>
                           </Select>
-                          <Select value={adminFilters.academicTerm} onValueChange={value => handleAdminFilterChange('academicTerm', value)}>
+                          <Select value={adminFilters.academicTerm} onValueChange={value => setAdminFilters(prev => ({...prev, academicTerm: value}))}>
                               <SelectTrigger className="w-auto min-w-[150px] max-w-[200px]" title="Filter by term">
                                   <div className="flex items-center gap-2"><BookMarked className="h-4 w-4 text-primary" /><SelectValue placeholder="Filter by term..." /></div>
                               </SelectTrigger>
