@@ -1548,7 +1548,7 @@ function AppContent({ user }: { user: CustomUser }) {
           <SchoolPerformanceDashboard
               isOpen={isSchoolDashboardOpen}
               onOpenChange={setIsSchoolDashboardOpen}
-              allReports={allReports}
+              allReports={allRankedReports}
               schoolNameProp={schoolNameForDashboard}
               academicYearProp={academicYearForDashboard}
               userRole={user.role}
