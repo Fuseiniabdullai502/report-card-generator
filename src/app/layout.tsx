@@ -7,6 +7,7 @@ import { Providers } from '@/components/providers';
 export const metadata: Metadata = {
   title: 'Report Card Generator',
   description: 'Easily create, customize, rank, and print student terminal reports.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
