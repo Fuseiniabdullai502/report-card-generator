@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { calculateSubjectFinalMark, calculateOverallAverage } from '@/lib/calculations';
 import Image from 'next/image';
+import type { CustomUser } from './auth-provider';
 
 interface SchoolPerformanceDashboardProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ interface SchoolPerformanceDashboardProps {
   allReports: ReportData[];
   schoolNameProp: string;
   academicYearProp: string;
-  userRole: 'super-admin' | 'big-admin' | 'admin' | 'user' | null;
+  userRole: CustomUser['role'];
 }
 
 interface HistoricalSchoolTermData {
@@ -384,7 +385,7 @@ export default function SchoolPerformanceDashboard({
     }
     return (
        <CardContent className="pt-4">
-        <Button onClick={fetchSchoolAiInsights} disabled={isLoadingAi || !schoolStats}>
+        <Button onClick={fetchSchoolAiInsights} disabled={!schoolStats}>
           <Brain className="mr-2 h-4 w-4" /> Generate AI Insights
         </Button>
       </CardContent>
@@ -400,7 +401,7 @@ export default function SchoolPerformanceDashboard({
         id="school-dashboard-dialog-content"
         className="max-w-5xl w-[95vw] h-[calc(100vh-4rem)] flex flex-col overflow-hidden"
       >
-        <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
+        <ShadcnDialogHeader className="w-full shrink-0 px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10 dialog-header-print-hide">
           <ShadcnDialogTitle className="text-xl font-bold text-primary flex items-center">
             <Building className="mr-3 h-6 w-6" />
             School Dashboard: {schoolNameProp}
@@ -685,17 +686,12 @@ export default function SchoolPerformanceDashboard({
                           {isLoadingAi && !aiSchoolAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
                           School-Level Insights &amp; Advice ({mostRecentTerm})
                       </CardTitle>
-                      {!aiSchoolAdvice && !isLoadingAi && (
-                        <Button variant="outline" size="sm" onClick={fetchSchoolAiInsights} disabled={!schoolStats}>
-                           <Brain className="mr-2 h-4 w-4" /> Generate
-                        </Button>
-                      )}
-                      {aiSchoolAdvice && (
-                         <Button variant="outline" size="sm" onClick={fetchSchoolAiInsights} disabled={isLoadingAi || !schoolStats}>
+                      
+                        <Button variant="outline" size="sm" onClick={fetchSchoolAiInsights} disabled={isLoadingAi || !schoolStats}>
                           <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingAi ? 'animate-spin' : ''}`} />
-                          Regenerate
+                          {aiSchoolAdvice ? 'Regenerate' : 'Generate'}
                         </Button>
-                      )}
+                      
                     </div>
                   </CardHeader>
                   {renderAiSchoolInsights()}

@@ -411,7 +411,7 @@ export default function ClassPerformanceDashboard({
     }
     return (
       <CardContent className="pt-4">
-        <Button onClick={fetchAiInsights} disabled={isLoadingAi || !classStats}>
+        <Button onClick={fetchAiInsights} disabled={!classStats}>
           <Brain className="mr-2 h-4 w-4" /> Generate AI Insights
         </Button>
       </CardContent>
@@ -711,17 +711,12 @@ export default function ClassPerformanceDashboard({
                           {isLoadingAi && !aiAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
                           Pedagogical Insights &amp; Advice ({mostRecentTerm})
                       </CardTitle>
-                      {!aiAdvice && !isLoadingAi && (
-                        <Button variant="outline" size="sm" onClick={fetchAiInsights} disabled={!classStats}>
-                           <Brain className="mr-2 h-4 w-4" /> Generate
-                        </Button>
-                      )}
-                      {aiAdvice && (
+                      
                         <Button variant="outline" size="sm" onClick={fetchAiInsights} disabled={isLoadingAi || !classStats}>
                           <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingAi ? 'animate-spin' : ''}`} />
-                          Regenerate
+                          {aiAdvice ? 'Regenerate' : 'Generate'}
                         </Button>
-                      )}
+                      
                     </div>
                   </CardHeader>
                   {renderAiInsights()}
