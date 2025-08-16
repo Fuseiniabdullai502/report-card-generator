@@ -150,12 +150,6 @@ export default function DistrictPerformanceDashboard({
     
   }, [isOpen, filteredReports]); 
 
-  useEffect(() => {
-    if (isOpen && districtStats) {
-      fetchDistrictAiInsights();
-    }
-  }, [isOpen, districtStats, fetchDistrictAiInsights]);
-
   const districtSubjectPerformanceChartData = useMemo(() => {
     return districtStats?.overallSubjectStatsForDistrictUI.map(s => ({
       name: s.subjectName,
@@ -209,10 +203,10 @@ export default function DistrictPerformanceDashboard({
       return (
         <CardContent className="pt-4 space-y-3 text-sm text-accent-foreground">
           {overallDistrictAssessment && <div><h4 className="font-semibold text-green-600">Overall Assessment:</h4><p className="pl-2">{overallDistrictAssessment}</p></div>}
-          {keyStrengthsDistrictWide?.length > 0 && <div><h4 className="font-semibold text-green-600">Key Strengths:</h4><ul className="list-disc list-inside pl-2">{keyStrengthsDistrictWide.map((s, i) => <li key={`strength-${i}`}>{s}</li>)}</ul></div>}
-          {areasForConcernDistrictWide?.length > 0 && <div><h4 className="font-semibold text-yellow-600">Areas for Concern:</h4><ul className="list-disc list-inside pl-2">{areasForConcernDistrictWide.map((a, i) => <li key={`concern-${i}`}>{a}</li>)}</ul></div>}
-          {actionableAdviceForDistrict?.length > 0 && <div><h4 className="font-semibold text-blue-600">Actionable Advice:</h4><ul className="list-disc list-inside pl-2">{actionableAdviceForDistrict.map((adv, i) => <li key={`advice-${i}`}>{adv}</li>)}</ul></div>}
-          {interSchoolObservations?.length > 0 && <div><h4 className="font-semibold text-purple-600">Inter-School Observations:</h4><ul className="list-disc list-inside pl-2">{interSchoolObservations.map((obs, i) => <li key={`obs-${i}`}>{obs}</li>)}</ul></div>}
+          {keyStrengthsDistrictWide && keyStrengthsDistrictWide.length > 0 && <div><h4 className="font-semibold text-green-600">Key Strengths:</h4><ul className="list-disc list-inside pl-2">{keyStrengthsDistrictWide.map((s, i) => <li key={`strength-${i}`}>{s}</li>)}</ul></div>}
+          {areasForConcernDistrictWide && areasForConcernDistrictWide.length > 0 && <div><h4 className="font-semibold text-yellow-600">Areas for Concern:</h4><ul className="list-disc list-inside pl-2">{areasForConcernDistrictWide.map((a, i) => <li key={`concern-${i}`}>{a}</li>)}</ul></div>}
+          {actionableAdviceForDistrict && actionableAdviceForDistrict.length > 0 && <div><h4 className="font-semibold text-blue-600">Actionable Advice:</h4><ul className="list-disc list-inside pl-2">{actionableAdviceForDistrict.map((adv, i) => <li key={`advice-${i}`}>{adv}</li>)}</ul></div>}
+          {interSchoolObservations && interSchoolObservations.length > 0 && <div><h4 className="font-semibold text-purple-600">Inter-School Observations:</h4><ul className="list-disc list-inside pl-2">{interSchoolObservations.map((obs, i) => <li key={`obs-${i}`}>{obs}</li>)}</ul></div>}
         </CardContent>
       );
     }
