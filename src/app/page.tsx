@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, PenSquare, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo, SlidersHorizontal, Settings, Search, Image as ImageIcon } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, PenSquare, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo, SlidersHorizontal, Settings, Search, Image as ImageIcon, GraduationCap } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
@@ -27,7 +27,6 @@ import { useRouter } from 'next/navigation';
 import type { CustomUser } from '@/components/auth-provider';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -37,21 +36,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Slider } from '@/components/ui/slider';
 import { DatePicker } from '@/components/ui/datepicker';
 import { format } from 'date-fns';
-
-
-// Dynamically import heavy components
-const SchoolPerformanceDashboard = dynamic(() => import('@/components/school-dashboard'), { 
-    ssr: false,
-    loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> 
-});
-const ImportStudentsDialog = dynamic(() => import('@/components/import-students-dialog'), { 
-    ssr: false,
-    loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> 
-});
-const ClassPerformanceDashboard = dynamic(() => import('@/components/class-dashboard'), { 
-    ssr: false,
-    loading: () => <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> 
-});
+import { getClassLevel, shsProgramOptions, type ShsProgram } from '@/lib/curriculum';
+import SchoolPerformanceDashboard from '@/components/school-dashboard';
+import ImportStudentsDialog from '@/components/import-students-dialog';
+import ClassPerformanceDashboard from '@/components/class-dashboard';
 
 
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
@@ -69,9 +57,13 @@ const reportTemplateOptions = [
 
 
 function getOrdinalSuffix(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return s[(v - 20) % 10] || s[v] || s[0];
+  if (n > 3 && n < 21) return 'th'; 
+  switch (n % 10) {
+    case 1:  return "st";
+    case 2:  return "nd";
+    case 3:  return "rd";
+    default: return "th";
+  }
 }
 
 function formatRankString(rankNumber: number): string {
@@ -289,7 +281,6 @@ function AppContent({ user }: { user: CustomUser }) {
       const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
       
       let rank = 0;
-      let lastRank = 0;
       let lastScore = -1;
   
       const reportsWithRankNumbers = sortedReports.map((report, index) => {
@@ -297,16 +288,14 @@ function AppContent({ user }: { user: CustomUser }) {
           return { ...report, rankNumber: -1 };
         }
   
+        // Only increment rank if the score is different from the previous student's score
         if (report.overallAverage < lastScore) {
           rank = index + 1;
-        } else if (report.overallAverage === lastScore) {
-          rank = lastRank;
-        } else {
-          rank = index + 1;
+        } else if (index === 0) {
+          rank = 1;
         }
   
         lastScore = report.overallAverage;
-        lastRank = rank;
         return { ...report, rankNumber: rank };
       });
   
@@ -519,6 +508,7 @@ function AppContent({ user }: { user: CustomUser }) {
       academicTerm: currentEditingReport.academicTerm,
       reopeningDate: currentEditingReport.reopeningDate,
       selectedTemplateId: currentEditingReport.selectedTemplateId,
+      shsProgram: currentEditingReport.shsProgram,
       totalSchoolDays: currentEditingReport.totalSchoolDays,
       headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
       instructorContact: currentEditingReport.instructorContact,
@@ -554,6 +544,7 @@ function AppContent({ user }: { user: CustomUser }) {
       studentEntryNumber: formDataFromForm.studentEntryNumber,
       studentName: formDataFromForm.studentName || '',
       className: formDataFromForm.className || '',
+      shsProgram: formDataFromForm.shsProgram || null,
       gender: formDataFromForm.gender,
       schoolName: formDataFromForm.schoolName || '',
       region: formDataFromForm.region || '',
@@ -641,6 +632,7 @@ function AppContent({ user }: { user: CustomUser }) {
       circuit: reportToSaveForFirestore.circuit,
       schoolLogoDataUri: reportToSaveForFirestore.schoolLogoDataUri,
       className: reportToSaveForFirestore.className,
+      shsProgram: reportToSaveForFirestore.shsProgram,
       academicYear: reportToSaveForFirestore.academicYear,
       academicTerm: reportToSaveForFirestore.academicTerm ?? '',
       reopeningDate: reportToSaveForFirestore.reopeningDate ?? null,
@@ -664,6 +656,7 @@ function AppContent({ user }: { user: CustomUser }) {
       circuit: reportToEdit.circuit,
       schoolLogoDataUri: reportToEdit.schoolLogoDataUri,
       className: reportToEdit.className,
+      shsProgram: reportToEdit.shsProgram,
       academicYear: reportToEdit.academicYear,
       academicTerm: reportToEdit.academicTerm,
       reopeningDate: reportToEdit.reopeningDate,
@@ -1001,6 +994,10 @@ function AppContent({ user }: { user: CustomUser }) {
     return allRankedReports.filter(r => r.className === className).length;
   };
 
+  const isShsClass = useMemo(() => {
+    return !!sessionDefaults.className && getClassLevel(sessionDefaults.className) === 'SHS';
+  }, [sessionDefaults.className]);
+
   return (
     <>
       <div className="main-app-container">
@@ -1174,6 +1171,17 @@ function AppContent({ user }: { user: CustomUser }) {
                               </SelectContent>
                           </Select>
                       </div>
+                      {isShsClass && (
+                          <div className="space-y-1">
+                              <Label htmlFor="sessionShsProgram" className="text-sm font-medium">SHS Program</Label>
+                              <Select value={sessionDefaults.shsProgram || ''} onValueChange={value => handleSessionDefaultChange('shsProgram', value)}>
+                                  <SelectTrigger id="sessionShsProgram"><SelectValue placeholder="Select SHS program" /></SelectTrigger>
+                                  <SelectContent>
+                                      {shsProgramOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                                  </SelectContent>
+                              </Select>
+                          </div>
+                      )}
                       <div className="space-y-1">
                           <Label htmlFor="sessionAcademicTerm" className="text-sm font-medium">Academic Term</Label>
                           <Select value={sessionDefaults.academicTerm || ''} onValueChange={value => handleSessionDefaultChange('academicTerm', value)}>
@@ -1279,6 +1287,7 @@ function AppContent({ user }: { user: CustomUser }) {
                         <ReportForm
                           onFormUpdate={handleFormUpdate}
                           initialData={currentEditingReport}
+                          sessionDefaults={sessionDefaults}
                           isEditing={!currentEditingReport.id.startsWith('unsaved-')}
                           reportPrintListForHistory={allRankedReports}
                           onSaveReport={handleSaveOrUpdateReport}

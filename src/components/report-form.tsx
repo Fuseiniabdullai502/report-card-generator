@@ -23,10 +23,13 @@ import { calculateOverallAverage } from '@/lib/calculations';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
+
 
 interface ReportFormProps {
   onFormUpdate: (data: ReportData) => void;
   initialData: ReportData;
+  sessionDefaults: Partial<ReportData>;
   isEditing?: boolean;
   reportPrintListForHistory?: ReportData[];
   onSaveReport: (data: ReportData) => Promise<void>;
@@ -61,7 +64,7 @@ const AiErrorDescription = ({ errorMessage }: { errorMessage: string }) => {
 };
 
 
-export default function ReportForm({ onFormUpdate, initialData, isEditing = false, reportPrintListForHistory, onSaveReport, onResetForm }: ReportFormProps) {
+export default function ReportForm({ onFormUpdate, initialData, sessionDefaults, isEditing = false, reportPrintListForHistory, onSaveReport, onResetForm }: ReportFormProps) {
   const formData = initialData; // This component is now fully controlled by the parent.
 
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
@@ -80,6 +83,26 @@ export default function ReportForm({ onFormUpdate, initialData, isEditing = fals
   const [customHobbyInputValue, setCustomHobbyInputValue] = useState('');
 
   const [currentVisibleSubjectIndex, setCurrentVisibleSubjectIndex] = useState(0);
+
+  // When form is reset (isEditing becomes false after being true) or session defaults change,
+  // automatically populate subjects based on class and program.
+  useEffect(() => {
+    if (!isEditing && sessionDefaults.className) {
+      const suggestedSubjects = getSubjectsForClass(
+        sessionDefaults.className,
+        sessionDefaults.shsProgram as ShsProgram | undefined
+      );
+      if (suggestedSubjects.length > 0) {
+        const newSubjects: SubjectEntry[] = suggestedSubjects.map(name => ({
+          subjectName: name,
+          continuousAssessment: null,
+          examinationMark: null,
+        }));
+        onFormUpdate({ ...formData, subjects: newSubjects });
+      }
+    }
+  }, [isEditing, sessionDefaults.className, sessionDefaults.shsProgram]);
+
 
   // Reset subject pager if the form is reset (detected by ID change)
   useEffect(() => {

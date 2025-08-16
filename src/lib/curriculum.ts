@@ -109,6 +109,17 @@ export const curriculumLevels = {
 };
 
 export type ClassLevel = keyof typeof curriculumLevels | 'SHS' | null;
+export type ShsProgram = keyof Omit<typeof curriculumLevels, 'NURSERY' | 'KG' | 'PRIMARY' | 'JHS' | 'SHS_CORE'>;
+
+export const shsProgramOptions: { value: ShsProgram, label: string }[] = [
+    { value: 'SHS_GENERAL_SCIENCE', label: 'General Science' },
+    { value: 'SHS_GENERAL_ARTS', label: 'General Arts' },
+    { value: 'SHS_BUSINESS', label: 'Business' },
+    { value: 'SHS_AGRIC', label: 'Agriculture' },
+    { value: 'SHS_HOME_ECONOMICS', label: 'Home Economics' },
+    { value: 'SHS_VISUAL_ARTS', label: 'Visual Arts' },
+    { value: 'SHS_TECHNICAL', label: 'Technical' },
+];
 
 export const getClassLevel = (className: string): ClassLevel => {
     if (!className) return null;
@@ -123,7 +134,7 @@ export const getClassLevel = (className: string): ClassLevel => {
     return null;
 };
 
-export const getSubjectsForClass = (className: string): string[] => {
+export const getSubjectsForClass = (className: string, shsProgram?: ShsProgram): string[] => {
     const level = getClassLevel(className);
 
     if (!level) return [];
@@ -131,17 +142,10 @@ export const getSubjectsForClass = (className: string): string[] => {
     let subjects: string[] = [];
 
     if (level === 'SHS') {
-        // For SHS, combine core with all electives for selection flexibility
-        subjects = [
-            ...curriculumLevels.SHS_CORE,
-            ...curriculumLevels.SHS_GENERAL_SCIENCE,
-            ...curriculumLevels.SHS_GENERAL_ARTS,
-            ...curriculumLevels.SHS_AGRIC,
-            ...curriculumLevels.SHS_BUSINESS,
-            ...curriculumLevels.SHS_VISUAL_ARTS,
-            ...curriculumLevels.SHS_HOME_ECONOMICS,
-            ...curriculumLevels.SHS_TECHNICAL,
-        ];
+        subjects = [...curriculumLevels.SHS_CORE];
+        if (shsProgram && curriculumLevels[shsProgram]) {
+            subjects = [...subjects, ...curriculumLevels[shsProgram]];
+        }
     } else if (level in curriculumLevels) {
         subjects = curriculumLevels[level as keyof typeof curriculumLevels];
     }
