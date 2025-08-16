@@ -211,7 +211,16 @@ export default function ReportPreview({ data, classTotal, subjectOrder }: Report
               )}
             </div>
              <div className="object-contain" style={{width: 80, height: 80}}>
-               
+               {data.schoolLogoDataUri && (
+                  <Image
+                      src={data.schoolLogoDataUri}
+                      alt={`${data.schoolName || 'School'} Logo`}
+                      width={80}
+                      height={80}
+                      className="object-contain"
+                      data-ai-hint="school logo"
+                  />
+                )}
              </div>
           </div>
           <h1 className={cn(templateStyles.mainHeaderTextClass, "report-main-header print:mt-1 print:text-2xl")}>Student Report Card</h1>
