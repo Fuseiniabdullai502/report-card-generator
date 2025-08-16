@@ -1269,6 +1269,7 @@ const DistrictClassRankingInputSchema = z.object({
   academicYear: z.string().optional().nullable(),
   academicTerm: z.string().optional().nullable(),
   subjectName: z.string().optional().nullable(),
+  schoolCategory: z.enum(['public', 'private']).optional().nullable(),
 });
 
 // Action for fetching district-class-level ranking
@@ -1278,10 +1279,9 @@ export async function getDistrictClassRankingAction(input: z.infer<typeof Distri
   error?: string;
 }> {
   try {
-    const { district, className, academicYear, academicTerm, subjectName } = DistrictClassRankingInputSchema.parse(input);
+    const { district, className, academicYear, academicTerm, subjectName, schoolCategory } = DistrictClassRankingInputSchema.parse(input);
     
-    const reportsRef = admin.firestore().collection('reports');
-    let reportsQuery: Query = reportsRef
+    let reportsQuery: Query = admin.firestore().collection('reports')
       .where('district', '==', district)
       .where('className', '==', className);
     
@@ -1290,6 +1290,9 @@ export async function getDistrictClassRankingAction(input: z.infer<typeof Distri
     }
     if (academicTerm) {
       reportsQuery = reportsQuery.where('academicTerm', '==', academicTerm);
+    }
+    if (schoolCategory) {
+      reportsQuery = reportsQuery.where('schoolCategory', '==', schoolCategory);
     }
     
     const reportsSnapshot = await reportsQuery.get();

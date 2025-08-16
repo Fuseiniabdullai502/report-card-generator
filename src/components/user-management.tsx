@@ -151,6 +151,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [selectedRankingYear, setSelectedRankingYear] = useState<string>('all_years');
   const [selectedRankingTerm, setSelectedRankingTerm] = useState<string>('all_terms');
   const [selectedRankingSubject, setSelectedRankingSubject] = useState<string>('overall');
+  const [selectedRankingCategory, setSelectedRankingCategory] = useState<'public' | 'private' | 'all'>('all');
   const [isFetchingRanking, setIsFetchingRanking] = useState(false);
   const [rankingData, setRankingData] = useState<SchoolRankingData[] | null>(null);
   const [isRankingDialogOpen, setIsRankingDialogOpen] = useState(false);
@@ -254,6 +255,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
         academicYear: selectedRankingYear === 'all_years' ? null : selectedRankingYear,
         academicTerm: selectedRankingTerm === 'all_terms' ? null : selectedRankingTerm,
         subjectName: selectedRankingSubject === 'overall' ? null : selectedRankingSubject, 
+        schoolCategory: selectedRankingCategory === 'all' ? null : selectedRankingCategory,
     });
     if (result.success && result.ranking) {
       setRankingData(result.ranking);
@@ -464,9 +466,9 @@ export default function UserManagement({ user, users, invites, populationStats, 
                 <CardDescription>Compare the performance of a class (and optionally, a specific subject) across all schools in your district.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row gap-4 items-end">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-grow">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-5 gap-4 flex-grow">
                     <div className="w-full">
-                        <Label htmlFor="class-ranking-select">Select Class Level</Label>
+                        <Label htmlFor="class-ranking-select">Class Level</Label>
                         <Select value={selectedRankingClass} onValueChange={setSelectedRankingClass}>
                         <SelectTrigger id="class-ranking-select">
                             <SelectValue placeholder="Select a class..." />
@@ -479,7 +481,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                         </Select>
                     </div>
                     <div className="w-full">
-                        <Label htmlFor="year-ranking-select">Select Academic Year</Label>
+                        <Label htmlFor="year-ranking-select">Academic Year</Label>
                         <Select value={selectedRankingYear} onValueChange={setSelectedRankingYear}>
                         <SelectTrigger id="year-ranking-select">
                             <SelectValue placeholder="Select a year..." />
@@ -493,7 +495,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                         </Select>
                     </div>
                     <div className="w-full">
-                        <Label htmlFor="term-ranking-select">Select Term</Label>
+                        <Label htmlFor="term-ranking-select">Term</Label>
                         <Select value={selectedRankingTerm} onValueChange={setSelectedRankingTerm}>
                         <SelectTrigger id="term-ranking-select">
                             <SelectValue placeholder="Select a term..." />
@@ -507,7 +509,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                         </Select>
                     </div>
                     <div className="w-full">
-                        <Label htmlFor="subject-ranking-select">Select Subject</Label>
+                        <Label htmlFor="subject-ranking-select">Subject</Label>
                         <Select value={selectedRankingSubject} onValueChange={setSelectedRankingSubject} disabled={!selectedRankingClass}>
                         <SelectTrigger id="subject-ranking-select">
                             <SelectValue placeholder="Overall / Select Subject" />
@@ -521,6 +523,19 @@ export default function UserManagement({ user, users, invites, populationStats, 
                             ) : (
                                 <SelectItem value="no_subjects" disabled>No subjects for this class</SelectItem>
                             )}
+                        </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="w-full">
+                      <Label htmlFor="category-ranking-select">School Category</Label>
+                        <Select value={selectedRankingCategory} onValueChange={(value) => setSelectedRankingCategory(value as any)}>
+                        <SelectTrigger id="category-ranking-select">
+                            <SelectValue placeholder="All Schools" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Schools</SelectItem>
+                            <SelectItem value="public">Public Schools</SelectItem>
+                            <SelectItem value="private">Private Schools</SelectItem>
                         </SelectContent>
                         </Select>
                     </div>

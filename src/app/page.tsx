@@ -54,6 +54,7 @@ const reportTemplateOptions = [
     { id: 'academicRed', name: 'Academic Red' },
     { id: 'creativeTeal', name: 'Creative Teal' },
 ];
+const schoolCategories = [{ value: 'public', label: 'Public School' }, { value: 'private', label: 'Private School' }];
 
 
 function getOrdinalSuffix(n: number): string {
@@ -401,6 +402,7 @@ function AppContent({ user }: { user: CustomUser }) {
           if(firstReportFromSchool) {
             newSessionDefaults.region = firstReportFromSchool.region;
             newSessionDefaults.district = firstReportFromSchool.district;
+            newSessionDefaults.schoolCategory = firstReportFromSchool.schoolCategory;
           }
       } else if (user.role === 'big-admin' && user.district) {
           newSessionDefaults.district = user.district;
@@ -413,6 +415,7 @@ function AppContent({ user }: { user: CustomUser }) {
           newSessionDefaults.region = user.region ?? fetchedReports.find(r => r.region?.trim())?.region ?? '';
           newSessionDefaults.district = user.district ?? fetchedReports.find(r => r.district?.trim())?.district ?? '';
           newSessionDefaults.circuit = user.circuit ?? fetchedReports.find(r => r.circuit?.trim())?.circuit ?? '';
+          newSessionDefaults.schoolCategory = user.schoolCategory ?? fetchedReports.find(r => r.schoolCategory)?.schoolCategory ?? undefined;
       }
       setSessionDefaults(prev => ({...prev, ...newSessionDefaults}));
       
@@ -512,6 +515,7 @@ function AppContent({ user }: { user: CustomUser }) {
       totalSchoolDays: currentEditingReport.totalSchoolDays,
       headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
       instructorContact: currentEditingReport.instructorContact,
+      schoolCategory: currentEditingReport.schoolCategory,
     };
     setSessionDefaults(newDefaults);
     
@@ -550,6 +554,7 @@ function AppContent({ user }: { user: CustomUser }) {
       region: formDataFromForm.region || '',
       district: formDataFromForm.district || '',
       circuit: formDataFromForm.circuit || '',
+      schoolCategory: formDataFromForm.schoolCategory || null,
       schoolLogoDataUri: formDataFromForm.schoolLogoDataUri || null,
       academicYear: formDataFromForm.academicYear || '',
       academicTerm: formDataFromForm.academicTerm || '',
@@ -640,6 +645,7 @@ function AppContent({ user }: { user: CustomUser }) {
       totalSchoolDays: reportToSaveForFirestore.totalSchoolDays,
       headMasterSignatureDataUri: reportToSaveForFirestore.headMasterSignatureDataUri,
       instructorContact: reportToSaveForFirestore.instructorContact,
+      schoolCategory: reportToSaveForFirestore.schoolCategory,
     };
     setSessionDefaults(newSessionDefaults);
 
@@ -664,6 +670,7 @@ function AppContent({ user }: { user: CustomUser }) {
       totalSchoolDays: reportToEdit.totalSchoolDays,
       headMasterSignatureDataUri: reportToEdit.headMasterSignatureDataUri,
       instructorContact: reportToEdit.instructorContact,
+      schoolCategory: reportToEdit.schoolCategory,
     };
     setSessionDefaults(newDefaults);
 
@@ -853,6 +860,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     region: sessionDefaults.region,
                     district: sessionDefaults.district,
                     circuit: sessionDefaults.circuit ?? '',
+                    schoolCategory: sessionDefaults.schoolCategory ?? null,
                     schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? null,
                     academicYear: sessionDefaults.academicYear,
                     academicTerm: sessionDefaults.academicTerm,
@@ -890,6 +898,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 region: sessionDefaults.region,
                 district: sessionDefaults.district,
                 circuit: sessionDefaults.circuit ?? '',
+                schoolCategory: sessionDefaults.schoolCategory ?? null,
                 schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? '',
                 className: destinationClass,
                 academicYear: sessionDefaults.academicYear,
@@ -1142,6 +1151,18 @@ function AppContent({ user }: { user: CustomUser }) {
                           <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
                           <Input id="sessionSchoolName" value={sessionDefaults.schoolName ?? ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={!isSuperAdmin && !isBigAdmin}/>
                       </div>
+                      {(isSuperAdmin || isBigAdmin) && (
+                        <div className="space-y-1">
+                          <Label htmlFor="sessionSchoolCategory" className="text-sm font-medium">School Category</Label>
+                          <Select value={sessionDefaults.schoolCategory || ''} onValueChange={value => handleSessionDefaultChange('schoolCategory', value)}>
+                              <SelectTrigger id="sessionSchoolCategory"><SelectValue placeholder="Select category..."/></SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value="" disabled>Select category...</SelectItem>
+                                  {schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                        <div className="space-y-1">
                           <Label htmlFor="sessionReopeningDate" className="text-sm font-medium">Reopening Date</Label>
                            <DatePicker 
