@@ -36,7 +36,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Slider } from '@/components/ui/slider';
 import { DatePicker } from '@/components/ui/datepicker';
 import { format } from 'date-fns';
-import { getClassLevel, shsProgramOptions, type ShsProgram } from '@/lib/curriculum';
+import { getClassLevel, getSubjectsForClass, shsProgramOptions, type ShsProgram } from '@/lib/curriculum';
 import SchoolPerformanceDashboard from '@/components/school-dashboard';
 import ImportStudentsDialog from '@/components/import-students-dialog';
 import ClassPerformanceDashboard from '@/components/class-dashboard';
@@ -125,6 +125,10 @@ function AppContent({ user }: { user: CustomUser }) {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
   const [backgroundOpacity, setBackgroundOpacity] = useState<number>(0.1);
   const [isAppearanceSettingsVisible, setIsAppearanceSettingsVisible] = useState(false);
+
+  // State for subject order, lifted from QuickEntry
+  const [subjectOrder, setSubjectOrder] = useState<string[]>([]);
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1296,6 +1300,8 @@ function AppContent({ user }: { user: CustomUser }) {
                         user={user} 
                         onDataRefresh={fetchData}
                         shsProgram={sessionDefaults.shsProgram}
+                        subjectOrder={subjectOrder}
+                        setSubjectOrder={setSubjectOrder}
                       />
                     </TabsContent>
                   </Tabs>
@@ -1434,7 +1440,7 @@ function AppContent({ user }: { user: CustomUser }) {
                                 </div>
                               )}
                               <div className="a4-page-simulation break-inside-avoid">
-                                <ReportPreview data={reportData} classTotal={getClassTotal(reportData.className)} />
+                                <ReportPreview data={reportData} classTotal={getClassTotal(reportData.className)} subjectOrder={subjectOrder}/>
                               </div>
                           </div>
                         ))}
@@ -1442,7 +1448,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
                         // This is the LIVE preview of the report being edited in the form
                         <div className="a4-page-simulation break-inside-avoid">
-                          <ReportPreview data={currentEditingReport} classTotal={getClassTotal(currentEditingReport.className)} />
+                          <ReportPreview data={currentEditingReport} classTotal={getClassTotal(currentEditingReport.className)} subjectOrder={subjectOrder} />
                         </div>
                     ) : (
                       <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
@@ -1469,12 +1475,12 @@ function AppContent({ user }: { user: CustomUser }) {
         {reportsCount > 0 ? (
           filteredReports.map((reportData) => (
             <div key={`print-${reportData.id}`} className="a4-page-simulation">
-              <ReportPreview data={reportData} classTotal={getClassTotal(reportData.className)} />
+              <ReportPreview data={reportData} classTotal={getClassTotal(reportData.className)} subjectOrder={subjectOrder} />
             </div>
           ))
         ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
           <div className="a4-page-simulation">
-            <ReportPreview data={currentEditingReport} classTotal={getClassTotal(currentEditingReport.className)} />
+            <ReportPreview data={currentEditingReport} classTotal={getClassTotal(currentEditingReport.className)} subjectOrder={subjectOrder} />
           </div>
         ) : null}
       </div>

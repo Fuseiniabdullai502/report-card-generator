@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type {ReportData, SubjectEntry} from '@/lib/schemas';
@@ -11,6 +12,7 @@ import { format } from 'date-fns';
 interface ReportPreviewProps {
   data: ReportData;
   classTotal?: number;
+  subjectOrder?: string[];
 }
 
 interface TemplateStyles {
@@ -104,8 +106,8 @@ const getGradeAndRemarks = (
     return { grade: 'N/A', remarks: 'Not available', finalMark: '-' };
   }
 
-  const scaledCaMark = (caMarkInput !== null && caMarkInput !== undefined) ? (caMarkInput / 60) * 40 : 0;
-  const scaledExamMark = (examMarkInput !== null && examMarkInput !== undefined) ? (examMarkInput / 100) * 60 : 0;
+  const scaledCaMark = (caMarkInput !== null && caMarkInput !== undefined) ? (caMarkInput / 60) * 50 : 0;
+  const scaledExamMark = (examMarkInput !== null && examMarkInput !== undefined) ? (examMarkInput / 100) * 50 : 0;
 
   let finalPercentageMark: number;
   finalPercentageMark = scaledCaMark + scaledExamMark;
@@ -134,7 +136,7 @@ const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) =>
     </div>
 );
 
-export default function ReportPreview({ data, classTotal }: ReportPreviewProps) {
+export default function ReportPreview({ data, classTotal, subjectOrder }: ReportPreviewProps) {
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -157,6 +159,16 @@ export default function ReportPreview({ data, classTotal }: ReportPreviewProps) 
                                       : data.selectedTemplateId === 'professionalBlue' ? 'bg-blue-50 print:bg-blue-50'
                                       : data.selectedTemplateId === 'creativeTeal' ? 'bg-teal-50 print:bg-teal-50'
                                       : 'bg-green-50 print:bg-green-50'; // Default highlight
+
+  const orderedSubjects = React.useMemo(() => {
+    if (!subjectOrder || subjectOrder.length === 0) {
+      return data.subjects;
+    }
+    const subjectMap = new Map(data.subjects.map(s => [s.subjectName, s]));
+    return subjectOrder
+      .map(subjectName => subjectMap.get(subjectName))
+      .filter((s): s is SubjectEntry => !!s);
+  }, [data.subjects, subjectOrder]);
 
   return (
     <div id="printable-report-area" className={cn("a4-page-simulation flex flex-col text-sm relative", templateStyles.overallReportBorderClass)}>
@@ -240,22 +252,22 @@ export default function ReportPreview({ data, classTotal }: ReportPreviewProps) 
         </section>
 
 
-        {data.subjects && data.subjects.length > 0 && (
+        {orderedSubjects && orderedSubjects.length > 0 && (
           <section className="mb-3 print:mb-1.5">
             <h3 className={templateStyles.sectionTitleClass}>Subject Performance</h3>
             <Table className={cn("border rounded-md text-xs report-subjects-table", templateStyles.overallReportBorderClass)}>
               <TableHeader>
                 <TableRow className={templateStyles.tableHeaderClass}>
                   <TableHead className="font-semibold text-gray-600 w-[28%] py-0.5 px-2 print:px-1.5">Subject</TableHead>
-                  <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">CA (60)</TableHead>
-                  <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">Exam (100)</TableHead>
+                  <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">CA (50)</TableHead>
+                  <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">Exam (50)</TableHead>
                   <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">Final (100)</TableHead>
                   <TableHead className="text-center font-semibold text-gray-600 py-0.5 px-2 print:px-1.5">Grade</TableHead>
                   <TableHead className="font-semibold text-gray-600 w-[25%] py-0.5 px-2 print:px-1.5">Remarks</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.subjects.map((subject, index) => {
+                {orderedSubjects.map((subject, index) => {
                   if (!subject.subjectName || subject.subjectName.trim() === '') return null; 
                   const { grade, remarks, finalMark } = getGradeAndRemarks(subject.continuousAssessment, subject.examinationMark);
 

@@ -26,7 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookPlus, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus as BookPlusIcon, MessageSquare, Image as ImageIcon, Smile } from 'lucide-react';
+import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookPlus, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus as BookPlusIcon, MessageSquare, Image as ImageIcon, Smile, ArrowUp, ArrowDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
@@ -62,6 +62,8 @@ interface QuickEntryProps {
   user: CustomUser;
   onDataRefresh: () => void;
   shsProgram?: string | null;
+  subjectOrder: string[];
+  setSubjectOrder: (order: string[]) => void;
 }
 
 const scoreTypeOptions = [
@@ -73,7 +75,7 @@ type ScoreType = 'continuousAssessment' | 'examinationMark';
 const predefinedHobbiesList = ["Reading", "Sports (General)", "Music", "Art & Craft", "Debating", "Coding/Programming", "Gardening", "Volunteering", "Cooking/Baking", "Drama/Theater"];
 const ADD_CUSTOM_HOBBY_VALUE = "--add-custom-hobby--";
 
-export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: QuickEntryProps) {
+export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjectOrder, setSubjectOrder }: QuickEntryProps) {
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [studentsInClass, setStudentsInClass] = useState<ReportData[]>([]);
   const [subjectsForClass, setSubjectsForClass] = useState<string[]>([]);
@@ -104,7 +106,6 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
   const [customHobbyInputValue, setCustomHobbyInputValue] = useState('');
   const [currentHobbyTargetStudentId, setCurrentHobbyTargetStudentId] = useState<string | null>(null);
 
-
   const availableClasses = useMemo(() => {
     if (user.role === 'user' && user.classNames) {
         return user.classNames.sort();
@@ -119,30 +120,47 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
       setSelectedClass('');
     }
   }, [availableClasses, selectedClass]);
-
+  
+  // New useEffect to manage subjectOrder state
   useEffect(() => {
     if (selectedClass) {
-      const reports = allReports
-        .filter(r => r.className === selectedClass)
-        .sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''));
-      setStudentsInClass(reports);
+      const reports = allReports.filter(r => r.className === selectedClass);
+      setStudentsInClass(reports.sort((a, b) => (a.studentName || '').localeCompare(b.studentName || '')));
 
       const curriculumSubjects = getSubjectsForClass(selectedClass, shsProgram as ShsProgram | undefined);
-      
       const subjectsFromReports = new Set<string>();
       reports.forEach(report => {
         report.subjects?.forEach(sub => {
           if (sub.subjectName) subjectsFromReports.add(sub.subjectName);
         });
       });
-      
       const allPossibleSubjects = [...new Set([...curriculumSubjects, ...Array.from(subjectsFromReports)])].sort();
       setSubjectsForClass(allPossibleSubjects);
+      
+      // Load saved order or initialize it
+      const savedOrderKey = `subjectOrder_${selectedClass}`;
+      try {
+        const savedOrder = localStorage.getItem(savedOrderKey);
+        if (savedOrder) {
+          const parsedOrder = JSON.parse(savedOrder);
+          // Filter out subjects that are no longer relevant
+          const validOrder = parsedOrder.filter((s: string) => allPossibleSubjects.includes(s));
+          // Add any new subjects that weren't in the saved order
+          const newSubjects = allPossibleSubjects.filter(s => !validOrder.includes(s));
+          setSubjectOrder([...validOrder, ...newSubjects]);
+        } else {
+          setSubjectOrder(allPossibleSubjects);
+        }
+      } catch (e) {
+          console.error("Failed to parse subject order from localStorage", e);
+          setSubjectOrder(allPossibleSubjects);
+      }
     } else {
       setStudentsInClass([]);
       setSubjectsForClass([]);
+      setSubjectOrder([]);
     }
-  }, [selectedClass, allReports, shsProgram]);
+  }, [selectedClass, allReports, shsProgram, setSubjectOrder]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return studentsInClass;
@@ -242,7 +260,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
           }
         }
         
-        const allColumns = ['gender', 'daysAttended', ...activeSubjectsInClass.flatMap(s => [`${s}-ca`, `${s}-exam`])];
+        const allColumns = ['gender', 'daysAttended', ...subjectOrder.flatMap(s => [`${s}-ca`, `${s}-exam`])];
         
         let nextStudentIndex = studentIndex + 1;
         let nextColId = colId;
@@ -281,14 +299,13 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
         setIsAddingStudent(true);
         
         const classTemplate = studentsInClass[0]; 
-        const curriculumSubjects = getSubjectsForClass(selectedClass, shsProgram as ShsProgram | undefined);
         
         const newStudentData: Omit<ReportData, 'id'> = {
             studentName: newStudentName.trim(),
             className: selectedClass,
             gender: '',
             studentPhotoDataUri: null,
-            subjects: activeSubjectsInClass.map(s => ({ subjectName: s, continuousAssessment: null, examinationMark: null })),
+            subjects: subjectOrder.map(s => ({ subjectName: s, continuousAssessment: null, examinationMark: null })),
             teacherId: user.uid,
             studentEntryNumber: (allReports.reduce((max, r) => Math.max(r.studentEntryNumber || 0, max), 0) || 0) + 1,
             academicYear: classTemplate?.academicYear || '',
@@ -506,51 +523,37 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
   };
 
 
-  const handleBatchSubjectChange = async (subject: string, checked: boolean) => {
-    if (studentsInClass.length === 0) return;
-    
-    const batch = writeBatch(db);
-    studentsInClass.forEach(student => {
-      const reportRef = doc(db, 'reports', student.id);
-      let newSubjects: SubjectEntry[];
-      if (checked) {
-        if (!student.subjects.find(s => s.subjectName === subject)) {
-          newSubjects = [...student.subjects, { subjectName: subject, continuousAssessment: null, examinationMark: null }];
-          batch.update(reportRef, { subjects: newSubjects });
+  const handleSubjectOrderChange = (newOrder: string[]) => {
+      setSubjectOrder(newOrder);
+      if (selectedClass) {
+        try {
+            localStorage.setItem(`subjectOrder_${selectedClass}`, JSON.stringify(newOrder));
+        } catch (e) {
+            console.error("Failed to save subject order to localStorage", e);
         }
-      } else {
-        newSubjects = student.subjects.filter(s => s.subjectName !== subject);
-        batch.update(reportRef, { subjects: newSubjects });
       }
-    });
-
-    try {
-      await batch.commit();
-      toast({ title: `Subjects Updated`, description: `Successfully ${checked ? 'added' : 'removed'} "${subject}" for ${studentsInClass.length} students.` });
-      onDataRefresh();
-    } catch (error) {
-      console.error("Error batch updating subjects:", error);
-      toast({ title: "Update Failed", description: "Could not update subjects for the class.", variant: "destructive" });
-    }
   };
 
-  const activeSubjectsInClass = useMemo(() => {
-    const activeSubjects = new Set<string>();
-    studentsInClass.forEach(student => {
-      student.subjects.forEach(sub => {
-        if(sub.subjectName) activeSubjects.add(sub.subjectName);
-      });
-    });
-    return subjectsForClass.filter(s => activeSubjects.has(s));
-  }, [studentsInClass, subjectsForClass]);
+  const moveSubject = (index: number, direction: 'up' | 'down') => {
+      const newOrder = [...subjectOrder];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex >= 0 && targetIndex < newOrder.length) {
+          [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
+          handleSubjectOrderChange(newOrder);
+      }
+  };
 
-    const handleAddCustomSubject = () => {
-        if (customSubjectInputValue.trim() && !subjectsForClass.includes(customSubjectInputValue.trim())) {
-            setSubjectsForClass(prev => [...prev, customSubjectInputValue.trim()].sort());
-        }
-        setCustomSubjectInputValue('');
-        setIsCustomSubjectDialogOpen(false);
-    };
+  const handleAddCustomSubject = () => {
+      if (customSubjectInputValue.trim()) {
+          const newSubject = customSubjectInputValue.trim();
+          if (!subjectsForClass.includes(newSubject)) {
+              setSubjectsForClass(prev => [...prev, newSubject].sort());
+              handleSubjectOrderChange([...subjectOrder, newSubject]);
+          }
+      }
+      setCustomSubjectInputValue('');
+      setIsCustomSubjectDialogOpen(false);
+  };
 
       const dataUriToBlob = (dataUri: string): { blob: Blob, mimeType: string } => {
     const byteString = atob(dataUri.split(',')[1]);
@@ -721,7 +724,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
                 </div>
 
                 <div className="lg:col-span-1">
-                    <Label className="text-xs text-muted-foreground">Add/Remove Subjects for Class</Label>
+                    <Label className="text-xs text-muted-foreground">Manage & Order Subjects</Label>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="w-full" disabled={!selectedClass}>
@@ -731,17 +734,32 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                          <DropdownMenuLabel>Available Subjects</DropdownMenuLabel>
+                          <DropdownMenuLabel>Visible Subjects</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <ScrollArea className="h-60">
-                            {subjectsForClass.map(subject => (
-                              <DropdownMenuCheckboxItem
-                                key={subject}
-                                checked={activeSubjectsInClass.includes(subject)}
-                                onCheckedChange={(checked) => handleBatchSubjectChange(subject, Boolean(checked))}
-                              >
-                                {subject}
-                              </DropdownMenuCheckboxItem>
+                            {subjectsForClass.map((subject, index) => (
+                              <div key={subject} className="flex items-center pr-2">
+                                <DropdownMenuCheckboxItem
+                                    className="flex-1"
+                                    checked={subjectOrder.includes(subject)}
+                                    onCheckedChange={(checked) => {
+                                        const newOrder = checked
+                                            ? [...subjectOrder, subject]
+                                            : subjectOrder.filter(s => s !== subject);
+                                        handleSubjectOrderChange(newOrder);
+                                    }}
+                                >
+                                    {subject}
+                                </DropdownMenuCheckboxItem>
+                                <div className="flex gap-1">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveSubject(subjectOrder.indexOf(subject), 'up')} disabled={subjectOrder.indexOf(subject) === 0}>
+                                        <ArrowUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveSubject(subjectOrder.indexOf(subject), 'down')} disabled={subjectOrder.indexOf(subject) === subjectOrder.length - 1}>
+                                        <ArrowDown className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                              </div>
                             ))}
                           </ScrollArea>
                           <DropdownMenuSeparator />
@@ -778,7 +796,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
                             <TableHead className="min-w-[120px]"><VenetianMask className="inline-block mr-1 h-4 w-4"/>Gender</TableHead>
                             <TableHead className="min-w-[150px]"><CalendarCheck2 className="inline-block mr-1 h-4 w-4"/>Days Attended</TableHead>
                              <TableHead className="min-w-[180px]"><Smile className="inline-block mr-1 h-4 w-4"/>Hobbies</TableHead>
-                            {activeSubjectsInClass.map(subject => (
+                            {subjectOrder.map(subject => (
                               <TableHead key={subject} colSpan={2} className="text-center border-l min-w-[150px]">
                                 {subject}
                               </TableHead>
@@ -792,7 +810,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
                             <TableHead></TableHead>
                             <TableHead></TableHead>
                             <TableHead></TableHead>
-                            {activeSubjectsInClass.map(subject => (
+                            {subjectOrder.map(subject => (
                               <React.Fragment key={`${subject}-sub`}>
                                 <TableHead className="text-center border-l">CA (60)</TableHead>
                                 <TableHead className="text-center">Exam (100)</TableHead>
@@ -892,7 +910,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
-                                     {activeSubjectsInClass.map(subjectName => {
+                                     {subjectOrder.map(subjectName => {
                                         const subjectData = student.subjects.find(s => s.subjectName === subjectName);
                                         return (
                                           <React.Fragment key={`${student.id}-${subjectName}`}>
@@ -937,7 +955,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
                         })}
                         {filteredStudents.length === 0 && (
                             <TableRow>
-                              <TableCell colSpan={activeSubjectsInClass.length * 2 + 7} className="text-center h-24 text-muted-foreground">
+                              <TableCell colSpan={subjectOrder.length * 2 + 7} className="text-center h-24 text-muted-foreground">
                                 No students found. {searchQuery ? 'Try adjusting your search.' : 'Select a class or add a new student.'}
                               </TableCell>
                             </TableRow>
@@ -1082,7 +1100,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: Quic
         <ExportGradesheetDialog
             isOpen={isExportGradesheetDialogOpen}
             onOpenChange={setIsExportGradesheetDialogOpen}
-            subjects={activeSubjectsInClass}
+            subjects={subjectOrder}
             students={studentsInClass}
             className={selectedClass}
         />
