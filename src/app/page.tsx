@@ -57,13 +57,9 @@ const reportTemplateOptions = [
 
 
 function getOrdinalSuffix(n: number): string {
-  if (n > 3 && n < 21) return 'th'; 
-  switch (n % 10) {
-    case 1:  return "st";
-    case 2:  return "nd";
-    case 3:  return "rd";
-    default: return "th";
-  }
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
 }
 
 function formatRankString(rankNumber: number): string {
@@ -261,12 +257,12 @@ function AppContent({ user }: { user: CustomUser }) {
       setAllRankedReports([]);
       return;
     }
-  
+
     const reportsWithAverages = listToProcess.map(report => ({
       ...report,
       overallAverage: calculateOverallAverage(report.subjects) ?? undefined,
     }));
-  
+
     const reportsByClass = new Map<string, ReportData[]>();
     reportsWithAverages.forEach(report => {
       const className = report.className || 'Unclassified';
@@ -275,30 +271,30 @@ function AppContent({ user }: { user: CustomUser }) {
       }
       reportsByClass.get(className)!.push(report as ReportData);
     });
-  
+
     const allClassRankedReports: ReportData[] = [];
     reportsByClass.forEach((classReports) => {
       const sortedReports = [...classReports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
-      
-      let rank = 0;
+
       let lastScore = -1;
-  
+      let lastRank = 0;
+
       const reportsWithRankNumbers = sortedReports.map((report, index) => {
+        let currentRank = 0;
         if (report.overallAverage === null || typeof report.overallAverage === 'undefined') {
-          return { ...report, rankNumber: -1 };
+          currentRank = -1; // Unranked
+        } else if (report.overallAverage === lastScore) {
+          currentRank = lastRank; // Same rank as the previous student
+        } else {
+          currentRank = index + 1; // New rank
         }
-  
-        // Only increment rank if the score is different from the previous student's score
-        if (report.overallAverage < lastScore) {
-          rank = index + 1;
-        } else if (index === 0) {
-          rank = 1;
-        }
-  
-        lastScore = report.overallAverage;
-        return { ...report, rankNumber: rank };
+        
+        lastScore = report.overallAverage ?? -1;
+        lastRank = currentRank;
+
+        return { ...report, rankNumber: currentRank };
       });
-  
+      
       const finalFormattedReports = reportsWithRankNumbers.map(report => {
         if (report.rankNumber <= 0) {
           return { ...report, rank: 'N/A' };
@@ -308,7 +304,7 @@ function AppContent({ user }: { user: CustomUser }) {
           rank: formatRankString(report.rankNumber),
         };
       });
-  
+
       allClassRankedReports.push(...finalFormattedReports);
     });
     
@@ -1298,7 +1294,8 @@ function AppContent({ user }: { user: CustomUser }) {
                       <QuickEntry 
                         allReports={allRankedReports} 
                         user={user} 
-                        onDataRefresh={fetchData} 
+                        onDataRefresh={fetchData}
+                        shsProgram={sessionDefaults.shsProgram}
                       />
                     </TabsContent>
                   </Tabs>

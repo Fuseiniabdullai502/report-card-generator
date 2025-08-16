@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -51,7 +52,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { getSubjectsForClass } from '@/lib/curriculum';
+import { getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
 import { Textarea } from './ui/textarea';
 import { Progress } from './ui/progress';
 
@@ -60,6 +61,7 @@ interface QuickEntryProps {
   allReports: ReportData[];
   user: CustomUser;
   onDataRefresh: () => void;
+  shsProgram?: string | null;
 }
 
 const scoreTypeOptions = [
@@ -71,7 +73,7 @@ type ScoreType = 'continuousAssessment' | 'examinationMark';
 const predefinedHobbiesList = ["Reading", "Sports (General)", "Music", "Art & Craft", "Debating", "Coding/Programming", "Gardening", "Volunteering", "Cooking/Baking", "Drama/Theater"];
 const ADD_CUSTOM_HOBBY_VALUE = "--add-custom-hobby--";
 
-export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps) {
+export function QuickEntry({ allReports, user, onDataRefresh, shsProgram }: QuickEntryProps) {
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [studentsInClass, setStudentsInClass] = useState<ReportData[]>([]);
   const [subjectsForClass, setSubjectsForClass] = useState<string[]>([]);
@@ -125,7 +127,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         .sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''));
       setStudentsInClass(reports);
 
-      const curriculumSubjects = getSubjectsForClass(selectedClass);
+      const curriculumSubjects = getSubjectsForClass(selectedClass, shsProgram as ShsProgram | undefined);
       
       const subjectsFromReports = new Set<string>();
       reports.forEach(report => {
@@ -140,7 +142,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
       setStudentsInClass([]);
       setSubjectsForClass([]);
     }
-  }, [selectedClass, allReports]);
+  }, [selectedClass, allReports, shsProgram]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return studentsInClass;
@@ -279,7 +281,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
         setIsAddingStudent(true);
         
         const classTemplate = studentsInClass[0]; 
-        const curriculumSubjects = getSubjectsForClass(selectedClass);
+        const curriculumSubjects = getSubjectsForClass(selectedClass, shsProgram as ShsProgram | undefined);
         
         const newStudentData: Omit<ReportData, 'id'> = {
             studentName: newStudentName.trim(),
@@ -295,6 +297,7 @@ export function QuickEntry({ allReports, user, onDataRefresh }: QuickEntryProps)
             region: classTemplate?.region || user.region || '',
             district: classTemplate?.district || user.district || '',
             circuit: classTemplate?.circuit || user.circuit || '',
+            shsProgram: classTemplate?.shsProgram || shsProgram || '',
             performanceSummary: '',
             strengths: '',
             areasForImprovement: '',
