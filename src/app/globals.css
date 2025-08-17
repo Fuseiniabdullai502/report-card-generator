@@ -327,6 +327,7 @@
   /* This ensures the fixed watermark is visible when printing the dashboard */
   body.dashboard-printing-active .watermark-container {
     position: fixed !important;
+    color: #f0f0f0 !important;
   }
 
   body.dashboard-printing-active #class-dashboard-dialog-content,
@@ -462,7 +463,7 @@
       page-break-inside: avoid;
   }
   
-  body.dashboard-printing-active .table { min-width: 0 !important; width: 100% !important; table-layout: fixed !important; }
+  body.dashboard-printing-active .table { min-width: 0 !important; width: 100% !important; table-layout: auto !important; }
   body.dashboard-printing-active .table th,
   body.dashboard-printing-active .table td { word-break: break-word !important; padding: 2px 3px !important; white-space: normal !important; font-size: 7pt !important; }
   body.dashboard-printing-active .table th { font-size: 7pt !important; }
