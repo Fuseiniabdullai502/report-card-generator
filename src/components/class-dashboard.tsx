@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useEffect, useMemo, useState, useTransition, useCallback } from 'react';
@@ -458,273 +459,291 @@ export default function ClassPerformanceDashboard({
           data-testid="dashboard-inner-scroll-container"
           className="flex-1 min-h-0 overflow-y-auto p-4"
         >
-          <div className="a4-page-simulation space-y-6">
-            <div className="dashboard-print-header">
-                <div className="flex justify-center mb-2">
-                    <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
-                </div>
-                <h2 className="text-xl font-bold">{schoolNameProp} - Class Performance: {selectedClass}</h2>
-                <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
-            </div>
-            <div className="ranking-print-header">
-                <div className="flex justify-center mb-2">
-                    <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
-                </div>
-                <h2 className="text-xl font-bold">{schoolNameProp} - Student Ranking: {selectedClass}</h2>
-                <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
-            </div>
+          <div className="a4-page-simulation space-y-6 relative">
+             {/* Watermark */}
+            {schoolNameProp && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+                  <p 
+                    className="font-bold text-gray-500/10 dark:text-gray-400/10 transform -rotate-45 select-none"
+                    style={{
+                        fontSize: 'clamp(2rem, 15vw, 8rem)',
+                        lineHeight: '1.2',
+                        wordBreak: 'break-word',
+                    }}
+                  >
+                      {schoolNameProp}
+                  </p>
+              </div>
+            )}
+            
+            <div className="relative z-10">
+              <div className="dashboard-print-header">
+                  <div className="flex justify-center mb-2">
+                      <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
+                  </div>
+                  <h2 className="text-xl font-bold">{schoolNameProp} - Class Performance: {selectedClass}</h2>
+                  <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
+              </div>
+              <div className="ranking-print-header">
+                  <div className="flex justify-center mb-2">
+                      <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
+                  </div>
+                  <h2 className="text-xl font-bold">{schoolNameProp} - Student Ranking: {selectedClass}</h2>
+                  <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
+              </div>
 
-            {(isLoadingStats && !classStats) && (
-              <Card className="shadow-md">
-                <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Calculating class statistics...
-                </CardContent>
-              </Card>
-            )}
-            {reportsForClass.length === 0 && !isLoadingStats && (
-                 <Card className="shadow-md">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Info className="mr-2 h-5 w-5" />No Reports Available</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">There are no student reports for class '{selectedClass}' to generate a dashboard. Please add reports or select a different class.</p>
-                    </CardContent>
-                </Card>
-            )}
-            {!classStats && reportsForClass.length > 0 && !isLoadingStats && (
-                 <Card className="shadow-md">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />Data Error</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">Could not calculate class statistics for the most recent term. Please check report data or try again.</p>
-                    </CardContent>
-                </Card>
-            )}
-
-            {classStats && (
-              <>
-                <Card className="shadow-md print-hide-on-rankings">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Users className="mr-2 h-5 w-5" />Overall Snapshot ({mostRecentTerm})</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Total Students</p>
-                      <p className="font-semibold text-lg">{classStats.totalStudents}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Overall Class Average</p>
-                      <p className="font-semibold text-lg">
-                        {classStats.overallClassAverage !== null ? `${classStats.overallClassAverage.toFixed(2)}%` : 'N/A'}
-                      </p>
-                    </div>
+              {(isLoadingStats && !classStats) && (
+                <Card className="shadow-md">
+                  <CardContent className="pt-6 flex items-center justify-center text-muted-foreground">
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Calculating class statistics...
                   </CardContent>
                 </Card>
+              )}
+              {reportsForClass.length === 0 && !isLoadingStats && (
+                  <Card className="shadow-md">
+                      <CardHeader className="pb-3">
+                          <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Info className="mr-2 h-5 w-5" />No Reports Available</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <p className="text-muted-foreground">There are no student reports for class '{selectedClass}' to generate a dashboard. Please add reports or select a different class.</p>
+                      </CardContent>
+                  </Card>
+              )}
+              {!classStats && reportsForClass.length > 0 && !isLoadingStats && (
+                  <Card className="shadow-md">
+                      <CardHeader className="pb-3">
+                          <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />Data Error</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <p className="text-muted-foreground">Could not calculate class statistics for the most recent term. Please check report data or try again.</p>
+                      </CardContent>
+                  </Card>
+              )}
 
-                <Card className="shadow-md student-ranking-card">
-                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between border-b pb-2">
-                      <CardTitle className="text-lg font-semibold text-primary flex items-center">
-                        <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
-                        Student Ranking ({mostRecentTerm})
-                      </CardTitle>
-                      <Button variant="outline" size="sm" className="no-print" onClick={() => handlePrint('rankings')}>
-                          <Printer className="mr-2 h-4 w-4" /> Print Rankings
-                      </Button>
-                    </div>
-                    <CardDescription className="text-xs text-muted-foreground pt-1 no-print">
-                      Students in this class ranked by their overall average for the term.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-4">
-                      <Table className="border rounded-md min-w-[500px]">
-                          <ShadcnUITableHeader className="bg-muted/50">
-                              <TableRow>
-                                  <TableHead className="font-semibold w-[80px]">Rank</TableHead>
-                                  <TableHead className="font-semibold">Student Name</TableHead>
-                                  <TableHead className="text-right font-semibold">Average (%)</TableHead>
-                              </TableRow>
-                          </ShadcnUITableHeader>
-                          <TableBody className="table-body-rankings">
-                              {rankedStudents.map((student) => (
-                                  <TableRow key={student.id}>
-                                      <TableCell className="font-bold text-lg">{student.rank || 'N/A'}</TableCell>
-                                      <TableCell>{student.studentName}</TableCell>
-                                      <TableCell className="text-right font-semibold">
-                                          {student.overallAverage !== undefined && student.overallAverage !== null ? student.overallAverage.toFixed(2) : 'N/A'}
-                                      </TableCell>
-                                  </TableRow>
-                              ))}
-                          </TableBody>
-                      </Table>
-                  </CardContent>
-                </Card>
-
-                 {historicalData.length > 1 && (
-                    <Card className="shadow-md print-hide-on-rankings">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><History className="mr-2 h-5 w-5"/>Term-over-Term Comparison</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-4">
-                            <Table className="border rounded-md min-w-[500px]">
-                                <ShadcnUITableHeader className="bg-muted/50">
-                                    <TableRow>
-                                        <TableHead className="font-semibold">Term</TableHead>
-                                        <TableHead className="text-center font-semibold"># Students</TableHead>
-                                        <TableHead className="text-center font-semibold">Class Average (%)</TableHead>
-                                    </TableRow>
-                                </ShadcnUITableHeader>
-                                <TableBody>
-                                    {historicalData.map(data => (
-                                        <TableRow key={data.term}>
-                                            <TableCell className="font-medium">{data.term}</TableCell>
-                                            <TableCell className="text-center">{data.numStudents}</TableCell>
-                                            <TableCell className="text-center">{data.classAverage?.toFixed(1) ?? 'N/A'}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                 )}
-
-                {classStats.subjectStats.length > 0 && (
+              {classStats && (
+                <>
                   <Card className="shadow-md print-hide-on-rankings">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><TrendingUp className="mr-2 h-5 w-5 text-green-600" />Subject Performance ({mostRecentTerm})</CardTitle>
-                      <CardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject (Below Average &lt;40%, Average 40-59%, Above Average &ge;60%).</CardDescription>
+                      <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><Users className="mr-2 h-5 w-5" />Overall Snapshot ({mostRecentTerm})</CardTitle>
                     </CardHeader>
-                    <CardContent className="pt-4">
-                      <div data-testid="subject-barchart-container" className="h-[300px] min-w-[500px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={subjectPerformanceChartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                            <XAxis 
-                              dataKey="name" 
-                              angle={-35} 
-                              textAnchor="end" 
-                              height={80} 
-                              interval={0} 
-                              tick={{ fontSize: 10 }}
-                              tickFormatter={(name) => name.length > 12 ? `${name.slice(0, 12)}…` : name}
-                            />
-                            <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', fillOpacity: 0.3 }} />
-                            <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
-                            <Bar dataKey="Below Average (<40%)" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} barSize={15} />
-                            <Bar dataKey="Average (40-59%)" fill="hsl(var(--primary) / 0.7)" radius={[4, 4, 0, 0]} barSize={15} />
-                            <Bar dataKey="Above Average (>=60%)" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} barSize={15} />
-                          </BarChart>
-                        </ResponsiveContainer>
+                    <CardContent className="pt-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Total Students</p>
+                        <p className="font-semibold text-lg">{classStats.totalStudents}</p>
                       </div>
-                       <Table className="mt-6 border rounded-md min-w-[700px] bg-card">
-                        <ShadcnUITableHeader className="bg-muted/50">
-                          <TableRow>
-                            <TableHead className="font-semibold py-2 px-3">Subject</TableHead>
-                            <TableHead className="text-center font-semibold py-2 px-3">Class Avg (%)</TableHead>
-                            <TableHead className="text-center font-semibold py-2 px-3 text-red-600 dark:text-red-400">Below Avg (&lt;40%)</TableHead>
-                            <TableHead className="text-center font-semibold py-2 px-3 text-blue-600 dark:text-blue-400">Average (40-59%)</TableHead>
-                            <TableHead className="text-center font-semibold py-2 px-3 text-green-600 dark:text-green-400">Above Avg (&ge;60%)</TableHead>
-                          </TableRow>
-                        </ShadcnUITableHeader>
-                        <TableBody>
-                          {classStats.subjectStats.map(s => (
-                            <TableRow key={s.subjectName}>
-                              <TableCell className="font-medium py-2 px-3">{s.subjectName}</TableCell>
-                              <TableCell className="text-center py-2 px-3">{s.classAverageForSubject?.toFixed(1) || 'N/A'}</TableCell>
-                              <TableCell className="text-center py-2 px-3">{s.numBelowAverage}</TableCell>
-                              <TableCell className="text-center py-2 px-3">{s.numAverage}</TableCell>
-                              <TableCell className="text-center py-2 px-3">{s.numAboveAverage}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                      <div>
+                        <p className="text-muted-foreground">Overall Class Average</p>
+                        <p className="font-semibold text-lg">
+                          {classStats.overallClassAverage !== null ? `${classStats.overallClassAverage.toFixed(2)}%` : 'N/A'}
+                        </p>
+                      </div>
                     </CardContent>
                   </Card>
-                )}
 
-                {classStats.genderStats.length > 0 && (
-                 <Card className="shadow-md print-hide-on-rankings">
+                  <Card className="shadow-md student-ranking-card">
                     <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics ({mostRecentTerm})</CardTitle>
-                         <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</CardDescription>
+                      <div className="flex items-center justify-between border-b pb-2">
+                        <CardTitle className="text-lg font-semibold text-primary flex items-center">
+                          <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
+                          Student Ranking ({mostRecentTerm})
+                        </CardTitle>
+                        <Button variant="outline" size="sm" className="no-print" onClick={() => handlePrint('rankings')}>
+                            <Printer className="mr-2 h-4 w-4" /> Print Rankings
+                        </Button>
+                      </div>
+                      <CardDescription className="text-xs text-muted-foreground pt-1 no-print">
+                        Students in this class ranked by their overall average for the term.
+                      </CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center">
-                        <div data-testid="gender-piechart-container" className="h-[250px] min-w-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <RechartsPieChart>
-                            <Pie
-                                data={genderChartData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
-                                    const RADIAN = Math.PI / 180;
-                                    const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
-                                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                                    if (percent * 100 < 5) return null; 
-                                    return (
-                                    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="11px" fontWeight="medium">
-                                        {`${name} (${(percent * 100).toFixed(0)}%)`}
-                                    </text>
-                                    );
-                                }}
-                                outerRadius={100}
-                                fill="#8884d8"
-                                dataKey="value"
-                                nameKey="name"
-                            >
-                                {genderChartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
+                    <CardContent className="pt-4">
+                        <Table className="border rounded-md min-w-[500px]">
+                            <ShadcnUITableHeader className="bg-muted/50">
+                                <TableRow>
+                                    <TableHead className="font-semibold w-[80px]">Rank</TableHead>
+                                    <TableHead className="font-semibold">Student Name</TableHead>
+                                    <TableHead className="text-right font-semibold">Average (%)</TableHead>
+                                </TableRow>
+                            </ShadcnUITableHeader>
+                            <TableBody className="table-body-rankings">
+                                {rankedStudents.map((student) => (
+                                    <TableRow key={student.id}>
+                                        <TableCell className="font-bold text-lg">{student.rank || 'N/A'}</TableCell>
+                                        <TableCell>{student.studentName}</TableCell>
+                                        <TableCell className="text-right font-semibold">
+                                            {student.overallAverage !== undefined && student.overallAverage !== null ? student.overallAverage.toFixed(2) : 'N/A'}
+                                        </TableCell>
+                                    </TableRow>
                                 ))}
-                            </Pie>
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
-                            </RechartsPieChart>
-                        </ResponsiveContainer>
-                        </div>
-                        <Table className="border rounded-md bg-card min-w-[300px]">
-                        <ShadcnUITableHeader className="bg-muted/50">
-                            <TableRow>
-                            <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
-                            <TableHead className="text-center font-semibold py-2 px-3">Count</TableHead>
-                            <TableHead className="text-center font-semibold py-2 px-3">Overall Avg (%)</TableHead>
-                            </TableRow>
-                        </ShadcnUITableHeader>
-                        <TableBody>
-                            {classStats.genderStats.map(g => (
-                            <TableRow key={g.gender}>
-                                <TableCell className="font-medium py-2 px-3">{g.gender}</TableCell>
-                                <TableCell className="text-center py-2 px-3">{g.count}</TableCell>
-                                <TableCell className="text-center py-2 px-3">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell>
-                            </TableRow>
-                            ))}
-                        </TableBody>
+                            </TableBody>
                         </Table>
                     </CardContent>
+                  </Card>
+
+                  {historicalData.length > 1 && (
+                      <Card className="shadow-md print-hide-on-rankings">
+                          <CardHeader className="pb-3">
+                              <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><History className="mr-2 h-5 w-5"/>Term-over-Term Comparison</CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-4">
+                              <Table className="border rounded-md min-w-[500px]">
+                                  <ShadcnUITableHeader className="bg-muted/50">
+                                      <TableRow>
+                                          <TableHead className="font-semibold">Term</TableHead>
+                                          <TableHead className="text-center font-semibold"># Students</TableHead>
+                                          <TableHead className="text-center font-semibold">Class Average (%)</TableHead>
+                                      </TableRow>
+                                  </ShadcnUITableHeader>
+                                  <TableBody>
+                                      {historicalData.map(data => (
+                                          <TableRow key={data.term}>
+                                              <TableCell className="font-medium">{data.term}</TableCell>
+                                              <TableCell className="text-center">{data.numStudents}</TableCell>
+                                              <TableCell className="text-center">{data.classAverage?.toFixed(1) ?? 'N/A'}</TableCell>
+                                          </TableRow>
+                                      ))}
+                                  </TableBody>
+                              </Table>
+                          </CardContent>
+                      </Card>
+                  )}
+
+                  {classStats.subjectStats.length > 0 && (
+                    <Card className="shadow-md print-hide-on-rankings">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><TrendingUp className="mr-2 h-5 w-5 text-green-600" />Subject Performance ({mostRecentTerm})</CardTitle>
+                        <CardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject (Below Average &lt;40%, Average 40-59%, Above Average &ge;60%).</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <div data-testid="subject-barchart-container" className="h-[300px] min-w-[500px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={subjectPerformanceChartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                              <XAxis 
+                                dataKey="name" 
+                                angle={-35} 
+                                textAnchor="end" 
+                                height={80} 
+                                interval={0} 
+                                tick={{ fontSize: 10 }}
+                                tickFormatter={(name) => name.length > 12 ? `${name.slice(0, 12)}…` : name}
+                              />
+                              <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
+                              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', fillOpacity: 0.3 }} />
+                              <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
+                              <Bar dataKey="Below Average (<40%)" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} barSize={15} />
+                              <Bar dataKey="Average (40-59%)" fill="hsl(var(--primary) / 0.7)" radius={[4, 4, 0, 0]} barSize={15} />
+                              <Bar dataKey="Above Average (>=60%)" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} barSize={15} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <Table className="mt-6 border rounded-md min-w-[700px] bg-card">
+                          <ShadcnUITableHeader className="bg-muted/50">
+                            <TableRow>
+                              <TableHead className="font-semibold py-2 px-3">Subject</TableHead>
+                              <TableHead className="text-center font-semibold py-2 px-3">Class Avg (%)</TableHead>
+                              <TableHead className="text-center font-semibold py-2 px-3 text-red-600 dark:text-red-400">Below Avg (&lt;40%)</TableHead>
+                              <TableHead className="text-center font-semibold py-2 px-3 text-blue-600 dark:text-blue-400">Average (40-59%)</TableHead>
+                              <TableHead className="text-center font-semibold py-2 px-3 text-green-600 dark:text-green-400">Above Avg (&ge;60%)</TableHead>
+                            </TableRow>
+                          </ShadcnUITableHeader>
+                          <TableBody>
+                            {classStats.subjectStats.map(s => (
+                              <TableRow key={s.subjectName}>
+                                <TableCell className="font-medium py-2 px-3">{s.subjectName}</TableCell>
+                                <TableCell className="text-center py-2 px-3">{s.classAverageForSubject?.toFixed(1) || 'N/A'}</TableCell>
+                                <TableCell className="text-center py-2 px-3">{s.numBelowAverage}</TableCell>
+                                <TableCell className="text-center py-2 px-3">{s.numAverage}</TableCell>
+                                <TableCell className="text-center py-2 px-3">{s.numAboveAverage}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
                     </Card>
-                )}
-                
-                <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50 print-hide-on-rankings")}>
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-center border-b pb-2">
-                      <CardTitle className="text-lg font-semibold text-primary flex items-center">
-                          {isLoadingAi && !aiAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
-                          Pedagogical Insights &amp; Advice ({mostRecentTerm})
-                      </CardTitle>
-                      
-                        <Button variant="outline" size="sm" onClick={fetchAiInsights} disabled={isLoadingAi || !classStats}>
-                          <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingAi ? 'animate-spin' : ''}`} />
-                          {aiAdvice ? 'Regenerate' : 'Generate'}
-                        </Button>
-                      
-                    </div>
-                  </CardHeader>
-                  {renderAiInsights()}
-                </Card>
-              </>
-            )}
+                  )}
+
+                  {classStats.genderStats.length > 0 && (
+                  <Card className="shadow-md print-hide-on-rankings">
+                      <CardHeader className="pb-3">
+                          <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics ({mostRecentTerm})</CardTitle>
+                          <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center">
+                          <div data-testid="gender-piechart-container" className="h-[250px] min-w-[300px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                              <RechartsPieChart>
+                              <Pie
+                                  data={genderChartData}
+                                  cx="50%"
+                                  cy="50%"
+                                  labelLine={false}
+                                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
+                                      const RADIAN = Math.PI / 180;
+                                      const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+                                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                      if (percent * 100 < 5) return null; 
+                                      return (
+                                      <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="11px" fontWeight="medium">
+                                          {`${name} (${(percent * 100).toFixed(0)}%)`}
+                                      </text>
+                                      );
+                                  }}
+                                  outerRadius={100}
+                                  fill="#8884d8"
+                                  dataKey="value"
+                                  nameKey="name"
+                              >
+                                  {genderChartData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
+                                  ))}
+                              </Pie>
+                              <Tooltip content={<CustomTooltip />} />
+                              <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
+                              </RechartsPieChart>
+                          </ResponsiveContainer>
+                          </div>
+                          <Table className="border rounded-md bg-card min-w-[300px]">
+                          <ShadcnUITableHeader className="bg-muted/50">
+                              <TableRow>
+                              <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
+                              <TableHead className="text-center font-semibold py-2 px-3">Count</TableHead>
+                              <TableHead className="text-center font-semibold py-2 px-3">Overall Avg (%)</TableHead>
+                              </TableRow>
+                          </ShadcnUITableHeader>
+                          <TableBody>
+                              {classStats.genderStats.map(g => (
+                              <TableRow key={g.gender}>
+                                  <TableCell className="font-medium py-2 px-3">{g.gender}</TableCell>
+                                  <TableCell className="text-center py-2 px-3">{g.count}</TableCell>
+                                  <TableCell className="text-center py-2 px-3">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell>
+                              </TableRow>
+                              ))}
+                          </TableBody>
+                          </Table>
+                      </CardContent>
+                      </Card>
+                  )}
+                  
+                  <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50 print-hide-on-rankings")}>
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-center border-b pb-2">
+                        <CardTitle className="text-lg font-semibold text-primary flex items-center">
+                            {isLoadingAi && !aiAdvice ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> : <Brain className="mr-2 h-5 w-5 text-green-600" /> }
+                            Pedagogical Insights &amp; Advice ({mostRecentTerm})
+                        </CardTitle>
+                        
+                          <Button variant="outline" size="sm" onClick={fetchAiInsights} disabled={isLoadingAi || !classStats}>
+                            <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingAi ? 'animate-spin' : ''}`} />
+                            {aiAdvice ? 'Regenerate' : 'Generate'}
+                          </Button>
+                        
+                      </div>
+                    </CardHeader>
+                    {renderAiInsights()}
+                  </Card>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -740,4 +759,3 @@ export default function ClassPerformanceDashboard({
     </Dialog>
   );
 }
-
