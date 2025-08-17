@@ -462,7 +462,7 @@ export default function ClassPerformanceDashboard({
             <div className="watermark-container fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
                 <p 
                   className="font-bold transform -rotate-45 select-none text-gray-500/5 dark:text-gray-400/5"
-                  style={{ fontSize: 'clamp(2rem, 15vw, 8rem)', lineHeight: '1.2', wordBreak: 'break-word', color: 'hsla(0, 0%, 85%, 0.5)' }}
+                  style={{ fontSize: 'clamp(2rem, 15vw, 8rem)', lineHeight: '1.2', wordBreak: 'break-word' }}
                 >
                     {schoolNameProp}
                 </p>
@@ -659,7 +659,7 @@ export default function ClassPerformanceDashboard({
                           <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics ({mostRecentTerm})</CardTitle>
                           <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</CardDescription>
                       </CardHeader>
-                      <CardContent className="pt-4 table-container space-y-4">
+                      <CardContent className="pt-4 space-y-4">
                           <div data-testid="gender-piechart-container" className="h-[250px] w-full">
                           <ResponsiveContainer width="100%" height="100%">
                               <RechartsPieChart>
@@ -716,7 +716,7 @@ export default function ClassPerformanceDashboard({
                       </Card>
                   )}
                   
-                  <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50 print-hide-on-rankings")}>
+                  <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50")}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-center border-b pb-2">
                         <CardTitle className="text-lg font-semibold text-primary flex items-center">
@@ -726,7 +726,7 @@ export default function ClassPerformanceDashboard({
                         
                           <Button variant="outline" size="sm" onClick={fetchAiInsights} disabled={isLoadingAi || !classStats}>
                             <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingAi ? 'animate-spin' : ''}`} />
-                            {aiAdvice ? 'Regenerate' : 'Generate'}
+                            {aiAdvice ? 'Reload' : 'Generate'}
                           </Button>
                         
                       </div>
