@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useEffect, useMemo, useState, useTransition, useCallback } from 'react';
@@ -177,7 +176,7 @@ export default function SchoolPerformanceDashboard({
     
     const newHistoricalData = sortedTerms.map(term => {
         const termReports = reportsByTerm.get(term)!;
-        const avg = calculateOverallAverage(termReports.flatMap(r => r.subjects));
+        const avg = calculateOverallAverage(termReports.flatMap(r => r.subjects ?? []));
         const numClasses = new Set(termReports.map(r => r.className)).size;
         return {
             term: term,
@@ -203,7 +202,7 @@ export default function SchoolPerformanceDashboard({
 
         const schoolPerformances = Array.from(reportsBySchool.entries()).map(([schoolName, schoolReports]) => {
             const allAverages = schoolReports
-              .map(report => calculateOverallAverage(report.subjects))
+              .map(report => calculateOverallAverage(report.subjects ?? []))
               .filter(avg => avg !== null) as number[];
 
             const average = allAverages.length > 0
@@ -603,9 +602,9 @@ export default function SchoolPerformanceDashboard({
                               <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
                               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', fillOpacity: 0.3 }} />
                               <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
-                              <Bar dataKey="Below Average (<40%)" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} barSize={15} />
+                              <Bar dataKey="Below Average (&lt;40%)" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} barSize={15} />
                               <Bar dataKey="Average (40-59%)" fill="hsl(var(--primary) / 0.7)" radius={[4, 4, 0, 0]} barSize={15} />
-                              <Bar dataKey="Above Average (>=60%)" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} barSize={15} />
+                              <Bar dataKey="Above Average (&ge;60%)" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} barSize={15} />
                             </BarChart>
                           </ResponsiveContainer>
                         </div>
@@ -739,14 +738,16 @@ function aggregateSchoolDataForTerm(reports: ReportData[]): SchoolStatistics | n
 
     const totalStudentsInSchool = reports.length;
 
-    const schoolWideAverage = calculateOverallAverage(reports.flatMap(r => r.subjects));
+    const schoolWideAverage = calculateOverallAverage(reports.flatMap(r => r.subjects ?? []));
 
     const classDataMap: Map<string, ReportData[]> = new Map();
     reports.forEach(report => {
-        if (!classDataMap.has(report.className)) {
-            classDataMap.set(report.className, []);
+        if (report.className) {
+            if (!classDataMap.has(report.className)) {
+                classDataMap.set(report.className, []);
+            }
+            classDataMap.get(report.className)!.push(report);
         }
-        classDataMap.get(report.className)!.push(report);
     });
     
     const numberOfClassesRepresented = classDataMap.size;
@@ -754,12 +755,12 @@ function aggregateSchoolDataForTerm(reports: ReportData[]): SchoolStatistics | n
     const classSummariesForUI = Array.from(classDataMap.entries()).map(([className, classReports]) => ({
       className,
       numberOfStudents: classReports.length,
-      classAverage: calculateOverallAverage(classReports.flatMap(r => r.subjects)),
+      classAverage: calculateOverallAverage(classReports.flatMap(r => r.subjects ?? [])),
     }));
 
     const schoolSubjectScoresMap: Map<string, number[]> = new Map();
     reports.forEach(report => {
-        report.subjects.forEach(subject => {
+        (report.subjects ?? []).forEach(subject => {
             if (subject.subjectName && subject.subjectName.trim() !== '') {
                 const finalMark = calculateSubjectFinalMark(subject);
                 if (finalMark !== null && !Number.isNaN(finalMark)) {
@@ -786,7 +787,7 @@ function aggregateSchoolDataForTerm(reports: ReportData[]): SchoolStatistics | n
         if (!schoolGenderMap.has(gender)) {
             schoolGenderMap.set(gender, { scores: [], count: 0 });
         }
-        const studentAverage = calculateOverallAverage(report.subjects);
+        const studentAverage = calculateOverallAverage(report.subjects ?? []);
         if (studentAverage !== null) {
           schoolGenderMap.get(gender)!.scores.push(studentAverage);
         }
@@ -808,3 +809,5 @@ function aggregateSchoolDataForTerm(reports: ReportData[]): SchoolStatistics | n
         overallGenderStatsForSchoolUI,
     };
 }
+
+    
