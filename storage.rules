@@ -2,19 +2,16 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow any authenticated user to read all files.
-    // This is common for public assets like photos and logos.
+    // Allow read access to all files for any authenticated user
     match /{allPaths=**} {
       allow read: if request.auth != null;
     }
 
-    // Secure write operations for images.
-    // This rule allows any authenticated user to upload images
-    // up to 2MB to any path. It checks for file type and size.
-    match /{allPaths=**} {
-      allow write: if request.auth != null
-                   && request.resource.size < 2 * 1024 * 1024
-                   && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    // Allow writes on image files for authenticated users, with size and type validation
+    match /{allPaths=**}/{fileName} {
+      allow write: if request.auth != null &&
+                      request.resource.size < 2 * 1024 * 1024 &&
+                      (fileName.matches('([^\\s]+(\\.(?i)(jpg|jpeg|png|webp))$)'));
     }
   }
 }
