@@ -462,9 +462,9 @@ export default function ClassPerformanceDashboard({
           <div className="a4-page-simulation space-y-6 relative">
              {/* Watermark */}
             {schoolNameProp && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden watermark-container">
+              <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden watermark-container">
                   <p 
-                    className="font-bold text-gray-400/5 dark:text-gray-600/5 transform -rotate-45 select-none"
+                    className="font-bold text-gray-500/5 dark:text-gray-400/5 transform -rotate-45 select-none"
                     style={{
                         fontSize: 'clamp(2rem, 15vw, 8rem)',
                         lineHeight: '1.2',

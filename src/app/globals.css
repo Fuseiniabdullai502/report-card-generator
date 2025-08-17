@@ -323,7 +323,12 @@
     overflow: visible !important;
     background: white !important;
   }
-  
+
+  /* This ensures the fixed watermark is visible when printing the dashboard */
+  body.dashboard-printing-active .watermark-container {
+    position: fixed !important;
+  }
+
   body.dashboard-printing-active #class-dashboard-dialog-content,
   body.dashboard-printing-active #school-dashboard-dialog-content,
   body.dashboard-printing-active #ranking-print-content {
