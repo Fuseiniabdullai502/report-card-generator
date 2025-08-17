@@ -39,7 +39,7 @@ const nextConfig = {
         '@opentelemetry/instrumentation',
         '@opentelemetry/resources',
         '@opentelemetry/sdk-trace-base',
-        '@opentelemetry/sdk-node',
+        '@opentelemetry/sdk-trace-node',
         '@opentelemetry/semantic-conventions',
         'require-in-the-middle',
         'async_hooks',
