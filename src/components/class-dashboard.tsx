@@ -462,7 +462,7 @@ export default function ClassPerformanceDashboard({
             <div className="watermark-container fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
                 <p 
                   className="font-bold transform -rotate-45 select-none text-gray-500/5 dark:text-gray-400/5"
-                  style={{ fontSize: 'clamp(2rem, 15vw, 8rem)', lineHeight: '1.2', wordBreak: 'break-word' }}
+                  style={{ fontSize: 'clamp(2rem, 15vw, 8rem)', lineHeight: '1.2', wordBreak: 'break-word', color: 'hsla(0, 0%, 50%, 0.05)' }}
                 >
                     {schoolNameProp}
                 </p>
@@ -716,7 +716,7 @@ export default function ClassPerformanceDashboard({
                       </Card>
                   )}
                   
-                  <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50 print-hide-on-rankings")}>
+                  <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50 print-hide-on-rankings print-hide-on-dashboard")}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-center border-b pb-2">
                         <CardTitle className="text-lg font-semibold text-primary flex items-center">

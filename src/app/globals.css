@@ -451,7 +451,8 @@
   }
 
   body[data-print-target="dashboard"] .student-ranking-card,
-  body[data-print-target="dashboard"] .ranking-print-header {
+  body[data-print-target="dashboard"] .ranking-print-header,
+  body[data-print-target="dashboard"] .print-hide-on-dashboard {
     display: none !important;
   }
   
