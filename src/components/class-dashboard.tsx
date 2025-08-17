@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader as ShadcnUITableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, Users, TrendingUp, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, FolderDown, History, RefreshCw, Trophy } from 'lucide-react';
+import { BarChart3, Users, TrendingUp, PieChart as LucidePieChart, Brain, Printer, Loader2, AlertTriangle, Info, FolderDown, History, RefreshCw, Trophy, Youtube, Globe } from 'lucide-react';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar, PieChart as RechartsPieChart, Pie, Cell, type TooltipProps } from 'recharts';
 import { getAiClassInsightsAction } from '@/app/actions';
 import type { GenerateClassInsightsOutput, GenerateClassInsightsInput } from '@/ai/flows/generate-class-insights-flow';
@@ -352,11 +352,12 @@ export default function ClassPerformanceDashboard({
       );
     }
     if (aiAdvice) {
-       const { overallAssessment, strengths, areasForConcern, actionableAdvice } = aiAdvice;
+       const { overallAssessment, strengths, areasForConcern, actionableAdvice, recommendedResources } = aiAdvice;
        const hasContent = (overallAssessment && overallAssessment.trim() !== '') || 
                           (strengths && strengths.length > 0 && strengths.some(s => s.trim() !== '')) || 
                           (areasForConcern && areasForConcern.length > 0 && areasForConcern.some(a => a.trim() !== '')) || 
-                          (actionableAdvice && actionableAdvice.length > 0 && actionableAdvice.some(ad => ad.trim() !== ''));
+                          (actionableAdvice && actionableAdvice.length > 0 && actionableAdvice.some(ad => ad.trim() !== '')) ||
+                          (recommendedResources && recommendedResources.length > 0 && recommendedResources.some(res => !!res.url));
 
        if (!hasContent) {
         return (
@@ -404,6 +405,22 @@ export default function ClassPerformanceDashboard({
               <ul className="list-disc list-inside pl-2 whitespace-pre-wrap">
                 {actionableAdvice.filter(adv => adv.trim() !== '').map((adv, i) => <li key={`advice-${i}`}>{adv}</li>)}
               </ul>
+            </div>
+          )}
+          {recommendedResources && recommendedResources.length > 0 && (
+             <div>
+                <h4 className="font-semibold text-indigo-500 dark:text-indigo-400">Recommended Resources:</h4>
+                <ul className="space-y-2 mt-1">
+                    {recommendedResources.filter(r => r.url).map((res, i) => (
+                        <li key={`resource-${i}`} className="p-2 border-l-4 border-indigo-200 bg-indigo-500/10 rounded-r-md">
+                            <a href={res.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline flex items-center">
+                                {res.type === 'YouTube Channel' ? <Youtube className="mr-2 h-4 w-4 text-red-500" /> : <Globe className="mr-2 h-4 w-4 text-blue-500" />}
+                                {res.name}
+                            </a>
+                            <p className="text-xs text-muted-foreground pl-6">{res.description}</p>
+                        </li>
+                    ))}
+                </ul>
             </div>
           )}
         </CardContent>
@@ -654,66 +671,45 @@ export default function ClassPerformanceDashboard({
                   )}
 
                   {classStats.genderStats.length > 0 && (
-                  <Card className="shadow-md print-hide-on-rankings">
+                    <Card className="shadow-md print-hide-on-rankings">
                       <CardHeader className="pb-3">
                           <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics ({mostRecentTerm})</CardTitle>
                           <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</CardDescription>
                       </CardHeader>
                       <CardContent className="pt-4 space-y-4">
-                          <div data-testid="gender-piechart-container" className="h-[250px] w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                              <RechartsPieChart>
-                              <Pie
-                                  data={genderChartData}
-                                  cx="50%"
-                                  cy="50%"
-                                  labelLine={false}
-                                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
-                                      const RADIAN = Math.PI / 180;
-                                      const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
-                                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                                      if (percent * 100 < 5) return null; 
-                                      return (
-                                      <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="11px" fontWeight="medium">
-                                          {`${name} (${(percent * 100).toFixed(0)}%)`}
-                                      </text>
-                                      );
-                                  }}
-                                  outerRadius={100}
-                                  fill="#8884d8"
-                                  dataKey="value"
-                                  nameKey="name"
-                              >
-                                  {genderChartData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
-                                  ))}
-                              </Pie>
-                              <Tooltip content={<CustomTooltip />} />
-                              <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
-                              </RechartsPieChart>
-                          </ResponsiveContainer>
-                          </div>
-                          <Table className="border rounded-md bg-card">
-                          <ShadcnUITableHeader className="bg-muted/50">
-                              <TableRow>
-                              <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
-                              <TableHead className="text-center font-semibold py-2 px-3">Count</TableHead>
-                              <TableHead className="text-center font-semibold py-2 px-3">Overall Avg (%)</TableHead>
-                              </TableRow>
-                          </ShadcnUITableHeader>
-                          <TableBody>
-                              {classStats.genderStats.map(g => (
-                              <TableRow key={g.gender}>
-                                  <TableCell className="font-medium py-2 px-3">{g.gender}</TableCell>
-                                  <TableCell className="text-center py-2 px-3">{g.count}</TableCell>
-                                  <TableCell className="text-center py-2 px-3">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell>
-                              </TableRow>
-                              ))}
-                          </TableBody>
-                          </Table>
+                        <div className="space-y-4">
+                            <div data-testid="gender-piechart-container" className="h-[250px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RechartsPieChart>
+                                        <Pie data={genderChartData} cx="50%" cy="50%" labelLine={false} label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => { const RADIAN = Math.PI / 180; const radius = innerRadius + (outerRadius - innerRadius) * 0.55; const x = cx + radius * Math.cos(-midAngle * RADIAN); const y = cy + radius * Math.sin(-midAngle * RADIAN); if (percent * 100 < 5) return null; return (<text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="11px" fontWeight="medium">{`${name} (${(percent * 100).toFixed(0)}%)`}</text>);}} outerRadius={100} fill="#8884d8" dataKey="value" nameKey="name">
+                                            {genderChartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />))}
+                                        </Pie>
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
+                                    </RechartsPieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <Table className="border rounded-md bg-card">
+                                <ShadcnUITableHeader className="bg-muted/50">
+                                    <TableRow>
+                                        <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
+                                        <TableHead className="text-center font-semibold py-2 px-3">Count</TableHead>
+                                        <TableHead className="text-center font-semibold py-2 px-3">Overall Avg (%)</TableHead>
+                                    </TableRow>
+                                </ShadcnUITableHeader>
+                                <TableBody>
+                                    {classStats.genderStats.map(g => (
+                                        <TableRow key={g.gender}>
+                                            <TableCell className="font-medium py-2 px-3">{g.gender}</TableCell>
+                                            <TableCell className="text-center py-2 px-3">{g.count}</TableCell>
+                                            <TableCell className="text-center py-2 px-3">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                       </CardContent>
-                      </Card>
+                    </Card>
                   )}
                   
                   <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50")}>

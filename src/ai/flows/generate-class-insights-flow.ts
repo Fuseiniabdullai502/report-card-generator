@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow to generate insights and advice for a class based on performance data.
@@ -30,11 +31,19 @@ const GenerateClassInsightsInputSchema = z.object({
 });
 export type GenerateClassInsightsInput = z.infer<typeof GenerateClassInsightsInputSchema>;
 
+const RecommendedResourceSchema = z.object({
+  name: z.string().describe('The name of the recommended resource (e.g., "Khan Academy", "CrashCourse").'),
+  type: z.enum(['Website', 'YouTube Channel']).describe('The type of the resource.'),
+  url: z.string().url().describe('The full URL to the resource.'),
+  description: z.string().describe('A brief (1-sentence) explanation of why this resource is helpful for the identified areas of concern.'),
+});
+
 const GenerateClassInsightsOutputSchema = z.object({
   overallAssessment: z.string().describe('A general assessment of the class\'s performance.').optional(),
   strengths: z.array(z.string()).describe('Key strengths observed in the class.').optional(),
   areasForConcern: z.array(z.string()).describe('Areas that might need attention or improvement.').optional(),
   actionableAdvice: z.array(z.string()).describe('Specific, actionable advice for the teacher.').optional(),
+  recommendedResources: z.array(RecommendedResourceSchema).describe('A list of 2-3 recommended educational websites or YouTube channels to help address areas for concern.').optional(),
 });
 export type GenerateClassInsightsOutput = z.infer<typeof GenerateClassInsightsOutputSchema>;
 
@@ -71,6 +80,7 @@ Based on this data, provide:
 2. **Strengths**
 3. **Areas for Concern**
 4. **Actionable Advice**
+5. **Recommended Resources**: Based on the 'Areas for Concern', recommend 2-3 specific, high-quality, and well-known educational websites or YouTube channels (like Khan Academy, BBC Bitesize, CrashCourse, etc.) that could help the teacher and students. For each resource, provide its name, type (Website or YouTube Channel), a valid URL, and a brief description of its relevance.
 
 Format the output as JSON matching the GenerateClassInsightsOutputSchema.`,
   config: {
@@ -97,6 +107,7 @@ const generateClassInsightsFlow = ai.defineFlow(
         strengths: [],
         areasForConcern: [],
         actionableAdvice: [],
+        recommendedResources: [],
       };
     }
     return {
@@ -104,6 +115,7 @@ const generateClassInsightsFlow = ai.defineFlow(
       strengths: output.strengths || [],
       areasForConcern: output.areasForConcern || [],
       actionableAdvice: output.actionableAdvice || [],
+      recommendedResources: output.recommendedResources || [],
     };
   }
 );
