@@ -1,25 +1,19 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow public read access to all files
+    // Allow any authenticated user (including anonymous) to READ files.
+    // If you also want to block anonymous users from reading, we can restrict this.
     match /{allPaths=**} {
-      allow read;
+      allow read: if request.auth != null;
     }
 
-    // Allow writes only for authenticated users and for specific image types and sizes
-    match /student_photos/{imageId} {
-      allow write: if request.auth != null &&
-                      request.resource.size < 2 * 1024 * 1024 && // 2MB limit
-                      request.resource.contentType.matches('image/(jpeg|png|webp|jpg)');
-    }
-
-    // Allow writes for other images (like logos, signatures) under the same conditions
-    match /{other_images}/{imageId} {
-       allow write: if request.auth != null &&
-                      request.resource.size < 2 * 1024 * 1024 && // 2MB limit
-                      request.resource.contentType.matches('image/(jpeg|png|webp|jpg)');
+    // Allow only authenticated NON-anonymous users to WRITE images under 2MB.
+    match /{allPaths=**} {
+      allow write: if request.auth != null
+                   && !request.auth.token.firebase.sign_in_provider.matches('anonymous')
+                   && request.resource.size < 2 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|png|webp)');
     }
   }
 }
