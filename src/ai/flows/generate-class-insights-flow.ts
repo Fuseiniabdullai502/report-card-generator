@@ -34,7 +34,7 @@ export type GenerateClassInsightsInput = z.infer<typeof GenerateClassInsightsInp
 const RecommendedResourceSchema = z.object({
   name: z.string().describe('The name of the recommended resource (e.g., "Khan Academy", "CrashCourse").'),
   type: z.enum(['Website', 'YouTube Channel']).describe('The type of the resource.'),
-  url: z.string().url().describe('The full URL to the resource.'),
+  url: z.string().describe('The full URL to the resource.'),
   description: z.string().describe('A brief (1-sentence) explanation of why this resource is helpful for the identified areas of concern.'),
 });
 
