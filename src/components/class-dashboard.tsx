@@ -462,7 +462,7 @@ export default function ClassPerformanceDashboard({
             <div className="watermark-container fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
                 <p 
                   className="font-bold transform -rotate-45 select-none text-gray-500/5 dark:text-gray-400/5"
-                  style={{ fontSize: 'clamp(2rem, 15vw, 8rem)', lineHeight: '1.2', wordBreak: 'break-word', color: 'hsla(0, 0%, 50%, 0.05)' }}
+                  style={{ fontSize: 'clamp(2rem, 15vw, 8rem)', lineHeight: '1.2', wordBreak: 'break-word', color: 'hsla(0, 0%, 80%, 0.5)' }}
                 >
                     {schoolNameProp}
                 </p>
@@ -659,8 +659,8 @@ export default function ClassPerformanceDashboard({
                           <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics ({mostRecentTerm})</CardTitle>
                           <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</CardDescription>
                       </CardHeader>
-                      <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center table-container">
-                          <div data-testid="gender-piechart-container" className="h-[250px]">
+                      <CardContent className="pt-4 table-container space-y-4">
+                          <div data-testid="gender-piechart-container" className="h-[250px] w-full">
                           <ResponsiveContainer width="100%" height="100%">
                               <RechartsPieChart>
                               <Pie
