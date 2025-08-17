@@ -6,9 +6,6 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-// -------------------------
-// Input Schemas
-// -------------------------
 const SubjectPerformanceStatSchema = z.object({
   subjectName: z.string(),
   numBelowAverage: z.number().describe('Number of students performing below average (e.g., <40%)'),
@@ -33,38 +30,21 @@ const GenerateClassInsightsInputSchema = z.object({
 });
 export type GenerateClassInsightsInput = z.infer<typeof GenerateClassInsightsInputSchema>;
 
-// -------------------------
-// Output Schema (strict)
-// -------------------------
-const RecommendedResourceSchema = z.object({
-  name: z.string().describe('The name of the recommended resource (e.g., "Khan Academy", "CrashCourse").'),
-  type: z.enum(['Website', 'YouTube Channel']).describe('The type of the resource.'),
-  url: z.string().describe('The full URL to the resource.'),
-  description: z.string().describe('A brief (1-sentence) explanation of why this resource is helpful for the identified areas of concern.'),
-});
-
 const GenerateClassInsightsOutputSchema = z.object({
-  overallAssessment: z.string().describe("A general assessment of the class's performance."),
-  strengths: z.array(z.string()).describe('Key strengths observed in the class.'),
-  areasForConcern: z.array(z.string()).describe('Areas that might need attention or improvement.'),
-  actionableAdvice: z.array(z.string()).describe('Specific, actionable advice for the teacher.'),
-  recommendedResources: z.array(RecommendedResourceSchema).describe('A list of 2-3 recommended educational websites or YouTube channels to help address areas for concern.'),
+  overallAssessment: z.string().describe('A general assessment of the class\'s performance.').optional(),
+  strengths: z.array(z.string()).describe('Key strengths observed in the class.').optional(),
+  areasForConcern: z.array(z.string()).describe('Areas that might need attention or improvement.').optional(),
+  actionableAdvice: z.array(z.string()).describe('Specific, actionable advice for the teacher.').optional(),
 });
 export type GenerateClassInsightsOutput = z.infer<typeof GenerateClassInsightsOutputSchema>;
 
-// -------------------------
-// Public Entry Function
-// -------------------------
 export async function generateClassInsights(input: GenerateClassInsightsInput): Promise<GenerateClassInsightsOutput> {
   return generateClassInsightsFlow(input);
 }
 
-// -------------------------
-// Prompt Definition
-// -------------------------
 const prompt = ai.definePrompt({
   name: 'generateClassInsightsPrompt',
-  model: 'googleai/gemini-1.5-flash', // ⚡ fast model; switch to "gemini-1.5-pro" for deeper reasoning
+  model: 'gemini-1.5-flash',
   input: { schema: GenerateClassInsightsInputSchema },
   output: { schema: GenerateClassInsightsOutputSchema },
   prompt: `You are an experienced educational analyst and pedagogical advisor.
@@ -86,14 +66,13 @@ Gender Performance:
 - {{gender}}s: {{count}} students, Average Score: {{#if averageScore}}{{averageScore}}%{{else}}N/A{{/if}}
 {{/each}}
 
-Based on this data, you MUST provide:
-1. **Overall Assessment**: A general summary of the class's performance.
-2. **Strengths**: Identify subjects or trends where the class is performing well.
-3. **Areas for Concern**: CRITICAL - Analyze the data to find subjects where a significant number of students are below average or where the class average is low. Explicitly list these subjects or trends as areas for concern.
-4. **Actionable Advice for Teacher**: CRITICAL - For each 'Area for Concern' you identified, provide specific, practical, and actionable advice that a teacher can implement in the classroom to help students improve. For example, suggest teaching strategies, group activities, or focus areas.
-5. **Recommended Resources**: Based on the 'Areas for Concern', recommend 2-3 specific, high-quality, and well-known educational websites or YouTube channels (like Khan Academy, BBC Bitesize, CrashCourse, etc.) that could help the teacher and students. For each resource, provide its name, type (Website or YouTube Channel), a valid URL, and a brief description of its relevance.
+Based on this data, provide:
+1. **Overall Assessment**
+2. **Strengths**
+3. **Areas for Concern**
+4. **Actionable Advice**
 
-Ensure all output fields are present, using empty strings or empty arrays if no specific points can be made for a particular section. Format the output as JSON matching the GenerateClassInsightsOutputSchema.`,
+Format the output as JSON matching the GenerateClassInsightsOutputSchema.`,
   config: {
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
@@ -104,9 +83,6 @@ Ensure all output fields are present, using empty strings or empty arrays if no 
   },
 });
 
-// -------------------------
-// Flow Definition (with try/catch)
-// -------------------------
 const generateClassInsightsFlow = ai.defineFlow(
   {
     name: 'generateClassInsightsFlow',
@@ -114,24 +90,20 @@ const generateClassInsightsFlow = ai.defineFlow(
     outputSchema: GenerateClassInsightsOutputSchema,
   },
   async (input: GenerateClassInsightsInput) => {
-    try {
-      const { output } = await prompt(input);
-      return {
-        overallAssessment: output?.overallAssessment ?? '',
-        strengths: output?.strengths ?? [],
-        areasForConcern: output?.areasForConcern ?? [],
-        actionableAdvice: output?.actionableAdvice ?? [],
-        recommendedResources: output?.recommendedResources ?? [],
-      };
-    } catch (e) {
-      console.error('Error generating insights:', e);
+    const { output } = await prompt(input);
+    if (!output) {
       return {
         overallAssessment: '',
         strengths: [],
         areasForConcern: [],
         actionableAdvice: [],
-        recommendedResources: [],
       };
     }
+    return {
+      overallAssessment: output.overallAssessment || '',
+      strengths: output.strengths || [],
+      areasForConcern: output.areasForConcern || [],
+      actionableAdvice: output.actionableAdvice || [],
+    };
   }
 );
