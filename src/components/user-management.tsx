@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
@@ -958,7 +957,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
 
                     {isSuperAdmin && (role === 'big-admin' || role === 'admin' || role === 'user') && (
                       <>
-                        <div className="space-y-1"><Label htmlFor="region">Region</Label><Controller name="region" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('district', ''); setValue('circuit', ''); }} value={field.value || ''}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Select a region</SelectItem>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>)} /></div>
+                        <div className="space-y-1"><Label htmlFor="region">Region</Label><Controller name="region" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('district', ''); setValue('circuit', ''); }} value={field.value || ''}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>)} /></div>
                         <div className="space-y-1"><Label htmlFor="district">District/Municipal</Label><Controller name="district" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('circuit', ''); }} value={field.value || ''} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select>)} /></div>
                       </>
                     )}
@@ -1243,7 +1242,4 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
     );
 }
 
-  
-
-
-
+    
