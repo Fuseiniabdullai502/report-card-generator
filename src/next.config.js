@@ -43,7 +43,9 @@ const nextConfig = {
         '@opentelemetry/semantic-conventions',
         'require-in-the-middle',
         'async_hooks',
-        '@opentelemetry/exporter-jaeger'
+        '@opentelemetry/exporter-jaeger',
+        '@opentelemetry/exporter-trace-otlp-grpc',
+        'grpc'
       );
     }
     return config
