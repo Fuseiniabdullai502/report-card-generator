@@ -420,7 +420,7 @@ export default function SchoolPerformanceDashboard({
           <div className="a4-page-simulation space-y-6 relative">
             {/* Watermark */}
             {schoolNameProp && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden watermark-container">
                   <p 
                     className="font-bold text-gray-500/5 dark:text-gray-400/5 transform -rotate-45 select-none"
                     style={{
@@ -786,8 +786,9 @@ function aggregateSchoolDataForTerm(reports: ReportData[]): SchoolStatistics | n
         if (!schoolGenderMap.has(gender)) {
             schoolGenderMap.set(gender, { scores: [], count: 0 });
         }
-        if (report.overallAverage !== undefined && report.overallAverage !== null && !Number.isNaN(report.overallAverage)) {
-            schoolGenderMap.get(gender)!.scores.push(report.overallAverage);
+        const studentAverage = calculateOverallAverage(report.subjects);
+        if (studentAverage !== null) {
+          schoolGenderMap.get(gender)!.scores.push(studentAverage);
         }
         schoolGenderMap.get(gender)!.count++;
     });

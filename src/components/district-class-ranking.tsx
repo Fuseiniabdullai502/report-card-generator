@@ -77,7 +77,7 @@ export default function DistrictClassRankingDialog({
         <div id="school-ranking-card" className="relative">
           {/* Watermark */}
           {districtName && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden watermark-container">
                   <p 
                     className="font-bold text-gray-500/5 dark:text-gray-400/5 transform -rotate-45 select-none"
                     style={{

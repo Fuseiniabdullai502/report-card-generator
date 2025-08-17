@@ -164,6 +164,11 @@
     box-shadow: none !important;
   }
 
+  /* Main watermark style for printing */
+  .watermark-container > p {
+    color: #f0f0f0 !important; /* Very light gray for the watermark text */
+  }
+
   /* Hide the main application view when printing */
   .main-app-container {
     display: none !important;
@@ -480,6 +485,5 @@
   .school-ranking-print-header { display: block !important; text-align: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #ccc; }
   .school-ranking-print-header h2 { font-size: 1.25rem; font-weight: bold; color: black !important; }
   .school-ranking-print-header p { font-size: 0.875rem; color: black !important; }
-  #school-ranking-card .table th, #school-ranking-card .table td { padding: 4px 6px !important; font-size: 9pt !important; }
 }
     

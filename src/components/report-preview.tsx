@@ -177,7 +177,7 @@ export default function ReportPreview({ data, classTotal, subjectOrder }: Report
     <div id="printable-report-area" className={cn("a4-page-simulation flex flex-col text-sm relative", templateStyles.overallReportBorderClass)}>
       {/* Watermark */}
       {data.schoolName && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden watermark-container">
               <p 
                 className="font-bold text-gray-500/5 dark:text-gray-400/5 transform -rotate-45 select-none"
                 style={{
