@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useEffect, useMemo, useState, useTransition, useCallback } from 'react';
@@ -460,21 +459,14 @@ export default function ClassPerformanceDashboard({
           className="flex-1 min-h-0 overflow-y-auto p-4"
         >
           <div className="a4-page-simulation space-y-6 relative">
-             {/* Watermark */}
-            {schoolNameProp && (
-              <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden watermark-container">
-                  <p 
-                    className="font-bold text-gray-500/5 dark:text-gray-400/5 transform -rotate-45 select-none"
-                    style={{
-                        fontSize: 'clamp(2rem, 15vw, 8rem)',
-                        lineHeight: '1.2',
-                        wordBreak: 'break-word',
-                    }}
-                  >
-                      {schoolNameProp}
-                  </p>
-              </div>
-            )}
+            <div className="watermark-container fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+                <p 
+                  className="font-bold transform -rotate-45 select-none text-gray-500/5 dark:text-gray-400/5"
+                  style={{ fontSize: 'clamp(2rem, 15vw, 8rem)', lineHeight: '1.2', wordBreak: 'break-word' }}
+                >
+                    {schoolNameProp}
+                </p>
+            </div>
             
             <div className="relative z-10">
               <div className="dashboard-print-header">
@@ -555,8 +547,8 @@ export default function ClassPerformanceDashboard({
                         Students in this class ranked by their overall average for the term.
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-4">
-                        <Table className="border rounded-md min-w-[500px]">
+                    <CardContent className="pt-4 table-container">
+                        <Table className="border rounded-md">
                             <ShadcnUITableHeader className="bg-muted/50">
                                 <TableRow>
                                     <TableHead className="font-semibold w-[80px]">Rank</TableHead>
@@ -584,8 +576,8 @@ export default function ClassPerformanceDashboard({
                           <CardHeader className="pb-3">
                               <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><History className="mr-2 h-5 w-5"/>Term-over-Term Comparison</CardTitle>
                           </CardHeader>
-                          <CardContent className="pt-4">
-                              <Table className="border rounded-md min-w-[500px]">
+                          <CardContent className="pt-4 table-container">
+                              <Table className="border rounded-md">
                                   <ShadcnUITableHeader className="bg-muted/50">
                                       <TableRow>
                                           <TableHead className="font-semibold">Term</TableHead>
@@ -613,8 +605,8 @@ export default function ClassPerformanceDashboard({
                         <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><TrendingUp className="mr-2 h-5 w-5 text-green-600" />Subject Performance ({mostRecentTerm})</CardTitle>
                         <CardDescription className="text-xs text-muted-foreground pt-1">Distribution of students based on score bands per subject (Below Average &lt;40%, Average 40-59%, Above Average &ge;60%).</CardDescription>
                       </CardHeader>
-                      <CardContent className="pt-4">
-                        <div data-testid="subject-barchart-container" className="h-[300px] min-w-[500px]">
+                      <CardContent className="pt-4 table-container">
+                        <div data-testid="subject-barchart-container" className="h-[300px]">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={subjectPerformanceChartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                               <XAxis 
@@ -635,7 +627,7 @@ export default function ClassPerformanceDashboard({
                             </BarChart>
                           </ResponsiveContainer>
                         </div>
-                        <Table className="mt-6 border rounded-md min-w-[700px] bg-card">
+                        <Table className="mt-6 border rounded-md bg-card">
                           <ShadcnUITableHeader className="bg-muted/50">
                             <TableRow>
                               <TableHead className="font-semibold py-2 px-3">Subject</TableHead>
@@ -667,8 +659,8 @@ export default function ClassPerformanceDashboard({
                           <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><LucidePieChart className="mr-2 h-5 w-5 text-purple-600" />Gender Statistics ({mostRecentTerm})</CardTitle>
                           <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</CardDescription>
                       </CardHeader>
-                      <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center">
-                          <div data-testid="gender-piechart-container" className="h-[250px] min-w-[300px]">
+                      <CardContent className="pt-4 grid md:grid-cols-2 gap-6 items-center table-container">
+                          <div data-testid="gender-piechart-container" className="h-[250px]">
                           <ResponsiveContainer width="100%" height="100%">
                               <RechartsPieChart>
                               <Pie
@@ -702,7 +694,7 @@ export default function ClassPerformanceDashboard({
                               </RechartsPieChart>
                           </ResponsiveContainer>
                           </div>
-                          <Table className="border rounded-md bg-card min-w-[300px]">
+                          <Table className="border rounded-md bg-card">
                           <ShadcnUITableHeader className="bg-muted/50">
                               <TableRow>
                               <TableHead className="font-semibold py-2 px-3">Gender</TableHead>

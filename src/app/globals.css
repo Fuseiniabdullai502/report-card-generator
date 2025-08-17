@@ -391,6 +391,11 @@
   body.dashboard-printing-active .card-content {
     padding: 6px !important; 
   }
+  /* NEW: Remove horizontal padding from table containers on print */
+  body.dashboard-printing-active .card-content .table-container {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
 
    body.dashboard-printing-active .text-primary { color: #2c5282 !important; }
    body.dashboard-printing-active .text-accent { color: #276749 !important; }
