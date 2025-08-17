@@ -2,16 +2,16 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow read access to all files for any authenticated user
-    match /{allPaths=**} {
-      allow read: if request.auth != null;
-    }
-
-    // Allow writes on image files for authenticated users, with size and type validation
+    // Allow write access for common image types for any authenticated user
+    // This covers student photos, school logos, and signatures.
     match /{allPaths=**}/{fileName} {
       allow write: if request.auth != null &&
-                      request.resource.size < 2 * 1024 * 1024 &&
-                      (fileName.matches('([^\\s]+(\\.(?i)(jpg|jpeg|png|webp))$)'));
+                      (fileName.matches('.(jpg|jpeg|png|webp)$')) &&
+                      request.resource.size < 2 * 1024 * 1024;
+
+      // Allow anyone to read images. This is common for public assets like photos.
+      // If you need more restrictive read access, you can change this.
+      allow read;
     }
   }
 }
