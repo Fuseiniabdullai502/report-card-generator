@@ -23,29 +23,6 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (
-    config,
-    { isServer }
-  ) => {
-    if (isServer) {
-      config.externals.push(
-        'handlebars',
-        'express',
-        'firebase-admin',
-        'long',
-        '@opentelemetry/api',
-        '@opentelemetry/core',
-        '@opentelemetry/instrumentation',
-        '@opentelemetry/resources',
-        '@opentelemetry/sdk-trace-base',
-        '@opentelemetry/sdk-trace-node',
-        '@opentelemetry/semantic-conventions',
-        'require-in-the-middle',
-        'async_hooks'
-      );
-    }
-    return config
-  },
 };
 
 module.exports = nextConfig;
