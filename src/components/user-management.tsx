@@ -958,7 +958,7 @@ function CreateInviteDialog({ currentUser, onOpenChange, onInviteCreated }: { cu
 
                     {isSuperAdmin && (role === 'big-admin' || role === 'admin' || role === 'user') && (
                       <>
-                        <div className="space-y-1"><Label htmlFor="region">Region</Label><Controller name="region" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('district', ''); setValue('circuit', ''); }} value={field.value || ''}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>)} /></div>
+                        <div className="space-y-1"><Label htmlFor="region">Region</Label><Controller name="region" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('district', ''); setValue('circuit', ''); }} value={field.value || ''}><SelectTrigger id="region"><SelectValue placeholder="Select a region"/></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Select a region</SelectItem>{ghanaRegions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>)} /></div>
                         <div className="space-y-1"><Label htmlFor="district">District/Municipal</Label><Controller name="district" control={control} render={({ field }) => (<Select onValueChange={(val) => { field.onChange(val); setValue('circuit', ''); }} value={field.value || ''} disabled={!region}><SelectTrigger id="district"><SelectValue placeholder="Select a district"/></SelectTrigger><SelectContent>{availableDistricts.length > 0 ? availableDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>) : <SelectItem value="-" disabled>Select a region first</SelectItem>}</SelectContent></Select>)} /></div>
                       </>
                     )}
@@ -1099,7 +1099,7 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
                     {role === 'admin' && (isSuperAdmin || isBigAdmin) && (
                         <>
                             <div className="space-y-1"><Label>School Levels</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{schoolLevels.length > 0 ? schoolLevels.join(', ') : 'Select school levels'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{schoolLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={schoolLevels.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'schoolLevels')}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>
-                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory} onValueChange={val => setSchoolCategory(val as 'public' | 'private' | undefined)}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Select category...</SelectItem>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
+                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory || 'placeholder'} onValueChange={val => setSchoolCategory(val === 'placeholder' ? undefined : (val as 'public' | 'private'))}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Select category...</SelectItem>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
                         </>
                     )}
                     
@@ -1227,7 +1227,7 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
                     {role === 'admin' && (isSuperAdmin || isBigAdmin) && (
                         <>
                             <div className="space-y-1"><Label>School Levels</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{schoolLevels.length > 0 ? schoolLevels.join(', ') : 'Select school levels'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{schoolLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={schoolLevels.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'schoolLevels')}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>
-                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory || 'placeholder'} onValueChange={val => setSchoolCategory(val === 'placeholder' ? undefined : (val as 'public' | 'private'))}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Select category...</SelectItem>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
+                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory || ''} onValueChange={val => setSchoolCategory(val as 'public' | 'private' | undefined)}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
                         </>
                     )}
                     
@@ -1244,5 +1244,6 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
 }
 
   
+
 
 
