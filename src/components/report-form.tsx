@@ -24,6 +24,7 @@ import { storage } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { getClassLevel, getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
+import { resizeImage } from '@/lib/utils';
 
 
 interface ReportFormProps {
@@ -298,18 +299,27 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     });
   };
   
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
+    let file = input.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
         toast({ title: 'Invalid File', description: 'Please select an image.', variant: 'destructive' });
         return;
     }
+    
+    // Resize image if it's too large
     if (file.size > 2 * 1024 * 1024) { // 2MB limit
-        toast({ title: 'File Too Large', description: 'Image must be under 2MB.', variant: 'destructive' });
-        return;
+        try {
+            toast({ title: "Resizing Image", description: "The selected image is large and is being resized before upload." });
+            file = await resizeImage(file);
+        } catch (resizeError) {
+            console.error("Image resize error:", resizeError);
+            toast({ title: 'Resize Failed', description: 'Could not resize the image. Please try a smaller file.', variant: 'destructive' });
+            if (input) input.value = '';
+            return;
+        }
     }
 
     const storageRef = ref(storage, `student_photos/${formData.id}`);
@@ -338,7 +348,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                         errorMessage = "Upload was canceled.";
                         break;
                     case 'storage/object-not-found':
-                        errorMessage = "Storage bucket not found. Please ensure Firebase Storage is enabled in your project console.";
+                        errorMessage = "Storage not enabled. Please activate Firebase Storage in your project console.";
                         break;
                     case 'storage/unknown':
                         errorMessage = "An unknown storage error occurred. Please check the server logs and ensure Storage is enabled.";
@@ -347,7 +357,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
             }
             toast({ title: 'Upload Failed', description: errorMessage, variant: 'destructive', duration: 10000 });
             setImageUploadProgress(null);
-            try { if (input) input.value = ''; } catch(_){}
+            if (input) input.value = '';
         },
         async () => {
             // completed uploading - try to get a download URL and ALWAYS clear the progress state so the spinner disappears
@@ -361,7 +371,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
             } finally {
                 // ensure UI state resets even if getDownloadURL fails
                 setImageUploadProgress(null);
-                try { if (input) input.value = ''; } catch(_){}
+                if (input) input.value = '';
             }
         }
     );
@@ -765,5 +775,6 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     </>
   );
 }
+
 
 

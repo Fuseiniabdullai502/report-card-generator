@@ -31,7 +31,7 @@ import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
 import { db, storage } from '@/lib/firebase';
 import { doc, setDoc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -54,6 +54,7 @@ import {
 import { getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
 import { Textarea } from './ui/textarea';
 import { Progress } from './ui/progress';
+import { resizeImage } from '@/lib/utils';
 
 
 interface QuickEntryProps {
@@ -586,21 +587,30 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
     return { blob: new Blob([ab], { type: mimeString }), mimeType: mimeString };
   };
 
-  const handleImageUpload = (
+  const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     studentId: string
   ) => {
     const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
+    let file = input.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
       toast({ title: 'Invalid File', description: 'Please select an image.', variant: 'destructive' });
       return;
     }
+
+    // Resize image if it's too large
     if (file.size > 2 * 1024 * 1024) { // 2MB limit
-      toast({ title: 'File Too Large', description: 'Image must be under 2MB.', variant: 'destructive' });
-      return;
+      try {
+        toast({ title: "Resizing Image", description: "The selected image is large and is being resized before upload." });
+        file = await resizeImage(file);
+      } catch (resizeError) {
+        console.error("Image resize error:", resizeError);
+        toast({ title: 'Resize Failed', description: 'Could not resize the image. Please try a smaller file.', variant: 'destructive' });
+        if (input) input.value = '';
+        return;
+      }
     }
 
     const storageRef = ref(storage, `student_photos/${studentId}`);
@@ -627,7 +637,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                     errorMessage = "Upload was canceled.";
                     break;
                 case 'storage/object-not-found':
-                    errorMessage = "Storage bucket not found. Please ensure Firebase Storage is enabled in your project console.";
+                    errorMessage = "Storage not enabled. Please activate Firebase Storage in your project console.";
                     break;
                 case 'storage/unknown':
                     errorMessage = "An unknown storage error occurred. Please check the server logs and ensure Storage is enabled.";
@@ -676,7 +686,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
       try {
         const { blob } = dataUriToBlob(result.editedPhotoDataUri);
         const storageRef = ref(storage, `student_photos/${student.id}`);
-        await uploadBytes(storageRef, blob);
+        await uploadBytesResumable(storageRef, blob);
         const downloadURL = await getDownloadURL(storageRef);
         handleFieldChange(student.id, 'studentPhotoDataUri', downloadURL);
       } catch (storageError) {
