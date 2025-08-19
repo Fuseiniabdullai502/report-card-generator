@@ -19,8 +19,10 @@ import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
-import { db, auth } from '@/lib/firebase';
+import { db, auth, storage } from '@/lib/firebase';
 import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, setDoc, deleteDoc, writeBatch, where, getDocs } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
@@ -794,13 +796,27 @@ function AppContent({ user }: { user: CustomUser }) {
   ) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const originalDataUri = reader.result as string;
-        handleSessionDefaultChange(fieldName, originalDataUri);
-        toast({ title: "Image Uploaded", description: `Session ${fieldName === 'schoolLogoDataUri' ? 'logo' : 'signature'} updated.` });
-      };
-      reader.readAsDataURL(file);
+      const storagePath = fieldName === 'schoolLogoDataUri' ? 'school_logos' : 'signatures';
+      const uniqueId = fieldName === 'schoolLogoDataUri' 
+          ? sessionDefaults.schoolName || user.uid 
+          : user.uid;
+      const storageRef = ref(storage, `${storagePath}/${uniqueId}-${uuidv4()}`);
+      
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on(
+        'state_changed',
+        null,
+        (error) => {
+          console.error("Session image upload error:", error);
+          toast({ title: "Image Upload Failed", description: "Could not save the image. Check storage rules.", variant: "destructive" });
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          handleSessionDefaultChange(fieldName, downloadURL);
+          toast({ title: "Image Uploaded", description: `Session ${fieldName === 'schoolLogoDataUri' ? 'logo' : 'signature'} updated.` });
+        }
+      );
     }
     if(event.target) event.target.value = '';
   };
