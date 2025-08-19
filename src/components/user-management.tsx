@@ -1009,6 +1009,7 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
     
     const isSuperAdmin = currentUser.role === 'super-admin';
     const isBigAdmin = currentUser.role === 'big-admin';
+    const isAdmin = currentUser.role === 'admin';
 
     useEffect(() => {
         if (region) setAvailableDistricts(ghanaRegionsAndDistricts[region]?.sort() || []);
@@ -1095,10 +1096,10 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
                         </>
                     )}
                      
-                    {role === 'admin' && (isSuperAdmin || isBigAdmin) && (
+                    {role === 'admin' && (isSuperAdmin || isBigAdmin || isAdmin) && (
                         <>
-                            <div className="space-y-1"><Label>School Levels</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{schoolLevels.length > 0 ? schoolLevels.join(', ') : 'Select school levels'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{schoolLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={schoolLevels.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'schoolLevels')}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>
-                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory || 'placeholder'} onValueChange={val => setSchoolCategory(val === 'placeholder' ? undefined : (val as 'public' | 'private'))}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Select category...</SelectItem>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
+                            <div className="space-y-1"><Label>School Levels</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between" disabled={isAdmin}><span className="truncate">{schoolLevels.length > 0 ? schoolLevels.join(', ') : 'Select school levels'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{schoolLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={schoolLevels.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'schoolLevels')}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>
+                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory || 'placeholder'} onValueChange={val => setSchoolCategory(val === 'placeholder' ? undefined : (val as 'public' | 'private'))} disabled={isAdmin}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Select category...</SelectItem>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
                         </>
                     )}
                     
