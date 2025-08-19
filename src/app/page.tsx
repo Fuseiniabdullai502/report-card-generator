@@ -96,7 +96,7 @@ function AppContent({ user }: { user: CustomUser }) {
   const [isImportStudentsDialogOpen, setIsImportStudentsDialogOpen] = useState(false);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
   
-  const [isSessionControlsVisible, setIsSessionControlsVisible] = useState(false);
+  const [isSessionControlsVisible, setIsSessionControlsVisible] = useState(true);
   const [isReportFormVisible, setIsReportFormVisible] = useState(false);
   const [isPreviewVisible, setIsPreviewVisible] = useState(true);
   
