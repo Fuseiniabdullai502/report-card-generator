@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
@@ -523,7 +524,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                         <SelectContent>
                             <SelectItem value="all_years">All Years</SelectItem>
                             {allAvailableYears.map(year => (
-                              <SelectItem key={year} value={year || ' '}>{year}</SelectItem>
+                              <SelectItem key={year} value={year}>{year}</SelectItem>
                             ))}
                         </SelectContent>
                         </Select>
@@ -537,7 +538,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                         <SelectContent>
                             <SelectItem value="all_terms">All Terms</SelectItem>
                             {allAvailableTerms.map(term => (
-                              <SelectItem key={term} value={term || ' '}>{term}</SelectItem>
+                              <SelectItem key={term} value={term}>{term}</SelectItem>
                             ))}
                         </SelectContent>
                         </Select>
@@ -552,7 +553,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                             <SelectItem value="overall">Overall Performance</SelectItem>
                             {availableSubjectsForClass.length > 0 ? (
                                 availableSubjectsForClass.map(subject => (
-                                  <SelectItem key={subject} value={subject || ' '}>{subject}</SelectItem>
+                                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                                 ))
                             ) : (
                                 <SelectItem value="no_subjects" disabled>No subjects for this class</SelectItem>
@@ -1099,7 +1100,7 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
                     {role === 'admin' && (isSuperAdmin || isBigAdmin || isAdmin) && (
                         <>
                             <div className="space-y-1"><Label>School Levels</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between" disabled={isAdmin}><span className="truncate">{schoolLevels.length > 0 ? schoolLevels.join(', ') : 'Select school levels'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{schoolLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={schoolLevels.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'schoolLevels')}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>
-                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory || 'placeholder'} onValueChange={val => setSchoolCategory(val === 'placeholder' ? undefined : (val as 'public' | 'private'))} disabled={isAdmin}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Select category...</SelectItem>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
+                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory || undefined} onValueChange={val => setSchoolCategory(val as 'public' | 'private' | undefined)} disabled={isAdmin}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Select category...</SelectItem>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
                         </>
                     )}
                     
@@ -1227,7 +1228,7 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
                     {role === 'admin' && (isSuperAdmin || isBigAdmin) && (
                         <>
                             <div className="space-y-1"><Label>School Levels</Label><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="truncate">{schoolLevels.length > 0 ? schoolLevels.join(', ') : 'Select school levels'}</span><ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]"><ScrollArea className="h-[200px]">{schoolLevels.map(c => (<DropdownMenuCheckboxItem key={c} checked={schoolLevels.includes(c)} onCheckedChange={checked => handleMultiSelectChange(c, Boolean(checked), 'schoolLevels')}>{c}</DropdownMenuCheckboxItem>))}</ScrollArea></DropdownMenuContent></DropdownMenu></div>
-                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory || 'placeholder'} onValueChange={val => setSchoolCategory(val === 'placeholder' ? undefined : (val as 'public' | 'private'))}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Select category...</SelectItem>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
+                            <div className="space-y-1"><Label>School Category</Label><Select value={schoolCategory || undefined} onValueChange={val => setSchoolCategory(val as 'public' | 'private' | undefined)}><SelectTrigger><SelectValue placeholder="Select category..."/></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Select category...</SelectItem>{schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
                         </>
                     )}
                     

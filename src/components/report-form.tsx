@@ -547,7 +547,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                 {/* Gender */}
                 <div className="space-y-2">
                     <Label className="flex items-center"><VenetianMask className="mr-2 h-4 w-4 text-primary" />Gender</Label>
-                    <Select value={formData.gender || ''} onValueChange={value => handleSelectChange('gender', value)}>
+                    <Select value={formData.gender || undefined} onValueChange={value => handleSelectChange('gender', value)}>
                         <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
                         <SelectContent>
                             {genderOptions.map(option => <SelectItem key={option} value={option}>{option}</SelectItem>)}
@@ -587,7 +587,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                  {isPromotionStatusApplicable && (
                     <div className="space-y-2">
                         <Label className="flex items-center"><Medal className="mr-2 h-4 w-4 text-primary" />Promotion Status</Label>
-                        <Select value={formData.promotionStatus || ''} onValueChange={value => handleSelectChange('promotionStatus', value)}>
+                        <Select value={formData.promotionStatus || undefined} onValueChange={value => handleSelectChange('promotionStatus', value)}>
                             <SelectTrigger><SelectValue placeholder="Select promotion status" /></SelectTrigger>
                             <SelectContent>
                                 {promotionStatusOptions.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
@@ -660,20 +660,21 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                         <div className="grid grid-cols-1 md:grid-cols-[3fr_1.5fr_1.5fr] gap-4 items-start">
                             <div className="space-y-2">
                                 <Label className="flex items-center"><BookOpenText className="mr-2 h-4 w-4 text-primary"/>Subject Name</Label>
-                                <Select value={formData.subjects[currentVisibleSubjectIndex].subjectName || ''} onValueChange={value => {
+                                <Select value={formData.subjects[currentVisibleSubjectIndex].subjectName || '_placeholder_'} onValueChange={value => {
                                     if(value === ADD_CUSTOM_SUBJECT_VALUE) {
                                         setCurrentCustomSubjectTargetIndex(currentVisibleSubjectIndex);
                                         setIsCustomSubjectDialogOpen(true);
                                     } else {
-                                        handleSubjectChange(currentVisibleSubjectIndex, 'subjectName', value);
+                                        handleSubjectChange(currentVisibleSubjectIndex, 'subjectName', value === '_placeholder_' ? '' : value);
                                     }
                                 }}>
                                     <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="_placeholder_" disabled>Select Subject</SelectItem>
                                         {allAvailableSubjects.map(s => (
                                           <SelectItem 
                                             key={s} 
-                                            value={s || ' '}
+                                            value={s}
                                             disabled={usedSubjectNames.has(s) && s !== formData.subjects[currentVisibleSubjectIndex].subjectName}
                                           >
                                             {s}
