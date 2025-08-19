@@ -509,7 +509,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                         </SelectTrigger>
                         <SelectContent>
                             {classLevels.map(level => (
-                            <SelectItem key={level} value={level}>{level}</SelectItem>
+                            <SelectItem key={level} value={level || ' '}>{level}</SelectItem>
                             ))}
                         </SelectContent>
                         </Select>
@@ -523,7 +523,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                         <SelectContent>
                             <SelectItem value="all_years">All Years</SelectItem>
                             {allAvailableYears.map(year => (
-                              <SelectItem key={year} value={year}>{year}</SelectItem>
+                              <SelectItem key={year} value={year || ' '}>{year}</SelectItem>
                             ))}
                         </SelectContent>
                         </Select>
@@ -537,7 +537,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                         <SelectContent>
                             <SelectItem value="all_terms">All Terms</SelectItem>
                             {allAvailableTerms.map(term => (
-                              <SelectItem key={term} value={term}>{term}</SelectItem>
+                              <SelectItem key={term} value={term || ' '}>{term}</SelectItem>
                             ))}
                         </SelectContent>
                         </Select>
@@ -552,7 +552,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                             <SelectItem value="overall">Overall Performance</SelectItem>
                             {availableSubjectsForClass.length > 0 ? (
                                 availableSubjectsForClass.map(subject => (
-                                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                                  <SelectItem key={subject} value={subject || ' '}>{subject}</SelectItem>
                                 ))
                             ) : (
                                 <SelectItem value="no_subjects" disabled>No subjects for this class</SelectItem>
@@ -693,7 +693,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                     <CardContent>
                         <div className="mb-4 max-w-xs">
                         <Label htmlFor="subject-analysis-class">Select a Class</Label>
-                        <Select value={subjectAnalysisClass} onValueChange={setSubjectAnalysisClass}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{allAvailableClasses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                        <Select value={subjectAnalysisClass} onValueChange={setSubjectAnalysisClass}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{allAvailableClasses.map(c => <SelectItem key={c} value={c || ' '}>{c}</SelectItem>)}</SelectContent></Select>
                         </div>
                         {subjectPerformanceForClass.length > 0 ? (
                             <Table>

@@ -648,7 +648,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                                         {allAvailableSubjects.map(s => (
                                           <SelectItem 
                                             key={s} 
-                                            value={s}
+                                            value={s || ' '}
                                             disabled={usedSubjectNames.has(s) && s !== formData.subjects[currentVisibleSubjectIndex].subjectName}
                                           >
                                             {s}
