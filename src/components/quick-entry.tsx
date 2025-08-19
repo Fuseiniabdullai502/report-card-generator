@@ -618,19 +618,23 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
         console.error('Image upload error:', error);
         let errorMessage = "Could not save the image. This can happen if the network connection is interrupted.";
         if (typeof error === 'object' && error !== null && 'code' in error) {
-            switch ((error as any).code) {
+            const errorCode = (error as any).code;
+            switch (errorCode) {
                 case 'storage/unauthorized':
                     errorMessage = "Permission denied. Please check your Firebase Storage security rules to allow writes.";
                     break;
                 case 'storage/canceled':
                     errorMessage = "Upload was canceled.";
                     break;
+                case 'storage/object-not-found':
+                    errorMessage = "Storage bucket not found. Please ensure Firebase Storage is enabled in your project console.";
+                    break;
                 case 'storage/unknown':
-                    errorMessage = "An unknown storage error occurred. Please check the server logs.";
+                    errorMessage = "An unknown storage error occurred. Please check the server logs and ensure Storage is enabled.";
                     break;
             }
         }
-        toast({ title: 'Upload Failed', description: errorMessage, variant: 'destructive' });
+        toast({ title: 'Upload Failed', description: errorMessage, variant: 'destructive', duration: 10000 });
         setImageUploadStatus(prev => ({ ...prev, [studentId]: null }));
         if (input) input.value = '';
       },
