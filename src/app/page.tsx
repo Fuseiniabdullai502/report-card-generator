@@ -220,16 +220,16 @@ function AppContent({ user }: { user: CustomUser }) {
     });
     
     // For 'user' role, filter class list to only assigned classes
-    let userVisibleClasses = Array.from(classes).sort();
+    let userVisibleClasses = Array.from(classes).filter(Boolean).sort();
     if (isRegularUser && user.classNames) {
-        userVisibleClasses = user.classNames;
+        userVisibleClasses = user.classNames.filter(Boolean);
     }
 
     return {
-        schools: ['all', ...Array.from(schools).sort()],
+        schools: ['all', ...Array.from(schools).filter(Boolean).sort()],
         classes: ['all', ...userVisibleClasses],
-        years: ['all', ...Array.from(years).sort()],
-        terms: ['all', ...Array.from(terms).sort()],
+        years: ['all', ...Array.from(years).filter(Boolean).sort()],
+        terms: ['all', ...Array.from(terms).filter(Boolean).sort()],
     };
   }, [allRankedReports, isRegularUser, user.classNames]);
 
@@ -1177,7 +1177,7 @@ function AppContent({ user }: { user: CustomUser }) {
                           <Select value={sessionDefaults.schoolCategory || ''} onValueChange={value => handleSessionDefaultChange('schoolCategory', value)}>
                               <SelectTrigger id="sessionSchoolCategory"><SelectValue placeholder="Select category..."/></SelectTrigger>
                               <SelectContent>
-                                  <SelectItem value="" disabled>Select category...</SelectItem>
+                                  <SelectItem value="placeholder" disabled>Select category...</SelectItem>
                                   {schoolCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                               </SelectContent>
                           </Select>

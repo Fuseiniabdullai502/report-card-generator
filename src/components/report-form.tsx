@@ -547,7 +547,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                 {/* Gender */}
                 <div className="space-y-2">
                     <Label className="flex items-center"><VenetianMask className="mr-2 h-4 w-4 text-primary" />Gender</Label>
-                    <Select value={formData.gender || undefined} onValueChange={value => handleSelectChange('gender', value)}>
+                    <Select value={formData.gender || ''} onValueChange={value => handleSelectChange('gender', value)}>
                         <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
                         <SelectContent>
                             {genderOptions.map(option => <SelectItem key={option} value={option}>{option}</SelectItem>)}
@@ -587,7 +587,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                  {isPromotionStatusApplicable && (
                     <div className="space-y-2">
                         <Label className="flex items-center"><Medal className="mr-2 h-4 w-4 text-primary" />Promotion Status</Label>
-                        <Select value={formData.promotionStatus || undefined} onValueChange={value => handleSelectChange('promotionStatus', value)}>
+                        <Select value={formData.promotionStatus || ''} onValueChange={value => handleSelectChange('promotionStatus', value)}>
                             <SelectTrigger><SelectValue placeholder="Select promotion status" /></SelectTrigger>
                             <SelectContent>
                                 {promotionStatusOptions.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
@@ -776,6 +776,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     </>
   );
 }
+
 
 
 

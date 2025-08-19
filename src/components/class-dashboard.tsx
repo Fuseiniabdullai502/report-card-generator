@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useEffect, useMemo, useState, useTransition, useCallback } from 'react';
@@ -451,7 +452,7 @@ export default function ClassPerformanceDashboard({
               <BarChart3 className="mr-3 h-6 w-6" />
               Class Dashboard: {schoolNameProp}
             </ShadcnDialogTitle>
-            <Select value={selectedClass} onValueChange={setSelectedClass} disabled={availableClasses.length === 0}>
+            <Select value={selectedClass || ''} onValueChange={setSelectedClass} disabled={availableClasses.length === 0}>
               <SelectTrigger className="w-full sm:w-[250px]" title="Select a class to view its dashboard">
                   <div className="flex items-center gap-2">
                       <FolderDown className="h-4 w-4 text-primary" />
