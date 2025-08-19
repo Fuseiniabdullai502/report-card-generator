@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -617,10 +616,9 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
       },
       async (error) => {
         console.error('Image upload error:', error);
-        try { await deleteObject(storageRef); } catch {}
         let errorMessage = "Could not save the image. This can happen if the network connection is interrupted.";
         if (typeof error === 'object' && error !== null && 'code' in error) {
-            switch (error.code) {
+            switch ((error as any).code) {
                 case 'storage/unauthorized':
                     errorMessage = "Permission denied. Please check your Firebase Storage security rules to allow writes.";
                     break;
@@ -1340,3 +1338,5 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
         </Dialog>
     );
 }
+
+    
