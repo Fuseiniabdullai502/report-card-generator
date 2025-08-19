@@ -21,7 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { calculateOverallAverage } from '@/lib/calculations';
 import { storage } from '@/lib/firebase';
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { getClassLevel, getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
 
@@ -279,7 +279,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
        if (result.success && result.editedPhotoDataUri) {
           try {
             const { blob } = dataUriToBlob(result.editedPhotoDataUri);
-            const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+            const storageRef = ref(storage, `student_photos/${formData.id}`);
             await uploadBytesResumable(storageRef, blob);
             const downloadURL = await getDownloadURL(storageRef);
             onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
@@ -312,23 +312,24 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
         return;
     }
 
-    const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+    const storageRef = ref(storage, `student_photos/${formData.id}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
+    // start showing upload UI
     setImageUploadProgress(0);
 
     uploadTask.on(
         'state_changed',
         (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            // protect against division by zero
+            const progress = snapshot.totalBytes ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100) : 0;
             setImageUploadProgress(progress);
         },
         async (error) => {
             console.error('Image upload error:', error);
-            try { await deleteObject(storageRef); } catch {}
             let errorMessage = "Could not save the image. This can happen if the network connection is interrupted.";
             if (typeof error === 'object' && error !== null && 'code' in error) {
-                switch (error.code) {
+                switch ((error as any).code) {
                     case 'storage/unauthorized':
                         errorMessage = "Permission denied. Please check your Firebase Storage security rules to allow writes.";
                         break;
@@ -342,14 +343,22 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
             }
             toast({ title: 'Upload Failed', description: errorMessage, variant: 'destructive' });
             setImageUploadProgress(null);
-            if (input) input.value = '';
+            try { if (input) input.value = ''; } catch(_){}
         },
         async () => {
-            const downloadURL = await getDownloadURL(storageRef);
-            onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
-            toast({ title: "Image Uploaded Successfully" });
-            setImageUploadProgress(null);
-            if (input) input.value = '';
+            // completed uploading - try to get a download URL and ALWAYS clear the progress state so the spinner disappears
+            try {
+                const downloadURL = await getDownloadURL(storageRef);
+                onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
+                toast({ title: "Image Uploaded Successfully" });
+            } catch (err) {
+                console.error('Error getting download URL after upload:', err);
+                toast({ title: 'Upload Completed (No URL)', description: 'The file uploaded but a download URL could not be retrieved. Check your Storage rules and permissions.', variant: 'destructive' });
+            } finally {
+                // ensure UI state resets even if getDownloadURL fails
+                setImageUploadProgress(null);
+                try { if (input) input.value = ''; } catch(_){}
+            }
         }
     );
   };
@@ -578,7 +587,8 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                  <div className="space-y-2">
                     <Label className="flex items-center"><ImageUp className="mr-2 h-4 w-4 text-primary" />Student Photo</Label>
                     <div className="flex items-center gap-2">
-                        <input type="file" id="studentPhotoUpload" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleImageUpload} disabled={isUploading} />
+                        {/* changed to sr-only so programmatic click works reliably in browsers */}
+                        <input type="file" id="studentPhotoUpload" className="sr-only" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
                         <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()} disabled={isUploading}>
                             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4 text-blue-500" />}
                              {isUploading ? 'Uploading...' : 'Upload'}
@@ -607,7 +617,8 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                     )}
                     {formData.studentPhotoDataUri && !isUploading && (
                       <div className="relative w-24 h-32 mt-2 rounded border p-1">
-                        <NextImage src={formData.studentPhotoDataUri} alt="student" layout="fill" className="object-cover rounded" />
+                        {/* use NextImage fill prop (Next.js >=13) instead of deprecated layout="fill" */}
+                        <NextImage src={formData.studentPhotoDataUri} alt="student" fill className="object-cover rounded" />
                         {(isImageEditingAiLoading || isUploading) && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
                             <Loader2 className="h-6 w-6 animate-spin text-white" />
@@ -750,3 +761,4 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     </>
   );
 }
+

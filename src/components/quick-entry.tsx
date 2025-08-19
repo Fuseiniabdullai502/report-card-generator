@@ -603,7 +603,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
       return;
     }
 
-    const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+    const storageRef = ref(storage, `student_photos/${studentId}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
     setImageUploadStatus(prev => ({ ...prev, [studentId]: 0 }));
@@ -671,7 +671,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
     if (result.success && result.editedPhotoDataUri) {
       try {
         const { blob } = dataUriToBlob(result.editedPhotoDataUri);
-        const storageRef = ref(storage, `student_photos/${uuidv4()}`);
+        const storageRef = ref(storage, `student_photos/${student.id}`);
         await uploadBytes(storageRef, blob);
         const downloadURL = await getDownloadURL(storageRef);
         handleFieldChange(student.id, 'studentPhotoDataUri', downloadURL);
