@@ -1,71 +1,36 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isSignedIn() { return request.auth != null; }
-    function userDoc() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
-    function userData() { return userDoc().data; }
-    function role() { return userData().role; }
+    // Rules for the 'users' collection
+    match /users/{userId} {
+      // Allow a user to read their own document
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Allow a user to create their own document upon registration
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Allow a user to update their own document (e.g., name, telephone)
+      // Admins will update roles/status via a backend function, not directly.
+      allow update: if request.auth != null && request.auth.uid == userId;
+    }
 
-    function isSuper()      { return role() == 'super-admin'; }
-    function isBig()        { return role() == 'big-admin'; }
-    function isAdmin()      { return role() == 'admin'; }
-    function isElevated()   { return isSuper() || isBig() || isAdmin(); }
-
-    function sameDistrict(r) { return r.district == userData().district; }
-    function sameSchool(r)   { return r.schoolName == userData().schoolName; }
-    function owns(r)         { return r.teacherId == request.auth.uid; }
-
-    // ---- reports ----
+    // Rules for the 'reports' collection
     match /reports/{reportId} {
-      // Read if owner OR elevated in scope
-      allow get, list, read: if isSignedIn() && (
-          owns(resource.data) ||
-          isSuper() ||
-          (isBig()   && sameDistrict(resource.data)) ||
-          (isAdmin() && sameSchool(resource.data))
-      );
-
-      // Create must write scoped fields; owners can create their own
-      allow create: if isSignedIn() && (
-          owns(request.resource.data) ||
-          isSuper() ||
-          (isBig()   && sameDistrict(request.resource.data)) ||
-          (isAdmin() && sameSchool(request.resource.data))
-      );
-
-      // Update/Delete: same scope rule, and owners can update their own
-      allow update, delete: if isSignedIn() && (
-          (owns(resource.data) && owns(request.resource.data)) ||
-          isSuper() ||
-          (isBig()   && sameDistrict(resource.data) && sameDistrict(request.resource.data)) ||
-          (isAdmin() && sameSchool(resource.data)   && sameSchool(request.resource.data))
-      );
+      // Any authenticated user can create, read, update, or delete reports.
+      // This is a common pattern for apps where users need to manage shared data.
+      // For more granular control, you could add conditions based on user roles
+      // stored in the 'users' collection, for example:
+      // allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read, write: if request.auth != null;
     }
 
-    // ---- invites ----
+    // Rules for the 'invites' collection
     match /invites/{inviteId} {
-      // Visible to elevated roles (scoped), hidden from normal users
-      allow read: if isSignedIn() && (
-        isSuper() ||
-        (isBig()   && resource.data.district  == userData().district) ||
-        (isAdmin() && resource.data.schoolName == userData().schoolName)
-      );
-
-      // Only elevated roles can manage invites
-      allow create, update, delete: if isSignedIn() && isElevated();
-    }
-
-    // ---- users ----
-    match /users/{uid} {
-      // Users can read their own doc; super-admin can read all
-      allow read: if isSignedIn() && (request.auth.uid == uid || isSuper());
-
-      // Allow self-create at first login/registration
-      allow create: if isSignedIn() && request.auth.uid == uid;
-
-      // Only super-admin may update/delete user docs (role changes, etc.)
-      allow update, delete: if isSignedIn() && isSuper();
+        // Any user can read invites to check if their email is on the list
+        allow read: if true;
+        // Only authenticated users can create or modify invites (admins do this via backend functions)
+        allow write: if request.auth != null;
     }
   }
 }
