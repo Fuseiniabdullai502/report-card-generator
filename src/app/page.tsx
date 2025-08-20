@@ -795,30 +795,40 @@ function AppContent({ user }: { user: CustomUser }) {
     fieldName: keyof Pick<ReportData, 'schoolLogoDataUri' | 'headMasterSignatureDataUri'>
   ) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const storagePath = fieldName === 'schoolLogoDataUri' ? 'school_logos' : 'signatures';
-      const uniqueId = fieldName === 'schoolLogoDataUri' 
-          ? sessionDefaults.schoolName || user.uid 
-          : user.uid;
-      const storageRef = ref(storage, `${storagePath}/${uniqueId}-${uuidv4()}`);
-      
-      const uploadTask = uploadBytesResumable(storageRef, file);
+    if (!file) return;
 
-      uploadTask.on(
-        'state_changed',
-        null,
-        (error) => {
-          console.error("Session image upload error:", error);
-          toast({ title: "Image Upload Failed", description: "Could not save the image. Check storage rules.", variant: "destructive" });
-        },
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          handleSessionDefaultChange(fieldName, downloadURL);
-          toast({ title: "Image Uploaded", description: `Session ${fieldName === 'schoolLogoDataUri' ? 'logo' : 'signature'} updated.` });
+    // Show instant preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        if (e.target?.result) {
+            handleSessionDefaultChange(fieldName, e.target.result as string);
         }
-      );
-    }
-    if(event.target) event.target.value = '';
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to storage in the background
+    const storagePath = fieldName === 'schoolLogoDataUri' ? 'school_logos' : 'signatures';
+    const uniqueId = fieldName === 'schoolLogoDataUri' ? sessionDefaults.schoolName || user.uid : user.uid;
+    const storageRef = ref(storage, `${storagePath}/${uniqueId}-${uuidv4()}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      'state_changed',
+      null, // We are not showing progress for this background task
+      (error) => {
+        console.error("Session image upload error:", error);
+        toast({ title: "Image Upload Failed", description: "Could not save the image. Check storage rules.", variant: "destructive" });
+        // Optional: revert to old image if needed, but for now we'll keep the optimistic local one
+      },
+      async () => {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        // Replace the local data URI with the permanent storage URL
+        handleSessionDefaultChange(fieldName, downloadURL);
+        toast({ title: "Image Uploaded", description: `Session ${fieldName === 'schoolLogoDataUri' ? 'logo' : 'signature'} updated and saved permanently.` });
+      }
+    );
+
+    if (event.target) event.target.value = '';
   };
 
   const handleAddCustomClassNameToListAndForm = () => {
