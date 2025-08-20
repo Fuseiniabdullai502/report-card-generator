@@ -32,6 +32,7 @@ interface SchoolProgramRankingDialogProps {
   schoolName: string;
   className: string;
   programName: string;
+  subjectName?: string | null;
 }
 
 export default function SchoolProgramRankingDialog({
@@ -41,6 +42,7 @@ export default function SchoolProgramRankingDialog({
   schoolName,
   className,
   programName,
+  subjectName,
 }: SchoolProgramRankingDialogProps) {
 
   const handlePrint = () => {
@@ -57,8 +59,14 @@ export default function SchoolProgramRankingDialog({
     }
   };
   
-  const reportTitle = `Student Ranking for ${className} - ${programName}`;
-  const reportDescription = `Ranking of students in ${className} (${programName} program) at ${schoolName} based on their overall average.`;
+  const reportTitle = subjectName 
+    ? `Student Ranking for ${subjectName}`
+    : `Student Ranking for ${className} - ${programName}`;
+
+  const reportDescription = subjectName
+    ? `Ranking of students in ${className} (${programName} program) at ${schoolName} based on performance in ${subjectName}.`
+    : `Ranking of students in ${className} (${programName} program) at ${schoolName} based on their overall average.`;
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -106,7 +114,7 @@ export default function SchoolProgramRankingDialog({
                     <TableRow>
                       <TableHead className="w-[80px]">Rank</TableHead>
                       <TableHead>Student Name</TableHead>
-                      <TableHead className="text-right">Overall Average (%)</TableHead>
+                      <TableHead className="text-right">{subjectName ? 'Subject Score' : 'Overall Average'} (%)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

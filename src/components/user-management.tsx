@@ -167,6 +167,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [isFetchingSchoolProgramRanking, setIsFetchingSchoolProgramRanking] = useState(false);
   const [selectedSchoolRankingClass, setSelectedSchoolRankingClass] = useState<string>('');
   const [selectedSchoolRankingProgram, setSelectedSchoolRankingProgram] = useState<string>('');
+  const [selectedSchoolRankingSubject, setSelectedSchoolRankingSubject] = useState<string>('overall');
 
   const allAvailableClasses = useMemo(() => {
     return [...new Set(allReports.map(r => r.className).filter(Boolean))].sort();
@@ -241,9 +242,26 @@ export default function UserManagement({ user, users, invites, populationStats, 
     return Array.from(subjects).sort();
   }, [selectedRankingClass, allReports]);
 
+  const availableSubjectsForSchoolClass = useMemo(() => {
+    if (!selectedSchoolRankingClass) return [];
+    const subjects = new Set<string>();
+    allReports.forEach(report => {
+      if (report.className === selectedSchoolRankingClass) {
+        report.subjects.forEach(subject => {
+          if(subject.subjectName) subjects.add(subject.subjectName);
+        });
+      }
+    });
+    return Array.from(subjects).sort();
+  }, [selectedSchoolRankingClass, allReports]);
+
   useEffect(() => {
     setSelectedRankingSubject('overall');
   }, [selectedRankingClass]);
+
+  useEffect(() => {
+    setSelectedSchoolRankingSubject('overall');
+  }, [selectedSchoolRankingClass]);
   
   useEffect(() => {
     if (allAvailableClasses.length > 0) {
@@ -291,6 +309,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
       schoolName: user.schoolName,
       className: selectedSchoolRankingClass,
       shsProgram: selectedSchoolRankingProgram,
+      subjectName: selectedSchoolRankingSubject === 'overall' ? null : selectedSchoolRankingSubject,
     });
     if (result.success && result.ranking) {
       setSchoolProgramRankingData(result.ranking);
@@ -645,7 +664,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                             <CardDescription>Rank students within a specific SHS program and class.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col sm:flex-row gap-4 items-end">
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow">
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow">
                                 <div className="space-y-1">
                                     <Label htmlFor="school-class-ranking-select">Class Level</Label>
                                     <Select value={selectedSchoolRankingClass} onValueChange={setSelectedSchoolRankingClass}>
@@ -658,6 +677,22 @@ export default function UserManagement({ user, users, invites, populationStats, 
                                     <Select value={selectedSchoolRankingProgram} onValueChange={setSelectedSchoolRankingProgram}>
                                         <SelectTrigger id="school-program-ranking-select"><SelectValue placeholder="Select program..." /></SelectTrigger>
                                         <SelectContent>{shsProgramOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="school-subject-ranking-select">Subject</Label>
+                                    <Select value={selectedSchoolRankingSubject} onValueChange={setSelectedSchoolRankingSubject} disabled={!selectedSchoolRankingClass}>
+                                        <SelectTrigger id="school-subject-ranking-select"><SelectValue placeholder="Overall / Select Subject" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="overall">Overall Performance</SelectItem>
+                                            {availableSubjectsForSchoolClass.length > 0 ? (
+                                                availableSubjectsForSchoolClass.map(subject => (
+                                                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                                                ))
+                                            ) : (
+                                                <SelectItem value="no_subjects" disabled>No subjects for this class</SelectItem>
+                                            )}
+                                        </SelectContent>
                                     </Select>
                                 </div>
                             </div>
@@ -816,6 +851,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
           schoolName={user.schoolName || ''}
           className={selectedSchoolRankingClass}
           programName={shsProgramOptions.find(p => p.value === selectedSchoolRankingProgram)?.label || selectedSchoolRankingProgram}
+          subjectName={selectedSchoolRankingSubject === 'overall' ? null : selectedSchoolRankingSubject}
         />
       )}
        <Suspense fallback={<div className="flex justify-center items-center h-screen w-screen bg-background"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
@@ -1245,3 +1281,4 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
 }
 
     
+

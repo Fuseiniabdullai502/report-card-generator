@@ -1478,6 +1478,7 @@ const SchoolProgramRankingInputSchema = z.object({
   schoolName: z.string().min(1, "School name is required."),
   className: z.string().min(1, "Class name is required."),
   shsProgram: z.string().min(1, "SHS program is required."),
+  subjectName: z.string().optional().nullable(),
   academicYear: z.string().optional().nullable(),
   academicTerm: z.string().optional().nullable(),
 });
@@ -1486,7 +1487,7 @@ export async function getSchoolProgramRankingAction(
   input: z.infer<typeof SchoolProgramRankingInputSchema>
 ): Promise<{ success: boolean; ranking?: StudentRankingData[]; error?: string }> {
   try {
-    const { schoolName, className, shsProgram, academicYear, academicTerm } = SchoolProgramRankingInputSchema.parse(input);
+    const { schoolName, className, shsProgram, subjectName, academicYear, academicTerm } = SchoolProgramRankingInputSchema.parse(input);
 
     let q: Query = admin.firestore().collection('reports')
       .where('schoolName', '==', schoolName)
@@ -1504,9 +1505,16 @@ export async function getSchoolProgramRankingAction(
 
     const students = snapshot.docs.map(doc => {
       const data = doc.data() as ReportData;
+      let average: number | null;
+      if (subjectName) {
+        const subject = data.subjects.find(s => s.subjectName === subjectName);
+        average = subject ? calculateSubjectFinalMark(subject) : null;
+      } else {
+        average = calculateOverallAverage(data.subjects);
+      }
       return {
         studentName: data.studentName,
-        average: calculateOverallAverage(data.subjects),
+        average: average,
       };
     }).filter(s => s.average !== null) as { studentName: string; average: number }[];
 
@@ -1556,4 +1564,5 @@ export async function getSchoolProgramRankingAction(
 
 
   
+
 
