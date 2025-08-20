@@ -16,7 +16,8 @@
     "indexes": "firestore.indexes.json"
   },
   "storage": {
-    "rules": "storage.rules"
+    "rules": "storage.rules",
+    "cors": "storage.cors.json"
   },
   "apphosting": [
     {
