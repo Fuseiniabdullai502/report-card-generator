@@ -868,7 +868,13 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                       </div>
                                     </TableCell>
                                     <TableCell className="font-medium sticky left-[150px] bg-background z-20">
-                                        {student.studentName || ''}
+                                      <Input
+                                          id={`studentName-${student.id}`}
+                                          value={student.studentName || ''}
+                                          onChange={(e) => handleFieldChange(student.id, 'studentName', e.target.value)}
+                                          onBlur={() => handleFieldBlur(student.id, { studentName: student.studentName })}
+                                          className="h-9"
+                                      />
                                     </TableCell>
                                     <TableCell>
                                       <Select 
@@ -1324,6 +1330,7 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
 }
 
     
+
 
 
 
