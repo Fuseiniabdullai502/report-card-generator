@@ -3,7 +3,6 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 import {
   Table,
   TableBody,
@@ -170,143 +169,98 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
     );
   }, [studentsInClass, searchQuery]);
   
-  const debouncedSave = useDebouncedCallback(async (reportId: string, updatedFields: Partial<ReportData>) => {
-    if (reportId.startsWith('temp-')) return;
-    
-    setSavingStatus(prev => ({ ...prev, [reportId]: 'saving' }));
-    try {
-      const reportRef = doc(db, 'reports', reportId);
-      await setDoc(reportRef, updatedFields, { merge: true });
-      setSavingStatus(prev => ({ ...prev, [reportId]: 'saved' }));
-      setTimeout(() => {
-        setSavingStatus(prev => ({ ...prev, [reportId]: 'idle' }));
-      }, 2000);
-    } catch (error) {
-      console.error("Failed to save data:", error);
-      toast({ title: 'Save Failed', description: 'Could not save changes to the database.', variant: 'destructive' });
-      setSavingStatus(prev => ({ ...prev, [reportId]: 'idle' }));
-    }
-  }, 1000);
+    const saveData = async (reportId: string, updatedFields: Partial<ReportData>) => {
+        if (reportId.startsWith('temp-')) return;
+        
+        setSavingStatus(prev => ({ ...prev, [reportId]: 'saving' }));
+        try {
+          const reportRef = doc(db, 'reports', reportId);
+          await setDoc(reportRef, updatedFields, { merge: true });
+          setSavingStatus(prev => ({ ...prev, [reportId]: 'saved' }));
+          setTimeout(() => {
+            setSavingStatus(prev => ({ ...prev, [reportId]: 'idle' }));
+          }, 2000);
+        } catch (error) {
+          console.error("Failed to save data:", error);
+          toast({ title: 'Save Failed', description: 'Could not save changes to the database.', variant: 'destructive' });
+          setSavingStatus(prev => ({ ...prev, [reportId]: 'idle' }));
+        }
+    };
 
-  const handleMarkChange = (reportId: string, subjectName: string, markType: ScoreType, value: string) => {
-    const numericValue = value === '' || value === '-' ? null : Number(value);
+    const handleFieldBlur = (reportId: string, updatedFields: Partial<ReportData>) => {
+        saveData(reportId, updatedFields);
+    };
 
-    // Instant validation
-    if (markType === 'continuousAssessment' && numericValue !== null && numericValue > 60) {
-        toast({
-            title: "Invalid CA Mark",
-            description: `Continuous Assessment mark for ${subjectName} cannot exceed 60.`,
-            variant: "destructive",
-        });
-        return; // Prevent update if invalid
-    }
+    const handleMarkChange = (reportId: string, subjectName: string, markType: ScoreType, value: string) => {
+        const numericValue = value === '' || value === '-' ? null : Number(value);
 
-    if (markType === 'examinationMark' && numericValue !== null && numericValue > 100) {
-        toast({
-            title: "Invalid Exam Mark",
-            description: `Examination mark for ${subjectName} cannot exceed 100.`,
-            variant: "destructive",
-        });
-        return; // Prevent update if invalid
-    }
+        if (markType === 'continuousAssessment' && numericValue !== null && numericValue > 60) {
+            toast({ title: "Invalid CA Mark", description: `CA for ${subjectName} cannot exceed 60.`, variant: "destructive" });
+            return;
+        }
+        if (markType === 'examinationMark' && numericValue !== null && numericValue > 100) {
+            toast({ title: "Invalid Exam Mark", description: `Exam for ${subjectName} cannot exceed 100.`, variant: "destructive" });
+            return;
+        }
 
-    setStudentsInClass(prevStudents => {
-        const updatedStudents = prevStudents.map(student => {
-          if (student.id === reportId) {
-            let subjectFound = false;
-            const newSubjects = student.subjects.map(sub => {
-              if (sub.subjectName === subjectName) {
-                subjectFound = true;
-                return { ...sub, [markType]: numericValue };
-              }
-              return sub;
-            });
+        setStudentsInClass(prevStudents => 
+            prevStudents.map(student => {
+                if (student.id === reportId) {
+                    let subjectFound = false;
+                    const newSubjects = student.subjects.map(sub => {
+                        if (sub.subjectName === subjectName) {
+                            subjectFound = true;
+                            return { ...sub, [markType]: numericValue };
+                        }
+                        return sub;
+                    });
+                    if (!subjectFound) {
+                        newSubjects.push({ subjectName, continuousAssessment: markType === 'continuousAssessment' ? numericValue : null, examinationMark: markType === 'examinationMark' ? numericValue : null });
+                    }
+                    return { ...student, subjects: newSubjects };
+                }
+                return student;
+            })
+        );
+    };
 
-            if (!subjectFound) {
-                newSubjects.push({
-                    subjectName: subjectName,
-                    continuousAssessment: markType === 'continuousAssessment' ? numericValue : null,
-                    examinationMark: markType === 'examinationMark' ? numericValue : null,
-                });
+    const handleFieldChange = (reportId: string, field: keyof ReportData, value: any) => {
+        setStudentsInClass(prevStudents => 
+            prevStudents.map(student => {
+                if (student.id === reportId) {
+                    return { ...student, [field]: value };
+                }
+                return student;
+            })
+        );
+    };
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, studentIndex: number, colId: string) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const currentInput = e.target as HTMLInputElement;
+            currentInput.blur(); // Triggers onBlur, which saves the data.
+            
+            const allColumns = ['gender', 'daysAttended', ...subjectOrder.flatMap(s => [`${s}-ca`, `${s}-exam`])];
+            let nextStudentIndex = studentIndex + 1;
+            let nextColId = colId;
+
+            if (nextStudentIndex >= filteredStudents.length) {
+                nextStudentIndex = 0;
+                const currentColIndex = allColumns.indexOf(colId);
+                const nextColIndex = currentColIndex + 1;
+                nextColId = (nextColIndex < allColumns.length) ? allColumns[nextColIndex] : allColumns[0];
             }
-            return { ...student, subjects: newSubjects };
-          }
-          return student;
-        });
-        
-        const studentToUpdate = updatedStudents.find(s => s.id === reportId);
-        if(studentToUpdate){
-            debouncedSave(reportId, { subjects: studentToUpdate.subjects });
-        }
-        
-        return updatedStudents;
-    });
-  };
-  
-  const handleFieldChange = (reportId: string, field: keyof ReportData, value: string | number | null | string[]) => {
-    setStudentsInClass(prevStudents => {
-        const updatedStudents = prevStudents.map(student => {
-            if (student.id === reportId) {
-                return { ...student, [field]: value };
-            }
-            return student;
-        });
-
-        const studentToUpdate = updatedStudents.find(s => s.id === reportId);
-        if (studentToUpdate) {
-            debouncedSave(reportId, { [field]: value });
-        }
-
-        return updatedStudents;
-    });
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, studentIndex: number, colId: string) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        
-        const currentInput = e.target as HTMLInputElement;
-        currentInput.blur();
-
-        const studentId = filteredStudents[studentIndex]?.id;
-        if (studentId) {
-          debouncedSave.cancel();
-          const studentToUpdate = studentsInClass.find(s => s.id === studentId);
-          if (studentToUpdate) {
-              const fieldToUpdate = colId.includes('-') 
-                  ? { subjects: studentToUpdate.subjects } 
-                  : { [colId]: (studentToUpdate as any)[colId] };
-              debouncedSave(studentId, fieldToUpdate);
-          }
-        }
-        
-        const allColumns = ['gender', 'daysAttended', ...subjectOrder.flatMap(s => [`${s}-ca`, `${s}-exam`])];
-        
-        let nextStudentIndex = studentIndex + 1;
-        let nextColId = colId;
-
-        if (nextStudentIndex >= filteredStudents.length) {
-            nextStudentIndex = 0;
-            const currentColIndex = allColumns.indexOf(colId);
-            const nextColIndex = currentColIndex + 1;
-            if (nextColIndex < allColumns.length) {
-                nextColId = allColumns[nextColIndex];
-            } else {
-                nextColId = allColumns[0];
+            
+            const nextStudentId = filteredStudents[nextStudentIndex]?.id;
+            if(nextStudentId){
+                const nextInputId = `${nextColId}-${nextStudentId}`;
+                const nextInput = document.getElementById(nextInputId) as HTMLInputElement | null;
+                nextInput?.focus();
+                nextInput?.select();
             }
         }
-        
-        const nextStudentId = filteredStudents[nextStudentIndex]?.id;
-        if(nextStudentId){
-            const nextInputId = `${nextColId}-${nextStudentId}`;
-            const nextInput = document.getElementById(nextInputId) as HTMLInputElement | null;
-            if (nextInput) {
-                nextInput.focus();
-                nextInput.select();
-            }
-        }
-    }
-  };
+    };
 
 
     const handleAddNewStudent = async () => {
@@ -917,7 +871,13 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                         {student.studentName || ''}
                                     </TableCell>
                                     <TableCell>
-                                      <Select value={student.gender || ''} onValueChange={(value) => handleFieldChange(student.id, 'gender', value)}>
+                                      <Select 
+                                        value={student.gender || ''} 
+                                        onValueChange={(value) => {
+                                            handleFieldChange(student.id, 'gender', value);
+                                            saveData(student.id, { gender: value });
+                                        }}
+                                      >
                                           <SelectTrigger id={`gender-${student.id}`} className="h-9 w-[100px]">
                                               <SelectValue />
                                           </SelectTrigger>
@@ -934,6 +894,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                             value={student.daysAttended ?? ''}
                                             onChange={(e) => handleFieldChange(student.id, 'daysAttended', e.target.value === '' ? null : Number(e.target.value))}
                                             onKeyDown={(e) => handleKeyDown(e, index, 'daysAttended')}
+                                            onBlur={() => handleFieldBlur(student.id, { daysAttended: student.daysAttended })}
                                             placeholder="e.g., 85"
                                             className="text-center h-9 w-[100px]"
                                         />
@@ -979,6 +940,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                                 value={subjectData?.continuousAssessment ?? ''}
                                                 onChange={(e) => handleMarkChange(student.id, subjectName, 'continuousAssessment', e.target.value)}
                                                 onKeyDown={(e) => handleKeyDown(e, index, `${subjectName}-ca`)}
+                                                onBlur={() => handleFieldBlur(student.id, { subjects: student.subjects })}
                                               />
                                             </TableCell>
                                             <TableCell className="border-l p-1">
@@ -990,6 +952,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                                 value={subjectData?.examinationMark ?? ''}
                                                 onChange={(e) => handleMarkChange(student.id, subjectName, 'examinationMark', e.target.value)}
                                                 onKeyDown={(e) => handleKeyDown(e, index, `${subjectName}-exam`)}
+                                                onBlur={() => handleFieldBlur(student.id, { subjects: student.subjects })}
                                               />
                                             </TableCell>
                                           </React.Fragment>
@@ -1361,4 +1324,5 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
 }
 
     
+
 
