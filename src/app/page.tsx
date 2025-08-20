@@ -805,6 +805,8 @@ function AppContent({ user }: { user: CustomUser }) {
     reader.onload = (e) => {
       if (e.target?.result) {
         handleSessionDefaultChange(fieldName, e.target.result as string);
+        // Also update current editing report immediately
+        setCurrentEditingReport(prev => ({...prev, [fieldName]: e.target?.result as string}));
       }
     };
     reader.readAsDataURL(file);
@@ -825,6 +827,7 @@ function AppContent({ user }: { user: CustomUser }) {
       async () => {
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
         handleSessionDefaultChange(fieldName, downloadURL);
+        setCurrentEditingReport(prev => ({...prev, [fieldName]: downloadURL}));
         toast({ title: "Image Uploaded", description: `Session logo updated and saved permanently.` });
       }
     );
@@ -1498,7 +1501,12 @@ function AppContent({ user }: { user: CustomUser }) {
                                 </div>
                               )}
                               <div className="a4-page-simulation break-inside-avoid">
-                                <ReportPreview data={reportData} classTotal={getClassTotal(reportData.className)} subjectOrder={subjectOrder}/>
+                                <ReportPreview 
+                                  data={reportData} 
+                                  classTotal={getClassTotal(reportData.className)} 
+                                  subjectOrder={subjectOrder}
+                                  sessionLogo={sessionDefaults.schoolLogoDataUri}
+                                />
                               </div>
                           </div>
                         ))}
@@ -1506,7 +1514,12 @@ function AppContent({ user }: { user: CustomUser }) {
                     ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
                         // This is the LIVE preview of the report being edited in the form
                         <div className="a4-page-simulation break-inside-avoid">
-                          <ReportPreview data={currentEditingReport} classTotal={getClassTotal(currentEditingReport.className)} subjectOrder={subjectOrder} />
+                           <ReportPreview 
+                            data={currentEditingReport} 
+                            classTotal={getClassTotal(currentEditingReport.className)} 
+                            subjectOrder={subjectOrder}
+                            sessionLogo={sessionDefaults.schoolLogoDataUri}
+                           />
                         </div>
                     ) : (
                       <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
@@ -1533,12 +1546,22 @@ function AppContent({ user }: { user: CustomUser }) {
         {reportsCount > 0 ? (
           filteredReports.map((reportData) => (
             <div key={`print-${reportData.id}`} className="a4-page-simulation">
-              <ReportPreview data={reportData} classTotal={getClassTotal(reportData.className)} subjectOrder={subjectOrder} />
+               <ReportPreview 
+                data={reportData} 
+                classTotal={getClassTotal(reportData.className)} 
+                subjectOrder={subjectOrder}
+                sessionLogo={sessionDefaults.schoolLogoDataUri}
+              />
             </div>
           ))
         ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
           <div className="a4-page-simulation">
-            <ReportPreview data={currentEditingReport} classTotal={getClassTotal(currentEditingReport.className)} subjectOrder={subjectOrder} />
+             <ReportPreview 
+              data={currentEditingReport} 
+              classTotal={getClassTotal(currentEditingReport.className)} 
+              subjectOrder={subjectOrder}
+              sessionLogo={sessionDefaults.schoolLogoDataUri}
+            />
           </div>
         ) : null}
       </div>

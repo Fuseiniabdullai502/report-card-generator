@@ -14,6 +14,7 @@ interface ReportPreviewProps {
   data: ReportData;
   classTotal?: number;
   subjectOrder?: string[];
+  sessionLogo?: string | null;
 }
 
 interface TemplateStyles {
@@ -137,7 +138,7 @@ const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) =>
     </div>
 );
 
-export default function ReportPreview({ data, classTotal, subjectOrder }: ReportPreviewProps) {
+export default function ReportPreview({ data, classTotal, subjectOrder, sessionLogo }: ReportPreviewProps) {
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -172,6 +173,9 @@ export default function ReportPreview({ data, classTotal, subjectOrder }: Report
       .map(subjectName => subjectMap.get(subjectName))
       .filter((s): s is SubjectEntry => !!s);
   }, [data.subjects, subjectOrder]);
+  
+  const logoToUse = data.schoolLogoDataUri || sessionLogo;
+
 
   return (
     <div id="printable-report-area" className={cn("a4-page-simulation flex flex-col text-sm relative", templateStyles.overallReportBorderClass)}>
@@ -211,9 +215,9 @@ export default function ReportPreview({ data, classTotal, subjectOrder }: Report
               )}
             </div>
              <div className="object-contain" style={{width: 80, height: 80}}>
-               {data.schoolLogoDataUri && (
+               {logoToUse && (
                   <Image
-                      src={data.schoolLogoDataUri}
+                      src={logoToUse}
                       alt={`${data.schoolName || 'School'} Logo`}
                       width={80}
                       height={80}
