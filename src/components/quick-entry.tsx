@@ -800,8 +800,8 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                 <Table>
                     <TableHeader className="sticky top-0 bg-muted z-10">
                         <TableRow>
-                            <TableHead className="min-w-[150px] sticky left-0 bg-muted z-20"><ImageIcon className="inline-block mr-1 h-4 w-4"/>Photo</TableHead>
-                            <TableHead className="min-w-[180px]">Student Name</TableHead>
+                            <TableHead className="w-[150px] sticky left-0 bg-muted z-20"><ImageIcon className="inline-block mr-1 h-4 w-4"/>Photo</TableHead>
+                            <TableHead className="min-w-[180px] sticky left-[150px] bg-muted z-20">Student Name</TableHead>
                             <TableHead className="min-w-[120px]"><VenetianMask className="inline-block mr-1 h-4 w-4"/>Gender</TableHead>
                             <TableHead className="min-w-[150px]"><CalendarCheck2 className="inline-block mr-1 h-4 w-4"/>Days Attended</TableHead>
                              <TableHead className="min-w-[180px]"><Smile className="inline-block mr-1 h-4 w-4"/>Hobbies</TableHead>
@@ -815,7 +815,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                         </TableRow>
                          <TableRow>
                             <TableHead className="sticky left-0 bg-muted z-20"></TableHead>
-                            <TableHead></TableHead>
+                            <TableHead className="sticky left-[150px] bg-muted z-20"></TableHead>
                             <TableHead></TableHead>
                             <TableHead></TableHead>
                             <TableHead></TableHead>
@@ -867,7 +867,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                         )}
                                       </div>
                                     </TableCell>
-                                    <TableCell className="font-medium">
+                                    <TableCell className="font-medium sticky left-[150px] bg-background z-20">
                                         {student.studentName || ''}
                                     </TableCell>
                                     <TableCell>
@@ -1324,5 +1324,6 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
 }
 
     
+
 
 
