@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { Button } from './ui/button';
 import { Save, Trash2 } from 'lucide-react';
@@ -13,6 +13,7 @@ interface SignaturePadProps {
 
 const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, initialDataUrl }) => {
   const sigPad = useRef<SignatureCanvas>(null);
+  const isInitialized = useRef(false);
 
   const handleClear = () => {
     sigPad.current?.clear();
@@ -29,10 +30,13 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, initialDataUrl }) =
     }
   };
 
-  React.useEffect(() => {
-    // Set the initial signature if it exists
-    if (initialDataUrl && sigPad.current) {
+  useEffect(() => {
+    // Set the initial signature if it exists, but only do this ONCE.
+    // This prevents an infinite loop where the parent state update causes this
+    // component to re-render and re-run this effect unnecessarily.
+    if (initialDataUrl && sigPad.current && !isInitialized.current) {
       sigPad.current.fromDataURL(initialDataUrl);
+      isInitialized.current = true;
     }
   }, [initialDataUrl]);
 
