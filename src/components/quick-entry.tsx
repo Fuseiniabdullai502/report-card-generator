@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -621,7 +622,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
     uploadTask.on(
       'state_changed',
       (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
         setImageUploadStatus(prev => ({ ...prev, [studentId]: progress }));
       },
       async (error) => {
@@ -649,10 +650,16 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
         if (input) input.value = '';
       },
       async () => {
-        const downloadURL = await getDownloadURL(storageRef);
-        handleFieldChange(studentId, 'studentPhotoDataUri', downloadURL);
-        setImageUploadStatus(prev => ({ ...prev, [studentId]: null }));
-        if (input) input.value = '';
+        try {
+            const downloadURL = await getDownloadURL(storageRef);
+            handleFieldChange(studentId, 'studentPhotoDataUri', downloadURL);
+        } catch (err) {
+            console.error('Error getting download URL after upload:', err);
+            toast({ title: 'Upload Completed (URL Error)', description: 'The file uploaded but a download URL could not be retrieved. Check your Storage rules and permissions.', variant: 'destructive' });
+        } finally {
+            setImageUploadStatus(prev => ({ ...prev, [studentId]: null }));
+            if (input) input.value = '';
+        }
       }
     );
   };
@@ -912,7 +919,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                     <TableCell>
                                       <Select value={student.gender || ''} onValueChange={(value) => handleFieldChange(student.id, 'gender', value)}>
                                           <SelectTrigger id={`gender-${student.id}`} className="h-9 w-[100px]">
-                                              <SelectValue placeholder="Select..."/>
+                                              <SelectValue />
                                           </SelectTrigger>
                                           <SelectContent>
                                               <SelectItem value="Male">Male</SelectItem>
@@ -1354,3 +1361,4 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
 }
 
     
+
