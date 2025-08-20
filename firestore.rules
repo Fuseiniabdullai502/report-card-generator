@@ -3,34 +3,72 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Helper functions to check user roles
+    function isSuperAdmin() {
+      return getUser(request.auth.uid).data.role == 'super-admin';
+    }
+    
+    function isBigAdmin() {
+      return getUser(request.auth.uid).data.role == 'big-admin';
+    }
 
+    function isAdmin() {
+      return getUser(request.auth.uid).data.role == 'admin';
+    }
+
+    function isRole(role) {
+      return getUser(request.auth.uid).data.role == role;
+    }
+    
+    function getUser(userId) {
+      return get(/databases/$(database)/documents/users/$(userId));
+    }
+    
     // Rules for the 'users' collection
     match /users/{userId} {
-      // Allow a user to read their own document
-      allow read: if request.auth != null && request.auth.uid == userId;
-      // Allow a user to create their own document upon registration
-      allow create: if request.auth != null && request.auth.uid == userId;
-      // Allow a user to update their own document (e.g., name, telephone)
-      // Admins will update roles/status via a backend function, not directly.
-      allow update: if request.auth != null && request.auth.uid == userId;
+      // Any authenticated user can create their own document during registration.
+      allow create: if request.auth != null;
+      
+      // A user can read their own data. Admins can read any user's data.
+      allow read: if request.auth.uid == userId || isSuperAdmin() || isBigAdmin() || isAdmin();
+      
+      // A user can update their own data. Admins can update any user's data.
+      allow update: if request.auth.uid == userId || isSuperAdmin() || isBigAdmin() || isAdmin();
+      
+      // Only a super-admin can delete a user.
+      allow delete: if isSuperAdmin();
     }
-
-    // Rules for the 'reports' collection
-    match /reports/{reportId} {
-      // Any authenticated user can create, read, update, or delete reports.
-      // This is a common pattern for apps where users need to manage shared data.
-      // For more granular control, you could add conditions based on user roles
-      // stored in the 'users' collection, for example:
-      // allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      allow read, write: if request.auth != null;
-    }
-
+    
     // Rules for the 'invites' collection
     match /invites/{inviteId} {
-        // Any user can read invites to check if their email is on the list
-        allow read: if true;
-        // Only authenticated users can create or modify invites (admins do this via backend functions)
-        allow write: if request.auth != null;
+        // Admins can create new invites.
+        allow create: if isSuperAdmin() || isBigAdmin() || isAdmin();
+        
+        // Admins can read all invites. A user can read their own pending invite during registration.
+        allow read: if isSuperAdmin() || isBigAdmin() || isAdmin() ||
+                    (request.auth != null && resource.data.email == request.auth.token.email && resource.data.status == 'pending');
+        
+        // Admins can update invites (e.g., to mark as 'completed').
+        allow update: if isSuperAdmin() || isBigAdmin() || isAdmin();
+        
+        // Admins can delete pending invites.
+        allow delete: if isSuperAdmin() || isBigAdmin() || isAdmin();
+    }
+    
+    // Rules for the 'reports' collection
+    match /reports/{reportId} {
+      // Any authenticated user can create a report.
+      allow create: if request.auth != null;
+
+      // An admin can read any report. A user can read their own reports.
+      allow read: if isSuper-admin() || isBigAdmin() || isAdmin() || resource.data.teacherId == request.auth.uid;
+      
+      // An admin can update any report. A user can update their own reports.
+      allow update: if isSuperAdmin() || isBigAdmin() || isAdmin() || resource.data.teacherId == request.auth.uid;
+
+      // An admin can delete any report. A user can delete their own reports.
+      allow delete: if isSuperAdmin() || isBigAdmin() || isAdmin() || resource.data.teacherId == request.auth.uid;
     }
   }
 }
