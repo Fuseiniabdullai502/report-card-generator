@@ -145,6 +145,13 @@
         { "fieldPath": "academicYear", "order": "ASCENDING" },
         { "fieldPath": "academicTerm", "order": "ASCENDING" }
       ]
+    },
+    {
+        "collectionGroup": "reports",
+        "queryScope": "COLLECTION",
+        "fields": [
+            {"fieldPath": "className", "arrayConfig": "CONTAINS"}
+        ]
     }
   ],
   "fieldOverrides": []
