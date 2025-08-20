@@ -1278,14 +1278,16 @@ function AppContent({ user }: { user: CustomUser }) {
                             <NextImage src={sessionDefaults.schoolLogoDataUri} alt="logo" width={40} height={40} className="rounded border p-1 object-contain"/>
                           )}
                       </div>
-                      <div className="space-y-1 flex items-center gap-2">
-                        <Button type="button" variant="outline" size="sm" onClick={() => setIsSignaturePadOpen(true)}>
-                            <PenSquare className="mr-2 h-4 w-4 text-green-600" /> Signature
-                        </Button>
-                        {mounted && sessionDefaults.headMasterSignatureDataUri && (sessionDefaults.headMasterSignatureDataUri.startsWith('data:image') || sessionDefaults.headMasterSignatureDataUri.startsWith('http')) && (
-                            <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>
-                        )}
-                      </div>
+                      {isAdminRole && (
+                        <div className="space-y-1 flex items-center gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => setIsSignaturePadOpen(true)}>
+                              <PenSquare className="mr-2 h-4 w-4 text-green-600" /> Signature
+                          </Button>
+                          {mounted && sessionDefaults.headMasterSignatureDataUri && (sessionDefaults.headMasterSignatureDataUri.startsWith('data:image') || sessionDefaults.headMasterSignatureDataUri.startsWith('http')) && (
+                              <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>
+                          )}
+                        </div>
+                      )}
                   </div>
               </CardContent>
             </Card>
