@@ -10,7 +10,7 @@ import ReportActions from '@/components/report-actions';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
@@ -795,7 +795,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
   const handleSessionImageUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
-    fieldName: keyof Pick<ReportData, 'schoolLogoDataUri'>
+    fieldName: 'schoolLogoDataUri'
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1600,7 +1600,9 @@ function AppContent({ user }: { user: CustomUser }) {
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>Provide Head Master's Signature</DialogTitle>
-                <DialogDescription>Draw the signature in the box below using your mouse or finger.</DialogDescription>
+                <DialogDescription>
+                  Draw the signature in the box below using your mouse or finger.
+                </DialogDescription>
             </DialogHeader>
             <SignaturePad 
                 onSave={handleSignatureSave} 
