@@ -611,7 +611,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                           type="button" 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => handleAiEditImage(formData.studentPhotoDataUri!, "Crop this image to a passport photo with a 3:4 aspect ratio. Apply bright, even studio lighting and remove any distracting background.")}
+                          onClick={() => handleAiEditImage(formData.studentPhotoDataUri!, "Enhance the clarity of this photo, keeping all original features, and place a graduation hat on the student's head.")}
                           disabled={!formData.studentPhotoDataUri || isImageEditingAiLoading || isUploading}
                           title="Enhance with AI"
                         >
@@ -776,8 +776,3 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     </>
   );
 }
-
-
-
-
-

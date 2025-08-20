@@ -642,7 +642,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
       }
     }
 
-    const result = await editImageWithAiAction({ photoDataUri, prompt: "Crop to passport photo with a 3:4 aspect ratio. Apply bright, even studio lighting and remove distracting background." });
+    const result = await editImageWithAiAction({ photoDataUri, prompt: "Enhance the clarity of this photo, keeping all original features, and place a graduation hat on the student's head." });
     if (result.success && result.editedPhotoDataUri) {
       try {
         const { blob } = dataUriToBlob(result.editedPhotoDataUri);
@@ -1328,9 +1328,3 @@ function ImportGradesheetDialog({ isOpen, onOpenChange, onImport, className }: {
         </Dialog>
     );
 }
-
-    
-
-
-
-

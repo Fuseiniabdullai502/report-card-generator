@@ -412,6 +412,8 @@ function AppContent({ user }: { user: CustomUser }) {
             newSessionDefaults.region = firstReportFromSchool.region;
             newSessionDefaults.district = firstReportFromSchool.district;
             newSessionDefaults.schoolCategory = firstReportFromSchool.schoolCategory;
+            newSessionDefaults.headMasterSignatureDataUri = firstReportFromSchool.headMasterSignatureDataUri;
+            newSessionDefaults.schoolLogoDataUri = firstReportFromSchool.schoolLogoDataUri;
           }
       } else if (user.role === 'big-admin' && user.district) {
           newSessionDefaults.district = user.district;
