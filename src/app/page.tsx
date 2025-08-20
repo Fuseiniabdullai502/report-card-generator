@@ -42,6 +42,7 @@ import { getClassLevel, getSubjectsForClass, shsProgramOptions, type ShsProgram 
 import SchoolPerformanceDashboard from '@/components/school-dashboard';
 import ImportStudentsDialog from '@/components/import-students-dialog';
 import ClassPerformanceDashboard from '@/components/class-dashboard';
+import SignaturePad from '@/components/signature-pad';
 
 
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
@@ -135,6 +136,8 @@ function AppContent({ user }: { user: CustomUser }) {
   // User-specific localStorage keys
   const bgImageKey = `app-background-image-${user.uid}`;
   const bgOpacityKey = `app-bg-opacity-${user.uid}`;
+
+  const [isSignaturePadOpen, setIsSignaturePadOpen] = useState(false);
 
 
   useEffect(() => {
@@ -792,44 +795,49 @@ function AppContent({ user }: { user: CustomUser }) {
 
   const handleSessionImageUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
-    fieldName: keyof Pick<ReportData, 'schoolLogoDataUri' | 'headMasterSignatureDataUri'>
+    fieldName: keyof Pick<ReportData, 'schoolLogoDataUri'>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
+  
     // Show instant preview
     const reader = new FileReader();
     reader.onload = (e) => {
-        if (e.target?.result) {
-            handleSessionDefaultChange(fieldName, e.target.result as string);
-        }
+      if (e.target?.result) {
+        handleSessionDefaultChange(fieldName, e.target.result as string);
+      }
     };
     reader.readAsDataURL(file);
-
-    // Upload to storage in the background
-    const storagePath = fieldName === 'schoolLogoDataUri' ? 'school_logos' : 'signatures';
-    const uniqueId = fieldName === 'schoolLogoDataUri' ? sessionDefaults.schoolName || user.uid : user.uid;
+  
+    // Continue with upload to storage
+    const storagePath = 'school_logos';
+    const uniqueId = sessionDefaults.schoolName || user.uid;
     const storageRef = ref(storage, `${storagePath}/${uniqueId}-${uuidv4()}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
-
+  
     uploadTask.on(
       'state_changed',
-      null, // We are not showing progress for this background task
+      null,
       (error) => {
         console.error("Session image upload error:", error);
         toast({ title: "Image Upload Failed", description: "Could not save the image. Check storage rules.", variant: "destructive" });
-        // Optional: revert to old image if needed, but for now we'll keep the optimistic local one
       },
       async () => {
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        // Replace the local data URI with the permanent storage URL
         handleSessionDefaultChange(fieldName, downloadURL);
-        toast({ title: "Image Uploaded", description: `Session ${fieldName === 'schoolLogoDataUri' ? 'logo' : 'signature'} updated and saved permanently.` });
+        toast({ title: "Image Uploaded", description: `Session logo updated and saved permanently.` });
       }
     );
-
+  
     if (event.target) event.target.value = '';
   };
+  
+  const handleSignatureSave = (signatureDataUrl: string) => {
+    handleSessionDefaultChange('headMasterSignatureDataUri', signatureDataUrl);
+    setIsSignaturePadOpen(false);
+    toast({ title: "Signature Saved", description: "The new signature will be used for subsequent reports." });
+  };
+  
 
   const handleAddCustomClassNameToListAndForm = () => {
       const newClassName = customClassNameInputValue.trim();
@@ -1271,15 +1279,12 @@ function AppContent({ user }: { user: CustomUser }) {
                           )}
                       </div>
                       <div className="space-y-1 flex items-center gap-2">
-                          <input type="file" id="sessionHeadMasterSignatureUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'headMasterSignatureDataUri')} />
-                           <Button asChild type="button" variant="outline" size="sm">
-                              <span onClick={() => document.getElementById('sessionHeadMasterSignatureUpload')?.click()} className="flex items-center gap-2 cursor-pointer">
-                                  <PenSquare className="h-4 w-4 text-green-600" />Signature
-                              </span>
-                          </Button>
-                          {mounted && sessionDefaults.headMasterSignatureDataUri && (sessionDefaults.headMasterSignatureDataUri.startsWith('data:image') || sessionDefaults.headMasterSignatureDataUri.startsWith('http')) && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => setIsSignaturePadOpen(true)}>
+                            <PenSquare className="mr-2 h-4 w-4 text-green-600" /> Signature
+                        </Button>
+                        {mounted && sessionDefaults.headMasterSignatureDataUri && (sessionDefaults.headMasterSignatureDataUri.startsWith('data:image') || sessionDefaults.headMasterSignatureDataUri.startsWith('http')) && (
                             <NextImage src={sessionDefaults.headMasterSignatureDataUri} alt="signature" width={80} height={40} className="rounded border p-1 object-contain"/>
-                          )}
+                        )}
                       </div>
                   </div>
               </CardContent>
@@ -1591,6 +1596,18 @@ function AppContent({ user }: { user: CustomUser }) {
           onImport={handleImportStudents}
         />
       )}
+      <Dialog open={isSignaturePadOpen} onOpenChange={setIsSignaturePadOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Provide Head Master's Signature</DialogTitle>
+                <DialogDescription>Draw the signature in the box below using your mouse or finger.</DialogDescription>
+            </DialogHeader>
+            <SignaturePad 
+                onSave={handleSignatureSave} 
+                initialDataUrl={sessionDefaults.headMasterSignatureDataUri}
+            />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
