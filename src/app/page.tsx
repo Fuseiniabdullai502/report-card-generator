@@ -376,7 +376,7 @@ function AppContent({ user }: { user: CustomUser }) {
     }
 
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       setIndexError(null);
       const fetchedReports: ReportData[] = [];
       let maxEntryNum = 0;
@@ -425,6 +425,16 @@ function AppContent({ user }: { user: CustomUser }) {
           newSessionDefaults.district = user.district ?? fetchedReports.find(r => r.district?.trim())?.district ?? '';
           newSessionDefaults.circuit = user.circuit ?? fetchedReports.find(r => r.circuit?.trim())?.circuit ?? '';
           newSessionDefaults.schoolCategory = user.schoolCategory ?? fetchedReports.find(r => r.schoolCategory)?.schoolCategory ?? undefined;
+          
+          if(user.schoolName) {
+            const adminQuery = query(collection(db, 'users'), where('role', '==', 'admin'), where('schoolName', '==', user.schoolName));
+            const adminSnapshot = await getDocs(adminQuery);
+            if (!adminSnapshot.empty) {
+                const adminData = adminSnapshot.docs[0].data();
+                newSessionDefaults.headMasterSignatureDataUri = adminData.headMasterSignatureDataUri || null;
+                newSessionDefaults.schoolLogoDataUri = adminData.schoolLogoDataUri || null;
+            }
+          }
       }
       setSessionDefaults(prev => ({...prev, ...newSessionDefaults}));
       
@@ -804,42 +814,46 @@ function AppContent({ user }: { user: CustomUser }) {
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
-        handleSessionDefaultChange(fieldName, e.target.result as string);
+        const dataUrl = e.target.result as string;
+        handleSessionDefaultChange(fieldName, dataUrl);
         // Also update current editing report immediately
-        setCurrentEditingReport(prev => ({...prev, [fieldName]: e.target?.result as string}));
+        setCurrentEditingReport(prev => ({...prev, [fieldName]: dataUrl}));
+
+        // Now, upload and update the user doc in firestore for admins
+        if (isAdminRole) {
+            const storageRef = ref(storage, `school_logos/${user.uid}-${uuidv4()}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+            uploadTask.on('state_changed', null, 
+                (error) => {
+                    console.error("Admin logo upload error:", error);
+                    toast({ title: "Logo Upload Failed", description: "Could not save logo to storage.", variant: "destructive" });
+                },
+                async () => {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    await setDoc(doc(db, 'users', user.uid), { schoolLogoDataUri: downloadURL }, { merge: true });
+                    handleSessionDefaultChange(fieldName, downloadURL);
+                    setCurrentEditingReport(prev => ({...prev, [fieldName]: downloadURL}));
+                    toast({ title: "School Logo Updated", description: `Logo has been saved to your admin profile.` });
+                }
+            );
+        }
       }
     };
     reader.readAsDataURL(file);
-  
-    // Continue with upload to storage
-    const storagePath = 'school_logos';
-    const uniqueId = sessionDefaults.schoolName || user.uid;
-    const storageRef = ref(storage, `${storagePath}/${uniqueId}-${uuidv4()}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-  
-    uploadTask.on(
-      'state_changed',
-      null,
-      (error) => {
-        console.error("Session image upload error:", error);
-        toast({ title: "Image Upload Failed", description: "Could not save the image. Check storage rules.", variant: "destructive" });
-      },
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        handleSessionDefaultChange(fieldName, downloadURL);
-        setCurrentEditingReport(prev => ({...prev, [fieldName]: downloadURL}));
-        toast({ title: "Image Uploaded", description: `Session logo updated and saved permanently.` });
-      }
-    );
-  
     if (event.target) event.target.value = '';
   };
   
-  const handleSignatureSave = (signatureDataUrl: string) => {
+  const handleSignatureSave = async (signatureDataUrl: string) => {
     handleSessionDefaultChange('headMasterSignatureDataUri', signatureDataUrl);
     setIsSignaturePadOpen(false);
-    toast({ title: "Signature Saved", description: "The new signature will be used for subsequent reports." });
-  };
+
+    if (isAdminRole) {
+        await setDoc(doc(db, 'users', user.uid), { headMasterSignatureDataUri: signatureDataUrl }, { merge: true });
+        toast({ title: "Signature Saved", description: "Signature has been saved to your admin profile and will apply to all teachers in your scope." });
+    } else {
+        toast({ title: "Signature Set for Session", description: "The new signature will be used for reports in this session." });
+    }
+};
   
 
   const handleAddCustomClassNameToListAndForm = () => {
