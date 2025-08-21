@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -14,6 +15,7 @@ interface ReportPreviewProps {
   classTotal?: number;
   subjectOrder?: string[];
   sessionLogo?: string | null;
+  sessionSignature?: string | null;
 }
 
 interface TemplateStyles {
@@ -137,7 +139,7 @@ const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) =>
     </div>
 );
 
-export default function ReportPreview({ data, classTotal, subjectOrder, sessionLogo }: ReportPreviewProps) {
+export default function ReportPreview({ data, classTotal, subjectOrder, sessionLogo, sessionSignature }: ReportPreviewProps) {
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -174,7 +176,7 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
   }, [data.subjects, subjectOrder]);
   
   const logoToUse = data.schoolLogoDataUri || sessionLogo;
-  const signatureToUse = data.headMasterSignatureDataUri;
+  const signatureToUse = data.headMasterSignatureDataUri || sessionSignature;
 
 
   return (

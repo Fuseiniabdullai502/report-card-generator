@@ -1522,6 +1522,7 @@ function AppContent({ user }: { user: CustomUser }) {
                                   classTotal={getClassTotal(reportData.className)} 
                                   subjectOrder={subjectOrder}
                                   sessionLogo={sessionDefaults.schoolLogoDataUri}
+                                  sessionSignature={sessionDefaults.headMasterSignatureDataUri}
                                 />
                               </div>
                           </div>
@@ -1535,6 +1536,7 @@ function AppContent({ user }: { user: CustomUser }) {
                             classTotal={getClassTotal(currentEditingReport.className)} 
                             subjectOrder={subjectOrder}
                             sessionLogo={sessionDefaults.schoolLogoDataUri}
+                            sessionSignature={sessionDefaults.headMasterSignatureDataUri}
                            />
                         </div>
                     ) : (
@@ -1567,6 +1569,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 classTotal={getClassTotal(reportData.className)} 
                 subjectOrder={subjectOrder}
                 sessionLogo={sessionDefaults.schoolLogoDataUri}
+                sessionSignature={sessionDefaults.headMasterSignatureDataUri}
               />
             </div>
           ))
@@ -1577,6 +1580,7 @@ function AppContent({ user }: { user: CustomUser }) {
               classTotal={getClassTotal(currentEditingReport.className)} 
               subjectOrder={subjectOrder}
               sessionLogo={sessionDefaults.schoolLogoDataUri}
+              sessionSignature={sessionDefaults.headMasterSignatureDataUri}
             />
           </div>
         ) : null}
