@@ -174,6 +174,7 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
   }, [data.subjects, subjectOrder]);
   
   const logoToUse = data.schoolLogoDataUri || sessionLogo;
+  const signatureToUse = data.headMasterSignatureDataUri;
 
 
   return (
@@ -343,10 +344,10 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
               )}
             </div>
             <div className="text-center">
-              {data.headMasterSignatureDataUri && (
+              {signatureToUse && (
                 <div className="mb-0.5">
                   <Image
-                    src={data.headMasterSignatureDataUri}
+                    src={signatureToUse}
                     alt="Head Master's Signature"
                     width={120}
                     height={40}
