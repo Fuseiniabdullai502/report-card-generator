@@ -216,7 +216,7 @@
   .a4-page-simulation .student-photo-container {
     display: block !important;
     visibility: visible !important;
-    page-break-inside: avoid;
+    page-break-inside: avoid !important;
   }
   .a4-page-simulation .student-photo-container > img {
     display: block !important;
