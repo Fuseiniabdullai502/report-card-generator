@@ -241,7 +241,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
             const currentInput = e.target as HTMLInputElement;
             currentInput.blur(); // Triggers onBlur, which saves the data.
             
-            const allColumns = ['gender', 'daysAttended', ...subjectOrder.flatMap(s => [`${s}-ca`, `${s}-exam`])];
+            const allColumns = ['studentName', 'gender', 'daysAttended', ...subjectOrder.flatMap(s => [`${s}-ca`, `${s}-exam`])];
             let nextStudentIndex = studentIndex + 1;
             let nextColId = colId;
 
@@ -642,7 +642,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
       }
     }
 
-    const result = await editImageWithAiAction({ photoDataUri, prompt: "Enhance the clarity of this photo, keeping all original features, and place a graduation hat on the student's head." });
+    const result = await editImageWithAiAction({ photoDataUri, prompt: "Brighten this photo and enhance its clarity, keeping all original features." });
     if (result.success && result.editedPhotoDataUri) {
       try {
         const { blob } = dataUriToBlob(result.editedPhotoDataUri);
@@ -872,6 +872,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                           id={`studentName-${student.id}`}
                                           value={student.studentName || ''}
                                           onChange={(e) => handleFieldChange(student.id, 'studentName', e.target.value)}
+                                          onKeyDown={(e) => handleKeyDown(e, index, 'studentName')}
                                           onBlur={() => handleFieldBlur(student.id, { studentName: student.studentName })}
                                           className="h-9"
                                       />

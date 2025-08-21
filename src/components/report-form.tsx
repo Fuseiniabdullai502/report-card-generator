@@ -611,7 +611,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                           type="button" 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => handleAiEditImage(formData.studentPhotoDataUri!, "Enhance the clarity of this photo, keeping all original features, and place a graduation hat on the student's head.")}
+                          onClick={() => handleAiEditImage(formData.studentPhotoDataUri!, "Brighten this photo and enhance its clarity, keeping all original features.")}
                           disabled={!formData.studentPhotoDataUri || isImageEditingAiLoading || isUploading}
                           title="Enhance with AI"
                         >
