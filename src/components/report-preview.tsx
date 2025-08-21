@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -252,7 +251,7 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
                  )}
             </div>
             {data.studentPhotoDataUri && (
-                <div className="flex-shrink-0 text-center">
+                <div className="flex-shrink-0 text-center student-photo-container">
                     <Image
                         src={data.studentPhotoDataUri}
                         alt={`${data.studentName || 'Student'}'s photo`}

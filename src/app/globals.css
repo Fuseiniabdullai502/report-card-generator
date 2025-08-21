@@ -212,6 +212,19 @@
     box-shadow: none !important;
     line-height: 1.1 !important;
   }
+
+  .a4-page-simulation .student-photo-container {
+    display: block !important;
+    visibility: visible !important;
+    page-break-inside: avoid;
+  }
+  .a4-page-simulation .student-photo-container > img {
+    display: block !important;
+    visibility: visible !important;
+    max-width: 100% !important; 
+    height: auto !important;
+  }
+
   .a4-page-simulation .bg-green-50 { 
      background-color: #f0fff4 !important; 
   }
@@ -379,6 +392,12 @@
     margin-bottom: 6px !important;
     box-shadow: none !important;
   }
+  
+  /* Allow the AI insights card to break across pages */
+  body.dashboard-printing-active #class-dashboard-insights-card {
+    page-break-inside: auto !important;
+  }
+
   body.dashboard-printing-active .card-header {
     padding: 6px !important; 
   }
