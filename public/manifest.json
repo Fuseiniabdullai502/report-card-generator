@@ -1,28 +1,21 @@
-
 {
   "name": "Report Card Generator",
   "short_name": "ReportCards",
   "description": "Easily create, customize, rank, and print student terminal reports.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F0F4F7",
+  "background_color": "#ffffff",
   "theme_color": "#64B5F6",
   "icons": [
     {
-      "src": "/icon-192x192.svg",
+      "src": "/icon.png",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png"
     },
     {
-      "src": "/icon-512x512.svg",
+      "src": "/icon.png",
       "sizes": "512x512",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "/maskable-icon.svg",
-      "sizes": "196x196",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "type": "image/png"
     }
   ]
 }
