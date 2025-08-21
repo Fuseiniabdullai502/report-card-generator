@@ -5,7 +5,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth, type CustomUser } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { Loader2, Shield, ArrowLeft } from 'lucide-react';
-import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction, getSystemWideStatsAction, getReportsForAdminAction, type PlainUser } from '@/app/actions';
+import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction, getSystemWideStatsAction, getReportsForAdminAction, type PlainUser, type PopulationStats } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -39,13 +39,6 @@ interface InviteData {
   schoolName?: string | null;
   classNames?: string[] | null;
   createdAt: Date | null;
-}
-
-interface PopulationStats {
-  schoolCount: number;
-  maleCount: number;
-  femaleCount: number;
-  totalStudents: number;
 }
 
 interface SchoolStats {

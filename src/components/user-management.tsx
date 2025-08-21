@@ -52,6 +52,7 @@ import {
     getDistrictClassRankingAction,
     getSchoolProgramRankingAction,
     type PlainUser,
+    type PopulationStats,
 } from '@/app/actions';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import type { CustomUser } from './auth-provider';
@@ -100,16 +101,6 @@ interface InviteData {
   schoolLevels?: string[] | null;
   schoolCategory?: 'public' | 'private' | null;
   createdAt: Date | null;
-}
-
-interface PopulationStats {
-  totalStudents: number;
-  maleCount: number;
-  femaleCount: number;
-  schoolCount: number;
-  publicSchoolCount: number;
-  privateSchoolCount: number;
-  schoolLevelCounts: Record<string, number>;
 }
 
 interface SchoolStats {
@@ -1281,4 +1272,5 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
 }
 
     
+
 

@@ -1031,19 +1031,21 @@ export async function getReportsForAdminAction(user: PlainUser): Promise<{ succe
   }
 }
 
+// Interface for PopulationStats, now centralized here.
+export interface PopulationStats {
+  totalStudents: number;
+  maleCount: number;
+  femaleCount: number;
+  schoolCount: number;
+  publicSchoolCount: number;
+  privateSchoolCount: number;
+  schoolLevelCounts: Record<string, number>;
+}
 
 // Action for fetching district-level statistics
 export async function getDistrictStatsAction(district: string): Promise<{
   success: boolean;
-  stats?: {
-    totalStudents: number;
-    maleCount: number;
-    femaleCount: number;
-    schoolCount: number;
-    publicSchoolCount: number;
-    privateSchoolCount: number;
-    schoolLevelCounts: Record<string, number>;
-  };
+  stats?: PopulationStats;
   error?: string;
 }> {
   try {
@@ -1094,7 +1096,7 @@ export async function getDistrictStatsAction(district: string): Promise<{
         }
     });
 
-    const stats = {
+    const stats: PopulationStats = {
       totalStudents: reportsSnapshot.size,
       maleCount,
       femaleCount,
@@ -1183,15 +1185,7 @@ export async function getSchoolStatsAction(schoolName: string): Promise<{
 // Action for fetching system-wide statistics (super-admin only)
 export async function getSystemWideStatsAction(): Promise<{
   success: boolean;
-  stats?: {
-    totalStudents: number;
-    maleCount: number;
-    femaleCount: number;
-    schoolCount: number;
-    publicSchoolCount: number;
-    privateSchoolCount: number;
-    schoolLevelCounts: Record<string, number>;
-  };
+  stats?: PopulationStats;
   error?: string;
 }> {
   try {
@@ -1234,7 +1228,7 @@ export async function getSystemWideStatsAction(): Promise<{
         }
     });
     
-    const stats = {
+    const stats: PopulationStats = {
       totalStudents: reportsSnapshot.size,
       maleCount,
       femaleCount,
@@ -1564,5 +1558,6 @@ export async function getSchoolProgramRankingAction(
 
 
   
+
 
 
