@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import fonts after Tailwind directives */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
@@ -528,4 +529,3 @@
   .school-ranking-print-header h2 { font-size: 1.25rem; font-weight: bold; color: black !important; }
   .school-ranking-print-header p { font-size: 0.875rem; color: black !important; }
 }
-    
