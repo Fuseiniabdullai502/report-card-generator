@@ -1,9 +1,9 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -259,7 +259,7 @@
   }
 
   .a4-page-simulation .print\\:mb-1 { margin-bottom: 0.1rem !important; }
-  .a4-page-simulation .print\\:p-1.5 { padding: 0.2rem !important; }
+  .a4-page-simulation .print\\:p-1\\.5 { padding: 0.2rem !important; }
 
   .a4-page-simulation img {
     max-width: 100% !important; 
