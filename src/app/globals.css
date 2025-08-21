@@ -223,6 +223,7 @@
     visibility: visible !important;
     max-width: 100% !important; 
     height: auto !important;
+    page-break-inside: avoid !important;
   }
 
   .a4-page-simulation .bg-green-50 { 
