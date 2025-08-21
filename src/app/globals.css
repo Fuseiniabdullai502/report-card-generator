@@ -1,9 +1,9 @@
+/* Import fonts first */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import fonts after Tailwind directives */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -428,7 +428,7 @@
    body.dashboard-printing-active .text-accent { color: #276749 !important; }
    body.dashboard-printing-active .text-muted-foreground { color: #4a5568 !important; }
   
-  body.dashboard-printing-active [class~="bg-accent/10"] { 
+  body.dashboard-printing-active [class~="bg-accent\\/10"] { 
     background-color: #f0fff4 !important; 
     border: 1px solid #a7f3d0 !important; 
   }
