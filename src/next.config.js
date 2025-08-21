@@ -29,28 +29,30 @@ const nextConfig = {
     config,
     { isServer }
   ) => {
-    if (isServer) {
-      config.externals.push(
-        'handlebars',
-        'express',
-        'firebase-admin',
-        'long',
-        '@opentelemetry/api',
-        '@opentelemetry/core',
-        '@opentelemetry/instrumentation',
-        '@opentelemetry/resources',
-        '@opentelemetry/sdk-trace-base',
-        '@opentelemetry/sdk-trace-node',
-        '@opentelemetry/semantic-conventions',
-        'require-in-the-middle',
-        'async_hooks',
-        '@opentelemetry/exporter-jaeger',
-        '@opentelemetry/exporter-trace-otlp-grpc',
-        'grpc'
-      );
+    // This is the correct way to handle server-only packages in Next.js.
+    // They should not be bundled for the client.
+    if (!isServer) {
+        config.externals.push(
+            'firebase-admin',
+            'long',
+            'handlebars',
+            '@opentelemetry/api',
+            '@opentelemetry/core',
+            '@opentelemetry/instrumentation',
+            '@opentelemetry/resources',
+            '@opentelemetry/sdk-trace-base',
+            '@opentelemetry/sdk-trace-node',
+            '@opentelemetry/semantic-conventions',
+            'require-in-the-middle',
+            'async_hooks',
+            '@opentelemetry/exporter-jaeger',
+            '@opentelemetry/exporter-trace-otlp-grpc',
+            'grpc'
+        );
     }
     return config
   },
 };
 
 module.exports = nextConfig;
+
