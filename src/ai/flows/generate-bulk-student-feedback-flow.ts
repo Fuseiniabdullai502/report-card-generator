@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -83,7 +84,7 @@ const generateBulkStudentFeedbackFlow = ai.defineFlow(
     inputSchema: GenerateBulkStudentFeedbackInputSchema,
     outputSchema: GenerateBulkStudentFeedbackOutputSchema,
   },
-  async (input) => {
+  async (input: GenerateBulkStudentFeedbackInput) => {
     const {output} = await generateBulkStudentFeedbackPrompt(input);
     if (!output?.feedbacks) {
       return {
