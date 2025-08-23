@@ -13,13 +13,6 @@
       "collectionGroup": "reports",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "schoolName", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "reports",
-      "queryScope": "COLLECTION",
-      "fields": [
         { "fieldPath": "className", "arrayConfig": "CONTAINS" }
       ]
     },
@@ -28,6 +21,13 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "district", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "schoolName", "order": "ASCENDING" }
       ]
     },
     {
@@ -150,20 +150,15 @@
         "collectionGroup": "users",
         "queryScope": "COLLECTION",
         "fields": [
-            { "fieldPath": "role", "order": "ASCENDING" }
-        ]
-    },
-    {
-        "collectionGroup": "users",
-        "queryScope": "COLLECTION",
-        "fields": [
+            { "fieldPath": "role", "order": "ASCENDING" },
             { "fieldPath": "district", "order": "ASCENDING" }
         ]
     },
-    {
+     {
         "collectionGroup": "users",
         "queryScope": "COLLECTION",
         "fields": [
+            { "fieldPath": "role", "order": "ASCENDING" },
             { "fieldPath": "schoolName", "order": "ASCENDING" }
         ]
     }
