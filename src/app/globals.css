@@ -220,19 +220,11 @@
     line-height: 1.1 !important;
   }
 
-  .a4-page-simulation .student-photo-container {
-    display: flex !important;
+  .a4-page-simulation .student-photo-container,
+  .a4-page-simulation .student-photo-container > *,
+  .a4-page-simulation .student-photo-container img {
+    display: block !important;
     visibility: visible !important;
-    page-break-inside: avoid !important;
-    flex-direction: column;
-    align-items: center;
-  }
-  .a4-page-simulation .student-photo-container > img,
-  .a4-page-simulation .student-photo-container > div {
-    display: flex !important;
-    visibility: visible !important;
-    max-width: 100% !important; 
-    height: auto !important;
     page-break-inside: avoid !important;
   }
 
