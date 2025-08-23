@@ -364,7 +364,6 @@ function AppContent({ user }: { user: CustomUser }) {
                 q = query(reportsCollectionRef, where('className', 'in', user.classNames));
             } else {
                 // If user has no classes assigned, they can see no reports.
-                // Fetching by teacherId is a fallback but might not be what's desired. Let's make it explicit.
                 // An empty query that will return nothing.
                  q = query(reportsCollectionRef, where('teacherId', '==', 'user-has-no-classes'));
             }
