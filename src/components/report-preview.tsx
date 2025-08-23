@@ -6,7 +6,7 @@ import * as React from 'react';
 import type {ReportData, SubjectEntry} from '@/lib/schemas';
 import Image from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Award, Medal } from 'lucide-react'; // For rank display, Medal for promotion
+import { Award, Medal, User as UserIcon } from 'lucide-react'; // For rank display, Medal for promotion
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -253,19 +253,27 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
                     />
                  )}
             </div>
-            {data.studentPhotoDataUri && (
-                <div className="flex-shrink-0 text-center student-photo-container">
-                    <Image
-                        src={data.studentPhotoDataUri}
-                        alt={`${data.studentName || 'Student'}'s photo`}
-                        width={80}
-                        height={100}
-                        className="object-cover rounded border border-gray-300 shadow-sm"
-                        data-ai-hint="student portrait"
-                    />
-                    <p className="text-xs text-gray-700 mt-1 font-medium">{data.studentName}</p>
-                </div>
-            )}
+            
+            <div className="flex-shrink-0 text-center student-photo-container">
+              {data.studentPhotoDataUri ? (
+                  <>
+                      <Image
+                          src={data.studentPhotoDataUri}
+                          alt={`${data.studentName || 'Student'}'s photo`}
+                          width={80}
+                          height={100}
+                          className="object-cover rounded border border-gray-300 shadow-sm"
+                          data-ai-hint="student portrait"
+                      />
+                      <p className="text-xs text-gray-700 mt-1 font-medium">{data.studentName}</p>
+                  </>
+              ) : (
+                  <div className="hidden print:flex w-[80px] h-[100px] border-2 border-dashed rounded flex-col items-center justify-center text-gray-400 text-xs text-center">
+                    <UserIcon className="h-6 w-6 mb-1"/>
+                    No Photo
+                  </div>
+              )}
+            </div>
         </section>
 
 
