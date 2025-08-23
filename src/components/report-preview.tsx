@@ -268,7 +268,7 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
                       <p className="text-xs text-gray-700 mt-1 font-medium">{data.studentName}</p>
                   </>
               ) : (
-                  <div className="hidden print:flex w-[80px] h-[100px] border-2 border-dashed rounded flex-col items-center justify-center text-gray-400 text-xs text-center">
+                  <div className="flex w-[80px] h-[100px] border-2 border-dashed rounded flex-col items-center justify-center text-gray-400 text-xs text-center">
                     <UserIcon className="h-6 w-6 mb-1"/>
                     No Photo
                   </div>
