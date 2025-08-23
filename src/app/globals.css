@@ -221,12 +221,15 @@
   }
 
   .a4-page-simulation .student-photo-container {
-    display: block !important;
+    display: flex !important;
     visibility: visible !important;
     page-break-inside: avoid !important;
+    flex-direction: column;
+    align-items: center;
   }
-  .a4-page-simulation .student-photo-container > img {
-    display: block !important;
+  .a4-page-simulation .student-photo-container > img,
+  .a4-page-simulation .student-photo-container > div {
+    display: flex !important;
     visibility: visible !important;
     max-width: 100% !important; 
     height: auto !important;
