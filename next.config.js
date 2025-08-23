@@ -33,21 +33,7 @@ const nextConfig = {
     // They should not be bundled for the client.
     if (!isServer) {
         config.externals.push(
-            'firebase-admin',
-            'long',
-            'handlebars',
-            '@opentelemetry/api',
-            '@opentelemetry/core',
-            '@opentelemetry/instrumentation',
-            '@opentelemetry/resources',
-            '@opentelemetry/sdk-trace-base',
-            '@opentelemetry/sdk-trace-node',
-            '@opentelemetry/semantic-conventions',
-            'require-in-the-middle',
-            'async_hooks',
-            '@opentelemetry/exporter-jaeger',
-            '@opentelemetry/exporter-trace-otlp-grpc',
-            'grpc'
+            'firebase-admin'
         );
     }
     return config
@@ -55,4 +41,5 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
 
