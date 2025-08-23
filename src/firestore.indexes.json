@@ -20,7 +20,7 @@
       "collectionGroup": "reports",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "className", "order": "ASCENDING" }
+        { "fieldPath": "className", "arrayConfig": "CONTAINS" }
       ]
     },
     {
@@ -147,17 +147,24 @@
       ]
     },
     {
-        "collectionGroup": "reports",
+        "collectionGroup": "users",
         "queryScope": "COLLECTION",
         "fields": [
-            {
-                "fieldPath": "className",
-                "arrayConfig": "CONTAINS"
-            },
-            {
-                "fieldPath": "createdAt",
-                "order": "ASCENDING"
-            }
+            { "fieldPath": "role", "order": "ASCENDING" }
+        ]
+    },
+    {
+        "collectionGroup": "users",
+        "queryScope": "COLLECTION",
+        "fields": [
+            { "fieldPath": "district", "order": "ASCENDING" }
+        ]
+    },
+    {
+        "collectionGroup": "users",
+        "queryScope": "COLLECTION",
+        "fields": [
+            { "fieldPath": "schoolName", "order": "ASCENDING" }
         ]
     }
   ],
