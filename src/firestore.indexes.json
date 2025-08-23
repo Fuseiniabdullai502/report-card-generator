@@ -13,7 +13,8 @@
       "collectionGroup": "reports",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "className", "arrayConfig": "CONTAINS" }
+        { "fieldPath": "className", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
       ]
     },
     {
