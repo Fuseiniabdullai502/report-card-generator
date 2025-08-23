@@ -1,4 +1,5 @@
 
+
 {
   "indexes": [
     {
@@ -13,8 +14,7 @@
       "collectionGroup": "reports",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "className", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "ASCENDING" }
+        { "fieldPath": "teacherId", "order": "ASCENDING" }
       ]
     },
     {

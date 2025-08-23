@@ -323,7 +323,8 @@ function AppContent({ user }: { user: CustomUser }) {
     });
     
     // Restore original sort order for consistency in the list view
-    setAllRankedReports(allClassRankedReports.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0)));
+    allClassRankedReports.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
+    setAllRankedReports(allClassRankedReports);
   }, []);
 
 
@@ -340,7 +341,7 @@ function AppContent({ user }: { user: CustomUser }) {
     let q;
     switch(user.role) {
         case 'super-admin':
-            q = query(reportsCollectionRef); // Removed order by to avoid composite index need
+            q = query(reportsCollectionRef);
             break;
         case 'big-admin':
             if (!user.district) {
@@ -359,21 +360,12 @@ function AppContent({ user }: { user: CustomUser }) {
             q = query(reportsCollectionRef, where('schoolName', '==', user.schoolName));
             break;
         case 'user':
-            if (user.classNames && user.classNames.length > 0) {
-                // Fetch all reports for the classes the user is assigned to, regardless of teacherId
-                q = query(reportsCollectionRef, where('className', 'in', user.classNames));
-            } else {
-                // If user has no classes assigned, they can see no reports.
-                // An empty query that will return nothing.
-                 q = query(reportsCollectionRef, where('teacherId', '==', 'user-has-no-classes'));
-            }
+            q = query(reportsCollectionRef, where('teacherId', '==', user.uid));
             break;
         default:
-             // Default to old behavior for safety, though should be unreachable
             q = query(reportsCollectionRef, where('teacherId', '==', user.uid));
             break;
     }
-
 
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       setIndexError(null);
@@ -399,10 +391,9 @@ function AppContent({ user }: { user: CustomUser }) {
         }
       });
       
-      // Sort reports on the client side to avoid needing composite indexes in Firestore
+      // Sort on the client side
       fetchedReports.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
 
-      // Set session defaults based on user role and fetched data
       const newSessionDefaults: Partial<ReportData> = {};
       if (user.role === 'admin' && user.schoolName) {
           newSessionDefaults.schoolName = user.schoolName;
@@ -462,11 +453,7 @@ function AppContent({ user }: { user: CustomUser }) {
     }, (error: any) => { 
       console.error("Error fetching reports from Firestore:", error);
       if (error.code === 'failed-precondition') {
-        let indexField = 'teacherId';
-        if (user.role === 'big-admin') indexField = 'district';
-        if (user.role === 'admin') indexField = 'schoolName';
-        if (user.role === 'user') indexField = 'className';
-        const errorMessage = `A database index is needed to filter reports. Please check your browser's developer console for a link to create the required index on the "reports" collection. This is a one-time setup.`;
+        const errorMessage = `A database index is needed. Please check your browser's developer console for a link to create the required index on the "reports" collection. This is a one-time setup.`;
         setIndexError(errorMessage);
         toast({ 
           title: "Action Required: Firestore Index Needed", 
