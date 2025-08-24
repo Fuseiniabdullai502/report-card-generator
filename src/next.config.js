@@ -1,5 +1,4 @@
 
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
@@ -47,5 +46,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-
 
