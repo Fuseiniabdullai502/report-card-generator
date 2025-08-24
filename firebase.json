@@ -19,43 +19,7 @@
     "rules": "storage.rules",
     "cors": "storage.cors.json"
   },
-  "apphosting": [
-    {
-      "backendId": "nextjs-app",
-      "rootDir": "/",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "functions"
-      ]
-    },
-    {
-      "backendId": "report-card-generator",
-      "rootDir": "/",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "functions"
-      ],
-      "alwaysDeployFromSource": true
-    },
-    {
-      "backendId": "report-card-generator",
-      "rootDir": "/",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "functions"
-      ],
-      "alwaysDeployFromSource": true
-    },
-    {
+  "apphosting": {
       "backendId": "report-card-generator",
       "rootDir": "/",
       "ignore": [
@@ -67,5 +31,4 @@
       ],
       "alwaysDeployFromSource": true
     }
-  ]
 }
