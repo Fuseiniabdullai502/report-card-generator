@@ -30,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
 import { db, storage } from '@/lib/firebase';
-import { doc, setDoc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, serverTimestamp, writeBatch, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
@@ -175,7 +175,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
         setSavingStatus(prev => ({ ...prev, [reportId]: 'saving' }));
         try {
           const reportRef = doc(db, 'reports', reportId);
-          await setDoc(reportRef, updatedFields, { merge: true });
+          await updateDoc(reportRef, updatedFields);
           setSavingStatus(prev => ({ ...prev, [reportId]: 'saved' }));
           setTimeout(() => {
             setSavingStatus(prev => ({ ...prev, [reportId]: 'idle' }));
@@ -607,6 +607,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
         try {
             const downloadURL = await getDownloadURL(storageRef);
             handleFieldChange(studentId, 'studentPhotoDataUri', downloadURL);
+            saveData(studentId, { studentPhotoDataUri: downloadURL }); // Save immediately after upload
         } catch (err) {
             console.error('Error getting download URL after upload:', err);
             toast({ title: 'Upload Completed (URL Error)', description: 'The file uploaded but a download URL could not be retrieved. Check your Storage rules and permissions.', variant: 'destructive' });
@@ -650,6 +651,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
         await uploadBytesResumable(storageRef, blob);
         const downloadURL = await getDownloadURL(storageRef);
         handleFieldChange(student.id, 'studentPhotoDataUri', downloadURL);
+        saveData(student.id, { studentPhotoDataUri: downloadURL });
       } catch (storageError) {
         toast({ title: "Storage Error", description: "AI edit successful, but failed to save new image.", variant: "destructive" });
       }
@@ -921,7 +923,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                                             key={hobby}
                                                             checked={student.hobbies?.includes(hobby)}
                                                             onCheckedChange={checked => handleHobbyChange(student.id, hobby, Boolean(checked))}
-                                                            onSelect={(e) => e.preventDefault()}
+                                                            onSelect={(e) => { e.preventDefault(); handleFieldBlur(student.id, { hobbies: student.hobbies })}}
                                                         >
                                                             {hobby}
                                                         </DropdownMenuCheckboxItem>
