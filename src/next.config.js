@@ -36,8 +36,8 @@ const nextConfig = {
             'handlebars',
             'express',
             'require-in-the-middle',
-            /^@opentelemetry.*$/,
-            /^@google-cloud.*$/,
+            /^@opentelemetry\//,
+            /^@google-cloud\//,
             'protobufjs'
         );
     }
@@ -46,4 +46,5 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
 
