@@ -106,13 +106,15 @@
   }
   
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
   body {
-    @apply bg-background text-foreground font-body;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-inter), sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-headline;
+    font-family: var(--font-inter), sans-serif;
   }
 }
 
@@ -172,6 +174,16 @@
     box-shadow: none !important;
   }
 
+  img,
+  .a4-page-simulation .student-photo-container img {
+    display: inline-block !important;
+    max-width: 100% !important;
+    height: auto !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    visibility: visible !important;
+  }
+
   /* Main watermark style for printing */
   .watermark-container > p {
     color: #f0f0f0 !important; /* Very light gray for the watermark text */
@@ -222,8 +234,7 @@
   }
 
   .a4-page-simulation .student-photo-container,
-  .a4-page-simulation .student-photo-container > *,
-  .a4-page-simulation .student-photo-container img {
+  .a4-page-simulation .student-photo-container > * {
     display: block !important;
     visibility: visible !important;
     page-break-inside: avoid !important;
