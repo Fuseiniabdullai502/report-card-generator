@@ -284,10 +284,6 @@
   .a4-page-simulation tr {
     page-break-inside: avoid; 
   }
-  .a4-page-simulation .py-0\\.5 {
-    padding-top: 0px !important;
-    padding-bottom: 0px !important;
-  }
   
   .a4-page-simulation .report-subjects-table th, .a4-page-simulation .report-subjects-table td {
     padding-top: 0px !important;
@@ -425,7 +421,7 @@
   .ranking-print-header p,
   .school-dashboard-print-header p {
     font-size: 0.875rem; 
-    color: black !important;
+    color: black !important; 
   }
   
   body.dashboard-printing-active .dialog-footer-print-hide,
