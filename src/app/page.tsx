@@ -524,9 +524,8 @@ function AppContent({ user }: { user: CustomUser }) {
       instructorContact: currentEditingReport.instructorContact,
       schoolCategory: currentEditingReport.schoolCategory,
     };
-    setSessionDefaults(newDefaults);
-    
     handleResetToBlankForm(newDefaults);
+    setSessionDefaults(newDefaults);
   }, [currentEditingReport, handleResetToBlankForm]);
 
   const handleSaveOrUpdateReport = async (formDataFromForm: ReportData) => {
@@ -654,8 +653,8 @@ function AppContent({ user }: { user: CustomUser }) {
       instructorContact: reportToSaveForFirestore.instructorContact,
       schoolCategory: reportToSaveForFirestore.schoolCategory,
     };
-    setSessionDefaults(newSessionDefaults);
     handleResetToBlankForm(newSessionDefaults);
+    setSessionDefaults(newSessionDefaults);
   };
   
   const handleLoadReportForEditing = useCallback((reportToEdit: ReportData) => {
@@ -679,7 +678,6 @@ function AppContent({ user }: { user: CustomUser }) {
       schoolCategory: reportToEdit.schoolCategory,
     };
     setSessionDefaults(newDefaults);
-
     window.scrollTo({ top: 0, behavior: 'smooth' });
     toast({
         title: `Editing Report for ${reportToEdit.studentName}`,
