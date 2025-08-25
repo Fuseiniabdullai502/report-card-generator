@@ -33,6 +33,7 @@ const nextConfig = {
     if (!isServer) {
         config.externals.push(
             'firebase-admin',
+            'require-in-the-middle',
             'handlebars',
             'express',
             'require-in-the-middle',
@@ -46,5 +47,6 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
 
 
