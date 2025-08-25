@@ -554,7 +554,7 @@ function AppContent({ user }: { user: CustomUser }) {
       studentEntryNumber: formDataFromForm.studentEntryNumber,
       studentName: formDataFromForm.studentName || '',
       className: formDataFromForm.className || '',
-      shsProgram: formDataFromForm.shsProgram || null,
+      shsProgram: formDataFromForm.shsProgram || undefined,
       gender: formDataFromForm.gender,
       schoolName: formDataFromForm.schoolName || '',
       region: formDataFromForm.region || '',
@@ -636,7 +636,7 @@ function AppContent({ user }: { user: CustomUser }) {
       }
     }
 
-    const newSessionDefaults = {
+    const newSessionDefaults: Partial<ReportData> = {
       schoolName: reportToSaveForFirestore.schoolName,
       region: reportToSaveForFirestore.region,
       district: reportToSaveForFirestore.district,
@@ -653,8 +653,8 @@ function AppContent({ user }: { user: CustomUser }) {
       instructorContact: reportToSaveForFirestore.instructorContact,
       schoolCategory: reportToSaveForFirestore.schoolCategory,
     };
-    handleResetToBlankForm(newSessionDefaults);
     setSessionDefaults(newSessionDefaults);
+    handleResetToBlankForm(newSessionDefaults);
   };
   
   const handleLoadReportForEditing = useCallback((reportToEdit: ReportData) => {

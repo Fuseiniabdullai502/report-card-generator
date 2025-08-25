@@ -179,3 +179,12 @@ firestore-debug.log
 firebase-debug.log
 firestore-debug.log
 *.log
+
+# Big build/emulator dirs
+.firebase/
+.next/
+node_modules/
+functions/node_modules/
+dist/
+build/
+.vercel/
