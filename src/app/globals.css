@@ -315,19 +315,10 @@
   }
 
   /* Styles for printing Dialogs (Class & School Dashboards) */
-  body.dashboard-printing-active #report-preview-container {
-    display: none !important;
-  }
-  
-  .dashboard-print-header, 
+  .dashboard-print-header,
   .school-dashboard-print-header,
   .ranking-print-header { 
     display: none;
-  }
-
-  @page {
-    size: A4;
-    margin: 0;
   }
   
   body.dashboard-printing-active {
@@ -339,6 +330,10 @@
   body.dashboard-printing-active .watermark-container {
     position: fixed !important;
     color: #f0f0f0 !important;
+  }
+
+  body.dashboard-printing-active #report-preview-container {
+    display: none !important;
   }
 
   body.dashboard-printing-active #class-dashboard-dialog-content,
@@ -383,9 +378,6 @@
   
   body.dashboard-printing-active .card {
     background-color: white !important; 
-  }
-  
-  body.dashboard-printing-active .card {
     page-break-inside: avoid !important;
     margin-bottom: 6px !important;
     box-shadow: none !important;
@@ -396,27 +388,15 @@
     page-break-inside: auto !important;
   }
 
-  body.dashboard-printing-active .card-header {
-    padding: 6px !important; 
-  }
-  body.dashboard-printing-active .card-title {
-    font-size: 10pt !important; 
-  }
-  body.dashboard-printing-active .card-description {
-    font-size: 7pt !important; 
-  }
-  body.dashboard-printing-active .card-content {
-    padding: 6px !important; 
-  }
-  /* NEW: Remove horizontal padding from table containers on print */
-  body.dashboard-printing-active .card-content .table-container {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
+  body.dashboard-printing-active .card-header { padding: 6px !important; }
+  body.dashboard-printing-active .card-title { font-size: 10pt !important; }
+  body.dashboard-printing-active .card-description { font-size: 7pt !important; }
+  body.dashboard-printing-active .card-content { padding: 6px !important; }
+  body.dashboard-printing-active .card-content .table-container { padding-left: 0 !important; padding-right: 0 !important; }
 
-   body.dashboard-printing-active .text-primary { color: #2c5282 !important; }
-   body.dashboard-printing-active .text-accent { color: #276749 !important; }
-   body.dashboard-printing-active .text-muted-foreground { color: #4a5568 !important; }
+  body.dashboard-printing-active .text-primary { color: #2c5282 !important; }
+  body.dashboard-printing-active .text-accent { color: #276749 !important; }
+  body.dashboard-printing-active .text-muted-foreground { color: #4a5568 !important; }
   
   body.dashboard-printing-active [class~="bg-accent\\/10"] { 
     background-color: #f0fff4 !important; 
@@ -515,7 +495,20 @@
   
   #school-ranking-card { border: none !important; box-shadow: none !important; }
   #school-ranking-card .card-header { display: none !important; }
-  .school-ranking-print-header { display: block !important; text-align: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #ccc; }
-  .school-ranking-print-header h2 { font-size: 1.25rem; font-weight: bold; color: black !important; }
-  .school-ranking-print-header p { font-size: 0.875rem; color: black !important; }
+  .school-ranking-print-header { 
+      display: block !important; 
+      text-align: center; 
+      margin-bottom: 1rem; 
+      padding-bottom: 0.5rem; 
+      border-bottom: 1px solid #ccc; 
+  }
+  .school-ranking-print-header h2 { 
+      font-size: 1.25rem; 
+      font-weight: bold; 
+      color: black !important; 
+  }
+  .school-ranking-print-header p { 
+      font-size: 0.875rem; 
+      color: black !important; 
+  }
 }
