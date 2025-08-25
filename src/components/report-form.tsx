@@ -24,7 +24,7 @@ import { storage } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { getClassLevel, getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
-import { resizeImage } from '@/lib/utils';
+import { resizeImage, fileToBase64 } from '@/lib/utils';
 
 
 interface ReportFormProps {
@@ -71,7 +71,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
   const [isTeacherFeedbackAiLoading, startTeacherFeedbackAiTransition] = useTransition();
   const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
   const [isImageEditingAiLoading, startImageEditingAiTransition] = useTransition();
-  const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(null);
+  const [imageUploadProgress, setImageUploadProgress] = useState<'uploading' | null>(null);
   const { toast } = useToast();
 
   const [customSubjects, setCustomSubjects] = useState<string[]>([]);
@@ -244,58 +244,22 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
       onFormUpdate({ ...formData, hobbies: newHobbies });
   };
 
-  const dataUriToBlob = (dataUri: string): { blob: Blob, mimeType: string } => {
-    const byteString = atob(dataUri.split(',')[1]);
-    const mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-    }
-    return { blob: new Blob([ab], { type: mimeString }), mimeType: mimeString };
-  };
-
   const handleAiEditImage = async (photoUrl: string, editPrompt: string) => {
     if (!photoUrl) return;
 
-    let photoDataUri = photoUrl;
     startImageEditingAiTransition(async () => {
-      if (!photoUrl.startsWith('data:')) {
-        try {
-          const response = await fetch(photoUrl);
-          const blob = await response.blob();
-          photoDataUri = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        } catch (error) {
-          toast({ title: "AI Edit Failed", description: "Could not fetch the image to send to the AI.", variant: "destructive" });
-          return;
-        }
-      }
-
-       const result = await editImageWithAiAction({ photoDataUri, prompt: editPrompt });
-       if (result.success && result.editedPhotoDataUri) {
-          try {
-            const { blob } = dataUriToBlob(result.editedPhotoDataUri);
-            const storageRef = ref(storage, `student_photos/${formData.id}`);
-            await uploadBytesResumable(storageRef, blob);
-            const downloadURL = await getDownloadURL(storageRef);
-            onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
-            toast({ title: "AI Image Enhancement Successful", description: "The student photo has been updated and saved." });
-          } catch(storageError) {
-             toast({ title: "Storage Error", description: "AI editing was successful, but the new image could not be saved to storage.", variant: "destructive" });
-          }
-       } else {
+      const result = await editImageWithAiAction({ photoDataUri: photoUrl, prompt: editPrompt });
+      if (result.success && result.editedPhotoDataUri) {
+          onFormUpdate({ ...formData, studentPhotoDataUri: result.editedPhotoDataUri });
+          toast({ title: "AI Image Enhancement Successful", description: "The student photo has been updated." });
+      } else {
           toast({ 
             title: "AI Image Edit Failed", 
             description: <AiErrorDescription errorMessage={result.error || "An unknown error occurred."} />,
             variant: "destructive",
             duration: 30000 
           });
-       }
+      }
     });
   };
   
@@ -303,78 +267,26 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     const input = e.target as HTMLInputElement;
     let file = input.files?.[0];
     if (!file) return;
-
+  
     if (!file.type.startsWith('image/')) {
-        toast({ title: 'Invalid File', description: 'Please select an image.', variant: 'destructive' });
-        return;
+      toast({ title: 'Invalid File', description: 'Please select an image.', variant: 'destructive' });
+      return;
     }
-    
-    // Resize image if it's too large
-    if (file.size > 2 * 1024 * 1024) { // 2MB limit
-        try {
-            toast({ title: "Resizing Image", description: "The selected image is large and is being resized before upload." });
-            file = await resizeImage(file);
-        } catch (resizeError) {
-            console.error("Image resize error:", resizeError);
-            toast({ title: 'Resize Failed', description: 'Could not resize the image. Please try a smaller file.', variant: 'destructive' });
-            if (input) input.value = '';
-            return;
-        }
+  
+    setImageUploadProgress('uploading');
+  
+    try {
+      const resizedFile = await resizeImage(file);
+      const base64 = await fileToBase64(resizedFile);
+      onFormUpdate({ ...formData, studentPhotoDataUri: base64 });
+      toast({ title: "Image Ready", description: "Image has been converted and is ready to be saved." });
+    } catch (error) {
+      console.error("Image processing error:", error);
+      toast({ title: 'Image Processing Failed', description: 'Could not process the image.', variant: 'destructive' });
+    } finally {
+      setImageUploadProgress(null);
+      if (input) input.value = '';
     }
-
-    const storageRef = ref(storage, `student_photos/${formData.id}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    // start showing upload UI
-    setImageUploadProgress(0);
-
-    uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-            // protect against division by zero
-            const progress = snapshot.totalBytes ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100) : 0;
-            setImageUploadProgress(progress);
-        },
-        async (error) => {
-            console.error('Image upload error:', error);
-            let errorMessage = "Could not save the image. This can happen if the network connection is interrupted.";
-            if (typeof error === 'object' && error !== null && 'code' in error) {
-                const errorCode = (error as any).code;
-                switch (errorCode) {
-                    case 'storage/unauthorized':
-                        errorMessage = "Permission denied. Please check your Firebase Storage security rules to allow writes.";
-                        break;
-                    case 'storage/canceled':
-                        errorMessage = "Upload was canceled.";
-                        break;
-                    case 'storage/object-not-found':
-                        errorMessage = "Storage not enabled. Please activate Firebase Storage in your project console.";
-                        break;
-                    case 'storage/unknown':
-                        errorMessage = "An unknown storage error occurred. Please check the server logs and ensure Storage is enabled.";
-                        break;
-                }
-            }
-            toast({ title: 'Upload Failed', description: errorMessage, variant: 'destructive', duration: 10000 });
-            setImageUploadProgress(null);
-            if (input) input.value = '';
-        },
-        async () => {
-            // completed uploading - try to get a download URL and ALWAYS clear the progress state so the spinner disappears
-            try {
-                const downloadURL = await getDownloadURL(storageRef);
-                onFormUpdate({ ...formData, studentPhotoDataUri: downloadURL });
-                toast({ title: "Image Uploaded Successfully" });
-            } catch (err) {
-                console.error('Error getting download URL after upload:', err);
-                toast({ title: 'Upload Completed (No URL)', description: 'The file uploaded but a download URL could not be retrieved. Check your Storage rules and permissions.', variant: 'destructive' });
-            } finally {
-                // ensure UI state resets even if getDownloadURL fails
-                setImageUploadProgress(null);
-                if (input) input.value = '';
-            }
-        }
-    );
   };
   
   const handleSubmit = (e: FormEvent) => {
@@ -511,7 +423,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
       setIsCustomHobbyDialogOpen(false);
   };
   
-  const isUploading = typeof imageUploadProgress === 'number';
+  const isUploading = imageUploadProgress === 'uploading';
 
   return (
     <>
@@ -605,7 +517,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                         <input type="file" id="studentPhotoUpload" className="sr-only" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
                         <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('studentPhotoUpload')?.click()} disabled={isUploading}>
                             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4 text-blue-500" />}
-                             {isUploading ? 'Uploading...' : 'Upload'}
+                             {isUploading ? 'Processing...' : 'Upload'}
                         </Button>
                         <Button 
                           type="button" 
@@ -619,16 +531,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                           Enhance
                         </Button>
                     </div>
-                    {isUploading && (
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mt-2">
-                          <div
-                              className="h-full bg-blue-500 transition-all duration-300 ease-in-out relative"
-                              style={{ width: `${imageUploadProgress}%` }}
-                          >
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
-                          </div>
-                      </div>
-                    )}
+                    {isUploading && <p className="text-xs text-blue-500">Processing image...</p>}
                     {formData.studentPhotoDataUri && !isUploading && (
                       <div className="relative w-24 h-32 mt-2 rounded border p-1">
                         {/* use NextImage fill prop (Next.js >=13) instead of deprecated layout="fill" */}

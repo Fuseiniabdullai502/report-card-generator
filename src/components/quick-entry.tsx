@@ -54,7 +54,7 @@ import {
 import { getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
 import { Textarea } from './ui/textarea';
 import { Progress } from './ui/progress';
-import { resizeImage } from '@/lib/utils';
+import { resizeImage, fileToBase64 } from '@/lib/utils';
 
 
 interface QuickEntryProps {
@@ -98,7 +98,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
 
   const [isApplyingBulkFeedback, setIsApplyingBulkFeedback] = useState(false);
 
-  const [imageUploadStatus, setImageUploadStatus] = useState<Record<string, number | null>>({});
+  const [imageUploadStatus, setImageUploadStatus] = useState<Record<string, 'uploading' | null>>({});
   const [isAiEditing, setIsAiEditing] = useState<Record<string, boolean>>({});
 
   const [customHobbies, setCustomHobbies] = useState<string[]>([]);
@@ -531,17 +531,6 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
       setIsCustomSubjectDialogOpen(false);
   };
 
-      const dataUriToBlob = (dataUri: string): { blob: Blob, mimeType: string } => {
-    const byteString = atob(dataUri.split(',')[1]);
-    const mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-    }
-    return { blob: new Blob([ab], { type: mimeString }), mimeType: mimeString };
-  };
-
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     studentId: string
@@ -555,68 +544,21 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
       return;
     }
 
-    // Resize image if it's too large
-    if (file.size > 2 * 1024 * 1024) { // 2MB limit
-      try {
-        toast({ title: "Resizing Image", description: "The selected image is large and is being resized before upload." });
-        file = await resizeImage(file);
-      } catch (resizeError) {
-        console.error("Image resize error:", resizeError);
-        toast({ title: 'Resize Failed', description: 'Could not resize the image. Please try a smaller file.', variant: 'destructive' });
-        if (input) input.value = '';
-        return;
-      }
+    setImageUploadStatus(prev => ({ ...prev, [studentId]: 'uploading' }));
+
+    try {
+      const resizedFile = await resizeImage(file);
+      const base64 = await fileToBase64(resizedFile);
+      handleFieldChange(studentId, 'studentPhotoDataUri', base64);
+      await saveData(studentId, { studentPhotoDataUri: base64 });
+      toast({ title: 'Image Uploaded', description: 'The student photo has been updated.' });
+    } catch (error) {
+      console.error("Image processing or saving error:", error);
+      toast({ title: 'Image Upload Failed', description: 'Could not process or save the image.', variant: 'destructive' });
+    } finally {
+      setImageUploadStatus(prev => ({ ...prev, [studentId]: null }));
+      if (input) input.value = '';
     }
-
-    const storageRef = ref(storage, `student_photos/${studentId}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    setImageUploadStatus(prev => ({ ...prev, [studentId]: 0 }));
-
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
-        setImageUploadStatus(prev => ({ ...prev, [studentId]: progress }));
-      },
-      async (error) => {
-        console.error('Image upload error:', error);
-        let errorMessage = "Could not save the image. This can happen if the network connection is interrupted.";
-        if (typeof error === 'object' && error !== null && 'code' in error) {
-            const errorCode = (error as any).code;
-            switch (errorCode) {
-                case 'storage/unauthorized':
-                    errorMessage = "Permission denied. Please check your Firebase Storage security rules to allow writes.";
-                    break;
-                case 'storage/canceled':
-                    errorMessage = "Upload was canceled.";
-                    break;
-                case 'storage/object-not-found':
-                    errorMessage = "Storage not enabled. Please activate Firebase Storage in your project console.";
-                    break;
-                case 'storage/unknown':
-                    errorMessage = "An unknown storage error occurred. Please check the server logs and ensure Storage is enabled.";
-                    break;
-            }
-        }
-        toast({ title: 'Upload Failed', description: errorMessage, variant: 'destructive', duration: 10000 });
-        setImageUploadStatus(prev => ({ ...prev, [studentId]: null }));
-        if (input) input.value = '';
-      },
-      async () => {
-        try {
-            const downloadURL = await getDownloadURL(storageRef);
-            handleFieldChange(studentId, 'studentPhotoDataUri', downloadURL);
-            saveData(studentId, { studentPhotoDataUri: downloadURL }); // Save immediately after upload
-        } catch (err) {
-            console.error('Error getting download URL after upload:', err);
-            toast({ title: 'Upload Completed (URL Error)', description: 'The file uploaded but a download URL could not be retrieved. Check your Storage rules and permissions.', variant: 'destructive' });
-        } finally {
-            setImageUploadStatus(prev => ({ ...prev, [studentId]: null }));
-            if (input) input.value = '';
-        }
-      }
-    );
   };
 
   const handleAiEditImage = async (student: ReportData) => {
@@ -625,36 +567,11 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
 
     setIsAiEditing(prev => ({...prev, [student.id]: true}));
 
-    let photoDataUri = photoUrl;
-    if (!photoUrl.startsWith('data:')) {
-      try {
-        const response = await fetch(photoUrl);
-        const blob = await response.blob();
-        photoDataUri = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-      } catch (error) {
-        toast({ title: "AI Edit Failed", description: "Could not fetch image to send to AI.", variant: "destructive" });
-        setIsAiEditing(prev => ({...prev, [student.id]: false}));
-        return;
-      }
-    }
-
-    const result = await editImageWithAiAction({ photoDataUri, prompt: "Brighten this photo and enhance its clarity, keeping all original features." });
+    const result = await editImageWithAiAction({ photoDataUri: photoUrl, prompt: "Brighten this photo and enhance its clarity, keeping all original features." });
     if (result.success && result.editedPhotoDataUri) {
-      try {
-        const { blob } = dataUriToBlob(result.editedPhotoDataUri);
-        const storageRef = ref(storage, `student_photos/${student.id}`);
-        await uploadBytesResumable(storageRef, blob);
-        const downloadURL = await getDownloadURL(storageRef);
-        handleFieldChange(student.id, 'studentPhotoDataUri', downloadURL);
-        saveData(student.id, { studentPhotoDataUri: downloadURL });
-      } catch (storageError) {
-        toast({ title: "Storage Error", description: "AI edit successful, but failed to save new image.", variant: "destructive" });
-      }
+        handleFieldChange(student.id, 'studentPhotoDataUri', result.editedPhotoDataUri);
+        await saveData(student.id, { studentPhotoDataUri: result.editedPhotoDataUri });
+        toast({ title: "AI Image Enhancement Successful", description: "The student photo has been updated." });
     } else {
       toast({ title: "AI Image Edit Failed", description: result.error, variant: "destructive" });
     }
@@ -833,8 +750,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                     </TableHeader>
                     <TableBody>
                         {filteredStudents.map((student, index) => {
-                            const uploadProgress = imageUploadStatus[student.id];
-                            const isImageProcessing = isAiEditing[student.id] || (typeof uploadProgress === 'number');
+                            const isImageProcessing = imageUploadStatus[student.id] === 'uploading' || isAiEditing[student.id];
                             return (
                                 <TableRow key={student.id}>
                                     <TableCell className="sticky left-0 bg-background z-20">
@@ -857,16 +773,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                                                </Button>
                                             </div>
                                         </div>
-                                        {imageUploadStatus[student.id] != null && (
-                                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                                            <div
-                                              className="h-full bg-blue-500 transition-all duration-300 ease-in-out relative"
-                                              style={{ width: `${imageUploadStatus[student.id]}%` }}
-                                            >
-                                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
-                                            </div>
-                                          </div>
-                                        )}
+                                        {imageUploadStatus[student.id] === 'uploading' && <Progress value={100} className="h-2 w-full animate-pulse" />}
                                       </div>
                                     </TableCell>
                                     <TableCell className="font-medium sticky left-[150px] bg-background z-20">
