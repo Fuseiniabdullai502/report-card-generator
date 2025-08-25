@@ -36,7 +36,12 @@ const nextConfig = {
             'require-in-the-middle',
             'handlebars',
             'express',
-            'require-in-the-middle',
+            'long',
+            'google-gax',
+            '@grpc/grpc-js',
+            './lib/api_request',
+            './lib/common',
+            './lib/util',
             /^@opentelemetry\//,
             /^@google-cloud\//,
             'protobufjs'
@@ -47,6 +52,7 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
 
 
 
