@@ -655,7 +655,6 @@ function AppContent({ user }: { user: CustomUser }) {
       schoolCategory: reportToSaveForFirestore.schoolCategory,
     };
     setSessionDefaults(newSessionDefaults);
-
     handleResetToBlankForm(newSessionDefaults);
   };
   
