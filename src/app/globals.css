@@ -254,9 +254,6 @@
       padding-top: 0px !important;
   }
 
-  .a4-page-simulation .print\\:mb-1 { margin-bottom: 0.1rem !important; }
-  .a4-page-simulation .print\\:p-1\\.5 { padding: 0.2rem !important; }
-
   .a4-page-simulation textarea {
     border: none !important;
     resize: none !important;
