@@ -4,20 +4,20 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // =====================
-    // Helper functions
-    // =====================
+    // Helper function to get user data from the /users/ collection
     function getUserData(userId) {
       return get(/databases/$(database)/documents/users/$(userId)).data;
     }
     
+    // Helper function to check if a user has a specific role
     function hasRole(userId, role) {
       let userData = getUserData(userId);
       return userData.role == role;
     }
 
-    function isAdmin(userId) {
-      return hasRole(userId, 'super-admin') || hasRole(userId, 'big-admin') || hasRole(userId, 'admin');
+    // Helper function to check if the user is any kind of admin
+    function isAdmin() {
+      return hasRole(request.auth.uid, 'super-admin') || hasRole(request.auth.uid, 'big-admin') || hasRole(request.auth.uid, 'admin');
     }
 
     // =====================
@@ -27,30 +27,30 @@ service cloud.firestore {
       // Any authenticated user can create their own document (e.g., on registration).
       allow create: if request.auth != null && request.auth.uid == userId;
       
-      // A user can only read their own document.
-      allow get: if request.auth != null && request.auth.uid == userId;
+      // A user can only read their own document. Admins can read any user document.
+      allow get: if request.auth != null && (request.auth.uid == userId || isAdmin());
 
       // A user can update their own info, but cannot change their role.
-      allow update: if request.auth != null
-                    && request.auth.uid == userId
-                    && request.resource.data.role == resource.data.role;
+      // An admin can update any user's document.
+      allow update: if request.auth != null && 
+                    ( (request.auth.uid == userId && request.resource.data.role == resource.data.role) || isAdmin() );
 
-      // Only super-admin should be able to delete users (handled by admin SDK).
-      allow delete: if hasRole(request.auth.uid, 'super-admin');
+      // Only a super-admin can delete a user.
+      allow delete: if request.auth != null && hasRole(request.auth.uid, 'super-admin');
       
-      // Admins can list users to manage them
-      allow list: if request.auth != null && isAdmin(request.auth.uid);
+      // Admins can list users to manage them.
+      allow list: if request.auth != null && isAdmin();
     }
     
     // =====================
     // Invites collection rules
     // =====================
     match /invites/{inviteId} {
-      // Anyone (even unauthenticated users during registration) can read an invite to check its status.
+      // Anyone (even unauthenticated users during registration) can read an invite.
       allow get: if true;
 
-      // Only admins can create, update, or delete invites.
-      allow create, update, delete, list: if request.auth != null && isAdmin(request.auth.uid);
+      // Only admins can create, update, list, or delete invites.
+      allow list, create, update, delete: if request.auth != null && isAdmin();
     }
 
     // =====================
@@ -58,15 +58,31 @@ service cloud.firestore {
     // =====================
     match /reports/{reportId} {
       // Any authenticated user can create a report.
-      allow create: if request.auth != null;
+      allow create: if request.auth.uid != null;
+      
+      // Allow a user to read a single report document if they are the owner or an admin.
+      // This rule is necessary for direct document access.
+      allow get: if request.auth != null && (
+        resource.data.teacherId == request.auth.uid ||
+        hasRole(request.auth.uid, 'super-admin') ||
+        (hasRole(request.auth.uid, 'big-admin') && resource.data.district == getUserData(request.auth.uid).district) ||
+        (hasRole(request.auth.uid, 'admin') && resource.data.schoolName == getUserData(request.auth.uid).schoolName)
+      );
 
-      // Now, only server-side actions (admin SDK) can read, update, or delete reports.
-      // This prevents any direct client-side access, forcing data access
-      // through our secure server actions.
-      allow read, update, delete: if false;
-
-      // Disallow all list operations from the client.
-      allow list: if false;
+      // Allow a user to LIST reports ONLY if they are querying for their own reports.
+      // This is the key fix. It checks the query itself, not the individual documents.
+      allow list: if request.auth != null && (
+          (request.query.limit <= 100 && request.query.teacherId == request.auth.uid) || // Regular user can only list their own
+          (request.query.district == getUserData(request.auth.uid).district && hasRole(request.auth.uid, 'big-admin')) || // Big-admin can list by their district
+          (request.query.schoolName == getUserData(request.auth.uid).schoolName && hasRole(request.auth.uid, 'admin')) || // Admin can list by their school
+          hasRole(request.auth.uid, 'super-admin') // Super-admin can list everything
+      );
+      
+      // Allow update/delete if the user is the owner or an admin.
+      allow update, delete: if request.auth != null && (
+        resource.data.teacherId == request.auth.uid ||
+        isAdmin()
+      );
     }
   }
 }
