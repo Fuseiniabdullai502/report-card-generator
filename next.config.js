@@ -33,7 +33,19 @@ const nextConfig = {
     // They should not be bundled for the client.
     if (!isServer) {
         config.externals.push(
-            'firebase-admin'
+            'firebase-admin',
+            'require-in-the-middle',
+            'handlebars',
+            'express',
+            'long',
+            'google-gax',
+            '@grpc/grpc-js',
+            './lib/api_request',
+            './lib/common',
+            './lib/util',
+            /^@opentelemetry\//,
+            /^@google-cloud\//,
+            'protobufjs'
         );
     }
     return config
@@ -41,6 +53,7 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
 
 
 
