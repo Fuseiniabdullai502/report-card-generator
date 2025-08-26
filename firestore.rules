@@ -1,67 +1,40 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if the user is authenticated.
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Helper function to get incoming data during a write operation.
-    function getAfter() {
-      return request.resource.data;
+    // Helper function to check if a user has a specific role
+    function hasRole(role) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
     }
     
-    // Helper function to check if a user is an admin type
+    // Helper function to check if a user has any of the specified admin roles
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['super-admin', 'big-admin', 'admin'];
+      return hasRole('super-admin') || hasRole('big-admin') || hasRole('admin');
     }
 
-    // Rules for the 'users' collection
+    // Users can create their own document, but only read/update their own.
+    // They cannot change their own role.
     match /users/{userId} {
-      // Allow a user to create their own user document (e.g., on registration).
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      
-      // Allow a user to read their own document.
-      allow get: if isSignedIn() && request.auth.uid == userId;
-
-      // Allow admins to read any user document.
-      allow get: if isSignedIn() && isAdmin();
-      
-      // Allow a user to update their own document, but NOT their role or status.
-      allow update: if isSignedIn() && request.auth.uid == userId
-                    && getAfter().role == resource.data.role
-                    && getAfter().status == resource.data.status;
-                    
-      // Admins can update any user document. This is mainly for changing roles/status.
-      // This is a broad rule; specific server-side logic in your actions should enforce who can change what.
-      allow update: if isSignedIn() && isAdmin();
+      allow read: if request.auth.uid == userId || isAdmin();
+      allow update: if request.auth.uid == userId && !('role' in request.resource.data);
+      allow create: if request.auth.uid == userId;
     }
-
-    // Rules for the 'invites' collection
+    
+    // Allow unauthenticated reads for invites during registration process
     match /invites/{inviteId} {
-      // Allow anyone (including unauthenticated users during registration) to read from the invites collection
-      // This is necessary for the registration flow to check if an email has been invited.
-      allow read; 
-      
-      // Only admins should be able to create, update, or delete invites.
-      // These operations are handled by server-side actions using the Admin SDK,
-      // so client-side writes are denied.
-      allow write: if false;
+        allow read: if request.auth == null || !exists(/databases/$(database)/documents/users/$(request.auth.uid));
+        // Admin actions (create, update, delete) are handled by backend functions with Admin SDK
     }
 
-    // Rules for the 'reports' collection
+    // Rules for reports
     match /reports/{reportId} {
-      // Allow any signed-in user to create a report.
-      allow create: if isSignedIn();
+      // Any authenticated user can create a report
+      allow create: if request.auth != null;
 
-      // Allow the user who created the report (teacherId) to read, update, and delete it.
-      allow read, update, delete: if isSignedIn() && resource.data.teacherId == request.auth.uid;
-      
-      // Allow any admin role to read all reports.
-      allow list, get: if isSignedIn() && isAdmin();
+      // Users can read/update/delete their own reports.
+      // Admins can read/update/delete any report. This supports dashboard views.
+      allow read, update, delete: if (request.auth.uid == resource.data.teacherId) || isAdmin();
     }
   }
 }

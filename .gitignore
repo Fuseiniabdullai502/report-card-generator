@@ -196,3 +196,8 @@ build/
 firebase-debug.log
 firestore-debug.log
 *.log
+
+# Logs
+firebase-debug.log
+firestore-debug.log
+*.log
