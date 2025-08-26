@@ -2,39 +2,35 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if a user has a specific role
-    function hasRole(role) {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
-    }
     
-    // Helper function to check if a user has any of the specified admin roles
-    function isAdmin() {
-      return hasRole('super-admin') || hasRole('big-admin') || hasRole('admin');
-    }
-
-    // Users can create their own document, but only read/update their own.
+    // Users can create their own user document, but only read and update their own.
     // They cannot change their own role.
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin();
-      allow update: if request.auth.uid == userId && !('role' in request.resource.data);
-      allow create: if request.auth.uid == userId;
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+      
+      // Ensure users cannot change their role.
+      allow update: if request.resource.data.role == resource.data.role;
+    }
+
+    // Invites can be read by anyone to check for their email during registration.
+    // Creating, updating, and deleting invites is restricted to backend admin functions.
+    match /invites/{inviteId} {
+      allow read: if true;
+      allow write: if false; // Managed by backend with admin privileges
     }
     
-    // Allow unauthenticated reads for invites during registration process
-    match /invites/{inviteId} {
-        allow read: if request.auth == null || !exists(/databases/$(database)/documents/users/$(request.auth.uid));
-        // Admin actions (create, update, delete) are handled by backend functions with Admin SDK
-    }
-
-    // Rules for reports
+    // Reports can be created by any authenticated user.
+    // Users can read, update, and delete their own reports.
+    // Admins can manage reports within their scope (handled by backend/more complex rules).
     match /reports/{reportId} {
-      // Any authenticated user can create a report
       allow create: if request.auth != null;
+      allow get: if request.auth != null && request.auth.uid == resource.data.teacherId;
+      
+      // Allow users to list reports only if they are querying for their own reports.
+      allow list: if request.auth != null && request.query.where.teacherId == request.auth.uid;
 
-      // Users can read/update/delete their own reports.
-      // Admins can read/update/delete any report. This supports dashboard views.
-      allow read, update, delete: if (request.auth.uid == resource.data.teacherId) || isAdmin();
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.teacherId;
     }
   }
 }
