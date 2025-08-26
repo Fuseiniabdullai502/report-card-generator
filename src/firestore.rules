@@ -3,18 +3,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // Helper function to get user data
+    // =====================
+    // Helper functions
+    // =====================
     function getUserData(userId) {
       return get(/databases/$(database)/documents/users/$(userId)).data;
     }
     
-    // Helper function to check if a user has a specific role
     function hasRole(userId, role) {
       let userData = getUserData(userId);
       return userData.role == role;
     }
 
-    // Helper function to check if the user is a super-admin, big-admin or admin
     function isAdmin(userId) {
       return hasRole(userId, 'super-admin') || hasRole(userId, 'big-admin') || hasRole(userId, 'admin');
     }
@@ -23,21 +23,12 @@ service cloud.firestore {
     // Users collection rules
     // =====================
     match /users/{userId} {
-      // Any authenticated user can create their own document (e.g., on registration).
       allow create: if request.auth != null && request.auth.uid == userId;
-      
-      // A user can only read their own document.
       allow get: if request.auth != null && request.auth.uid == userId;
-
-      // A user can update their own info, but cannot change their role.
       allow update: if request.auth != null
                     && request.auth.uid == userId
                     && request.resource.data.role == resource.data.role;
-
-      // Only super-admin should be able to delete users (handled by admin SDK).
       allow delete: if hasRole(request.auth.uid, 'super-admin');
-      
-      // Admins can list users to manage them
       allow list: if request.auth != null && isAdmin(request.auth.uid);
     }
     
@@ -45,10 +36,7 @@ service cloud.firestore {
     // Invites collection rules
     // =====================
     match /invites/{inviteId} {
-      // Anyone (even unauthenticated users during registration) can read an invite to check its status.
       allow get: if true;
-
-      // Only admins can create, update, or delete invites.
       allow create, update, delete, list: if request.auth != null && isAdmin(request.auth.uid);
     }
 
@@ -60,15 +48,18 @@ service cloud.firestore {
       allow create: if request.auth != null;
 
       // Allow read/list/update/delete if:
-      // 1. The user is the one who created the report.
-      // 2. The user is a super-admin.
-      // 3. The user is a big-admin for the correct district.
-      // 4. The user is an admin for the correct school.
+      // 1. Teacher (user) owns the report (teacherId or ownerId matches UID).
+      // 2. Super-admin (all reports).
+      // 3. Big-admin (reports in their district).
+      // 4. Admin (reports in their school).
       allow get, list, update, delete: if request.auth != null && (
-        resource.data.teacherId == request.auth.uid ||
+        (resource.data.keys().hasAny(['teacherId', 'ownerId']) &&
+         (resource.data.teacherId == request.auth.uid || resource.data.ownerId == request.auth.uid)) ||
         hasRole(request.auth.uid, 'super-admin') ||
-        (hasRole(request.auth.uid, 'big-admin') && getUserData(request.auth.uid).district == resource.data.district) ||
-        (hasRole(request.auth.uid, 'admin') && getUserData(request.auth.uid).schoolName == resource.data.schoolName)
+        (hasRole(request.auth.uid, 'big-admin') && resource.data.keys().hasAll(['district']) &&
+          getUserData(request.auth.uid).district == resource.data.district) ||
+        (hasRole(request.auth.uid, 'admin') && resource.data.keys().hasAll(['schoolName']) &&
+          getUserData(request.auth.uid).schoolName == resource.data.schoolName)
       );
     }
   }
