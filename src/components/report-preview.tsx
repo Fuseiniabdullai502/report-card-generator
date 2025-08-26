@@ -1,9 +1,7 @@
-
 'use client';
 
 import * as React from 'react';
 import type {ReportData, SubjectEntry} from '@/lib/schemas';
-import Image from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Award, Medal, User as UserIcon } from 'lucide-react'; // For rank display, Medal for promotion
 import { cn } from '@/lib/utils';
@@ -200,7 +198,7 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
       <div className="relative z-10 flex flex-col h-full">
         <header className={cn("mb-2 print:mb-1", templateStyles.headerContainerClass)}>
           <div className="flex justify-between items-center">
-             <Image
+             <img
                 src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg"
                 alt="Ghana Coat of Arms"
                 width={80}
@@ -217,7 +215,7 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
             </div>
              <div className="object-contain" style={{width: 80, height: 80}}>
                {logoToUse && (
-                  <Image
+                  <img
                       src={logoToUse}
                       alt={`${data.schoolName || 'School'} Logo`}
                       width={80}
@@ -254,8 +252,8 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
             </div>
             
             <div className="flex-shrink-0 text-center student-photo-container">
-              <Image
-                  src={data.studentPhotoDataUri || `https://placehold.co/400x500/F0F4F7/7F9Cf5?text=${data.studentName?.charAt(0) || 'S'}&font=raleway`}
+              <img
+                  src={data.studentPhotoDataUri || `https://placehold.co/80x100/F0F4F7/7F9Cf5?text=${data.studentName?.charAt(0) || 'S'}&font=raleway`}
                   alt={`${data.studentName || 'Student'}'s photo`}
                   width={80}
                   height={100}
@@ -346,7 +344,7 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
             <div className="text-center">
               {signatureToUse && (
                 <div className="mb-0.5">
-                  <Image
+                  <img
                     src={signatureToUse}
                     alt="Head Master's Signature"
                     width={120}

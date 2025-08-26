@@ -1,10 +1,8 @@
 
-
 'use client';
 
 import { type ReportData, type SubjectEntry, ReportDataSchema, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
 import React, { useState, useTransition, useEffect, useMemo, ChangeEvent, FormEvent } from 'react';
-import NextImage from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -534,8 +532,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                     {isUploading && <p className="text-xs text-blue-500">Processing image...</p>}
                     {formData.studentPhotoDataUri && !isUploading && (
                       <div className="relative w-24 h-32 mt-2 rounded border p-1">
-                        {/* use NextImage fill prop (Next.js >=13) instead of deprecated layout="fill" */}
-                        <NextImage src={formData.studentPhotoDataUri} alt="student" fill className="object-cover rounded" />
+                        <img src={formData.studentPhotoDataUri} alt="student" className="object-cover rounded w-full h-full" />
                         {(isImageEditingAiLoading || isUploading) && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
                             <Loader2 className="h-6 w-6 animate-spin text-white" />

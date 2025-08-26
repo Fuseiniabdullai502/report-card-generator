@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import React from 'react';
@@ -23,7 +21,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Trophy, Printer, FileText } from 'lucide-react';
 import type { SchoolRankingData } from '@/app/actions';
-import Image from 'next/image';
 
 interface DistrictClassRankingDialogProps {
   isOpen: boolean;
@@ -94,7 +91,7 @@ export default function DistrictClassRankingDialog({
             <DialogHeader>
               <div className="school-ranking-print-header">
                   <div className="flex justify-center mb-2">
-                      <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
                   </div>
                   <h2>{districtName} District - {reportTitle}</h2>
                   <p>Academic Session: {yearDisplay}, {termDisplay} | Generated on: {new Date().toLocaleDateString()}</p>

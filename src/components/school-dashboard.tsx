@@ -1,9 +1,9 @@
 
-
 'use client';
 
 import React, { useEffect, useMemo, useState, useTransition, useCallback } from 'react';
 import type { ReportData } from '@/lib/schemas';
+import type { CustomUser } from './auth-provider';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -23,8 +23,7 @@ import type { GenerateSchoolInsightsOutput, GenerateSchoolInsightsInput } from '
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { calculateSubjectFinalMark, calculateOverallAverage } from '@/lib/calculations';
-import Image from 'next/image';
-import type { CustomUser } from './auth-provider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface SchoolPerformanceDashboardProps {
   isOpen: boolean;
@@ -436,7 +435,7 @@ export default function SchoolPerformanceDashboard({
             <div className="relative z-10">
               <div className="school-dashboard-print-header">
                   <div className="flex justify-center mb-2">
-                      <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
                   </div>
                   <h2 className="text-xl font-bold">{schoolNameProp} - School Performance Dashboard</h2>
                   <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
@@ -810,5 +809,3 @@ function aggregateSchoolDataForTerm(reports: ReportData[]): SchoolStatistics | n
         overallGenderStatsForSchoolUI,
     };
 }
-
-    

@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import React from 'react';
@@ -23,7 +21,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Trophy, Printer, FileText } from 'lucide-react';
 import type { StudentRankingData } from '@/app/actions';
-import Image from 'next/image';
 
 interface SchoolProgramRankingDialogProps {
   isOpen: boolean;
@@ -91,7 +88,7 @@ export default function SchoolProgramRankingDialog({
             <DialogHeader>
               <div className="school-ranking-print-header hidden print:block mb-4">
                   <div className="flex justify-center mb-2">
-                      <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
                   </div>
                   <h2 className="text-lg font-bold">{schoolName}</h2>
                   <h3 className="text-base font-semibold">{reportTitle}</h3>
