@@ -1,4 +1,3 @@
-
 {
   "hosting": {
     "source": ".",
@@ -17,9 +16,35 @@
   },
   "storage": {
     "rules": "storage.rules",
-    "cors": "storage.cors.json"
+    "cors": "storage.cors.json",
+    "bucket": "report-card-generator-e3zkv.firebasestorage.app"
   },
-  "apphosting": {
+  "apphosting": [
+    {
+      "backendId": "report-card-generator",
+      "rootDir": "/",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "functions"
+      ],
+      "alwaysDeployFromSource": true
+    },
+    {
+      "backendId": "report-card-generator",
+      "rootDir": "/",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "functions"
+      ],
+      "alwaysDeployFromSource": true
+    },
+    {
       "backendId": "report-card-generator",
       "rootDir": "/",
       "ignore": [
@@ -31,4 +56,11 @@
       ],
       "alwaysDeployFromSource": true
     }
+  ],
+  "functions": [
+    {
+      "source": ".firebase/report-card-generator-e3zkv/functions",
+      "codebase": "firebase-frameworks-report-card-generator-e3zkv"
+    }
+  ]
 }

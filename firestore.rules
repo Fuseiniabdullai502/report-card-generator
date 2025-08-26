@@ -1,59 +1,67 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // By default, deny all reads and writes
-    match /{document=**} {
-      allow read, write: if false;
+
+    // Helper function to check if the user is authenticated.
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    // --- Users Collection Rules ---
+    // Helper function to get incoming data during a write operation.
+    function getAfter() {
+      return request.resource.data;
+    }
+    
+    // Helper function to check if a user is an admin type
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['super-admin', 'big-admin', 'admin'];
+    }
+
+    // Rules for the 'users' collection
     match /users/{userId} {
-      // Helper function to check if the requesting user is an admin type
-      function isAdmin() {
-        return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['super-admin', 'big-admin', 'admin'];
-      }
+      // Allow a user to create their own user document (e.g., on registration).
+      allow create: if isSignedIn() && request.auth.uid == userId;
       
       // Allow a user to read their own document.
-      allow get: if request.auth.uid == userId;
+      allow get: if isSignedIn() && request.auth.uid == userId;
 
-      // Allow admins to read any user's document.
-      allow list: if isAdmin();
+      // Allow admins to read any user document.
+      allow get: if isSignedIn() && isAdmin();
       
-      // Allow a user to create their own document (e.g., on registration).
-      allow create: if request.auth.uid == userId;
-      
-      // Allow a user to update their own document, but not change their role.
-      allow update: if request.auth.uid == userId && request.resource.data.role == resource.data.role;
-
-      // Allow admins to update any user document.
-      allow update: if isAdmin();
-      
-      // Only super-admins can delete users.
-      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super-admin';
+      // Allow a user to update their own document, but NOT their role or status.
+      allow update: if isSignedIn() && request.auth.uid == userId
+                    && getAfter().role == resource.data.role
+                    && getAfter().status == resource.data.status;
+                    
+      // Admins can update any user document. This is mainly for changing roles/status.
+      // This is a broad rule; specific server-side logic in your actions should enforce who can change what.
+      allow update: if isSignedIn() && isAdmin();
     }
 
-    // --- Reports Collection Rules ---
-    match /reports/{reportId} {
-      // Any authenticated user can create a report (e.g., a teacher).
-      allow create: if request.auth != null;
-      
-      // Any authenticated user can read any report.
-      // You can tighten this later if needed (e.g., only allow users to read reports they created or are in their school).
-      allow read: if request.auth != null;
-      
-      // Only allow a user to update a report they created, or allow an admin to update any report.
-      allow update, delete: if request.auth != null && (resource.data.teacherId == request.auth.uid || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['super-admin', 'big-admin', 'admin']);
-    }
-
-    // --- Invites Collection Rules ---
+    // Rules for the 'invites' collection
     match /invites/{inviteId} {
-      // Anyone can read the invites collection to check if their email has a pending invite during registration.
-      allow read: if true;
+      // Allow anyone (including unauthenticated users during registration) to read from the invites collection
+      // This is necessary for the registration flow to check if an email has been invited.
+      allow read; 
       
-      // Only admins can create, update, or delete invites.
-      allow write: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['super-admin', 'big-admin', 'admin'];
+      // Only admins should be able to create, update, or delete invites.
+      // These operations are handled by server-side actions using the Admin SDK,
+      // so client-side writes are denied.
+      allow write: if false;
+    }
+
+    // Rules for the 'reports' collection
+    match /reports/{reportId} {
+      // Allow any signed-in user to create a report.
+      allow create: if isSignedIn();
+
+      // Allow the user who created the report (teacherId) to read, update, and delete it.
+      allow read, update, delete: if isSignedIn() && resource.data.teacherId == request.auth.uid;
+      
+      // Allow any admin role to read all reports.
+      allow list, get: if isSignedIn() && isAdmin();
     }
   }
 }

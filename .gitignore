@@ -188,3 +188,11 @@ functions/node_modules/
 dist/
 build/
 .vercel/
+
+# Firebase build artifacts
+.firebase/
+
+# Logs
+firebase-debug.log
+firestore-debug.log
+*.log
