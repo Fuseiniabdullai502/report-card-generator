@@ -11,8 +11,8 @@ service cloud.firestore {
     }
     
     function hasRole(userId, role) {
-      let userData = getUserData(userId);
-      return userData.role == role;
+      // Check if user data and role exist before comparing
+      return get(/databases/$(database)/documents/users/$(userId)).data.role == role;
     }
 
     function isAdmin(userId) {
@@ -28,7 +28,7 @@ service cloud.firestore {
       allow update: if request.auth != null
                     && request.auth.uid == userId
                     && request.resource.data.role == resource.data.role;
-      allow delete: if hasRole(request.auth.uid, 'super-admin');
+      allow delete: if request.auth != null && hasRole(request.auth.uid, 'super-admin');
       allow list: if request.auth != null && isAdmin(request.auth.uid);
     }
     
@@ -47,19 +47,29 @@ service cloud.firestore {
       // Any authenticated user can create a report.
       allow create: if request.auth != null;
 
-      // Allow read/list/update/delete if:
-      // 1. Teacher (user) owns the report (teacherId or ownerId matches UID).
-      // 2. Super-admin (all reports).
-      // 3. Big-admin (reports in their district).
-      // 4. Admin (reports in their school).
-      allow get, list, update, delete: if request.auth != null && (
-        (resource.data.keys().hasAny(['teacherId', 'ownerId']) &&
-         (resource.data.teacherId == request.auth.uid || resource.data.ownerId == request.auth.uid)) ||
+      // Rules for reading/writing a SINGLE document by its ID.
+      // Admins can get any doc in their scope, users can get their own.
+      allow get, update, delete: if request.auth != null && (
+        resource.data.teacherId == request.auth.uid ||
         hasRole(request.auth.uid, 'super-admin') ||
-        (hasRole(request.auth.uid, 'big-admin') && resource.data.keys().hasAll(['district']) &&
-          getUserData(request.auth.uid).district == resource.data.district) ||
-        (hasRole(request.auth.uid, 'admin') && resource.data.keys().hasAll(['schoolName']) &&
-          getUserData(request.auth.uid).schoolName == resource.data.schoolName)
+        (hasRole(request.auth.uid, 'big-admin') && getUserData(request.auth.uid).district == resource.data.district) ||
+        (hasRole(request.auth.uid, 'admin') && getUserData(request.auth.uid).schoolName == resource.data.schoolName)
+      );
+      
+      // Rules for QUERYING the collection.
+      // This is more restrictive. The query from the frontend MUST match these rules.
+      allow list: if request.auth != null && (
+        // super-admin can list all reports without filters.
+        hasRole(request.auth.uid, 'super-admin') ||
+        
+        // big-admin can list reports if the query is filtering by THEIR district.
+        (hasRole(request.auth.uid, 'big-admin') && request.query.where[0][0] == 'district' && request.query.where[0][2] == getUserData(request.auth.uid).district) ||
+        
+        // admin can list reports if the query is filtering by THEIR school.
+        (hasRole(request.auth.uid, 'admin') && request.query.where[0][0] == 'schoolName' && request.query.where[0][2] == getUserData(request.auth.uid).schoolName) ||
+        
+        // regular user can list reports if the query is filtering by THEIR user ID.
+        (hasRole(request.auth.uid, 'user') && request.query.where[0][0] == 'teacherId' && request.query.where[0][2] == request.auth.uid)
       );
     }
   }
