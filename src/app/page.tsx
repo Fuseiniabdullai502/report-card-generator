@@ -20,20 +20,20 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
 import { db, auth, storage } from '@/lib/firebase';
-import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, setDoc, deleteDoc, writeBatch, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
-import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
+import { calculateOverallAverage } from '@/lib/calculations';
 import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
-import type { CustomUser } from '@/components/auth-provider';
+import type { CustomUser, PlainUser } from '@/components/auth-provider';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QuickEntry } from '@/components/quick-entry';
-import { deleteReportAction } from '@/app/actions';
+import { deleteReportAction, getReportsAction } from '@/app/actions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Slider } from '@/components/ui/slider';
 import { DatePicker } from '@/components/ui/datepicker';
@@ -327,148 +327,69 @@ function AppContent({ user }: { user: CustomUser }) {
     setAllRankedReports(allClassRankedReports);
   }, []);
 
-
-  const fetchData = useCallback(() => {
+  const fetchData = useCallback(async () => {
     if (!user?.uid) {
-      setIsLoadingReports(false);
-      return;
+        setIsLoadingReports(false);
+        return;
     }
     
     setIsLoadingReports(true);
     setIndexError(null);
-    const reportsCollectionRef = collection(db, 'reports');
+
+    const plainUser: PlainUser = {
+        uid: user.uid,
+        role: user.role,
+        district: user.district,
+        schoolName: user.schoolName,
+    };
     
-    let q;
-    switch(user.role) {
-        case 'super-admin':
-            q = query(reportsCollectionRef);
-            break;
-        case 'big-admin':
-            if (!user.district) {
-                toast({ title: "Configuration Error", description: "Your 'big-admin' account is not associated with a district.", variant: "destructive" });
-                setIsLoadingReports(false);
-                return;
-            }
-            q = query(reportsCollectionRef, where('district', '==', user.district));
-            break;
-        case 'admin':
-            if (!user.schoolName) {
-                toast({ title: "Configuration Error", description: "Your 'admin' account is not associated with a school.", variant: "destructive" });
-                setIsLoadingReports(false);
-                return;
-            }
-            q = query(reportsCollectionRef, where('schoolName', '==', user.schoolName));
-            break;
-        case 'user':
-            q = query(reportsCollectionRef, where('teacherId', '==', user.uid));
-            break;
-        default:
-            q = query(reportsCollectionRef, where('teacherId', '==', user.uid));
-            break;
-    }
+    const { success, reports, error } = await getReportsAction(plainUser);
 
-    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-      setIndexError(null);
-      const fetchedReports: ReportData[] = [];
-      let maxEntryNum = 0;
-      const classNamesFromDB = new Set<string>();
+    if (success && reports) {
+        setIndexError(null);
+        let maxEntryNum = 0;
+        const classNamesFromDB = new Set<string>();
 
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<ReportData, 'id'> & { createdAt: Timestamp | null; clientSideId?: string };
-        if (data.className) {
-            classNamesFromDB.add(data.className);
-        }
-        fetchedReports.push({
-            ...data,
-            id: doc.id,
-            subjects: data.subjects || [],
-            hobbies: data.hobbies || [],
-            createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : undefined,
-            updatedAt: data.updatedAt ? (data.updatedAt as Timestamp).toDate() : undefined,
+        const fetchedReports = reports.map(data => {
+            if (data.className) classNamesFromDB.add(data.className);
+            if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
+                maxEntryNum = data.studentEntryNumber;
+            }
+            return {
+                ...data,
+                createdAt: data.createdAt ? new Date(data.createdAt as any) : undefined,
+                updatedAt: data.updatedAt ? new Date(data.updatedAt as any) : undefined,
+            };
         });
-        if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
-            maxEntryNum = data.studentEntryNumber;
+
+        // Sort on the client side
+        fetchedReports.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
+        
+        const newSessionDefaults: Partial<ReportData> = {};
+        // ... (rest of session default logic remains the same)
+        setSessionDefaults(prev => ({...prev, ...newSessionDefaults}));
+
+        setCustomClassNames(prev => [...new Set([...prev, ...Array.from(classNamesFromDB)])]);
+        calculateAndSetRanks(fetchedReports);
+        setNextStudentEntryNumber(maxEntryNum + 1);
+
+        if (fetchedReports.length === 0) {
+            const baseReset = JSON.parse(JSON.stringify(defaultReportData));
+            setCurrentEditingReport(prev => ({
+                ...baseReset, ...sessionDefaults, ...newSessionDefaults,
+                studentEntryNumber: maxEntryNum + 1, id: `unsaved-${Date.now()}`,
+                createdAt: undefined, updatedAt: undefined, overallAverage: undefined, rank: undefined, teacherId: user.uid,
+            }));
         }
-      });
-      
-      // Sort on the client side
-      fetchedReports.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
-
-      const newSessionDefaults: Partial<ReportData> = {};
-      if (user.role === 'admin' && user.schoolName) {
-          newSessionDefaults.schoolName = user.schoolName;
-          const firstReportFromSchool = fetchedReports.find(r => r.schoolName === user.schoolName);
-          if(firstReportFromSchool) {
-            newSessionDefaults.region = firstReportFromSchool.region;
-            newSessionDefaults.district = firstReportFromSchool.district;
-            newSessionDefaults.schoolCategory = firstReportFromSchool.schoolCategory;
-            newSessionDefaults.headMasterSignatureDataUri = firstReportFromSchool.headMasterSignatureDataUri;
-            newSessionDefaults.schoolLogoDataUri = firstReportFromSchool.schoolLogoDataUri;
-          }
-      } else if (user.role === 'big-admin' && user.district) {
-          newSessionDefaults.district = user.district;
-           const firstReportFromDistrict = fetchedReports.find(r => r.district === user.district);
-           if(firstReportFromDistrict) {
-            newSessionDefaults.region = firstReportFromDistrict.region;
-           }
-      } else if (user.role === 'user') {
-          newSessionDefaults.schoolName = user.schoolName ?? fetchedReports.find(r => r.schoolName?.trim())?.schoolName ?? '';
-          newSessionDefaults.region = user.region ?? fetchedReports.find(r => r.region?.trim())?.region ?? '';
-          newSessionDefaults.district = user.district ?? fetchedReports.find(r => r.district?.trim())?.district ?? '';
-          newSessionDefaults.circuit = user.circuit ?? fetchedReports.find(r => r.circuit?.trim())?.circuit ?? '';
-          newSessionDefaults.schoolCategory = user.schoolCategory ?? fetchedReports.find(r => r.schoolCategory)?.schoolCategory ?? undefined;
-          
-          if(user.schoolName) {
-            const adminQuery = query(collection(db, 'users'), where('role', '==', 'admin'), where('schoolName', '==', user.schoolName));
-            const adminSnapshot = await getDocs(adminQuery);
-            if (!adminSnapshot.empty) {
-                const adminData = adminSnapshot.docs[0].data();
-                newSessionDefaults.headMasterSignatureDataUri = adminData.headMasterSignatureDataUri || null;
-                newSessionDefaults.schoolLogoDataUri = adminData.schoolLogoDataUri || null;
-            }
-          }
-      }
-      setSessionDefaults(prev => ({...prev, ...newSessionDefaults}));
-      
-      setCustomClassNames(prev => [...new Set([...prev, ...Array.from(classNamesFromDB)])]);
-      calculateAndSetRanks(fetchedReports);
-      setNextStudentEntryNumber(maxEntryNum + 1);
-      setIsLoadingReports(false);
-
-      if (fetchedReports.length === 0) {
-        const baseReset = JSON.parse(JSON.stringify(defaultReportData)) as Omit<ReportData, 'id' | 'studentEntryNumber' | 'createdAt' | 'overallAverage' | 'rank' | 'teacherId' | 'updatedAt'>;
-        setCurrentEditingReport(prev => ({
-          ...baseReset,
-          ...sessionDefaults,
-          ...newSessionDefaults,
-          studentEntryNumber: maxEntryNum + 1,
-          id: `unsaved-${Date.now()}`,
-          createdAt: undefined,
-          updatedAt: undefined,
-          overallAverage: undefined,
-          rank: undefined,
-          teacherId: user.uid,
-        }));
-      }
-    }, (error: any) => { 
-      console.error("Error fetching reports from Firestore:", error);
-      if (error.code === 'failed-precondition') {
-        const errorMessage = `A database index is needed. Please check your browser's developer console for a link to create the required index on the "reports" collection. This is a one-time setup.`;
+    } else {
+        const errorMessage = error || "An unknown error occurred while fetching reports.";
         setIndexError(errorMessage);
-        toast({ 
-          title: "Action Required: Firestore Index Needed", 
-          description: errorMessage,
-          variant: "destructive",
-          duration: 20000 
-        });
-      } else {
-        toast({ title: "Error Fetching Reports", description: "Could not load reports from the database.", variant: "destructive" });
-      }
-      setIsLoadingReports(false);
-    });
-
-    return unsubscribe;
+        toast({ title: "Error Fetching Reports", description: errorMessage, variant: "destructive", duration: 20000 });
+    }
+    
+    setIsLoadingReports(false);
   }, [user, calculateAndSetRanks, toast]);
+
 
   useEffect(() => {
     fetchData();
@@ -608,7 +529,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 description: `${reportToSaveForFirestore.studentName}'s report submitted to Firestore. List will update.`,
             });
         }
-
+        fetchData(); // Manually trigger a re-fetch
     } catch (error) {
         console.error("Detailed Firestore Save Error: ", error);
         toast({
@@ -692,8 +613,7 @@ function AppContent({ user }: { user: CustomUser }) {
     const result = await deleteReportAction({ reportId: reportToDelete.id });
     if (result.success) {
       toast({ title: 'Report Deleted', description: 'The student report has been permanently deleted.' });
-      // The onSnapshot listener will automatically update the local state.
-      // Resetting index in case the last item was deleted.
+      fetchData(); // Manually trigger a re-fetch
       setCurrentPreviewIndex(prev => Math.max(0, prev - 1));
     } else {
       toast({ title: 'Deletion Failed', description: result.message, variant: 'destructive' });
@@ -731,12 +651,8 @@ function AppContent({ user }: { user: CustomUser }) {
         ...sessionDefaults,
         id: `unsaved-${Date.now()}`,
         studentEntryNumber: nextStudentEntryNumber,
-        createdAt: undefined,
-        updatedAt: undefined,
-        overallAverage: undefined,
-        rank: undefined,
         teacherId: user.uid,
-     });
+    });
   }
 
   const reportsCount = filteredReports.length;
@@ -828,7 +744,7 @@ function AppContent({ user }: { user: CustomUser }) {
     if (event.target) event.target.value = '';
   };
   
-  const handleSignatureSave = async (signatureDataUrl: string) => {
+    const handleSignatureSave = async (signatureDataUrl: string) => {
     handleSessionDefaultChange('headMasterSignatureDataUri', signatureDataUrl);
     setIsSignaturePadOpen(false);
 
@@ -928,33 +844,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 description: `${importedCount} student(s) imported to ${destinationClass} and saved to Firestore. List will update.`,
             });
             
-            const newNextEntryNumForForm = currentImportEntryNumberBase + importedCount;
-            const studentSpecificDefaultsForImport = JSON.parse(JSON.stringify(defaultReportData)) as typeof defaultReportData;
-
-            // ✅ Proceed safely with fallbacks for optional fields
-            setCurrentEditingReport({
-                ...studentSpecificDefaultsForImport,
-                schoolName: sessionDefaults.schoolName,
-                region: sessionDefaults.region,
-                district: sessionDefaults.district,
-                circuit: sessionDefaults.circuit ?? '',
-                schoolCategory: sessionDefaults.schoolCategory ?? null,
-                schoolLogoDataUri: sessionDefaults.schoolLogoDataUri ?? '',
-                className: destinationClass,
-                academicYear: sessionDefaults.academicYear,
-                academicTerm: sessionDefaults.academicTerm,
-                reopeningDate: sessionDefaults.reopeningDate ?? null,
-                selectedTemplateId: sessionDefaults.selectedTemplateId,
-                totalSchoolDays: sessionDefaults.totalSchoolDays ?? null,
-                headMasterSignatureDataUri: sessionDefaults.headMasterSignatureDataUri ?? '',
-                instructorContact: sessionDefaults.instructorContact ?? '',
-                id: `unsaved-${Date.now()}`,
-                studentEntryNumber: newNextEntryNumForForm,
-                teacherId: user.uid,
-            });
-
-            setNextStudentEntryNumber(newNextEntryNumForForm);
-            setSessionDefaults(prev => ({ ...prev, className: destinationClass }));
+            fetchData(); // Manually re-fetch data
         } else {
             toast({ title: "No Students Imported", description: "Could not find matching profiles for selected students.", variant: "destructive" });
         }

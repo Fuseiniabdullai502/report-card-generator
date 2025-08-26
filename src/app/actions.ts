@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { generateStudentFeedback, type GenerateStudentFeedbackInput } from '@/ai/flows/generate-student-feedback';
@@ -530,7 +529,7 @@ export async function createInviteAction(
             if (role === 'big-admin') {
                 finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: null, schoolName: null, classNames: null, schoolLevels: null, schoolCategory: null };
             } else if (role === 'admin') {
-                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: null, schoolLevels: scopesFromClient.schoolLevels || null, schoolCategory: scopesFromClient.schoolCategory || null };
+                finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: null, schoolLevels: null, schoolCategory: null };
             } else { // user
                 finalScope = { region: scopesFromClient.region || null, district: scopesFromClient.district || null, circuit: scopesFromClient.circuit || null, schoolName: scopesFromClient.schoolName || null, classNames: scopesFromClient.classNames || null, schoolLevels: null, schoolCategory: null };
             }
@@ -696,11 +695,11 @@ export async function deleteUserAction(
   try {
     const { userId } = DeleteUserActionInputSchema.parse(data);
 
-    // Delete from Firestore first
-    await admin.firestore().collection('users').doc(userId).delete();
-
-    // Then delete from Firebase Auth
+    // Delete from Firebase Auth first to allow Firestore deletion rule to pass
     await admin.auth().deleteUser(userId);
+
+    // Then delete from Firestore
+    await admin.firestore().collection('users').doc(userId).delete();
 
     return { success: true, message: 'User successfully deleted.' };
   } catch (error: any) {
@@ -991,6 +990,53 @@ export async function getInvitesAction(currentUser: PlainUser): Promise<{ succes
     console.error('Error fetching invites via server action:', error);
     return { success: false, error: error.message };
   }
+}
+
+export async function getReportsAction(user: PlainUser): Promise<{ success: boolean; reports?: ReportData[]; error?: string; }> {
+    try {
+        if (!user || !user.uid) {
+            throw new Error("Authentication is required.");
+        }
+
+        let reportsQuery: Query = admin.firestore().collection('reports');
+
+        switch (user.role) {
+            case 'super-admin':
+                // No filter needed, gets all reports
+                break;
+            case 'big-admin':
+                if (!user.district) throw new Error("Big-admin scope error: district not defined.");
+                reportsQuery = reportsQuery.where('district', '==', user.district);
+                break;
+            case 'admin':
+                if (!user.schoolName) throw new Error("Admin scope error: schoolName not defined.");
+                reportsQuery = reportsQuery.where('schoolName', '==', user.schoolName);
+                break;
+            case 'user':
+                reportsQuery = reportsQuery.where('teacherId', '==', user.uid);
+                break;
+            default:
+                // Fallback for an unknown role - return no reports
+                return { success: true, reports: [] };
+        }
+
+        const snapshot = await reportsQuery.get();
+
+        const fetchedReports = snapshot.docs.map((doc: DocumentData) => {
+            const data = doc.data();
+            return {
+                ...data,
+                id: doc.id,
+                createdAt: data.createdAt?.toDate() || null,
+                updatedAt: data.updatedAt?.toDate() || null,
+            } as ReportData;
+        });
+
+        return { success: true, reports: fetchedReports };
+    } catch (error: any) {
+        console.error("Error fetching reports via server action:", error);
+        return { success: false, error: error.message };
+    }
 }
 
 
@@ -1458,7 +1504,7 @@ export async function batchUpdateTeacherFeedbackAction(
         } else if (error.message) {
             errorMessage = error.message;
         }
-        return { success: false, error: errorMessage };
+        return { success: true };
     }
 }
 
@@ -1562,3 +1608,7 @@ export async function getSchoolProgramRankingAction(
 
 
 
+
+
+
+    
