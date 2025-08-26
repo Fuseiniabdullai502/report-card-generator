@@ -12,7 +12,7 @@ const nextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'https' ,
         hostname: 'upload.wikimedia.org',
         port: '',
         pathname: '/**',
@@ -53,6 +53,7 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
 
 
 
