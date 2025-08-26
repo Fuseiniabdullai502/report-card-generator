@@ -1,79 +1,64 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // Helper function to get the role of the currently authenticated user
-    function getRole(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role;
-    }
-
-    // Helper function to check if the user is a super-admin, big-admin, or admin
-    function isAdmin() {
-      let userRole = getRole(request.auth.uid);
-      return userRole == 'super-admin' || userRole == 'big-admin' || userRole == 'admin';
-    }
-
-    // =====================
-    // Users collection rules
-    // =====================
-    match /users/{userId} {
-      // Any authenticated user can create their own document (e.g., on registration).
-      allow create: if request.auth != null && request.auth.uid == userId;
-      
-      // A user can only read their own document. Admins can read any user document.
-      allow get: if request.auth != null && (request.auth.uid == userId || isAdmin());
-
-      // A user can update their own info, but cannot change their role.
-      // Admins can update any user document (role changes handled by Admin SDK).
-      allow update: if request.auth != null && 
-                    ((request.auth.uid == userId && request.resource.data.role == resource.data.role) || isAdmin());
-
-      // Only super-admin should be able to delete users (handled by admin SDK).
-      allow delete: if getRole(request.auth.uid) == 'super-admin';
-      
-      // Admins can list users to manage them
-      allow list: if request.auth != null && isAdmin();
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
     }
     
-    // =====================
-    // Invites collection rules
-    // =====================
-    match /invites/{inviteId} {
-      // Anyone (even unauthenticated users during registration) can read an invite to check its status.
-      allow get: if true;
-
-      // Only admins can create, update, or delete invites.
-      allow create, update, delete, list: if request.auth != null && isAdmin();
+    function hasRole(userId, role) {
+      let userData = getUserData(userId);
+      return userData.role == role;
     }
 
-    // =====================
-    // Reports collection rules
-    // =====================
-    match /reports/{reportId} {
-      // Any authenticated user can create a report.
-      allow create: if request.auth != null;
+    function isAdmin(userId) {
+      return hasRole(userId, 'super-admin') || hasRole(userId, 'big-admin') || hasRole(userId, 'admin');
+    }
 
-      // Allow GET if:
-      // 1. The user is the one who created the report.
-      // 2. The user has an administrative role.
-      allow get: if request.auth != null && (resource.data.teacherId == request.auth.uid || isAdmin());
+    match /users/{userId} {
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.role == resource.data.role;
+      allow delete: if request.auth != null && hasRole(request.auth.uid, 'super-admin');
+      allow list: if request.auth != null && isAdmin(request.auth.uid);
+    }
+    
+    match /invites/{inviteId} {
+      allow get: if true;
+      allow list, create, update, delete: if request.auth != null && isAdmin(request.auth.uid);
+    }
+
+    match /reports/{reportId} {
+      allow create: if request.auth != null;
       
-      // Allow LIST if the query is properly constrained for the user's role
-      allow list: if request.auth != null && (
-        (getRole(request.auth.uid) == 'super-admin') ||
-        (getRole(request.auth.uid) == 'big-admin' && request.query.where[0][1] == 'district' && request.query.where[0][2] == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.district) ||
-        (getRole(request.auth.uid) == 'admin' && request.query.where[0][1] == 'schoolName' && request.query.where[0][2] == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schoolName) ||
-        (getRole(request.auth.uid) == 'user' && request.query.where[0][1] == 'teacherId' && request.query.where[0][2] == request.auth.uid)
+      allow get, update, delete: if request.auth != null && (
+        resource.data.teacherId == request.auth.uid ||
+        hasRole(request.auth.uid, 'super-admin') ||
+        (hasRole(request.auth.uid, 'big-admin') && getUserData(request.auth.uid).district == resource.data.district) ||
+        (hasRole(request.auth.uid, 'admin') && getUserData(request.auth.uid).schoolName == resource.data.schoolName)
       );
 
-      // Allow update/delete if:
-      // 1. The user created the report.
-      // 2. The user is a super-admin.
-      allow update, delete: if request.auth != null && (
-        resource.data.teacherId == request.auth.uid ||
-        getRole(request.auth.uid) == 'super-admin'
+      // Rules for LIST (queries) must be separate and check the query constraints.
+      allow list: if request.auth != null && (
+        hasRole(request.auth.uid, 'super-admin') ||
+        (
+          hasRole(request.auth.uid, 'big-admin') &&
+          request.query.where[0][1] == 'district' &&
+          request.query.where[0][2] == getUserData(request.auth.uid).district
+        ) ||
+        (
+          hasRole(request.auth.uid, 'admin') &&
+          request.query.where[0][1] == 'schoolName' &&
+          request.query.where[0][2] == getUserData(request.auth.uid).schoolName
+        ) ||
+        (
+          hasRole(request.auth.uid, 'user') &&
+          request.query.where[0][1] == 'teacherId' &&
+          request.query.where[0][2] == request.auth.uid
+        )
       );
     }
   }
