@@ -22,6 +22,19 @@ export interface CustomUser extends User {
   schoolCategory?: 'public' | 'private' | null;
 }
 
+// A serializable, plain object for the user
+export interface PlainUser {
+  uid: string;
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  district?: string | null;
+  schoolName?: string | null;
+  region?: string | null;
+  circuit?: string | null;
+  schoolLevels?: string[] | null;
+  schoolCategory?: 'public' | 'private' | null;
+}
+
+
 interface AuthContextType {
   user: CustomUser | null;
   loading: boolean;

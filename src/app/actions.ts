@@ -33,7 +33,7 @@ import admin from '@/lib/firebase-admin';
 import type { Query, DocumentData } from 'firebase-admin/firestore';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import type { CustomUser } from '@/components/auth-provider';
+import type { CustomUser, PlainUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 import { type ReportData, type SubjectEntry } from '@/lib/schemas';
 import { auth, db } from '@/lib/firebase';
@@ -742,19 +742,6 @@ export async function updateUserStatusAction(
     return { success: false, message: errorMessage };
   }
 }
-
-// A serializable, plain object for the user
-export interface PlainUser {
-  uid: string;
-  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
-  district?: string | null;
-  schoolName?: string | null;
-  region?: string | null;
-  circuit?: string | null;
-  schoolLevels?: string[] | null;
-  schoolCategory?: 'public' | 'private' | null;
-}
-
 
 // Action for updating a user's role and scope
 const UpdateUserRoleAndScopeActionSchema = z.object({
