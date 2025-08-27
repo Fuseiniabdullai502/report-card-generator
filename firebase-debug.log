@@ -597,3 +597,162 @@ Type error: Module '"@/app/actions"' declares 'PlainUser' locally, but it is not
 [debug] [2025-08-27T10:35:17.925Z] Error: ENOENT: no such file or directory, open '/home/user/studio/.next/export-marker.json'
 [error] 
 [error] Error: An unexpected error has occurred.
+[debug] [2025-08-27T10:56:02.395Z] ----------------------------------------------------------------------
+[debug] [2025-08-27T10:56:02.398Z] Command:       /nix/store/ws50yvm6vzlzf7jzz6n7xh4szddrack1-nodejs-20.19.1/bin/node /home/user/.global_modules/bin/firebase deploy
+[debug] [2025-08-27T10:56:02.398Z] CLI Version:   14.14.0
+[debug] [2025-08-27T10:56:02.399Z] Platform:      linux
+[debug] [2025-08-27T10:56:02.399Z] Node Version:  v20.19.1
+[debug] [2025-08-27T10:56:02.399Z] Time:          Wed Aug 27 2025 10:56:02 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-08-27T10:56:02.399Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-08-27T10:56:02.930Z] Object "/storage" in "firebase.json" has unknown property: {"additionalProperty":"cors"}
+[debug] [2025-08-27T10:56:02.930Z] Field "/storage" in "firebase.json" is possibly invalid: must be array
+[debug] [2025-08-27T10:56:02.931Z] Field "/storage" in "firebase.json" is possibly invalid: must match a schema in anyOf
+[debug] [2025-08-27T10:56:02.952Z] Checked if tokens are valid: false, expires at: 1756292457151
+[debug] [2025-08-27T10:56:02.952Z] Checked if tokens are valid: false, expires at: 1756292457151
+[debug] [2025-08-27T10:56:02.953Z] > refreshing access token with scopes: []
+[debug] [2025-08-27T10:56:02.956Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-08-27T10:56:02.957Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-08-27T10:56:03.095Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-08-27T10:56:03.095Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-08-27T10:56:03.114Z] >>> [apiv2][query] GET https://monospace-pa.googleapis.com/v1/workspaces/studio-3122546733 [none]
+[debug] [2025-08-27T10:56:03.797Z] <<< [apiv2][status] GET https://monospace-pa.googleapis.com/v1/workspaces/studio-3122546733 200
+[debug] [2025-08-27T10:56:03.797Z] <<< [apiv2][body] GET https://monospace-pa.googleapis.com/v1/workspaces/studio-3122546733 {"workspaceId":"studio-3122546733","name":"Report Card Generator","workspaceRedirectUrl":"firebase-studio-1749300569694.cluster-jbb3mjctu5cbgsi6hwq6u4btwe.cloudworkstations.dev","status":"WORKSPACE_STATUS_RUNNING","lastAccessDatetime":"2025-08-27T09:50:21.243767Z","failureReason":"Workstation has been modified. Try again later.","workspaceTemplate":"WORKSPACE_TEMPLATE_CAPRA_BUILDER","owner":"SELF","serviceAccountEmail":"msp-1505396788787216620@monospace-per-ws-sa-4.iam.gserviceaccount.com","ownerEmail":"fabdullai502@gmail.com","workspaceImageUrl":"https://www.gstatic.com/monospace/250314/workspace-prototype-192.png","templateArgs":"{}","templateRepoUrl":"file:///usr/local/monospace/templates/private/_capra_next","workstationAccessToken":"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2Nsb3VkLmdvb2dsZS5jb20vd29ya3N0YXRpb25zIiwiYXVkIjoiZmlyZWJhc2Utc3R1ZGlvLTE3NDkzMDA1Njk2OTQuY2x1c3Rlci1qYmIzbWpjdHU1Y2Jnc2k2aHdxNnU0YnR3ZS5jbG91ZHdvcmtzdGF0aW9ucy5kZXYiLCJpYXQiOjE3NTYyOTIxNjMsImV4cCI6MTc1NjM3ODU2M30.d-NDMreILdzLN24Z4JSCyLhnNg2n0O1IVI29FR-e8ymRUCvNvgmjC4RjG-5ceZEXPcJw5ujeeRNsFU99Ety-Hv3ShC5_sbup7FNE0V9G18rne7S-p_RempiHDj5UhIfnWth1t7g-tyAMgZ3jwItaJ_eMjJZ-2ZFwHSdrfF8M8Yu2ePKMJWPxOFTzAuSlgi9rMrNBveYH7KACFVSO9wbWvbfAkpTdbajmmF8qwC7kb_r_I0PaUc5KSC2pu9qkpjbtnzqZG9f67bx8wOf_3YrpwwxJFUfiArBEgjaULCfRS4rb9TuxThDhFF8HQBQZFPZJD-yi1GKaYXUK-xT-zqkWFg","firebaseProjectId":"report-card-generator-e3zkv"}
+[debug] [2025-08-27T10:56:03.801Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-08-27T10:56:03.804Z] > authorizing via signed-in user (fabdullai502@gmail.com)
+[debug] [2025-08-27T10:56:03.804Z] [iam] checking project report-card-generator-e3zkv for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create",null]
+[debug] [2025-08-27T10:56:03.805Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:03.805Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:03.805Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions [none]
+[debug] [2025-08-27T10:56:03.806Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions x-goog-quota-user=projects/report-card-generator-e3zkv
+[debug] [2025-08-27T10:56:03.806Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create",null]}
+[debug] [2025-08-27T10:56:04.467Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions 200
+[debug] [2025-08-27T10:56:04.468Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create"]}
+[debug] [2025-08-27T10:56:04.468Z] [iam] error while checking permissions, command may fail: Authorization failed. This account is missing the following required permissions on project report-card-generator-e3zkv:
+
+  
+[debug] [2025-08-27T10:56:04.469Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:04.469Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:04.469Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/report-card-generator-e3zkv/serviceAccounts/report-card-generator-e3zkv@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-08-27T10:56:04.469Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/report-card-generator-e3zkv/serviceAccounts/report-card-generator-e3zkv@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-08-27T10:56:04.641Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/report-card-generator-e3zkv/serviceAccounts/report-card-generator-e3zkv@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-08-27T10:56:04.641Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/report-card-generator-e3zkv/serviceAccounts/report-card-generator-e3zkv@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-08-27T10:56:04.645Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:04.645Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:04.645Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv [none]
+[debug] [2025-08-27T10:56:04.883Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv 200
+[debug] [2025-08-27T10:56:04.884Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv {"projectId":"report-card-generator-e3zkv","projectNumber":"103786735519","displayName":"Report Card Generator","name":"projects/report-card-generator-e3zkv","resources":{"hostingSite":"report-card-generator-e3zkv"},"state":"ACTIVE","etag":"1_05c9bddb-32fb-48a8-aba0-5fa099ca7eca"}
+[debug] [2025-08-27T10:56:10.702Z] defaultcredentials: writing to file /home/user/.config/firebase/fabdullai502_gmail_com_application_default_credentials.json
+[debug] [2025-08-27T10:56:10.742Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:10.746Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:10.751Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites pageToken=&pageSize=10
+[debug] [2025-08-27T10:56:11.664Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites 200
+[debug] [2025-08-27T10:56:11.665Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites {"sites":[{"name":"projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv","defaultUrl":"https://report-card-generator-e3zkv.web.app","appId":"1:103786735519:web:22922ed07e07c3dd817faa","type":"DEFAULT_SITE"}]}
+[debug] [2025-08-27T10:56:11.665Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:11.668Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:11.668Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:103786735519:web:22922ed07e07c3dd817faa/config [none]
+[debug] [2025-08-27T10:56:12.322Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:103786735519:web:22922ed07e07c3dd817faa/config 200
+[debug] [2025-08-27T10:56:12.324Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:103786735519:web:22922ed07e07c3dd817faa/config {"projectId":"report-card-generator-e3zkv","appId":"1:103786735519:web:22922ed07e07c3dd817faa","storageBucket":"report-card-generator-e3zkv.firebasestorage.app","apiKey":"AIzaSyCRe24-c5OnazQ2jbs84eiLnQheopbiIno","authDomain":"report-card-generator-e3zkv.firebaseapp.com","messagingSenderId":"103786735519","measurementId":"G-GFSQTH9VMT"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2025-08-27T10:56:26.467Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:26.467Z] Checked if tokens are valid: true, expires at: 1756295762096
+[debug] [2025-08-27T10:56:26.468Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv [none]
+[debug] [2025-08-27T10:56:27.244Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv 200
+[debug] [2025-08-27T10:56:27.250Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv {"name":"projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv","defaultUrl":"https://report-card-generator-e3zkv.web.app","appId":"1:103786735519:web:22922ed07e07c3dd817faa","type":"DEFAULT_SITE"}
+[info]   ▲ Next.js 14.2.4
+
+[info]   - Environments: .env.local, .env
+
+
+[info]    Creating an optimized production build ...
+
+[info]  ⚠ Compiled with warnings
+
+
+[info] ./node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/handlebars/lib/index.js
+./node_modules/dotprompt/dist/index.js
+./node_modules/@genkit-ai/core/lib/registry.js
+./node_modules/genkit/lib/registry.js
+./node_modules/genkit/lib/genkit.js
+./node_modules/genkit/lib/index.mjs
+./src/ai/flows/generate-student-feedback.ts
+./src/app/actions.ts
+
+./node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/handlebars/lib/index.js
+./node_modules/dotprompt/dist/index.js
+./node_modules/@genkit-ai/core/lib/registry.js
+./node_modules/genkit/lib/registry.js
+./node_modules/genkit/lib/genkit.js
+./node_modules/genkit/lib/index.mjs
+./src/ai/flows/generate-student-feedback.ts
+./src/app/actions.ts
+
+./node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/handlebars/lib/index.js
+./node_modules/dotprompt/dist/index.js
+./node_modules/@genkit-ai/core/lib/registry.js
+./node_modules/genkit/lib/registry.js
+./node_modules/genkit/lib/genkit.js
+./node_modules/genkit/lib/index.mjs
+./src/ai/flows/generate-student-feedback.ts
+./src/app/actions.ts
+
+./node_modules/require-in-the-middle/index.js
+Critical dependency: require function is used in a way in which dependencies cannot be statically extracted
+
+Import trace for requested module:
+./node_modules/require-in-the-middle/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/index.js
+./node_modules/@opentelemetry/sdk-node/build/src/sdk.js
+./node_modules/@opentelemetry/sdk-node/build/src/index.js
+./node_modules/@genkit-ai/core/lib/tracing.js
+./node_modules/@genkit-ai/ai/lib/chat.js
+./node_modules/genkit/lib/common.js
+./node_modules/genkit/lib/index.mjs
+./src/ai/flows/generate-student-feedback.ts
+./src/app/actions.ts
+
+[info] 
+
+[info]    Linting and checking validity of types ...
+
+[info] Failed to compile.
+
+
+[info] ./src/components/user-management.tsx:54:10
+Type error: Module '"@/app/actions"' declares 'PlainUser' locally, but it is not exported.
+
+  52 |     getDistrictClassRankingAction,
+  53 |     getSchoolProgramRankingAction,
+> 54 |     type PlainUser,
+     |          ^
+  55 |     type PopulationStats,
+  56 | } from '@/app/actions';
+  57 | import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
+
+[debug] [2025-08-27T10:58:18.400Z] Error: ENOENT: no such file or directory, open '/home/user/studio/.next/export-marker.json'
+[error] 
+[error] Error: An unexpected error has occurred.

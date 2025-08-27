@@ -26,6 +26,8 @@ export interface CustomUser extends User {
 export interface PlainUser {
   uid: string;
   role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  name?: string | null;
+  email?: string | null;
   district?: string | null;
   schoolName?: string | null;
   region?: string | null;

@@ -51,12 +51,12 @@ import {
     updateInviteAction,
     getDistrictClassRankingAction,
     getSchoolProgramRankingAction,
-    type PlainUser,
+    type SchoolRankingData, 
+    type StudentRankingData,
     type PopulationStats,
 } from '@/app/actions';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
-import type { CustomUser } from './auth-provider';
-import type { SchoolRankingData, StudentRankingData } from '@/app/actions';
+import type { CustomUser, PlainUser } from './auth-provider';
 import DistrictClassRankingDialog from '@/components/district-class-ranking';
 import SchoolProgramRankingDialog from '@/components/school-program-ranking';
 import { ReportData, SubjectEntry } from '@/lib/schemas';
@@ -1272,6 +1272,7 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
 }
 
     
+
 
 
 
