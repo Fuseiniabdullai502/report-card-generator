@@ -214,3 +214,229 @@ Dev App Server is now running.
 
 Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
  
+[debug] [2025-08-27T09:54:07.475Z] Aug 27, 2025 9:54:07 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel
+INFO: Connected to new websocket client
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Aug 27, 2025 9:54:07 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel\nINFO: Connected to new websocket client\n"}}
+[debug] [2025-08-27T09:54:07.661Z] Aug 27, 2025 9:54:07 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Aug 27, 2025 9:54:07 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-08-27T09:54:08.917Z] Aug 27, 2025 9:54:08 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel
+INFO: Connected to new websocket client
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Aug 27, 2025 9:54:08 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel\nINFO: Connected to new websocket client\n"}}
+[debug] [2025-08-27T09:54:09.023Z] Aug 27, 2025 9:54:08 AM io.grpc.netty.NettyServerTransport notifyTerminated
+INFO: Transport failed
+io.netty.handler.codec.http2.Http2Exception: Unexpected HTTP/1.x request: GET / 
+	at io.netty.handler.codec.http2.Http2Exception.connectionError(Http2Exception.java:107)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.readClientPrefaceString(Http2ConnectionHandler.java:315)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.decode(Http2ConnectionHandler.java:245)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler.decode(Http2ConnectionHandler.java:451)
+	at io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530)
+	at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469)
+	at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1407)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
+	at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:918)
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:166)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:788)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:994)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Aug 27, 2025 9:54:08 AM io.grpc.netty.NettyServerTransport notifyTerminated\nINFO: Transport failed\nio.netty.handler.codec.http2.Http2Exception: Unexpected HTTP/1.x request: GET / \n\tat io.netty.handler.codec.http2.Http2Exception.connectionError(Http2Exception.java:107)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.readClientPrefaceString(Http2ConnectionHandler.java:315)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.decode(Http2ConnectionHandler.java:245)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler.decode(Http2ConnectionHandler.java:451)\n\tat io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530)\n\tat io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469)\n\tat io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)\n\tat io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)\n\tat io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1407)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)\n\tat io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:918)\n\tat io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:166)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:788)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)\n\tat io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)\n\tat io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:994)\n\tat io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)\n\tat io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\n\n"}}
+[debug] [2025-08-27T09:54:09.327Z] Aug 27, 2025 9:54:09 AM io.grpc.netty.NettyServerTransport notifyTerminated
+INFO: Transport failed
+io.netty.handler.codec.http2.Http2Exception: HTTP/2 client preface string missing or corrupt. Hex dump for received bytes: 16030105a8010005a4030356f569172534897e44a65a4285
+	at io.netty.handler.codec.http2.Http2Exception.connectionError(Http2Exception.java:107)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.readClientPrefaceString(Http2ConnectionHandler.java:319)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.decode(Http2ConnectionHandler.java:245)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler.decode(Http2ConnectionHandler.java:451)
+	at io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530)
+	at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469)
+	at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1407)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
+	at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:918)
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:166)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:788)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:994)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Aug 27, 2025 9:54:09 AM io.grpc.netty.NettyServerTransport notifyTerminated\nINFO: Transport failed\nio.netty.handler.codec.http2.Http2Exception: HTTP/2 client preface string missing or corrupt. Hex dump for received bytes: 16030105a8010005a4030356f569172534897e44a65a4285\n\tat io.netty.handler.codec.http2.Http2Exception.connectionError(Http2Exception.java:107)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.readClientPrefaceString(Http2ConnectionHandler.java:319)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.decode(Http2ConnectionHandler.java:245)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler.decode(Http2ConnectionHandler.java:451)\n\tat io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530)\n\tat io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469)\n\tat io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)\n\tat io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)\n\tat io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1407)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)\n\tat io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:918)\n\tat io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:166)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:788)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)\n\tat io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)\n\tat io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:994)\n\tat io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)\n\tat io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\n\n"}}
+[debug] [2025-08-27T10:00:57.485Z] ----------------------------------------------------------------------
+[debug] [2025-08-27T10:00:57.488Z] Command:       /nix/store/ws50yvm6vzlzf7jzz6n7xh4szddrack1-nodejs-20.19.1/bin/node /home/user/.global_modules/bin/firebase deploy
+[debug] [2025-08-27T10:00:57.489Z] CLI Version:   14.14.0
+[debug] [2025-08-27T10:00:57.489Z] Platform:      linux
+[debug] [2025-08-27T10:00:57.490Z] Node Version:  v20.19.1
+[debug] [2025-08-27T10:00:57.490Z] Time:          Wed Aug 27 2025 10:00:57 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-08-27T10:00:57.490Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-08-27T10:00:58.025Z] Object "/storage" in "firebase.json" has unknown property: {"additionalProperty":"cors"}
+[debug] [2025-08-27T10:00:58.026Z] Field "/storage" in "firebase.json" is possibly invalid: must be array
+[debug] [2025-08-27T10:00:58.026Z] Field "/storage" in "firebase.json" is possibly invalid: must match a schema in anyOf
+[debug] [2025-08-27T10:00:58.029Z] Checked if tokens are valid: false, expires at: 1756231255146
+[debug] [2025-08-27T10:00:58.030Z] Checked if tokens are valid: false, expires at: 1756231255146
+[debug] [2025-08-27T10:00:58.030Z] > refreshing access token with scopes: []
+[debug] [2025-08-27T10:00:58.033Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-08-27T10:00:58.034Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-08-27T10:00:58.151Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-08-27T10:00:58.151Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-08-27T10:00:58.170Z] >>> [apiv2][query] GET https://monospace-pa.googleapis.com/v1/workspaces/studio-3122546733 [none]
+[debug] [2025-08-27T10:00:59.098Z] <<< [apiv2][status] GET https://monospace-pa.googleapis.com/v1/workspaces/studio-3122546733 200
+[debug] [2025-08-27T10:00:59.099Z] <<< [apiv2][body] GET https://monospace-pa.googleapis.com/v1/workspaces/studio-3122546733 {"workspaceId":"studio-3122546733","name":"Report Card Generator","workspaceRedirectUrl":"firebase-studio-1749300569694.cluster-jbb3mjctu5cbgsi6hwq6u4btwe.cloudworkstations.dev","status":"WORKSPACE_STATUS_RUNNING","lastAccessDatetime":"2025-08-27T09:50:21.243767Z","failureReason":"Workstation has been modified. Try again later.","workspaceTemplate":"WORKSPACE_TEMPLATE_CAPRA_BUILDER","owner":"SELF","serviceAccountEmail":"msp-1505396788787216620@monospace-per-ws-sa-4.iam.gserviceaccount.com","ownerEmail":"fabdullai502@gmail.com","workspaceImageUrl":"https://www.gstatic.com/monospace/250314/workspace-prototype-192.png","templateArgs":"{}","templateRepoUrl":"file:///usr/local/monospace/templates/private/_capra_next","workstationAccessToken":"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2Nsb3VkLmdvb2dsZS5jb20vd29ya3N0YXRpb25zIiwiYXVkIjoiZmlyZWJhc2Utc3R1ZGlvLTE3NDkzMDA1Njk2OTQuY2x1c3Rlci1qYmIzbWpjdHU1Y2Jnc2k2aHdxNnU0YnR3ZS5jbG91ZHdvcmtzdGF0aW9ucy5kZXYiLCJpYXQiOjE3NTYyODg4NTgsImV4cCI6MTc1NjM3NTI1OH0.SLLe3LkCCDK6mcf2REwRUrtPQRUy31DeHyn1GWU7ZBenSM0M0VWto6neZqSn5yLAojManhPloyTatN4qpHcCtmmM4EMj1xmtKDh08zv89jwDbd4IQKkCP4LxfpWNKYWhxE25PuVCqkdAwkP1ZkSdlz1p9GDoW7x_Y5cScYvImAQ8jirZuSeogk1TI7bI2Igi7GWsmzNGCTklAygekvWWEahOfv1-yoeOpZLLXuHQkM-GKQgfwlE_h5maP9MTZVGLbSBUTK9c30Hb0T36CllNB9r2Pswpovk2DTcb5xD01mah-WTvKDgiQXJCvsnK_NGSlXw9HGW70Ne_CvnKV7tzYg","firebaseProjectId":"report-card-generator-e3zkv"}
+[debug] [2025-08-27T10:00:59.101Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-08-27T10:00:59.101Z] > authorizing via signed-in user (fabdullai502@gmail.com)
+[debug] [2025-08-27T10:00:59.102Z] [iam] checking project report-card-generator-e3zkv for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create",null]
+[debug] [2025-08-27T10:00:59.104Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:00:59.105Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:00:59.105Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions [none]
+[debug] [2025-08-27T10:00:59.105Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions x-goog-quota-user=projects/report-card-generator-e3zkv
+[debug] [2025-08-27T10:00:59.105Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create",null]}
+[debug] [2025-08-27T10:00:59.765Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions 200
+[debug] [2025-08-27T10:00:59.766Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/report-card-generator-e3zkv:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create"]}
+[debug] [2025-08-27T10:00:59.767Z] [iam] error while checking permissions, command may fail: Authorization failed. This account is missing the following required permissions on project report-card-generator-e3zkv:
+
+  
+[debug] [2025-08-27T10:00:59.767Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:00:59.767Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:00:59.768Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/report-card-generator-e3zkv/serviceAccounts/report-card-generator-e3zkv@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-08-27T10:00:59.768Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/report-card-generator-e3zkv/serviceAccounts/report-card-generator-e3zkv@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-08-27T10:01:00.453Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/report-card-generator-e3zkv/serviceAccounts/report-card-generator-e3zkv@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-08-27T10:01:00.453Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/report-card-generator-e3zkv/serviceAccounts/report-card-generator-e3zkv@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-08-27T10:01:00.457Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:01:00.457Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:01:00.457Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv [none]
+[debug] [2025-08-27T10:01:00.715Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv 200
+[debug] [2025-08-27T10:01:00.717Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/report-card-generator-e3zkv {"projectId":"report-card-generator-e3zkv","projectNumber":"103786735519","displayName":"Report Card Generator","name":"projects/report-card-generator-e3zkv","resources":{"hostingSite":"report-card-generator-e3zkv"},"state":"ACTIVE","etag":"1_05c9bddb-32fb-48a8-aba0-5fa099ca7eca"}
+[debug] [2025-08-27T10:01:06.323Z] defaultcredentials: writing to file /home/user/.config/firebase/fabdullai502_gmail_com_application_default_credentials.json
+[debug] [2025-08-27T10:01:06.349Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:01:06.353Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:01:06.360Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites pageToken=&pageSize=10
+[debug] [2025-08-27T10:01:07.210Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites 200
+[debug] [2025-08-27T10:01:07.210Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites {"sites":[{"name":"projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv","defaultUrl":"https://report-card-generator-e3zkv.web.app","appId":"1:103786735519:web:22922ed07e07c3dd817faa","type":"DEFAULT_SITE"}]}
+[debug] [2025-08-27T10:01:07.211Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:01:07.211Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:01:07.212Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:103786735519:web:22922ed07e07c3dd817faa/config [none]
+[debug] [2025-08-27T10:01:07.691Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:103786735519:web:22922ed07e07c3dd817faa/config 200
+[debug] [2025-08-27T10:01:07.695Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:103786735519:web:22922ed07e07c3dd817faa/config {"projectId":"report-card-generator-e3zkv","appId":"1:103786735519:web:22922ed07e07c3dd817faa","storageBucket":"report-card-generator-e3zkv.firebasestorage.app","apiKey":"AIzaSyCRe24-c5OnazQ2jbs84eiLnQheopbiIno","authDomain":"report-card-generator-e3zkv.firebaseapp.com","messagingSenderId":"103786735519","measurementId":"G-GFSQTH9VMT"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2025-08-27T10:01:21.696Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:01:21.701Z] Checked if tokens are valid: true, expires at: 1756292457151
+[debug] [2025-08-27T10:01:21.702Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv [none]
+[debug] [2025-08-27T10:01:22.488Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv 200
+[debug] [2025-08-27T10:01:22.491Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv {"name":"projects/report-card-generator-e3zkv/sites/report-card-generator-e3zkv","defaultUrl":"https://report-card-generator-e3zkv.web.app","appId":"1:103786735519:web:22922ed07e07c3dd817faa","type":"DEFAULT_SITE"}
+[info]   ▲ Next.js 14.2.4
+  - Environments: .env.local, .env
+
+
+[info]    Creating an optimized production build ...
+
+[info] Browserslist: caniuse-lite is outdated. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+[info]  ⚠ Compiled with warnings
+
+./node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/handlebars/lib/index.js
+./node_modules/dotprompt/dist/index.js
+./node_modules/@genkit-ai/core/lib/registry.js
+./node_modules/genkit/lib/registry.js
+./node_modules/genkit/lib/genkit.js
+./node_modules/genkit/lib/index.mjs
+./src/ai/flows/generate-performance-summary.ts
+./src/app/actions.ts
+
+./node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/handlebars/lib/index.js
+./node_modules/dotprompt/dist/index.js
+./node_modules/@genkit-ai/core/lib/registry.js
+./node_modules/genkit/lib/registry.js
+./node_modules/genkit/lib/genkit.js
+./node_modules/genkit/lib/index.mjs
+./src/ai/flows/generate-performance-summary.ts
+./src/app/actions.ts
+
+./node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/handlebars/lib/index.js
+./node_modules/dotprompt/dist/index.js
+./node_modules/@genkit-ai/core/lib/registry.js
+./node_modules/genkit/lib/registry.js
+./node_modules/genkit/lib/genkit.js
+./node_modules/genkit/lib/index.mjs
+./src/ai/flows/generate-performance-summary.ts
+./src/app/actions.ts
+
+./node_modules/require-in-the-middle/index.js
+Critical dependency: require function is used in a way in which dependencies cannot be statically extracted
+
+Import trace for requested module:
+./node_modules/require-in-the-middle/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/index.js
+./node_modules/@opentelemetry/sdk-node/build/src/sdk.js
+./node_modules/@opentelemetry/sdk-node/build/src/index.js
+./node_modules/@genkit-ai/core/lib/tracing.js
+./node_modules/genkit/lib/tracing.js
+./node_modules/@genkit-ai/googleai/lib/gemini.js
+./node_modules/@genkit-ai/googleai/lib/index.mjs
+./src/ai/genkit.ts
+./src/ai/flows/generate-performance-summary.ts
+./src/app/actions.ts
+
+
+[info]    Linting and checking validity of types ...
+
+[info] Failed to compile.
+
+
+[info] ./src/app/page.tsx:29:27
+Type error: Module '"@/components/auth-provider"' has no exported member 'PlainUser'.
+
+  27 | import { useAuth } from '@/components/auth-provider';
+  28 | import { useRouter } from 'next/navigation';
+> 29 | import type { CustomUser, PlainUser } from '@/components/auth-provider';
+     |                           ^
+  30 | import { signOut } from 'firebase/auth';
+  31 | import Link from 'next/link';
+  32 | import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
+
+[debug] [2025-08-27T10:04:41.405Z] Error: ENOENT: no such file or directory, open '/home/user/studio/.next/export-marker.json'
+[error] 
+[error] Error: An unexpected error has occurred.
