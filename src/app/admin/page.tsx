@@ -2,10 +2,10 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { useAuth, type CustomUser } from '@/components/auth-provider';
+import { useAuth, type CustomUser, type PlainUser } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { Loader2, Shield, ArrowLeft } from 'lucide-react';
-import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction, getSystemWideStatsAction, getReportsForAdminAction, type PlainUser, type PopulationStats } from '@/app/actions';
+import { getUsersAction, getInvitesAction, getDistrictStatsAction, getSchoolStatsAction, getSystemWideStatsAction, getReportsForAdminAction, type PopulationStats } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -80,6 +80,8 @@ export default function AdminPage() {
       schoolName: currentUser.schoolName,
       region: currentUser.region,
       circuit: currentUser.circuit,
+      schoolLevels: currentUser.schoolLevels,
+      schoolCategory: currentUser.schoolCategory,
     };
     
     try {
