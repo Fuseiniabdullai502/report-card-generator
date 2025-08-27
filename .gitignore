@@ -251,3 +251,6 @@ firestore-debug.log
 
 firestore-debug.log
 *.log
+
+# Firebase build artifacts
+.firebase/
