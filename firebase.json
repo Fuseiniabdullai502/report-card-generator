@@ -29,13 +29,18 @@
       "firebase-debug.log",
       "firebase-debug.*.log",
       "functions"
-    ],
-    "alwaysDeployFromSource": true
+    ]
   },
   "functions": [
     {
-      "source": ".firebase/report-card-generator-e3zkv/functions",
-      "codebase": "firebase-frameworks-report-card-generator-e3zkv"
+      "source": ".firebase/report-card-generator/functions",
+      "codebase": "firebase-frameworks-report-card-generator",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ]
     }
   ]
 }
