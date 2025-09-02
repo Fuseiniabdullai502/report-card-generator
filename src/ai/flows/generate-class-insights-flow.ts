@@ -75,14 +75,14 @@ Gender Performance:
 - {{gender}}s: {{count}} students, Average Score: {{#if averageScore}}{{averageScore}}%{{else}}N/A{{/if}}
 {{/each}}
 
-Based on this data, provide:
-1. **Overall Assessment**
-2. **Strengths**
-3. **Areas for Concern**
-4. **Actionable Advice**
+Based on this data, you MUST provide:
+1. **Overall Assessment**: A general summary of the class's performance.
+2. **Strengths**: Identify subjects or trends where the class is performing well.
+3. **Areas for Concern**: CRITICAL - Analyze the data to find subjects where a significant number of students are below average or where the class average is low. Explicitly list these subjects or trends as areas for concern.
+4. **Actionable Advice for Teacher**: CRITICAL - For each 'Area for Concern' you identified, provide specific, practical, and actionable advice that a teacher can implement in the classroom to help students improve. For example, suggest teaching strategies, group activities, or focus areas.
 5. **Recommended Resources**: Based on the 'Areas for Concern', recommend 2-3 specific, high-quality, and well-known educational websites or YouTube channels (like Khan Academy, BBC Bitesize, CrashCourse, etc.) that could help the teacher and students. For each resource, provide its name, type (Website or YouTube Channel), a valid URL, and a brief description of its relevance.
 
-Format the output as JSON matching the GenerateClassInsightsOutputSchema.`,
+Ensure all output fields are present, using empty strings or empty arrays if no specific points can be made for a particular section. Format the output as JSON matching the GenerateClassInsightsOutputSchema.`,
   config: {
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
