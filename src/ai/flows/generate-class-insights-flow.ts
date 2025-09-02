@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A Genkit flow to generate insights and advice for a class based on performance data.
@@ -7,6 +6,9 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
+// -------------------------
+// Input Schemas
+// -------------------------
 const SubjectPerformanceStatSchema = z.object({
   subjectName: z.string(),
   numBelowAverage: z.number().describe('Number of students performing below average (e.g., <40%)'),
@@ -31,6 +33,9 @@ const GenerateClassInsightsInputSchema = z.object({
 });
 export type GenerateClassInsightsInput = z.infer<typeof GenerateClassInsightsInputSchema>;
 
+// -------------------------
+// Output Schema (strict)
+// -------------------------
 const RecommendedResourceSchema = z.object({
   name: z.string().describe('The name of the recommended resource (e.g., "Khan Academy", "CrashCourse").'),
   type: z.enum(['Website', 'YouTube Channel']).describe('The type of the resource.'),
@@ -39,21 +44,27 @@ const RecommendedResourceSchema = z.object({
 });
 
 const GenerateClassInsightsOutputSchema = z.object({
-  overallAssessment: z.string().describe('A general assessment of the class\'s performance.').optional(),
-  strengths: z.array(z.string()).describe('Key strengths observed in the class.').optional(),
-  areasForConcern: z.array(z.string()).describe('Areas that might need attention or improvement.').optional(),
-  actionableAdvice: z.array(z.string()).describe('Specific, actionable advice for the teacher.').optional(),
-  recommendedResources: z.array(RecommendedResourceSchema).describe('A list of 2-3 recommended educational websites or YouTube channels to help address areas for concern.').optional(),
+  overallAssessment: z.string().describe("A general assessment of the class's performance."),
+  strengths: z.array(z.string()).describe('Key strengths observed in the class.'),
+  areasForConcern: z.array(z.string()).describe('Areas that might need attention or improvement.'),
+  actionableAdvice: z.array(z.string()).describe('Specific, actionable advice for the teacher.'),
+  recommendedResources: z.array(RecommendedResourceSchema).describe('A list of 2-3 recommended educational websites or YouTube channels to help address areas for concern.'),
 });
 export type GenerateClassInsightsOutput = z.infer<typeof GenerateClassInsightsOutputSchema>;
 
+// -------------------------
+// Public Entry Function
+// -------------------------
 export async function generateClassInsights(input: GenerateClassInsightsInput): Promise<GenerateClassInsightsOutput> {
   return generateClassInsightsFlow(input);
 }
 
+// -------------------------
+// Prompt Definition
+// -------------------------
 const prompt = ai.definePrompt({
   name: 'generateClassInsightsPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-1.5-flash', // ⚡ fast model; switch to "gemini-1.5-pro" for deeper reasoning
   input: { schema: GenerateClassInsightsInputSchema },
   output: { schema: GenerateClassInsightsOutputSchema },
   prompt: `You are an experienced educational analyst and pedagogical advisor.
@@ -93,6 +104,9 @@ Ensure all output fields are present, using empty strings or empty arrays if no 
   },
 });
 
+// -------------------------
+// Flow Definition (with try/catch)
+// -------------------------
 const generateClassInsightsFlow = ai.defineFlow(
   {
     name: 'generateClassInsightsFlow',
@@ -100,8 +114,17 @@ const generateClassInsightsFlow = ai.defineFlow(
     outputSchema: GenerateClassInsightsOutputSchema,
   },
   async (input: GenerateClassInsightsInput) => {
-    const { output } = await prompt(input);
-    if (!output) {
+    try {
+      const { output } = await prompt(input);
+      return {
+        overallAssessment: output?.overallAssessment ?? '',
+        strengths: output?.strengths ?? [],
+        areasForConcern: output?.areasForConcern ?? [],
+        actionableAdvice: output?.actionableAdvice ?? [],
+        recommendedResources: output?.recommendedResources ?? [],
+      };
+    } catch (e) {
+      console.error('Error generating insights:', e);
       return {
         overallAssessment: '',
         strengths: [],
@@ -110,12 +133,5 @@ const generateClassInsightsFlow = ai.defineFlow(
         recommendedResources: [],
       };
     }
-    return {
-      overallAssessment: output.overallAssessment || '',
-      strengths: output.strengths || [],
-      areasForConcern: output.areasForConcern || [],
-      actionableAdvice: output.actionableAdvice || [],
-      recommendedResources: output.recommendedResources || [],
-    };
   }
 );
