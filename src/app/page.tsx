@@ -10,12 +10,12 @@ import ReportActions from '@/components/report-actions';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, PenSquare, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo, SlidersHorizontal, Settings, Search, Image as ImageIcon, GraduationCap } from 'lucide-react';
+import { Printer, BookMarked, FileText, Eye, EyeOff, Trash2, BarChart3, Download, Share2, ChevronLeft, ChevronRight, BarChartHorizontalBig, Building, Upload, Loader2, AlertTriangle, Users, PlusCircle, CalendarDays, Type, PenSquare, UploadCloud, FolderDown, LayoutTemplate, LogOut, Shield, Edit, ListTodo, SlidersHorizontal, Settings, Search, Image as ImageIcon, GraduationCap, ListChecks } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
@@ -43,6 +43,8 @@ import SchoolPerformanceDashboard from '@/components/school-dashboard';
 import ImportStudentsDialog from '@/components/import-students-dialog';
 import ClassPerformanceDashboard from '@/components/class-dashboard';
 import SignaturePad from '@/components/signature-pad';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
@@ -138,6 +140,8 @@ function AppContent({ user }: { user: CustomUser }) {
   const bgOpacityKey = `app-bg-opacity-${user.uid}`;
 
   const [isSignaturePadOpen, setIsSignaturePadOpen] = useState(false);
+  const [selectedReportsForPrint, setSelectedReportsForPrint] = useState<Record<string, boolean>>({});
+  const [isSelectForPrintDialogOpen, setIsSelectForPrintDialogOpen] = useState(false);
 
 
   useEffect(() => {
@@ -264,6 +268,7 @@ function AppContent({ user }: { user: CustomUser }) {
   // Reset preview index when filters change
   useEffect(() => {
     setCurrentPreviewIndex(0);
+    setSelectedReportsForPrint({});
   }, [adminFilters, searchQuery]);
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
@@ -655,13 +660,22 @@ function AppContent({ user }: { user: CustomUser }) {
     });
   }
 
-  const reportsCount = filteredReports.length;
+    const getReportsToPrint = () => {
+        const selectedIds = Object.keys(selectedReportsForPrint).filter(id => selectedReportsForPrint[id]);
+        if (selectedIds.length > 0) {
+            return filteredReports.filter(report => selectedIds.includes(report.id));
+        }
+        return filteredReports;
+    };
 
-  const handleInitiatePrint = (isPdfDownload: boolean) => {
-    if (reportsCount === 0) {
+    const reportsToPrint = getReportsToPrint();
+    const reportsCount = filteredReports.length;
+
+    const handleInitiatePrint = (isPdfDownload: boolean) => {
+    if (reportsToPrint.length === 0) {
       toast({
         title: `Nothing to ${isPdfDownload ? 'Download' : 'Print'}`,
-        description: "Add or filter reports to the list to use this feature.",
+        description: "Add, filter, or select reports to use this feature.",
         variant: "destructive",
       });
       return;
@@ -1322,13 +1336,17 @@ function AppContent({ user }: { user: CustomUser }) {
                                 School Overview
                               </Button>
                           )}
+                           <Button onClick={() => setIsSelectForPrintDialogOpen(true)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title="Select specific reports to print or download">
+                              <ListChecks className="mr-2 h-4 w-4 text-orange-500" />
+                              Select to Print...
+                            </Button>
                           <Button onClick={() => handleInitiatePrint(true)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Download all reports in the list as a single PDF" : "Add or filter reports to the list to enable download"}>
                             <Download className="mr-2 h-4 w-4 text-green-600" />
                             Download as PDF
                           </Button>
                           <Button onClick={() => handleInitiatePrint(false)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Print all reports in the list" : "Add or filter reports to the list to enable printing"}>
                             <Printer className="mr-2 h-4 w-4" />
-                            Print ({reportsCount})
+                            Print ({reportsToPrint.length})
                           </Button>
                         </div>
                         <div className="flex flex-wrap gap-2 justify-start md:justify-end">
@@ -1434,8 +1452,8 @@ function AppContent({ user }: { user: CustomUser }) {
 
       {/* This is the dedicated container for PRINTING ONLY. It is OUTSIDE the main app container. */}
       <div className="print-only-reports">
-        {reportsCount > 0 ? (
-          filteredReports.map((reportData) => (
+        {reportsToPrint.length > 0 ? (
+          reportsToPrint.map((reportData) => (
             <div key={`print-${reportData.id}`} className="a4-page-simulation">
                <ReportPreview 
                 data={reportData} 
@@ -1528,6 +1546,63 @@ function AppContent({ user }: { user: CustomUser }) {
             />
         </DialogContent>
       </Dialog>
+      
+       <Dialog open={isSelectForPrintDialogOpen} onOpenChange={setIsSelectForPrintDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Reports to Print</DialogTitle>
+            <DialogDescription>
+              Choose which reports from the current view to include in the printout/PDF.
+              If none are selected, all {filteredReports.length} reports will be printed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <div className="flex items-center space-x-2 mb-2 border p-2 rounded-md bg-muted/50">
+              <Checkbox
+                id="selectAllForPrint"
+                checked={Object.keys(selectedReportsForPrint).length > 0 && Object.keys(selectedReportsForPrint).length === filteredReports.length}
+                onCheckedChange={(checked) => {
+                  const newSelection: Record<string, boolean> = {};
+                  if (checked) {
+                    filteredReports.forEach(r => newSelection[r.id] = true);
+                  }
+                  setSelectedReportsForPrint(newSelection);
+                }}
+              />
+              <Label htmlFor="selectAllForPrint" className="text-sm font-medium">
+                Select All ({Object.keys(selectedReportsForPrint).filter(k => selectedReportsForPrint[k]).length} / {filteredReports.length} selected)
+              </Label>
+            </div>
+            <ScrollArea className="h-60 border rounded-md p-2">
+              <div className="space-y-1">
+                {filteredReports.map(report => (
+                  <div key={report.id} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded">
+                    <Checkbox
+                      id={`print-check-${report.id}`}
+                      checked={!!selectedReportsForPrint[report.id]}
+                      onCheckedChange={(checked) => {
+                        setSelectedReportsForPrint(prev => ({
+                          ...prev,
+                          [report.id]: !!checked,
+                        }));
+                      }}
+                    />
+                    <Label htmlFor={`print-check-${report.id}`} className="font-normal text-sm w-full cursor-pointer">
+                      {report.studentName} ({report.className})
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button>Done</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </>
   );
 }
