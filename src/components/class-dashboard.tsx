@@ -489,14 +489,14 @@ export default function ClassPerformanceDashboard({
             <div className="relative z-10">
               <div className="dashboard-print-header">
                   <div className="flex justify-center mb-2">
-                      <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
+                      <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} data-ai-hint="ghana coat of arms"/>
                   </div>
                   <h2 className="text-xl font-bold">{schoolNameProp} - Class Performance: {selectedClass}</h2>
                   <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
               </div>
               <div className="ranking-print-header">
                   <div className="flex justify-center mb-2">
-                      <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
+                      <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} data-ai-hint="ghana coat of arms"/>
                   </div>
                   <h2 className="text-xl font-bold">{schoolNameProp} - Student Ranking: {selectedClass}</h2>
                   <p className="text-sm">{academicYearProp} - {mostRecentTerm} | Generated on: {new Date().toLocaleDateString()}</p>
@@ -678,42 +678,40 @@ export default function ClassPerformanceDashboard({
                           <CardDescription className="text-xs text-muted-foreground pt-1">Distribution and average performance by gender.</CardDescription>
                       </CardHeader>
                       <CardContent className="pt-4 space-y-4">
-                        <div className="space-y-4">
-                            <div data-testid="gender-piechart-container" className="h-[250px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <RechartsPieChart>
-                                        <Pie data={genderChartData} cx="50%" cy="50%" labelLine={false} label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => { const RADIAN = Math.PI / 180; const radius = innerRadius + (outerRadius - innerRadius) * 0.55; const x = cx + radius * Math.cos(-midAngle * RADIAN); const y = cy + radius * Math.sin(-midAngle * RADIAN); if (percent * 100 < 5) return null; return (<text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="11px" fontWeight="medium">{`${name} (${(percent * 100).toFixed(0)}%)`}</text>);}} outerRadius={100} fill="#8884d8" dataKey="value" nameKey="name">
-                                            {genderChartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />))}
-                                        </Pie>
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
-                                    </RechartsPieChart>
-                                </ResponsiveContainer>
-                            </div>
-                            <Table className="border rounded-md bg-card">
-                                <ShadcnUITableHeader className="bg-muted/50">
-                                    <TableRow>
-                                        <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
-                                        <TableHead className="text-center font-semibold py-2 px-3">Count</TableHead>
-                                        <TableHead className="text-center font-semibold py-2 px-3">Overall Avg (%)</TableHead>
-                                    </TableRow>
-                                </ShadcnUITableHeader>
-                                <TableBody>
-                                    {classStats.genderStats.map(g => (
-                                        <TableRow key={g.gender}>
-                                            <TableCell className="font-medium py-2 px-3">{g.gender}</TableCell>
-                                            <TableCell className="text-center py-2 px-3">{g.count}</TableCell>
-                                            <TableCell className="text-center py-2 px-3">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                        <div data-testid="gender-piechart-container" className="h-[250px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <RechartsPieChart>
+                                    <Pie data={genderChartData} cx="50%" cy="50%" labelLine={false} label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => { const RADIAN = Math.PI / 180; const radius = innerRadius + (outerRadius - innerRadius) * 0.55; const x = cx + radius * Math.cos(-midAngle * RADIAN); const y = cy + radius * Math.sin(-midAngle * RADIAN); if (percent * 100 < 5) return null; return (<text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="11px" fontWeight="medium">{`${name} (${(percent * 100).toFixed(0)}%)`}</text>);}} outerRadius={100} fill="#8884d8" dataKey="value" nameKey="name">
+                                        {genderChartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />))}
+                                    </Pie>
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
+                                </RechartsPieChart>
+                            </ResponsiveContainer>
                         </div>
+                        <Table className="border rounded-md bg-card">
+                            <ShadcnUITableHeader className="bg-muted/50">
+                                <TableRow>
+                                    <TableHead className="font-semibold py-2 px-3">Gender</TableHead>
+                                    <TableHead className="text-center font-semibold py-2 px-3">Count</TableHead>
+                                    <TableHead className="text-center font-semibold py-2 px-3">Overall Avg (%)</TableHead>
+                                </TableRow>
+                            </ShadcnUITableHeader>
+                            <TableBody>
+                                {classStats.genderStats.map(g => (
+                                    <TableRow key={g.gender}>
+                                        <TableCell className="font-medium py-2 px-3">{g.gender}</TableCell>
+                                        <TableCell className="text-center py-2 px-3">{g.count}</TableCell>
+                                        <TableCell className="text-center py-2 px-3">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                       </CardContent>
                     </Card>
                   )}
                   
-                  <Card className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50")}>
+                  <Card id="class-dashboard-insights-card" className={cn("shadow-md bg-accent/10 border border-accent/30 dark:border-accent/50 print-hide-on-rankings")}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-center border-b pb-2">
                         <CardTitle className="text-lg font-semibold text-primary flex items-center">
