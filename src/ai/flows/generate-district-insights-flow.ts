@@ -123,7 +123,7 @@ const generateDistrictInsightsFlow = ai.defineFlow(
       overallDistrictAssessment: output.overallDistrictAssessment || '',
       keyStrengthsDistrictWide: output.keyStrengthsDistrictWide || [],
       areasForConcernDistrictWide: output.areasForConcernDistrictWide || [],
-      actionableAdviceForDistrict: output.actionableAdviceForSchool || [], // Mapped from old prompt if present
+      actionableAdviceForDistrict: output.actionableAdviceForDistrict || [],
       interSchoolObservations: output.interSchoolObservations || [],
     };
   }
