@@ -719,23 +719,15 @@ function AppContent({ user }: { user: CustomUser }) {
     const reportsToPrint = getReportsToPrint();
     const reportsCount = filteredReports.length;
 
-    const handleInitiatePrint = (isPdfDownload: boolean) => {
+    const handleInitiatePrint = () => {
     if (reportsToPrint.length === 0) {
       toast({
-        title: `Nothing to ${isPdfDownload ? 'Download' : 'Print'}`,
+        title: `Nothing to Print`,
         description: "Add, filter, or select reports to use this feature.",
         variant: "destructive",
       });
       return;
     }
-
-    if (isPdfDownload) {
-      toast({
-        title: "Preparing PDF Download...",
-        description: "Your browser's print dialog will open. Please select 'Save as PDF' as the destination.",
-      });
-    }
-
     window.print();
   };
 
@@ -1386,11 +1378,7 @@ function AppContent({ user }: { user: CustomUser }) {
                               <ListChecks className="mr-2 h-4 w-4 text-orange-500" />
                               Select to Print...
                             </Button>
-                          <Button onClick={() => handleInitiatePrint(true)} variant="outline" size="sm" title="Download all reports in the list as a single PDF">
-                            <Download className="mr-2 h-4 w-4 text-green-600" />
-                            Download as PDF
-                          </Button>
-                          <Button onClick={() => handleInitiatePrint(false)} variant="outline" size="sm" title="Print all reports in the list">
+                          <Button onClick={() => handleInitiatePrint()} variant="outline" size="sm" title="Print all reports in the list">
                             <Printer className="mr-2 h-4 w-4" />
                             Print ({reportsToPrint.length})
                           </Button>
