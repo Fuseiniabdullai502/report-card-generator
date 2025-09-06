@@ -55,3 +55,8 @@ firebase-service-account.json
 firebase-debug.log
 firestore-debug.log
 *.log
+
+# Logs
+firebase-debug.log
+firestore-debug.log
+*.log
