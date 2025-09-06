@@ -138,10 +138,53 @@ function AppContent({ user }: { user: CustomUser }) {
   // User-specific localStorage keys
   const bgImageKey = `app-background-image-${user.uid}`;
   const bgOpacityKey = `app-bg-opacity-${user.uid}`;
+  const sessionDefaultsKey = `sessionDefaults-report-card-app-${user.uid}`;
 
   const [isSignaturePadOpen, setIsSignaturePadOpen] = useState(false);
   const [selectedReportsForPrint, setSelectedReportsForPrint] = useState<Record<string, boolean>>({});
   const [isSelectForPrintDialogOpen, setIsSelectForPrintDialogOpen] = useState(false);
+
+  // Load session defaults from localStorage on initial mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        try {
+            const savedDefaultsRaw = localStorage.getItem(sessionDefaultsKey);
+            if (savedDefaultsRaw) {
+                const savedDefaults = JSON.parse(savedDefaultsRaw);
+                // Important: Merge with user's scope data to prevent overwriting permissions
+                const userScopeDefaults = {
+                    region: user.region ?? savedDefaults.region,
+                    district: user.district ?? savedDefaults.district,
+                    circuit: user.circuit ?? savedDefaults.circuit,
+                    schoolName: user.schoolName ?? savedDefaults.schoolName,
+                    className: (user.classNames && user.classNames.length > 0) ? user.classNames[0] : savedDefaults.className,
+                };
+                setSessionDefaults({ ...savedDefaults, ...userScopeDefaults });
+            }
+        } catch (e) {
+            console.error("Failed to load session defaults from localStorage", e);
+        }
+    }
+  }, [user, sessionDefaultsKey]);
+
+  // Save session defaults to localStorage whenever they change
+  useEffect(() => {
+      if (typeof window !== 'undefined' && Object.keys(sessionDefaults).length > 0) {
+          try {
+              const defaultsToSave = { ...sessionDefaults };
+              // Do not save user-specific scope data that should not be editable
+              delete defaultsToSave.region;
+              delete defaultsToSave.district;
+              delete defaultsToSave.circuit;
+              delete defaultsToSave.schoolName;
+              delete defaultsToSave.className;
+              
+              localStorage.setItem(sessionDefaultsKey, JSON.stringify(defaultsToSave));
+          } catch (e) {
+              console.error("Failed to save session defaults to localStorage", e);
+          }
+      }
+  }, [sessionDefaults, sessionDefaultsKey]);
 
 
   useEffect(() => {
@@ -392,7 +435,7 @@ function AppContent({ user }: { user: CustomUser }) {
     }
     
     setIsLoadingReports(false);
-  }, [user, calculateAndSetRanks, toast]);
+  }, [user, calculateAndSetRanks, toast, sessionDefaults]);
 
 
   useEffect(() => {
