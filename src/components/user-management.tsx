@@ -26,7 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch, TrendingUp, Trophy as TrophyIcon, BookMarked, Calendar, Home, School } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle, Trash2, Users, Hourglass, Edit, ChevronDown, ShieldCheck, ShieldX, UserCheck, UserX, Building, AlertCircle, BarChart, FileSearch, TrendingUp, Trophy as TrophyIcon, BookMarked, Calendar, Home, School, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -145,7 +145,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [selectedRankingYear, setSelectedRankingYear] = useState<string>('all_years');
   const [selectedRankingTerm, setSelectedRankingTerm] = useState<string>('all_terms');
   const [selectedRankingSubject, setSelectedRankingSubject] = useState<string>('overall');
-  const [selectedRankingCategory, setSelectedRankingCategory] = useState<'public' | 'private' | 'all'>('all');
+  const [selectedRankingCategory, setSelectedRankingCategory] = 'all';
   const [isFetchingRanking, setIsFetchingRanking] = useState(false);
   const [rankingData, setRankingData] = useState<SchoolRankingData[] | null>(null);
   const [isRankingDialogOpen, setIsRankingDialogOpen] = useState(false);
@@ -159,6 +159,19 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [selectedSchoolRankingClass, setSelectedSchoolRankingClass] = useState<string>('');
   const [selectedSchoolRankingProgram, setSelectedSchoolRankingProgram] = useState<string>('');
   const [selectedSchoolRankingSubject, setSelectedSchoolRankingSubject] = useState<string>('overall');
+
+  // State for user table filtering
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userLevelFilter, setUserLevelFilter] = useState('all');
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(u => {
+      const nameMatch = userSearchQuery ? u.name?.toLowerCase().includes(userSearchQuery.toLowerCase()) : true;
+      const levelMatch = userLevelFilter === 'all' ? true : u.schoolLevels?.includes(userLevelFilter);
+      return nameMatch && levelMatch;
+    });
+  }, [users, userSearchQuery, userLevelFilter]);
+
 
   const allAvailableClasses = useMemo(() => {
     return [...new Set(allReports.map(r => r.className).filter(Boolean))].sort();
@@ -389,7 +402,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
     }
   };
 
-  const totalUsers = users.length;
+  const totalUsers = filteredUsers.length;
   const pendingInvitesCount = invites.filter(i => i.status === 'pending').length;
 
   return (
@@ -398,7 +411,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
         <div className="grid gap-4 md:grid-cols-2">
         <Card className="border-primary/50 shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-primary">Total Managed Users</CardTitle><Users className="h-5 w-5 text-primary" /></CardHeader>
-            <CardContent><div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : totalUsers}</div><p className="text-xs text-muted-foreground">All users within your management scope.</p></CardContent>
+            <CardContent><div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : users.length}</div><p className="text-xs text-muted-foreground">All users within your management scope.</p></CardContent>
         </Card>
         <Card className="border-amber-500/50 shadow-lg hover:shadow-amber-500/20 transition-shadow duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-amber-600">Pending Invites</CardTitle><Hourglass className="h-5 w-5 text-amber-600" /></CardHeader>
@@ -743,14 +756,41 @@ export default function UserManagement({ user, users, invites, populationStats, 
         </Card>
 
         <Card>
-        <CardHeader><CardTitle>User & Invite Management</CardTitle><CardDescription>Manage roles, status, and pending invites for all system users.</CardDescription></CardHeader>
+        <CardHeader>
+            <CardTitle>User & Invite Management</CardTitle>
+            <CardDescription>Manage roles, status, and pending invites for all system users.</CardDescription>
+            {user.role === 'big-admin' && (
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <div className="relative flex-grow">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                          placeholder="Search by user name..." 
+                          className="pl-8" 
+                          value={userSearchQuery}
+                          onChange={(e) => setUserSearchQuery(e.target.value)}
+                      />
+                  </div>
+                  <Select value={userLevelFilter} onValueChange={setUserLevelFilter}>
+                      <SelectTrigger className="w-full sm:w-[200px]">
+                          <SelectValue placeholder="Filter by school level..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="all">All School Levels</SelectItem>
+                          {schoolLevels.map(level => (
+                              <SelectItem key={level} value={level}>{level}</SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+              </div>
+            )}
+        </CardHeader>
         <CardContent>
             {isLoading ? <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div> : (
             <div className="overflow-x-auto">
                 <Table>
                 <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                 <TableBody>
-                    {users.map((u) => (
+                    {filteredUsers.map((u) => (
                     <TableRow key={u.id}>
                         <TableCell>
                         <div className="font-medium">{u.name || u.email}</div>
@@ -1276,3 +1316,6 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
 
 
 
+
+
+    
