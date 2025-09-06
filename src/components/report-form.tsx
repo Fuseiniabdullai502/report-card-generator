@@ -1,4 +1,3 @@
-
 'use client';
 
 import { type ReportData, type SubjectEntry, ReportDataSchema, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
