@@ -1,289 +1,52 @@
-# deps
-node_modules/
-functions/node_modules/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# builds & caches
-.next/
-functions/.next/
-.next/cache/
-functions/.next/cache/
-dist/
-build/
-out/
-.turbo/
-.cache/
-.firebase/
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
 
-# logs
-firestore-debug.log
-firebase-debug.log
+# testing
+/coverage
 
-# Logs
-firestore-debug.log
-*.log
-# Env files
-.env
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# local env files
 .env.local
-.env.production
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Logs
-firestore-debug.log
-*.log
+# vercel
+.vercel
 
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
+# typescript
+*.tsbuildinfo
+next-env.d.ts
 
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
+# generated
+/functions/lib/
+/functions/node_modules/
+/functions/.genkit/
+/src/ai/dev.js
 
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Env files
-.env
-.env.local
-.env.production
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Big build/emulator dirs
+# firebase
 .firebase/
-.next/
-node_modules/
-functions/node_modules/
-dist/
-build/
-.vercel/
-
-# Firebase build artifacts
-.firebase/
-
-# Logs
 firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-next-env.d.ts
-
-next-env.d.ts
-
-next-env.d.ts
-
-next-env.d.ts
-
-# Ignore noise
-firebase-debug.log
-firestore-debug.log
-*.log
-next-env.d.ts
-
-firestore-debug.log
-*.log
-
-firestore-debug.log
-*.log
-
-# Firebase build artifacts
-.firebase/
-
-# Firebase build artifacts
-.firebase/
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
-
-# Logs
-firebase-debug.log
-firestore-debug.log
-*.log
+firebase-debug.*.log
+firebase-service-account.json
