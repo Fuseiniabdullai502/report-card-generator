@@ -145,7 +145,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const [selectedRankingYear, setSelectedRankingYear] = useState<string>('all_years');
   const [selectedRankingTerm, setSelectedRankingTerm] = useState<string>('all_terms');
   const [selectedRankingSubject, setSelectedRankingSubject] = useState<string>('overall');
-  const [selectedRankingCategory, setSelectedRankingCategory] = 'all';
+  const [selectedRankingCategory, setSelectedRankingCategory] = useState<'public' | 'private' | 'all'>('all');
   const [isFetchingRanking, setIsFetchingRanking] = useState(false);
   const [rankingData, setRankingData] = useState<SchoolRankingData[] | null>(null);
   const [isRankingDialogOpen, setIsRankingDialogOpen] = useState(false);
@@ -1238,7 +1238,6 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
         setFunction(prev => checked ? [...prev, item] : prev.filter(c => c !== item));
     };
 
-
     const handleSave = async () => {
         if (!role) {
             toast({ title: "Role Required", description: "You must assign a role to the invite.", variant: 'destructive' });
@@ -1258,6 +1257,7 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
 
         const result = await updateInviteAction({
             inviteId: invite.id,
+            email: invite.email, // email is not editable, pass it along
             role: role as 'big-admin' | 'admin' | 'user',
             region,
             district,
@@ -1325,12 +1325,3 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
         </Dialog>
     );
 }
-
-    
-
-
-
-
-
-
-    
