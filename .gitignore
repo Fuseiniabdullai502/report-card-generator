@@ -60,3 +60,8 @@ firestore-debug.log
 firebase-debug.log
 firestore-debug.log
 *.log
+
+# Logs
+firebase-debug.log
+firestore-debug.log
+*.log
