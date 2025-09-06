@@ -173,18 +173,24 @@ function AppContent({ user }: { user: CustomUser }) {
           try {
               const defaultsToSave = { ...sessionDefaults };
               // Do not save user-specific scope data that should not be editable
-              delete defaultsToSave.region;
-              delete defaultsToSave.district;
-              delete defaultsToSave.circuit;
-              delete defaultsToSave.schoolName;
-              delete defaultsToSave.className;
+              if (user.role !== 'super-admin') {
+                delete defaultsToSave.region;
+                delete defaultsToSave.district;
+              }
+               if (user.role !== 'super-admin' && user.role !== 'big-admin') {
+                delete defaultsToSave.circuit;
+                delete defaultsToSave.schoolName;
+               }
+               if (user.role === 'user') {
+                delete defaultsToSave.className;
+               }
               
               localStorage.setItem(sessionDefaultsKey, JSON.stringify(defaultsToSave));
           } catch (e) {
               console.error("Failed to save session defaults to localStorage", e);
           }
       }
-  }, [sessionDefaults, sessionDefaultsKey]);
+  }, [sessionDefaults, sessionDefaultsKey, user.role]);
 
 
   useEffect(() => {
@@ -224,14 +230,14 @@ function AppContent({ user }: { user: CustomUser }) {
 
   // Effect to set and lock session defaults for all roles
   useEffect(() => {
-    const userDefaults: Partial<ReportData> = {
-      region: user.region ?? '',
-      district: user.district ?? '',
-      circuit: user.circuit ?? '',
-      schoolName: user.schoolName ?? '',
-      className: user.classNames?.[0] || '',
-      schoolCategory: user.schoolCategory || undefined,
-    };
+    const userDefaults: Partial<ReportData> = {};
+    if (user.region) userDefaults.region = user.region;
+    if (user.district) userDefaults.district = user.district;
+    if (user.circuit) userDefaults.circuit = user.circuit;
+    if (user.schoolName) userDefaults.schoolName = user.schoolName;
+    if (user.classNames && user.classNames.length > 0) userDefaults.className = user.classNames[0];
+    if (user.schoolCategory) userDefaults.schoolCategory = user.schoolCategory;
+
     setSessionDefaults(prev => ({...prev, ...userDefaults}));
     setCurrentEditingReport(prev => ({...prev, ...userDefaults}));
   }, [user]);
@@ -1358,10 +1364,9 @@ function AppContent({ user }: { user: CustomUser }) {
                           </Select>
                           <Button
                               onClick={() => setIsClassDashboardOpen(true)}
-                              disabled={reportsCount === 0 || isLoadingReports}
                               variant="outline"
                               size="sm"
-                              title={reportsCount > 0 ? "View AI-powered class performance dashboard" : "Add reports to list to view dashboard"}
+                              title="View AI-powered class performance dashboard"
                             >
                             <BarChartHorizontalBig className="mr-2 h-4 w-4 text-blue-500" />
                             Class Dashboard
@@ -1369,24 +1374,23 @@ function AppContent({ user }: { user: CustomUser }) {
                           {isAdminRole && (
                               <Button
                                   onClick={() => setIsSchoolDashboardOpen(true)}
-                                  disabled={reportsCount === 0 || isLoadingReports}
                                   variant="outline"
                                   size="sm"
-                                  title={reportsCount > 0 ? "View AI-powered school overview dashboard" : "Add reports to list to view dashboard"}
+                                  title="View AI-powered school overview dashboard"
                               >
                                 <Building className="mr-2 h-4 w-4 text-purple-500" />
                                 School Overview
                               </Button>
                           )}
-                           <Button onClick={() => setIsSelectForPrintDialogOpen(true)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title="Select specific reports to print or download">
+                           <Button onClick={() => setIsSelectForPrintDialogOpen(true)} variant="outline" size="sm" title="Select specific reports to print or download">
                               <ListChecks className="mr-2 h-4 w-4 text-orange-500" />
                               Select to Print...
                             </Button>
-                          <Button onClick={() => handleInitiatePrint(true)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Download all reports in the list as a single PDF" : "Add or filter reports to the list to enable download"}>
+                          <Button onClick={() => handleInitiatePrint(true)} variant="outline" size="sm" title="Download all reports in the list as a single PDF">
                             <Download className="mr-2 h-4 w-4 text-green-600" />
                             Download as PDF
                           </Button>
-                          <Button onClick={() => handleInitiatePrint(false)} disabled={reportsCount === 0 || isLoadingReports} variant="outline" size="sm" title={reportsCount > 0 ? "Print all reports in the list" : "Add or filter reports to the list to enable printing"}>
+                          <Button onClick={() => handleInitiatePrint(false)} variant="outline" size="sm" title="Print all reports in the list">
                             <Printer className="mr-2 h-4 w-4" />
                             Print ({reportsToPrint.length})
                           </Button>
@@ -1397,7 +1401,6 @@ function AppContent({ user }: { user: CustomUser }) {
                               variant="outline"
                               size="sm"
                               title="Import student data from previous term/class"
-                              disabled={isLoadingReports}
                             >
                             <Upload className="mr-2 h-4 w-4 text-indigo-500" />
                             Import Promoted Students
