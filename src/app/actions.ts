@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { generateStudentFeedback, type GenerateStudentFeedbackInput } from '@/ai/flows/generate-student-feedback';
@@ -23,7 +22,7 @@ import {
   generateDistrictInsights,
   type GenerateDistrictInsightsInput,
   type GenerateDistrictInsightsOutput,
-} from '@/ai/flows/generate-district-insights-flow';
+} from '@/ai/flows/generate-bulk-student-feedback-flow';
 import {
   generateBulkStudentFeedback,
   type GenerateBulkStudentFeedbackInput,
@@ -36,7 +35,7 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser, PlainUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
-import { type ReportData, type SubjectEntry } from '@/lib/schemas';
+import { type ReportData, type SubjectEntry, SubjectEntrySchema } from '@/lib/schemas';
 import { auth, db } from '@/lib/firebase';
 
 
@@ -1103,3 +1102,5 @@ export async function getSchoolProgramRankingAction(
     return { success: false, error: error.message };
   }
 }
+
+    
