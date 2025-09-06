@@ -64,9 +64,9 @@ npm run dev
 
 ---
 
-## 2. Deployment to Firebase App Hosting
+## 2. Initial Deployment to Firebase App Hosting
 
-This is the recommended method for deploying your project.
+This is the recommended method for deploying your project for the first time.
 
 ### Step 2.1: Initialize App Hosting
 
@@ -109,3 +109,43 @@ git push
 ```
 
 The GitHub Action will automatically build and deploy your application. You can monitor its progress in the "Logs" tab of your App Hosting backend in the Firebase Console.
+
+---
+
+## 3. Updating Your Application
+
+Once your application is live, follow these steps to deploy any new changes you've made.
+
+### Step 3.1: Check for New Secrets
+
+If you added any new environment variables to your `.env.local` file (for example, a key for a new service), you **must** add them to Google Secret Manager before deploying.
+
+Follow the same process as in **Step 2.2**, running `gcloud secrets create ...` for each new variable.
+
+### Step 3.2: Commit and Push Your Changes
+
+This is the standard process for deploying updates.
+
+1.  **Add your changes:** Stage all the files you've modified.
+    ```bash
+    git add .
+    ```
+
+2.  **Commit the changes:** Give your update a descriptive message.
+    ```bash
+    git commit -m "feat: Add new feature for student ranking"
+    ```
+
+3.  **Push to your main branch:** This is the action that triggers the automatic deployment.
+    ```bash
+    git push origin main
+    ```
+
+### Step 3.3: Monitor the Deployment
+
+After you push your changes, a new build and deployment will automatically start.
+
+1.  Go to the **Firebase Console**.
+2.  Navigate to the **App Hosting** section for your project.
+3.  Select your backend.
+4.  Go to the **"Logs"** tab to monitor the build and deployment process in real-time. Once it completes, your changes will be live.
