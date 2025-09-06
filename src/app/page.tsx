@@ -179,20 +179,19 @@ function AppContent({ user }: { user: CustomUser }) {
   const isRegularUser = user.role === 'user';
   const isAdminRole = isSuperAdmin || isBigAdmin || isAdmin;
 
-  // Effect to set and lock session defaults for regular users
+  // Effect to set and lock session defaults for all roles
   useEffect(() => {
-    if (isRegularUser) {
-      const userDefaults: Partial<ReportData> = {
-        region: user.region ?? '',
-        district: user.district ?? '',
-        circuit: user.circuit ?? '',
-        schoolName: user.schoolName ?? '',
-        className: user.classNames?.[0] || '', // Default to first assigned class
-      };
-      setSessionDefaults(prev => ({...prev, ...userDefaults}));
-      setCurrentEditingReport(prev => ({...prev, ...userDefaults}));
-    }
-  }, [user, isRegularUser]);
+    const userDefaults: Partial<ReportData> = {
+      region: user.region ?? '',
+      district: user.district ?? '',
+      circuit: user.circuit ?? '',
+      schoolName: user.schoolName ?? '',
+      className: user.classNames?.[0] || '',
+      schoolCategory: user.schoolCategory || undefined,
+    };
+    setSessionDefaults(prev => ({...prev, ...userDefaults}));
+    setCurrentEditingReport(prev => ({...prev, ...userDefaults}));
+  }, [user]);
 
   useEffect(() => {
     if (sessionDefaults.region && typeof sessionDefaults.region === 'string') {
@@ -1081,7 +1080,7 @@ function AppContent({ user }: { user: CustomUser }) {
                               onChange={e => handleSessionDefaultChange('circuit', e.target.value)} 
                               placeholder="e.g., Kalpohin"
                               list="circuit-datalist"
-                              disabled={!isSuperAdmin && !isBigAdmin && !isAdmin}
+                              disabled={!isSuperAdmin && !isBigAdmin}
                           />
                           <datalist id="circuit-datalist">
                               {availableCircuits.map(circuit => (
@@ -1125,7 +1124,7 @@ function AppContent({ user }: { user: CustomUser }) {
                       </div>
                       <div className="space-y-1">
                           <Label htmlFor="sessionClassName" className="text-sm font-medium">Current Class</Label>
-                          <Select value={sessionDefaults.className || ''} onValueChange={value => handleSessionDefaultChange('className', value === ADD_CUSTOM_CLASS_VALUE ? '' : value)} disabled={isRegularUser}>
+                          <Select value={sessionDefaults.className || ''} onValueChange={value => value === ADD_CUSTOM_CLASS_VALUE ? setIsCustomClassNameDialogOpen(true) : handleSessionDefaultChange('className', value)} disabled={isRegularUser}>
                               <SelectTrigger id="sessionClassName"><SelectValue placeholder="Select or add class" /></SelectTrigger>
                               <SelectContent>
                                   <SelectItem value={ADD_CUSTOM_CLASS_VALUE} onSelect={() => setIsCustomClassNameDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4 text-accent" />Add New Class...</SelectItem>
