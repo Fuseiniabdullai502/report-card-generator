@@ -22,7 +22,7 @@ import {
   generateDistrictInsights,
   type GenerateDistrictInsightsInput,
   type GenerateDistrictInsightsOutput,
-} from '@/ai/flows/generate-bulk-student-feedback-flow';
+} from '@/ai/flows/generate-district-insights-flow';
 import {
   generateBulkStudentFeedback,
   type GenerateBulkStudentFeedbackInput,
@@ -924,10 +924,14 @@ export async function getReportsAction(user: PlainUser): Promise<{ success: bool
     if (user.role === 'super-admin') {
       // super-admin can see all reports
     } else if (user.role === 'big-admin') {
-      if (!user.district) return { success: false, error: "District admin scope is not defined." };
+      if (!user.district) {
+        return { success: false, error: "District admin's scope is not defined." };
+      }
       query = query.where('district', '==', user.district);
     } else if (user.role === 'admin') {
-      if (!user.schoolName) return { success: false, error: "Admin scope is not defined." };
+      if (!user.schoolName) {
+        return { success: false, error: "Admin's scope is not defined." };
+      }
       query = query.where('schoolName', '==', user.schoolName);
     } else { // 'user' role
       query = query.where('teacherId', '==', user.uid);
