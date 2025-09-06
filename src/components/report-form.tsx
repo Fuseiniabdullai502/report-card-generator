@@ -1,3 +1,4 @@
+
 'use client';
 
 import { type ReportData, type SubjectEntry, ReportDataSchema, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
@@ -110,8 +111,18 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
         // Update the form with the new subjects, preserving other form data
         onFormUpdate({ ...formData, subjects: newSubjects });
       }
+    } else if (!isShsClass) { // For non-SHS classes
+        const suggestedSubjects = getSubjectsForClass(className);
+        if (suggestedSubjects.length > 0) {
+          const newSubjects: SubjectEntry[] = suggestedSubjects.map(name => ({
+              subjectName: name,
+              continuousAssessment: null,
+              examinationMark: null,
+          }));
+          onFormUpdate({ ...formData, subjects: newSubjects });
+        }
     }
-  }, [isEditing, sessionDefaults.className, sessionDefaults.shsProgram, onFormUpdate, formData]);
+  }, [isEditing, sessionDefaults.className, sessionDefaults.shsProgram, onFormUpdate]);
 
 
   // Reset subject pager if the form is reset (detected by ID change)
