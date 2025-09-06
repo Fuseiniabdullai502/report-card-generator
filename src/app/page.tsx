@@ -1087,7 +1087,7 @@ function AppContent({ user }: { user: CustomUser }) {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-1">
                           <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
-                          <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)} disabled={!isSuperAdmin}>
+                          <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)} disabled={user.role !== 'super-admin'}>
                               <SelectTrigger id="sessionRegion"><SelectValue placeholder="Select region" /></SelectTrigger>
                               <SelectContent>
                                   {ghanaRegions.map(region => <SelectItem key={region} value={region}>{region}</SelectItem>)}
@@ -1099,7 +1099,7 @@ function AppContent({ user }: { user: CustomUser }) {
                           <Select 
                               value={sessionDefaults.district || ''} 
                               onValueChange={value => handleSessionDefaultChange('district', value)}
-                              disabled={!isSuperAdmin && !isBigAdmin}
+                              disabled={user.role !== 'super-admin' && user.role !== 'big-admin'}
                           >
                               <SelectTrigger id="sessionDistrict">
                                   <SelectValue placeholder="Select district" />
@@ -1121,7 +1121,7 @@ function AppContent({ user }: { user: CustomUser }) {
                               onChange={e => handleSessionDefaultChange('circuit', e.target.value)} 
                               placeholder="e.g., Kalpohin"
                               list="circuit-datalist"
-                              disabled={!isSuperAdmin && !isBigAdmin}
+                              disabled={user.role !== 'super-admin' && user.role !== 'big-admin'}
                           />
                           <datalist id="circuit-datalist">
                               {availableCircuits.map(circuit => (
@@ -1133,7 +1133,7 @@ function AppContent({ user }: { user: CustomUser }) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
                       <div className="space-y-1 md:col-span-2">
                           <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
-                          <Input id="sessionSchoolName" value={sessionDefaults.schoolName ?? ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={!isSuperAdmin && !isBigAdmin}/>
+                          <Input id="sessionSchoolName" value={sessionDefaults.schoolName ?? ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={user.role === 'admin' || user.role === 'user'}/>
                       </div>
                       {(isSuperAdmin || isBigAdmin) && (
                         <div className="space-y-1">
@@ -1313,7 +1313,7 @@ function AppContent({ user }: { user: CustomUser }) {
             )}
 
             {isPreviewVisible && (
-              <section className={cn("flex-col no-print transition-all duration-300 animate-in fade-in-50", isReportFormVisible ? "lg:col-span-3 flex" : "lg:col-span-5 flex")}>
+              <section className={cn("flex flex-col no-print transition-all duration-300 animate-in fade-in-50", isReportFormVisible ? "lg:col-span-3" : "lg:col-span-5")}>
                 <Card className="shadow-lg flex-grow flex flex-col bg-card/95 text-card-foreground">
                   <CardHeader>
                     <div className="flex flex-col gap-4">

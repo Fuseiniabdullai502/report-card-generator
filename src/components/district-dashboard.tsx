@@ -238,12 +238,12 @@ export default function DistrictPerformanceDashboard({
             </div>
         </ShadcnDialogHeader>
         <div data-testid="school-dashboard-inner-scroll-container" className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
-          <div className="dashboard-print-header relative">
-            {/* Watermark */}
+          <div className="a4-page-simulation space-y-6 relative">
+             {/* Watermark */}
             {districtName && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden watermark-container">
                   <p 
-                    className="font-bold text-gray-500/20 dark:text-gray-400/20 transform -rotate-45 select-none"
+                    className="font-bold text-gray-500/5 dark:text-gray-400/5 transform -rotate-45 select-none"
                     style={{
                         fontSize: 'clamp(2rem, 15vw, 8rem)',
                         lineHeight: '1.2',
@@ -255,49 +255,52 @@ export default function DistrictPerformanceDashboard({
               </div>
             )}
             <div className="relative z-10">
+              <div className="dashboard-print-header">
                 <div className="flex justify-center mb-2">
-                    <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} />
+                    <Image src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg" alt="Ghana Coat of Arms" width={60} height={60} data-ai-hint="ghana coat of arms"/>
                 </div>
                 <h2 className="text-xl font-bold">{districtName} District - Performance Dashboard</h2>
                 <p className="text-sm">Academic Session: {selectedYear === 'all' ? 'All Years' : selectedYear}, {selectedTerm === 'all' ? 'All Terms' : selectedTerm} | Generated on: {new Date().toLocaleDateString()}</p>
+              </div>
+
+              {isLoadingStats ? <Card><CardContent className="pt-6 flex justify-center"><Loader2 className="mr-2 h-5 w-5 animate-spin"/> Loading stats...</CardContent></Card> : !districtStats ? <Card><CardContent className="pt-6 text-center text-muted-foreground">No reports found for the selected period.</CardContent></Card> : (
+                <>
+                  <Card><CardHeader><CardTitle className="flex items-center"><Sigma className="mr-2"/>District Snapshot</CardTitle></CardHeader><CardContent className="grid md:grid-cols-4 gap-4"><div className="text-center"><p className="text-sm text-muted-foreground">Total Students</p><p className="text-2xl font-bold">{districtStats.totalStudentsInDistrict}</p></div><div className="text-center"><p className="text-sm text-muted-foreground">Schools Represented</p><p className="text-2xl font-bold">{districtStats.numberOfSchoolsRepresented}</p></div><div className="text-center"><p className="text-sm text-muted-foreground">District Average</p><p className="text-2xl font-bold">{districtStats.overallDistrictAverage?.toFixed(2)}%</p></div></CardContent></Card>
+                  <Card><CardHeader><CardTitle className="flex items-center"><Building className="mr-2"/>School Performance</CardTitle></CardHeader><CardContent><Table><ShadcnUITableHeader><TableRow><TableHead>School</TableHead><TableHead className="text-center">Students</TableHead><TableHead className="text-center">Avg (%)</TableHead></TableRow></ShadcnUITableHeader><TableBody>{districtStats.schoolSummariesForUI.sort((a,b) => (b.schoolAverage || 0) - (a.schoolAverage || 0)).map(s => <TableRow key={s.schoolName}><TableCell>{s.schoolName}</TableCell><TableCell className="text-center">{s.numberOfStudents}</TableCell><TableCell className="text-center">{s.schoolAverage?.toFixed(1) || 'N/A'}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+                  <Card>
+                    <CardHeader><CardTitle className="flex items-center"><BookOpen className="mr-2"/>Subject Performance</CardTitle></CardHeader>
+                    <CardContent>
+                        <div className="h-[300px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={districtSubjectPerformanceChartData}><XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{fontSize:10}}/><YAxis/><Tooltip content={<CustomTooltip/>}/><Legend/><Bar dataKey="Below Average (<40%)" fill="hsl(var(--destructive))"/><Bar dataKey="Average (40-59%)" fill="hsl(var(--primary))"/><Bar dataKey="Above Average (>=60%)" fill="hsl(var(--accent))"/></BarChart></ResponsiveContainer></div>
+                        <Table className="mt-6 border rounded-md min-w-[700px] bg-card">
+                            <ShadcnUITableHeader className="bg-muted/50">
+                              <TableRow>
+                                <TableHead className="font-semibold py-2 px-3">Subject</TableHead>
+                                <TableHead className="text-center font-semibold py-2 px-3">District Avg (%)</TableHead>
+                                <TableHead className="text-center font-semibold py-2 px-3 text-red-600 dark:text-red-400">Below Avg (&lt;40%)</TableHead>
+                                <TableHead className="text-center font-semibold py-2 px-3 text-blue-600 dark:text-blue-400">Average (40-59%)</TableHead>
+                                <TableHead className="text-center font-semibold py-2 px-3 text-green-600 dark:text-green-400">Above Avg (&ge;60%)</TableHead>
+                              </TableRow>
+                            </ShadcnUITableHeader>
+                            <TableBody>
+                              {districtStats.overallSubjectStatsForDistrictUI.map(s => (
+                                <TableRow key={s.subjectName}>
+                                  <TableCell className="font-medium py-2 px-3">{s.subjectName}</TableCell>
+                                  <TableCell className="text-center py-2 px-3">{s.districtAverageForSubject?.toFixed(1) || 'N/A'}</TableCell>
+                                  <TableCell className="text-center py-2 px-3">{s.numBelowAverage}</TableCell>
+                                  <TableCell className="text-center py-2 px-3">{s.numAverage}</TableCell>
+                                  <TableCell className="text-center py-2 px-3">{s.numAboveAverage}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                  </Card>
+                  <Card><CardHeader><CardTitle className="flex items-center"><LucidePieChart className="mr-2"/>Gender Statistics</CardTitle></CardHeader><CardContent className="grid md:grid-cols-2 gap-6 items-center"><div className="h-[250px]"><ResponsiveContainer width="100%" height="100%"><RechartsPieChart><Pie data={districtGenderChartData} dataKey="value" nameKey="name" label>{districtGenderChartData.map((e,i) => <Cell key={`cell-${i}`} fill={GENDER_COLORS[i % GENDER_COLORS.length]}/>)}</Pie><Tooltip content={<CustomTooltip/>}/><Legend/></RechartsPieChart></ResponsiveContainer></div><Table><ShadcnUITableHeader><TableRow><TableHead>Gender</TableHead><TableHead className="text-center">Count</TableHead><TableHead className="text-center">Avg (%)</TableHead></TableRow></ShadcnUITableHeader><TableBody>{districtStats.overallGenderStatsForDistrictUI.map(g => <TableRow key={g.gender}><TableCell>{g.gender}</TableCell><TableCell className="text-center">{g.count}</TableCell><TableCell className="text-center">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+                  <Card className="bg-accent/10"><CardHeader><div className="flex justify-between items-center"><CardTitle className="flex items-center"><Brain className="mr-2"/>AI Insights & Advice</CardTitle><Button variant="outline" size="sm" onClick={fetchDistrictAiInsights} disabled={isLoadingAi}><RefreshCw className={cn("mr-2 h-4 w-4", isLoadingAi && "animate-spin")}/>Reload</Button></div></CardHeader>{renderAiDistrictInsights()}</Card>
+                </>
+              )}
             </div>
           </div>
-          {isLoadingStats ? <Card><CardContent className="pt-6 flex justify-center"><Loader2 className="mr-2 h-5 w-5 animate-spin"/> Loading stats...</CardContent></Card> : !districtStats ? <Card><CardContent className="pt-6 text-center text-muted-foreground">No reports found for the selected period.</CardContent></Card> : (
-            <>
-              <Card><CardHeader><CardTitle className="flex items-center"><Sigma className="mr-2"/>District Snapshot</CardTitle></CardHeader><CardContent className="grid md:grid-cols-4 gap-4"><div className="text-center"><p className="text-sm text-muted-foreground">Total Students</p><p className="text-2xl font-bold">{districtStats.totalStudentsInDistrict}</p></div><div className="text-center"><p className="text-sm text-muted-foreground">Schools Represented</p><p className="text-2xl font-bold">{districtStats.numberOfSchoolsRepresented}</p></div><div className="text-center"><p className="text-sm text-muted-foreground">District Average</p><p className="text-2xl font-bold">{districtStats.overallDistrictAverage?.toFixed(2)}%</p></div></CardContent></Card>
-              <Card><CardHeader><CardTitle className="flex items-center"><Building className="mr-2"/>School Performance</CardTitle></CardHeader><CardContent><Table><ShadcnUITableHeader><TableRow><TableHead>School</TableHead><TableHead className="text-center">Students</TableHead><TableHead className="text-center">Avg (%)</TableHead></TableRow></ShadcnUITableHeader><TableBody>{districtStats.schoolSummariesForUI.sort((a,b) => (b.schoolAverage || 0) - (a.schoolAverage || 0)).map(s => <TableRow key={s.schoolName}><TableCell>{s.schoolName}</TableCell><TableCell className="text-center">{s.numberOfStudents}</TableCell><TableCell className="text-center">{s.schoolAverage?.toFixed(1) || 'N/A'}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
-              <Card>
-                <CardHeader><CardTitle className="flex items-center"><BookOpen className="mr-2"/>Subject Performance</CardTitle></CardHeader>
-                <CardContent>
-                    <div className="h-[300px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={districtSubjectPerformanceChartData}><XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{fontSize:10}}/><YAxis/><Tooltip content={<CustomTooltip/>}/><Legend/><Bar dataKey="Below Average (<40%)" fill="hsl(var(--destructive))"/><Bar dataKey="Average (40-59%)" fill="hsl(var(--primary))"/><Bar dataKey="Above Average (>=60%)" fill="hsl(var(--accent))"/></BarChart></ResponsiveContainer></div>
-                    <Table className="mt-6 border rounded-md min-w-[700px] bg-card">
-                        <ShadcnUITableHeader className="bg-muted/50">
-                          <TableRow>
-                            <TableHead className="font-semibold py-2 px-3">Subject</TableHead>
-                            <TableHead className="text-center font-semibold py-2 px-3">District Avg (%)</TableHead>
-                            <TableHead className="text-center font-semibold py-2 px-3 text-red-600 dark:text-red-400">Below Avg (&lt;40%)</TableHead>
-                            <TableHead className="text-center font-semibold py-2 px-3 text-blue-600 dark:text-blue-400">Average (40-59%)</TableHead>
-                            <TableHead className="text-center font-semibold py-2 px-3 text-green-600 dark:text-green-400">Above Avg (&ge;60%)</TableHead>
-                          </TableRow>
-                        </ShadcnUITableHeader>
-                        <TableBody>
-                          {districtStats.overallSubjectStatsForDistrictUI.map(s => (
-                            <TableRow key={s.subjectName}>
-                              <TableCell className="font-medium py-2 px-3">{s.subjectName}</TableCell>
-                              <TableCell className="text-center py-2 px-3">{s.districtAverageForSubject?.toFixed(1) || 'N/A'}</TableCell>
-                              <TableCell className="text-center py-2 px-3">{s.numBelowAverage}</TableCell>
-                              <TableCell className="text-center py-2 px-3">{s.numAverage}</TableCell>
-                              <TableCell className="text-center py-2 px-3">{s.numAboveAverage}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-              </Card>
-              <Card><CardHeader><CardTitle className="flex items-center"><LucidePieChart className="mr-2"/>Gender Statistics</CardTitle></CardHeader><CardContent className="grid md:grid-cols-2 gap-6 items-center"><div className="h-[250px]"><ResponsiveContainer width="100%" height="100%"><RechartsPieChart><Pie data={districtGenderChartData} dataKey="value" nameKey="name" label>{districtGenderChartData.map((e,i) => <Cell key={`cell-${i}`} fill={GENDER_COLORS[i % GENDER_COLORS.length]}/>)}</Pie><Tooltip content={<CustomTooltip/>}/><Legend/></RechartsPieChart></ResponsiveContainer></div><Table><ShadcnUITableHeader><TableRow><TableHead>Gender</TableHead><TableHead className="text-center">Count</TableHead><TableHead className="text-center">Avg (%)</TableHead></TableRow></ShadcnUITableHeader><TableBody>{districtStats.overallGenderStatsForDistrictUI.map(g => <TableRow key={g.gender}><TableCell>{g.gender}</TableCell><TableCell className="text-center">{g.count}</TableCell><TableCell className="text-center">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
-              <Card className="bg-accent/10"><CardHeader><div className="flex justify-between items-center"><CardTitle className="flex items-center"><Brain className="mr-2"/>AI Insights & Advice</CardTitle><Button variant="outline" size="sm" onClick={fetchDistrictAiInsights} disabled={isLoadingAi}><RefreshCw className={cn("mr-2 h-4 w-4", isLoadingAi && "animate-spin")}/>Reload</Button></div></CardHeader>{renderAiDistrictInsights()}</Card>
-            </>
-          )}
         </div>
         <ShadcnDialogFooter className="shrink-0 border-t pt-4 flex-row justify-end dialog-footer-print-hide">
             <Button variant="outline" onClick={handlePrint} disabled={!districtStats}>
