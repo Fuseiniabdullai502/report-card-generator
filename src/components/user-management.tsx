@@ -342,12 +342,12 @@ export default function UserManagement({ user, users, invites, populationStats, 
   const bigAdminRoleCounts = useMemo(() => {
     if (user.role !== 'big-admin') return null;
     const counts = {
-      admin: { active: 0, inactive: 0 },
-      user: { active: 0, inactive: 0 },
+      admin: 0,
+      user: 0,
     };
     users.forEach(u => {
-      if (u.role === 'admin') u.status === 'active' ? counts.admin.active++ : counts.admin.inactive++;
-      else if (u.role === 'user') u.status === 'active' ? counts.user.active++ : counts.user.inactive++;
+      if (u.role === 'admin') counts.admin++;
+      else if (u.role === 'user') counts.user++;
     });
     return counts;
   }, [users, user.role]);
@@ -410,8 +410,23 @@ export default function UserManagement({ user, users, invites, populationStats, 
         <div className="space-y-8">
         <div className="grid gap-4 md:grid-cols-2">
         <Card className="border-primary/50 shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-primary">Total Managed Users</CardTitle><Users className="h-5 w-5 text-primary" /></CardHeader>
-            <CardContent><div className="text-4xl font-bold text-foreground">{isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : users.length}</div><p className="text-xs text-muted-foreground">All users within your management scope.</p></CardContent>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-primary">Total Managed Users</CardTitle>
+              <Users className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+              <div className="text-4xl font-bold text-foreground">
+                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : users.length}
+              </div>
+              {user.role === 'big-admin' && bigAdminRoleCounts && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  <b>{bigAdminRoleCounts.admin}</b> Admins (School) &bull; <b>{bigAdminRoleCounts.user}</b> Users (Instructors)
+                </div>
+              )}
+              {user.role !== 'big-admin' && (
+                <p className="text-xs text-muted-foreground">All users within your management scope.</p>
+              )}
+          </CardContent>
         </Card>
         <Card className="border-amber-500/50 shadow-lg hover:shadow-amber-500/20 transition-shadow duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-amber-600">Pending Invites</CardTitle><Hourglass className="h-5 w-5 text-amber-600" /></CardHeader>
