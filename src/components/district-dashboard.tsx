@@ -271,7 +271,7 @@ export default function DistrictPerformanceDashboard({
                     <CardHeader><CardTitle className="flex items-center"><BookOpen className="mr-2"/>Subject Performance</CardTitle></CardHeader>
                     <CardContent>
                         <div className="h-[300px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={districtSubjectPerformanceChartData}><XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{fontSize:10}}/><YAxis/><Tooltip content={<CustomTooltip/>}/><Legend/><Bar dataKey="Below Average (<40%)" fill="hsl(var(--destructive))"/><Bar dataKey="Average (40-59%)" fill="hsl(var(--primary))"/><Bar dataKey="Above Average (>=60%)" fill="hsl(var(--accent))"/></BarChart></ResponsiveContainer></div>
-                        <Table className="mt-6 border rounded-md min-w-[700px] bg-card">
+                        <Table className="mt-6 border rounded-md bg-card">
                             <ShadcnUITableHeader className="bg-muted/50">
                               <TableRow>
                                 <TableHead className="font-semibold py-2 px-3">Subject</TableHead>
