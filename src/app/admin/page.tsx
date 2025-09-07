@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ReportData } from '@/lib/schemas';
+import type { ReportData } from '@/lib/schemas';
 import type { UserData, InviteData } from '@/types';
 
 interface SchoolStats {
