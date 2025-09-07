@@ -37,6 +37,7 @@ import type { CustomUser, PlainUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 import { type ReportData, type SubjectEntry, SubjectEntrySchema } from '@/lib/schemas';
 import { auth, db } from '@/lib/firebase';
+import type { UserData, InviteData } from '@/types';
 
 
 // Schema for student feedback generation

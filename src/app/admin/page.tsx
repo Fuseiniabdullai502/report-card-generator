@@ -11,35 +11,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ReportData } from '@/lib/schemas';
-
-// Define types locally for state
-interface UserData {
-  id: string;
-  email: string;
-  name?: string | null;
-  telephone?: string | null;
-  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
-  status: 'active' | 'inactive';
-  region?: string | null;
-  district?: string | null;
-  circuit?: string | null;
-  schoolName?: string | null;
-  classNames?: string[] | null;
-  createdAt: Date | null;
-}
-
-interface InviteData {
-  id: string;
-  email: string;
-  status: 'pending' | 'completed';
-  role?: 'big-admin' | 'admin' | 'user';
-  region?: string | null;
-  district?: string | null;
-  circuit?: string | null;
-  schoolName?: string | null;
-  classNames?: string[] | null;
-  createdAt: Date | null;
-}
+import type { UserData, InviteData } from '@/types';
 
 interface SchoolStats {
   classCount: number;
@@ -100,13 +72,13 @@ export default function AdminPage() {
       ]);
 
       if (usersResult.success && usersResult.users) {
-        setUsers(usersResult.users.map(u => ({...u, name: u.name, telephone: u.telephone, classNames: u.classNames, createdAt: u.createdAt ? new Date(u.createdAt) : null } as UserData)));
+        setUsers(usersResult.users);
       } else {
         toast({ title: 'Error Fetching Users', description: usersResult.error, variant: 'destructive' });
       }
 
       if (invitesResult.success && invitesResult.invites) {
-        setInvites(invitesResult.invites.map(i => ({...i, role: i.role || undefined, region: i.region, district: i.district, circuit: i.circuit, schoolName: i.schoolName, classNames: i.classNames, createdAt: i.createdAt ? new Date(i.createdAt) : null } as InviteData)));
+        setInvites(invitesResult.invites);
       } else {
         toast({ title: 'Error Fetching Invites', description: invitesResult.error, variant: 'destructive' });
       }
