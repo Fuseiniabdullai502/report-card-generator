@@ -64,31 +64,42 @@ In your project's root directory, run: `firebase init hosting`.
 
 ### Step 2.2: Create Secrets in Google Secret Manager
 
-Your live application needs the same keys you use locally, but stored securely. The service account credential must also be created this way.
+Your live application needs secure keys. You will only store the most sensitive keys as secrets.
 
 1.  [**Enable the Secret Manager API**](https://console.cloud.google.com/apis/library/secretmanager.googleapis.com) for your Google Cloud project.
-2.  **Generate a Service Account Key:**
-    *   In the [Google Cloud Console for Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts), find the service account with an email like `firebase-adminsdk-....@...gserviceaccount.com`.
-    *   Click on it, go to the **"Keys"** tab.
-    *   Click **"Add Key"** > **"Create new key"**, select **JSON**, and click **"Create"**.
-    *   A JSON file will be downloaded. **Keep this file secure.**
-3.  **Run the following `gcloud` commands** in your terminal. You will be prompted to paste values for some, and for the service account, you'll point to the file you just downloaded.
+2.  **Generate a Service Account Key (if you don't have the file):**
+    *   If you haven't done so for local setup, go to the [Google Cloud Console for Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts). Find the service account with an email like `firebase-adminsdk-....@...gserviceaccount.com`.
+    *   Click on it, go to the **"Keys"** tab, click **"Add Key"** > **"Create new key"**, select **JSON**, and create it. A JSON file will be downloaded.
+3.  **Run the following `gcloud` commands** in your terminal to create the secrets:
 
     ```bash
-    # Set your API keys and admin email
+    # Create the Google API Key secret from the value in your .env.local
     echo "YOUR_API_KEY_HERE" | gcloud secrets create GOOGLE_API_KEY --data-file=-
+
+    # Create the Admin Email secret from the value in your .env.local
     echo "your-admin-email@example.com" | gcloud secrets create NEXT_PUBLIC_ADMIN_EMAIL --data-file=-
-
-    # Repeat for all your NEXT_PUBLIC_FIREBASE_* keys from your .env.local
-    echo "YOUR_FIREBASE_API_KEY" | gcloud secrets create NEXT_PUBLIC_FIREBASE_API_KEY --data-file=-
-    # ... (repeat for AUTH_DOMAIN, PROJECT_ID, etc.) ...
-
-    # Set the FIREBASE_SERVICE_ACCOUNT from your local JSON file
-    # This is the most important step for the backend
+    
+    # Create the Service Account secret from your downloaded JSON file
     gcloud secrets create FIREBASE_SERVICE_ACCOUNT --data-file=./path/to/your/downloaded-service-account-file.json
     ```
 
-### Step 2.3: Deploy
+### Step 2.3: Set Environment Variables in App Hosting
+
+The public Firebase configuration does **not** need to be secret. Set these directly in App Hosting.
+
+1.  Go to the [**Firebase Console**](https://console.firebase.google.com/project/report-card-generator-e3zkv) and navigate to the **App Hosting** section.
+2.  Select your backend (e.g., `report-card-generator`).
+3.  Go to the **"Settings"** tab.
+4.  Under **"Environment variables"**, click **"Add variable"**.
+5.  Add a variable for each `NEXT_PUBLIC_FIREBASE_*` key from your `.env.local` file and paste in its corresponding value.
+    *   `NEXT_PUBLIC_FIREBASE_API_KEY`
+    *   `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+    *   `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+    *   `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+    *   `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+    *   `NEXT_PUBLIC_FIREBASE_APP_ID`
+
+### Step 2.4: Deploy
 
 Commit the `firebase.json` and `apphosting.yaml` files and push to your main branch.
 
@@ -106,9 +117,10 @@ The GitHub Action will automatically build and deploy your application.
 
 Once your application is live, follow these steps to deploy any new changes you've made.
 
-### Step 3.1: Check for New Secrets
+### Step 3.1: Check for New Secrets or Variables
 
-If you added any new environment variables to your `.env.local` file (for example, a key for a new service), you **must** add them to Google Secret Manager before deploying. Follow the same process as in **Step 2.2**.
+*   If you added any **new sensitive keys** (like another API key), add them to Google Secret Manager following **Step 2.2**.
+*   If you added any **new public environment variables**, add them to your App Hosting backend settings following **Step 2.3**.
 
 ### Step 3.2: Commit and Push Your Changes
 

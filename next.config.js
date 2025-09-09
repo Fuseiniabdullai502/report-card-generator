@@ -25,42 +25,6 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (
-    config,
-    { isServer }
-  ) => {
-    // This is the correct way to handle server-only packages in Next.js.
-    // They should not be bundled for the client.
-    if (!isServer) {
-        config.externals.push(
-            'firebase-admin',
-            'require-in-the-middle',
-            'handlebars',
-            'express',
-            'long',
-            'google-gax',
-            '@grpc/grpc-js',
-            './lib/api_request',
-            './lib/common',
-            './lib/util',
-            /^@opentelemetry\//,
-            /^@google-cloud\//,
-            'protobufjs'
-        );
-    }
-    return config
-  },
 };
 
 module.exports = nextConfig;
-
-
-
-
-
-
-
-
-
-
-
