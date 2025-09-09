@@ -6,57 +6,42 @@ This guide will walk you through setting up your development environment and dep
 
 ## 1. Local Development Setup (Required First)
 
-Before you can run the app locally or deploy it, you must set up your environment variables.
+Before you can run the app locally, you must authenticate to Google Cloud and set up your local environment variables.
 
-### Step 1.1: Create `.env.local`
+### Step 1.1: Authenticate for Local Development
 
-1.  In the root of your project, create a new file and name it `.env.local`.
-2.  Copy the contents of `.env.example` into your new `.env.local` file. This will give you the template you need.
+To run the server locally with Firebase Admin features, your machine needs to be authenticated.
 
-### Step 1.2: Get Google AI API Key
-
-The AI features are powered by Google's Gemini models.
-
-1.  Go to [**Google AI Studio**](https://aistudio.google.com/app/apikey) and create an API key.
-2.  In your `.env.local` file, paste the key:
+1.  **Install the Google Cloud CLI:** If you haven't already, [install the gcloud CLI](https://cloud.google.com/sdk/docs/install).
+2.  **Log in to your account:** Run the following command and follow the prompts in your browser.
+    ```bash
+    gcloud auth login
     ```
-    GOOGLE_API_KEY="YOUR_API_KEY_HERE"
+3.  **Set your project:** Tell gcloud which project you're working on.
+    ```bash
+    gcloud config set project report-card-generator-e3zkv
+    ```
+4.  **Set up Application Default Credentials:** This is the crucial step that allows your local server to act as the service account.
+    ```bash
+    gcloud auth application-default login
     ```
 
-### Step 1.3: Get Firebase Credentials
+### Step 1.2: Create and Configure `.env.local`
 
-#### For the Client-Side App (Browser)
+1.  In the root of your project, create a new file named `.env.local`.
+2.  Copy the contents of `.env.example` into your new `.env.local` file.
+3.  **Get your Google AI API Key:**
+    *   Go to [**Google AI Studio**](https://aistudio.google.com/app/apikey) and create an API key.
+    *   Paste the key into `.env.local`: `GOOGLE_API_KEY="YOUR_API_KEY_HERE"`
+4.  **Get your Firebase Web App Credentials:**
+    *   In your [**Firebase project**](https://console.firebase.google.com/project/report-card-generator-e3zkv/overview), go to **Project Settings** (gear icon) > **General** tab.
+    *   Scroll to "Your apps" and find your web app configuration object.
+    *   Copy the values into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in `.env.local`.
+5.  **Set Your Admin Email:**
+    *   In `.env.local`, set the `NEXT_PUBLIC_ADMIN_EMAIL` variable: `NEXT_PUBLIC_ADMIN_EMAIL="your-admin-email@example.com"`
+    *   The first time you log in with this email, the app will automatically grant you the 'super-admin' role.
 
-1.  If you don't have one, [**create a Firebase project**](https://firebase.google.com/docs/web/setup#create-project).
-2.  In your project's dashboard, go to **Project Settings** (the gear icon) > **General** tab.
-3.  Scroll to "Your apps" and click the **Web** icon (`</>`) to register a web app (or use an existing one).
-4.  Firebase will show you a configuration object. Copy the values into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env.local` file.
-
-#### For the Admin SDK (Server-Side) - This is Crucial
-
-The server needs secure credentials to manage users and perform admin tasks.
-
-1.  In the Firebase console, go to **Project Settings** > **Service accounts** tab.
-2.  Click the **"Generate new private key"** button. A JSON file will be downloaded.
-3.  **Rename this file to `firebase-service-account.json`** and place it in the root directory of your project.
-4.  In your `.env.local` file, set the `GOOGLE_APPLICATION_CREDENTIALS` variable to point to this file:
-    ```
-    # This tells the local server where to find your admin credentials
-    GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json
-    ```
-    *The `.gitignore` file is already configured to prevent this sensitive file from being committed to your repository.*
-
-### Step 1.4: Set Your Admin Email
-
-To access the Admin Panel, you must designate your email as the super admin.
-
-1.  In `.env.local`, set the `NEXT_PUBLIC_ADMIN_EMAIL` variable:
-    ```
-    NEXT_PUBLIC_ADMIN_EMAIL="your-admin-email@example.com"
-    ```
-    *The first time you log in with this email, the app will automatically grant you the 'super-admin' role.*
-
-### Step 1.5: Run the App
+### Step 1.3: Run the App
 
 ```bash
 npm run dev
@@ -72,30 +57,35 @@ This is the recommended method for deploying your project for the first time.
 
 In your project's root directory, run: `firebase init hosting`.
 
-1.  **Select a Firebase Project:** Choose your project.
-2.  **Configure Hosting Option:** Use the arrow keys to select **`App Hosting: for web frameworks...`**.
+1.  **Select a Firebase Project:** Choose `report-card-generator-e3zkv`.
+2.  **Configure Hosting Option:** Select **`App Hosting: for web frameworks...`**.
 3.  **Set Backend Region:** Choose a region (e.g., `us-central1`).
 4.  **Connect to GitHub:** Follow the prompts to connect your GitHub account and repository.
 
 ### Step 2.2: Create Secrets in Google Secret Manager
 
-Your live application needs the same keys you use locally, but stored securely.
+Your live application needs the same keys you use locally, but stored securely. The service account credential must also be created this way.
 
 1.  [**Enable the Secret Manager API**](https://console.cloud.google.com/apis/library/secretmanager.googleapis.com) for your Google Cloud project.
-2.  Run the following `gcloud` commands in your terminal. You will be prompted to paste the value for each one from your `.env.local` file.
+2.  **Generate a Service Account Key:**
+    *   In the [Google Cloud Console for Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts), find the service account with an email like `firebase-adminsdk-....@...gserviceaccount.com`.
+    *   Click on it, go to the **"Keys"** tab.
+    *   Click **"Add Key"** > **"Create new key"**, select **JSON**, and click **"Create"**.
+    *   A JSON file will be downloaded. **Keep this file secure.**
+3.  **Run the following `gcloud` commands** in your terminal. You will be prompted to paste values for some, and for the service account, you'll point to the file you just downloaded.
 
     ```bash
     # Set your API keys and admin email
     echo "YOUR_API_KEY_HERE" | gcloud secrets create GOOGLE_API_KEY --data-file=-
     echo "your-admin-email@example.com" | gcloud secrets create NEXT_PUBLIC_ADMIN_EMAIL --data-file=-
 
-    # Repeat for all your NEXT_PUBLIC_FIREBASE_* keys
+    # Repeat for all your NEXT_PUBLIC_FIREBASE_* keys from your .env.local
     echo "YOUR_FIREBASE_API_KEY" | gcloud secrets create NEXT_PUBLIC_FIREBASE_API_KEY --data-file=-
     # ... (repeat for AUTH_DOMAIN, PROJECT_ID, etc.) ...
 
     # Set the FIREBASE_SERVICE_ACCOUNT from your local JSON file
     # This is the most important step for the backend
-    gcloud secrets create FIREBASE_SERVICE_ACCOUNT --data-file=firebase-service-account.json
+    gcloud secrets create FIREBASE_SERVICE_ACCOUNT --data-file=./path/to/your/downloaded-service-account-file.json
     ```
 
 ### Step 2.3: Deploy
@@ -108,7 +98,7 @@ git commit -m "Configure Firebase App Hosting"
 git push
 ```
 
-The GitHub Action will automatically build and deploy your application. You can monitor its progress in the "Logs" tab of your App Hosting backend in the Firebase Console.
+The GitHub Action will automatically build and deploy your application.
 
 ---
 
@@ -118,9 +108,7 @@ Once your application is live, follow these steps to deploy any new changes you'
 
 ### Step 3.1: Check for New Secrets
 
-If you added any new environment variables to your `.env.local` file (for example, a key for a new service), you **must** add them to Google Secret Manager before deploying.
-
-Follow the same process as in **Step 2.2**, running `gcloud secrets create ...` for each new variable.
+If you added any new environment variables to your `.env.local` file (for example, a key for a new service), you **must** add them to Google Secret Manager before deploying. Follow the same process as in **Step 2.2**.
 
 ### Step 3.2: Commit and Push Your Changes
 
