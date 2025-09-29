@@ -35,7 +35,7 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser, PlainUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
-import { type ReportData, type SubjectEntry, SubjectEntrySchema } from '@/lib/schemas';
+import { type ReportData, ReportDataSchema, type SubjectEntry, SubjectEntrySchema } from '@/lib/schemas';
 import { auth, db } from '@/lib/firebase';
 import type { UserData, InviteData } from '@/types';
 
@@ -823,3 +823,5 @@ export async function deleteUserAction(
     return { success: false, message: error.message || "Could not delete user." };
   }
 }
+
+    
