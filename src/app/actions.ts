@@ -492,7 +492,7 @@ const checkPermissions = (currentUser: PlainUser, targetRole?: string, targetSco
      return true;
   }
   
-  return false; // Users cannot perform these actions
+  return false; // Users and public users cannot perform these actions
 };
 
 
@@ -600,7 +600,7 @@ export async function updateInviteAction(
 
 const UpdateUserRoleAndScopeSchema = z.object({
   userId: z.string(),
-  role: z.enum(['big-admin', 'admin', 'user']),
+  role: z.enum(['big-admin', 'admin', 'user', 'public_user']),
   region: z.string().optional(),
   district: z.string().optional(),
   circuit: z.string().optional(),
@@ -675,12 +675,18 @@ export async function getUsersAction(
     } else if (user.role === 'admin') {
       if (!user.schoolName) throw new Error("Admin's scope is not defined.");
       query = query.where('schoolName', '==', user.schoolName);
-    } else if (user.role === 'user') {
+    } else if (user.role === 'user' || user.role === 'public_user') {
        return { success: false, error: 'Permission denied.' };
     }
 
     const snapshot = await query.get();
-    const users = snapshot.docs.map(doc => serializeUser({ id: doc.id, ...doc.data() }));
+    let users = snapshot.docs.map(doc => serializeUser({ id: doc.id, ...doc.data() }));
+
+    // Only super-admins can see public_users
+    if (user.role !== 'super-admin') {
+        users = users.filter(u => u.role !== 'public_user');
+    }
+
     return { success: true, users };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -700,7 +706,7 @@ export async function getInvitesAction(
     } else if (user.role === 'admin') {
         if (!user.schoolName) throw new Error("Admin's scope is not defined.");
         query = query.where('schoolName', '==', user.schoolName);
-    } else if (user.role === 'user') {
+    } else if (user.role === 'user' || user.role === 'public_user') {
        return { success: false, error: 'Permission denied.' };
     }
     
@@ -735,376 +741,8 @@ export async function deleteUserAction(
     
     return { success: true };
   } catch (error: any) {
-    console.error("Error deleting user:", error);
+    console.error("Delete user error:", error);
     return { success: false, message: error.message || "Could not delete user." };
-  }
-}
-
-export interface PopulationStats {
-  schoolCount: number;
-  publicSchoolCount: number;
-  privateSchoolCount: number;
-  totalStudents: number;
-  maleCount: number;
-  femaleCount: number;
-  schoolLevelCounts: Record<string, number>;
-}
-
-export async function getSystemWideStatsAction(): Promise<{ success: boolean, stats?: PopulationStats, error?: string }> {
-    try {
-        const dbAdmin = admin.firestore();
-        const usersSnapshot = await dbAdmin.collection('users').where('role', '==', 'admin').get();
-        const reportsSnapshot = await dbAdmin.collection('reports').get();
-        
-        const schoolSet = new Set<string>();
-        let publicSchoolCount = 0;
-        let privateSchoolCount = 0;
-        const schoolLevelCounts: Record<string, number> = {};
-
-        usersSnapshot.docs.forEach(doc => {
-            const user = doc.data();
-            if (user.schoolName) {
-                schoolSet.add(user.schoolName);
-                if (user.schoolCategory === 'public') publicSchoolCount++;
-                else if (user.schoolCategory === 'private') privateSchoolCount++;
-                
-                if (user.schoolLevels && Array.isArray(user.schoolLevels)) {
-                    user.schoolLevels.forEach((level: string) => {
-                        schoolLevelCounts[level] = (schoolLevelCounts[level] || 0) + 1;
-                    });
-                }
-            }
-        });
-
-        let maleCount = 0;
-        let femaleCount = 0;
-        const processedStudents = new Set<string>(); // studentName-className-term-year
-        
-        reportsSnapshot.docs.forEach(doc => {
-            const report = doc.data();
-            const studentKey = `${report.studentName}-${report.className}-${report.academicTerm}-${report.academicYear}`;
-            if (!processedStudents.has(studentKey)) {
-                if (report.gender === 'Male') maleCount++;
-                if (report.gender === 'Female') femaleCount++;
-                processedStudents.add(studentKey);
-            }
-        });
-        
-        const stats: PopulationStats = {
-            schoolCount: schoolSet.size,
-            publicSchoolCount,
-            privateSchoolCount,
-            totalStudents: processedStudents.size,
-            maleCount,
-            femaleCount,
-            schoolLevelCounts
-        };
-
-        return { success: true, stats };
-    } catch (error: any) {
-        console.error("Error fetching system-wide stats:", error);
-        return { success: false, error: error.message };
-    }
-}
-
-
-export async function getDistrictStatsAction(district: string): Promise<{ success: boolean, stats?: PopulationStats, error?: string }> {
-    try {
-        const dbAdmin = admin.firestore();
-        const usersSnapshot = await dbAdmin.collection('users')
-            .where('role', '==', 'admin')
-            .where('district', '==', district)
-            .get();
-        const reportsSnapshot = await dbAdmin.collection('reports')
-            .where('district', '==', district)
-            .get();
-
-        const schoolSet = new Set<string>();
-        let publicSchoolCount = 0;
-        let privateSchoolCount = 0;
-        const schoolLevelCounts: Record<string, number> = {};
-
-        usersSnapshot.docs.forEach(doc => {
-            const user = doc.data();
-            if (user.schoolName) {
-                schoolSet.add(user.schoolName);
-                if (user.schoolCategory === 'public') publicSchoolCount++;
-                else if (user.schoolCategory === 'private') privateSchoolCount++;
-                 if (user.schoolLevels && Array.isArray(user.schoolLevels)) {
-                    user.schoolLevels.forEach((level: string) => {
-                        schoolLevelCounts[level] = (schoolLevelCounts[level] || 0) + 1;
-                    });
-                }
-            }
-        });
-
-        let maleCount = 0;
-        let femaleCount = 0;
-        const processedStudents = new Set<string>();
-        reportsSnapshot.docs.forEach(doc => {
-            const report = doc.data();
-            const studentKey = `${report.studentName}-${report.className}-${report.academicTerm}-${report.academicYear}`;
-            if (!processedStudents.has(studentKey)) {
-                if (report.gender === 'Male') maleCount++;
-                if (report.gender === 'Female') femaleCount++;
-                processedStudents.add(studentKey);
-            }
-        });
-
-        const stats: PopulationStats = {
-            schoolCount: schoolSet.size,
-            publicSchoolCount,
-            privateSchoolCount,
-            totalStudents: processedStudents.size,
-            maleCount,
-            femaleCount,
-            schoolLevelCounts
-        };
-        return { success: true, stats };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-interface SchoolStats {
-  classCount: number;
-  maleCount: number;
-  femaleCount: number;
-  totalStudents: number;
-}
-
-export async function getSchoolStatsAction(schoolName: string): Promise<{ success: boolean, stats?: SchoolStats, error?: string }> {
-    try {
-        const reportsSnapshot = await admin.firestore().collection('reports')
-            .where('schoolName', '==', schoolName)
-            .get();
-        
-        const classSet = new Set<string>();
-        const studentSet = new Set<string>(); // studentName-className
-        let maleCount = 0;
-        let femaleCount = 0;
-
-        reportsSnapshot.docs.forEach(doc => {
-            const report = doc.data();
-            if (report.className) classSet.add(report.className);
-
-            const studentKey = `${report.studentName}-${report.className}`;
-            if (!studentSet.has(studentKey)) {
-                studentSet.add(studentKey);
-                if (report.gender === 'Male') maleCount++;
-                if (report.gender === 'Female') femaleCount++;
-            }
-        });
-
-        return { success: true, stats: {
-            classCount: classSet.size,
-            maleCount,
-            femaleCount,
-            totalStudents: studentSet.size,
-        }};
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-const serializeReport = (doc: DocumentData): ReportData => {
-  const data = doc.data();
-  return {
-    ...data,
-    id: doc.id,
-    createdAt: data.createdAt?.toDate()?.toISOString() || null,
-    updatedAt: data.updatedAt?.toDate()?.toISOString() || null,
-  } as ReportData;
-};
-
-export async function getReportsAction(user: PlainUser): Promise<{ success: boolean; reports?: ReportData[]; error?: string }> {
-  try {
-    const dbAdmin = admin.firestore();
-    let query: Query = dbAdmin.collection('reports');
-    
-    if (user.role === 'super-admin') {
-      // super-admin can see all reports
-    } else if (user.role === 'big-admin') {
-      if (!user.district) {
-        return { success: false, error: "District admin's scope is not defined." };
-      }
-      query = query.where('district', '==', user.district);
-    } else if (user.role === 'admin') {
-      if (!user.schoolName) {
-        return { success: false, error: "Admin's scope is not defined." };
-      }
-      query = query.where('schoolName', '==', user.schoolName);
-    } else { // 'user' role
-      query = query.where('teacherId', '==', user.uid);
-    }
-    
-    const snapshot = await query.get();
-    const reports = snapshot.docs.map(doc => serializeReport({ id: doc.id, data: () => doc.data() }));
-    return { success: true, reports };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-export async function getReportsForAdminAction(user: PlainUser): Promise<{ success: boolean; reports?: ReportData[]; error?: string }> {
-  try {
-    if (user.role !== 'super-admin' && user.role !== 'big-admin') {
-      return { success: false, error: 'Permission Denied.' };
-    }
-    return getReportsAction(user);
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-export interface SchoolRankingData {
-  schoolName: string;
-  studentCount: number;
-  average: number;
-  rank: string;
-}
-
-const DistrictRankingSchema = z.object({
-  district: z.string(),
-  className: z.string(),
-  academicYear: z.string().nullable().optional(),
-  academicTerm: z.string().nullable().optional(),
-  subjectName: z.string().nullable().optional(),
-  schoolCategory: z.string().nullable().optional(),
-});
-
-export async function getDistrictClassRankingAction(
-    input: z.infer<typeof DistrictRankingSchema>
-): Promise<{ success: boolean, ranking?: SchoolRankingData[], error?: string }> {
-    try {
-        const { district, className, academicYear, academicTerm, subjectName, schoolCategory } = DistrictRankingSchema.parse(input);
-        const dbAdmin = admin.firestore();
-        let query: Query = dbAdmin.collection('reports')
-            .where('district', '==', district)
-            .where('className', '==', className);
-
-        if (academicYear) query = query.where('academicYear', '==', academicYear);
-        if (academicTerm) query = query.where('academicTerm', '==', academicTerm);
-        if (schoolCategory) query = query.where('schoolCategory', '==', schoolCategory);
-        
-        const snapshot = await query.get();
-
-        const schoolPerformances: { [schoolName: string]: { scores: number[], count: number } } = {};
-
-        snapshot.docs.forEach(doc => {
-            const report = doc.data() as ReportData;
-            if (report.schoolName) {
-                if (!schoolPerformances[report.schoolName]) {
-                    schoolPerformances[report.schoolName] = { scores: [], count: 0 };
-                }
-                
-                let score: number | null = null;
-                if (subjectName) {
-                    const subject = report.subjects.find(s => s.subjectName === subjectName);
-                    if (subject) {
-                        score = calculateSubjectFinalMark(subject);
-                    }
-                } else {
-                    score = calculateOverallAverage(report.subjects);
-                }
-
-                if (score !== null) {
-                    schoolPerformances[report.schoolName].scores.push(score);
-                }
-                schoolPerformances[report.schoolName].count++;
-            }
-        });
-
-        const calculatedRankings = Object.entries(schoolPerformances).map(([schoolName, data]) => ({
-            schoolName,
-            studentCount: data.count,
-            average: data.scores.length > 0 ? data.scores.reduce((a, b) => a + b, 0) / data.scores.length : 0
-        })).sort((a, b) => b.average - a.average);
-        
-        const getOrdinalSuffix = (n: number) => {
-            const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-            return s[(v - 20) % 10] || s[v] || s[0];
-        };
-
-        const finalRanking = calculatedRankings.map((item, index) => {
-            let rank = index + 1;
-            if (index > 0 && item.average === calculatedRankings[index - 1].average) {
-              const prevRank = parseInt(finalRanking[index-1].rank.replace(/\D/g, ''));
-              rank = prevRank;
-            }
-            return {
-              ...item,
-              rank: `${rank}${getOrdinalSuffix(rank)}`,
-            };
-        });
-
-        return { success: true, ranking: finalRanking };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-export interface StudentRankingData {
-  studentName: string;
-  average: number;
-  rank: string;
-}
-
-const SchoolProgramRankingSchema = z.object({
-  schoolName: z.string(),
-  className: z.string(),
-  shsProgram: z.string(),
-  subjectName: z.string().nullable().optional(),
-});
-
-
-export async function getSchoolProgramRankingAction(
-  input: z.infer<typeof SchoolProgramRankingSchema>
-): Promise<{ success: boolean, ranking?: StudentRankingData[], error?: string }> {
-  try {
-    const { schoolName, className, shsProgram, subjectName } = SchoolProgramRankingSchema.parse(input);
-    const dbAdmin = admin.firestore();
-    const query = dbAdmin.collection('reports')
-      .where('schoolName', '==', schoolName)
-      .where('className', '==', className)
-      .where('shsProgram', '==', shsProgram);
-    
-    const snapshot = await query.get();
-    
-    const studentPerformances = snapshot.docs.map(doc => {
-      const report = doc.data() as ReportData;
-      let score: number | null = 0;
-      if (subjectName) {
-        const subject = report.subjects.find(s => s.subjectName === subjectName);
-        score = subject ? calculateSubjectFinalMark(subject) : null;
-      } else {
-        score = calculateOverallAverage(report.subjects);
-      }
-      return {
-        studentName: report.studentName,
-        average: score
-      };
-    }).filter(p => p.average !== null) as { studentName: string, average: number }[];
-    
-    const sortedPerformances = studentPerformances.sort((a, b) => b.average - a.average);
-    
-    const getOrdinalSuffix = (n: number) => {
-        const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-        return s[(v - 20) % 10] || s[v] || s[0];
-    };
-
-    const finalRanking: StudentRankingData[] = [];
-    sortedPerformances.forEach((item, index) => {
-      let rankNumber = index + 1;
-      if (index > 0 && item.average === sortedPerformances[index - 1].average) {
-          rankNumber = parseInt(finalRanking[index-1].rank.replace(/\D/g, ''));
-      }
-      finalRanking.push({ ...item, rank: `${rankNumber}${getOrdinalSuffix(rankNumber)}` });
-    });
-
-    return { success: true, ranking: finalRanking };
-  } catch (error: any) {
-    return { success: false, error: error.message };
   }
 }
 
