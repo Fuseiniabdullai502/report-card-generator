@@ -407,6 +407,84 @@ export async function batchUpdateTeacherFeedbackAction(
 }
 
 
+const serializeReport = (doc: DocumentData): ReportData => {
+  const data = doc.data();
+  const report = ReportDataSchema.partial().parse({
+    id: doc.id,
+    teacherId: data.teacherId,
+    studentEntryNumber: data.studentEntryNumber,
+    studentName: data.studentName,
+    className: data.className,
+    shsProgram: data.shsProgram,
+    gender: data.gender,
+    schoolName: data.schoolName,
+    schoolCategory: data.schoolCategory,
+    region: data.region,
+    district: data.district,
+    circuit: data.circuit,
+    schoolLogoDataUri: data.schoolLogoDataUri,
+    academicYear: data.academicYear,
+    academicTerm: data.academicTerm,
+    reopeningDate: data.reopeningDate,
+    selectedTemplateId: data.selectedTemplateId,
+    daysAttended: data.daysAttended,
+    totalSchoolDays: data.totalSchoolDays,
+    parentEmail: data.parentEmail,
+    parentPhoneNumber: data.parentPhoneNumber,
+    performanceSummary: data.performanceSummary,
+    strengths: data.strengths,
+    areasForImprovement: data.areasForImprovement,
+    hobbies: data.hobbies || [],
+    teacherFeedback: data.teacherFeedback,
+    instructorContact: data.instructorContact,
+    subjects: data.subjects.map((s: any) => SubjectEntrySchema.partial().parse(s)),
+    promotionStatus: data.promotionStatus,
+    studentPhotoDataUri: data.studentPhotoDataUri,
+    headMasterSignatureDataUri: data.headMasterSignatureDataUri,
+    createdAt: data.createdAt?.toDate()?.toISOString() || null,
+    updatedAt: data.updatedAt?.toDate()?.toISOString() || null,
+  });
+
+  report.overallAverage = calculateOverallAverage(report.subjects as SubjectEntry[]);
+  
+  return report as ReportData;
+};
+
+
+export async function getReportsAction(user: PlainUser): Promise<{ success: boolean, reports?: ReportData[], error?: string }> {
+  try {
+    const dbAdmin = admin.firestore();
+    let query: Query = dbAdmin.collection('reports');
+
+    if (user.role === 'user') {
+      query = query.where('teacherId', '==', user.uid);
+    } else if (user.role === 'public_user') {
+      query = query.where('teacherId', '==', user.uid);
+    } else if (user.role === 'admin') {
+      if (!user.schoolName) throw new Error("School admin's scope is not defined.");
+      query = query.where('schoolName', '==', user.schoolName);
+    } else if (user.role === 'big-admin') {
+      if (!user.district) throw new Error("District admin's scope is not defined.");
+      query = query.where('district', '==', user.district);
+    }
+    // super-admin has no where clause, gets all reports
+
+    const snapshot = await query.get();
+    const reports = snapshot.docs.map(serializeReport);
+
+    return { success: true, reports };
+  } catch (error: any) {
+    let errorMessage = "An unknown error occurred while fetching reports.";
+    if (error.code === 'FAILED_PRECONDITION' && error.message.includes('requires an index')) {
+      errorMessage = `A Firestore index is required for this query. Please create the index in your Firebase console. Details: ${error.message}`;
+    } else {
+      errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
+
+
 
 // --- User & Invite Management Actions ---
 
@@ -745,5 +823,3 @@ export async function deleteUserAction(
     return { success: false, message: error.message || "Could not delete user." };
   }
 }
-
-    
