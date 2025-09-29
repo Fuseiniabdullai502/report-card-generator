@@ -144,29 +144,32 @@ function AppContent({ user }: { user: CustomUser }) {
   const [selectedReportsForPrint, setSelectedReportsForPrint] = useState<Record<string, boolean>>({});
   const [isSelectForPrintDialogOpen, setIsSelectForPrintDialogOpen] = useState(false);
 
-  // Load session defaults from localStorage on initial mount
+  // Load session defaults from localStorage on initial mount (client-side only)
   useEffect(() => {
     if (typeof window !== 'undefined') {
         try {
             const savedDefaultsRaw = localStorage.getItem(sessionDefaultsKey);
+            let savedDefaults = {};
             if (savedDefaultsRaw) {
-                const savedDefaults = JSON.parse(savedDefaultsRaw);
-                // Important: Merge with user's scope data to prevent overwriting permissions
-                const userScopeDefaults = {
-                    region: user.region ?? savedDefaults.region,
-                    district: user.district ?? savedDefaults.district,
-                    circuit: user.circuit ?? savedDefaults.circuit,
-                    schoolName: user.schoolName ?? savedDefaults.schoolName,
-                    className: (user.classNames && user.classNames.length > 0) ? user.classNames[0] : savedDefaults.className,
-                };
-                setSessionDefaults({ ...savedDefaults, ...userScopeDefaults });
+                savedDefaults = JSON.parse(savedDefaultsRaw);
             }
+             const userScopeDefaults: Partial<ReportData> = {};
+            if (user.region) userScopeDefaults.region = user.region;
+            if (user.district) userScopeDefaults.district = user.district;
+            if (user.circuit) userScopeDefaults.circuit = user.circuit;
+            if (user.schoolName) userScopeDefaults.schoolName = user.schoolName;
+            if (user.classNames && user.classNames.length > 0) userScopeDefaults.className = user.classNames[0];
+            if (user.schoolCategory) userScopeDefaults.schoolCategory = user.schoolCategory;
+
+            setSessionDefaults({ ...savedDefaults, ...userScopeDefaults });
+            setCurrentEditingReport(prev => ({...prev, ...savedDefaults, ...userScopeDefaults}));
+
         } catch (e) {
             console.error("Failed to load session defaults from localStorage", e);
         }
     }
   }, [user, sessionDefaultsKey]);
-
+  
   // Save session defaults to localStorage whenever they change
   useEffect(() => {
       if (typeof window !== 'undefined' && Object.keys(sessionDefaults).length > 0) {
@@ -228,19 +231,6 @@ function AppContent({ user }: { user: CustomUser }) {
   const isRegularUser = user.role === 'user';
   const isAdminRole = isSuperAdmin || isBigAdmin || isAdmin;
 
-  // Effect to set and lock session defaults for all roles
-  useEffect(() => {
-    const userDefaults: Partial<ReportData> = {};
-    if (user.region) userDefaults.region = user.region;
-    if (user.district) userDefaults.district = user.district;
-    if (user.circuit) userDefaults.circuit = user.circuit;
-    if (user.schoolName) userDefaults.schoolName = user.schoolName;
-    if (user.classNames && user.classNames.length > 0) userDefaults.className = user.classNames[0];
-    if (user.schoolCategory) userDefaults.schoolCategory = user.schoolCategory;
-
-    setSessionDefaults(prev => ({...prev, ...userDefaults}));
-    setCurrentEditingReport(prev => ({...prev, ...userDefaults}));
-  }, [user]);
 
   useEffect(() => {
     if (sessionDefaults.region && typeof sessionDefaults.region === 'string') {
@@ -415,22 +405,33 @@ function AppContent({ user }: { user: CustomUser }) {
             };
         });
 
-        // Sort on the client side
         fetchedReports.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
         
+        const newNextEntryNumber = maxEntryNum + 1;
+        setNextStudentEntryNumber(newNextEntryNumber);
+        
         const newSessionDefaults: Partial<ReportData> = {};
-        // ... (rest of session default logic remains the same)
+        if (fetchedReports.length > 0) {
+          const lastReport = fetchedReports[fetchedReports.length - 1];
+          newSessionDefaults.schoolName = lastReport.schoolName;
+          newSessionDefaults.region = lastReport.region;
+          newSessionDefaults.district = lastReport.district;
+          newSessionDefaults.circuit = lastReport.circuit;
+          newSessionDefaults.className = lastReport.className;
+          newSessionDefaults.academicYear = lastReport.academicYear;
+          newSessionDefaults.academicTerm = lastReport.academicTerm;
+        }
+        
         setSessionDefaults(prev => ({...prev, ...newSessionDefaults}));
-
+        
         setCustomClassNames(prev => [...new Set([...prev, ...Array.from(classNamesFromDB)])]);
         calculateAndSetRanks(fetchedReports);
-        setNextStudentEntryNumber(maxEntryNum + 1);
 
         if (fetchedReports.length === 0) {
             const baseReset = JSON.parse(JSON.stringify(defaultReportData));
             setCurrentEditingReport(prev => ({
                 ...baseReset, ...sessionDefaults, ...newSessionDefaults,
-                studentEntryNumber: maxEntryNum + 1, id: `unsaved-${Date.now()}`,
+                studentEntryNumber: newNextEntryNumber, id: `unsaved-${Date.now()}`,
                 createdAt: undefined, updatedAt: undefined, overallAverage: undefined, rank: undefined, teacherId: user.uid,
             }));
         }
@@ -445,7 +446,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
 
   useEffect(() => {
-    fetchData();
+      fetchData();
   }, [fetchData]);
 
 
