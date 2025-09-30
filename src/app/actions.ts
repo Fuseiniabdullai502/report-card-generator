@@ -32,7 +32,7 @@ import { z } from 'zod';
 import admin from '@/lib/firebase-admin';
 import type { Query, DocumentData } from 'firebase-admin/firestore';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc, writeBatch, Timestamp, getDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser, PlainUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 import { ReportDataSchema, type ReportData, type SubjectEntry, SubjectEntrySchema } from '@/lib/schemas';
@@ -567,22 +567,30 @@ export async function registerUserAction(input: z.infer<typeof RegisterUserSchem
     }
 }
 
-export async function handleGoogleSignInAction(): Promise<{ success: boolean; message: string }> {
-  try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
+const GoogleUserSchema = z.object({
+  uid: z.string(),
+  email: z.string().email().nullable(),
+  displayName: z.string().nullable(),
+  phoneNumber: z.string().nullable(),
+});
 
-    const userDocRef = doc(db, 'users', user.uid);
+export async function handleGoogleSignInAction(
+  goolgeUser: z.infer<typeof GoogleUserSchema>
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const validatedUser = GoogleUserSchema.parse(goolgeUser);
+    const { uid, email, displayName, phoneNumber } = validatedUser;
+
+    const userDocRef = doc(db, 'users', uid);
     const userDocSnap = await getDoc(userDocRef);
 
     if (!userDocSnap.exists()) {
       // This is a new public user
       await setDoc(userDocRef, {
-        uid: user.uid,
-        email: user.email,
-        name: user.displayName || 'Public User',
-        telephone: user.phoneNumber || null,
+        uid: uid,
+        email: email,
+        name: displayName || 'Public User',
+        telephone: phoneNumber || null,
         role: 'public_user',
         status: 'active',
         createdAt: serverTimestamp(),
@@ -592,21 +600,17 @@ export async function handleGoogleSignInAction(): Promise<{ success: boolean; me
       // This is a returning user. Check if their account is active.
       const userData = userDocSnap.data();
       if (userData.status === 'inactive') {
-        // Here you might want to sign them out again, depending on your app's rules
-        // await auth.signOut(); 
         return { success: false, message: 'This account has been deactivated by an administrator.' };
       }
       return { success: true, message: 'Welcome back!' };
     }
   } catch (error: any) {
-    console.error('Google Sign-In Error:', error);
-    let message = 'An unknown error occurred during Google sign-in.';
-    if (error.code === 'auth/popup-closed-by-user') {
-      message = 'Sign-in cancelled. The sign-in popup was closed.';
-    } else if (error.code === 'auth/account-exists-with-different-credential') {
-      message = 'An account already exists with the same email address but different sign-in credentials. Please sign in using the original method.';
+    console.error('Google Sign-In DB Action Error:', error);
+    let message = 'An unknown error occurred on the server during Google sign-in.';
+    if (error instanceof z.ZodError) {
+      message = "Invalid user data received from client.";
     } else {
-      message = error.message || 'Google sign-in failed.';
+      message = error.message || 'Google sign-in failed on the server.';
     }
     return { success: false, message };
   }
