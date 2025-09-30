@@ -442,7 +442,7 @@ function AppContent({ user }: { user: CustomUser }) {
     }
     
     setIsLoadingReports(false);
-  }, [user, calculateAndSetRanks, toast, sessionDefaults]);
+  }, [user, calculateAndSetRanks, toast]);
 
 
   useEffect(() => {
