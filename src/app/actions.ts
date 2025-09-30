@@ -459,9 +459,7 @@ export async function getReportsAction(user: PlainUser): Promise<{ success: bool
     const dbAdmin = admin.firestore();
     let query: Query = dbAdmin.collection('reports');
 
-    if (user.role === 'user') {
-      query = query.where('teacherId', '==', user.uid);
-    } else if (user.role === 'public_user') {
+    if (user.role === 'user' || user.role === 'public_user') {
       query = query.where('teacherId', '==', user.uid);
     } else if (user.role === 'admin') {
       if (!user.schoolName) throw new Error("School admin's scope is not defined.");
@@ -826,3 +824,5 @@ export async function deleteUserAction(
     return { success: false, message: error.message || "Could not delete user." };
   }
 }
+
+    
