@@ -409,6 +409,9 @@ export async function batchUpdateTeacherFeedbackAction(
 
 const serializeReport = (doc: DocumentData): ReportData => {
   const data = doc.data();
+  // We use .partial() here to make all fields optional during parsing,
+  // which prevents Zod from throwing an error if a field from the schema
+  // is missing in the Firestore document.
   const report = ReportDataSchema.partial().parse({
     id: doc.id,
     teacherId: data.teacherId,
@@ -437,7 +440,7 @@ const serializeReport = (doc: DocumentData): ReportData => {
     hobbies: data.hobbies || [],
     teacherFeedback: data.teacherFeedback,
     instructorContact: data.instructorContact,
-    subjects: data.subjects.map((s: any) => SubjectEntrySchema.partial().parse(s)),
+    subjects: data.subjects?.map((s: any) => SubjectEntrySchema.partial().parse(s)) || [],
     promotionStatus: data.promotionStatus,
     studentPhotoDataUri: data.studentPhotoDataUri,
     headMasterSignatureDataUri: data.headMasterSignatureDataUri,
@@ -823,5 +826,3 @@ export async function deleteUserAction(
     return { success: false, message: error.message || "Could not delete user." };
   }
 }
-
-    
