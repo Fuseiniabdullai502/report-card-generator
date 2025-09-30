@@ -31,10 +31,10 @@ import {
 import { z } from 'zod';
 import admin from '@/lib/firebase-admin';
 import type { Query, DocumentData } from 'firebase-admin/firestore';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc, writeBatch, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc, writeBatch, Timestamp, getDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import type { CustomUser, PlainUser } from '@/components/auth-provider';
-import { calculateOverallAverage } from '@/lib/calculations';
+import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 import { ReportDataSchema, type ReportData, type SubjectEntry, SubjectEntrySchema } from '@/lib/schemas';
 import { auth, db } from '@/lib/firebase';
 import type { UserData, InviteData } from '@/types';
@@ -454,26 +454,41 @@ const serializeReport = (doc: DocumentData): ReportData => {
   return report;
 };
 
-
-export async function getReportsAction(user: PlainUser): Promise<{ success: boolean, reports?: ReportData[], error?: string }> {
+export async function getReportsAction(user: PlainUser): Promise<{ success: boolean; reports?: ReportData[]; error?: string }> {
+  if (!user) {
+    return { success: false, error: 'User is not authenticated.' };
+  }
+  
   try {
     const dbAdmin = admin.firestore();
     let q: Query = dbAdmin.collection('reports');
 
-    if (user.role === 'user' || user.role === 'public_user') {
-      q = q.where('teacherId', '==', user.uid);
-    } else if (user.role === 'admin') {
-      if (!user.schoolName) throw new Error("School admin's scope is not defined.");
-      q = q.where('schoolName', '==', user.schoolName);
-    } else if (user.role === 'big-admin') {
-      if (!user.district) throw new Error("District admin's scope is not defined.");
-      q = q.where('district', '==', user.district);
+    switch (user.role) {
+      case 'super-admin':
+        // Super admin sees all reports
+        break;
+      case 'big-admin':
+        if (!user.district) throw new Error("District admin's scope is not defined.");
+        q = q.where('district', '==', user.district);
+        break;
+      case 'admin':
+        if (!user.schoolName) throw new Error("School admin's scope is not defined.");
+        q = q.where('schoolName', '==', user.schoolName);
+        break;
+      case 'user':
+      case 'public_user':
+        q = q.where('teacherId', '==', user.uid);
+        break;
+      default:
+        // If role is undefined or not recognized, return no reports.
+        return { success: true, reports: [] };
     }
 
     const snapshot = await q.get();
     const reports = snapshot.docs.map(serializeReport);
-
+    
     return { success: true, reports };
+
   } catch (error: any) {
     let errorMessage = "An unknown error occurred while fetching reports.";
     if (error.code === 'FAILED_PRECONDITION' && error.message.includes('requires an index')) {
@@ -481,6 +496,7 @@ export async function getReportsAction(user: PlainUser): Promise<{ success: bool
     } else {
       errorMessage = error.message;
     }
+    console.error("Error in getReportsAction: ", errorMessage);
     return { success: false, error: errorMessage };
   }
 }
@@ -573,15 +589,26 @@ export async function handleGoogleSignInAction(): Promise<{ success: boolean; me
       });
       return { success: true, message: 'Welcome! Your public account has been created.' };
     } else {
+      // This is a returning user. Check if their account is active.
       const userData = userDocSnap.data();
       if (userData.status === 'inactive') {
-        return { success: false, message: 'This account has been deactivated.' };
+        // Here you might want to sign them out again, depending on your app's rules
+        // await auth.signOut(); 
+        return { success: false, message: 'This account has been deactivated by an administrator.' };
       }
       return { success: true, message: 'Welcome back!' };
     }
   } catch (error: any) {
     console.error('Google Sign-In Error:', error);
-    return { success: false, message: error.message || 'Google sign-in failed.' };
+    let message = 'An unknown error occurred during Google sign-in.';
+    if (error.code === 'auth/popup-closed-by-user') {
+      message = 'Sign-in cancelled. The sign-in popup was closed.';
+    } else if (error.code === 'auth/account-exists-with-different-credential') {
+      message = 'An account already exists with the same email address but different sign-in credentials. Please sign in using the original method.';
+    } else {
+      message = error.message || 'Google sign-in failed.';
+    }
+    return { success: false, message };
   }
 }
 

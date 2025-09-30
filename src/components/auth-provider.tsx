@@ -8,10 +8,10 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 export interface CustomUser extends User {
-  id: string; // Add the 'id' property here
+  id: string;
   name?: string | null;
   telephone?: string | null;
-  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user' | 'public_user';
   status: 'active' | 'inactive';
   region?: string | null;
   district?: string | null;
@@ -25,7 +25,7 @@ export interface CustomUser extends User {
 // A serializable, plain object for the user
 export interface PlainUser {
   uid: string;
-  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user' | 'public_user';
   name?: string | null;
   email?: string | null;
   district?: string | null;
@@ -101,12 +101,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.warn(`User document for ${userEmail} not found. A document should have been created on registration. Creating a fallback/initial document now.`);
               
               const isSuperAdmin = superAdminEmail && userEmail === superAdminEmail;
-              role = isSuperAdmin ? 'super-admin' : 'user';
+              role = isSuperAdmin ? 'super-admin' : 'public_user'; // Default to public_user for new sign-ups
               status = 'active';
 
               await setDoc(userDocRef, {
                   email: firebaseUser.email,
-                  name: isSuperAdmin ? (firebaseUser.displayName || 'Super Admin') : (firebaseUser.displayName || 'New User'),
+                  name: firebaseUser.displayName || (isSuperAdmin ? 'Super Admin' : 'New User'),
                   telephone: firebaseUser.phoneNumber || null,
                   role: role,
                   status: status,
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         } catch (error) {
           console.error('Error in AuthProvider while fetching/setting user role:', error);
-          setUser({ ...firebaseUser, id: firebaseUser.uid, role: 'user', status: 'active', name: null, telephone: null, region: null, district: null, circuit: null, schoolName: null, classNames: null, schoolLevels: null, schoolCategory: null }); // Fallback on error
+          setUser({ ...firebaseUser, id: firebaseUser.uid, role: 'public_user', status: 'active', name: null, telephone: null, region: null, district: null, circuit: null, schoolName: null, classNames: null, schoolLevels: null, schoolCategory: null }); // Fallback on error
         }
       } else {
         // User is not logged in.
@@ -159,6 +159,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-    
-  

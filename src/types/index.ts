@@ -1,3 +1,4 @@
+
 // src/types/index.ts
 
 export interface UserData {
@@ -5,7 +6,7 @@ export interface UserData {
   email: string;
   name: string | null;
   telephone: string | null;
-  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user' | 'public_user';
   status: 'active' | 'inactive';
   region: string | null;
   district: string | null;
