@@ -407,51 +407,51 @@ export async function batchUpdateTeacherFeedbackAction(
 }
 
 const serializeReport = (doc: DocumentData): ReportData => {
-  const data = doc.data();
+  const data = doc.data() || {};
   
-  const reportForValidation: ReportData = {
+  const reportForValidation: Partial<ReportData> = {
     id: doc.id,
-    teacherId: data.teacherId || '',
-    studentEntryNumber: data.studentEntryNumber || 0,
-    studentName: data.studentName || '',
-    className: data.className || '',
-    shsProgram: data.shsProgram || undefined,
-    gender: data.gender || '',
-    schoolName: data.schoolName || '',
-    schoolCategory: data.schoolCategory || undefined,
-    region: data.region || '',
-    district: data.district || '',
-    circuit: data.circuit || '',
-    schoolLogoDataUri: data.schoolLogoDataUri || null,
-    academicYear: data.academicYear || '',
-    academicTerm: data.academicTerm || '',
-    reopeningDate: data.reopeningDate || null,
-    selectedTemplateId: data.selectedTemplateId || 'default',
+    teacherId: data.teacherId,
+    studentEntryNumber: data.studentEntryNumber,
+    studentName: data.studentName,
+    className: data.className,
+    shsProgram: data.shsProgram,
+    gender: data.gender,
+    schoolName: data.schoolName,
+    schoolCategory: data.schoolCategory,
+    region: data.region,
+    district: data.district,
+    circuit: data.circuit,
+    schoolLogoDataUri: data.schoolLogoDataUri,
+    academicYear: data.academicYear,
+    academicTerm: data.academicTerm,
+    reopeningDate: data.reopeningDate,
+    selectedTemplateId: data.selectedTemplateId,
     daysAttended: data.daysAttended,
     totalSchoolDays: data.totalSchoolDays,
-    parentEmail: data.parentEmail || '',
-    parentPhoneNumber: data.parentPhoneNumber || '',
-    performanceSummary: data.performanceSummary || '',
-    strengths: data.strengths || '',
-    areasForImprovement: data.areasForImprovement || '',
-    hobbies: data.hobbies || [],
-    teacherFeedback: data.teacherFeedback || '',
-    instructorContact: data.instructorContact || '',
-    subjects: data.subjects?.map((s: any) => ({
+    parentEmail: data.parentEmail,
+    parentPhoneNumber: data.parentPhoneNumber,
+    performanceSummary: data.performanceSummary,
+    strengths: data.strengths,
+    areasForImprovement: data.areasForImprovement,
+    hobbies: Array.isArray(data.hobbies) ? data.hobbies : [],
+    teacherFeedback: data.teacherFeedback,
+    instructorContact: data.instructorContact,
+    subjects: Array.isArray(data.subjects) ? data.subjects.map((s: any) => ({
       subjectName: s.subjectName || '',
       continuousAssessment: s.continuousAssessment,
       examinationMark: s.examinationMark,
-    })) || [],
-    promotionStatus: data.promotionStatus || null,
-    studentPhotoDataUri: data.studentPhotoDataUri || null,
-    headMasterSignatureDataUri: data.headMasterSignatureDataUri || null,
-    createdAt: data.createdAt?.toDate()?.toISOString() || null,
-    updatedAt: data.updatedAt?.toDate()?.toISOString() || null,
+    })) : [],
+    promotionStatus: data.promotionStatus,
+    studentPhotoDataUri: data.studentPhotoDataUri,
+    headMasterSignatureDataUri: data.headMasterSignatureDataUri,
+    createdAt: data.createdAt?.toDate()?.toISOString(),
+    updatedAt: data.updatedAt?.toDate()?.toISOString(),
   };
 
-  const report = ReportDataSchema.parse(reportForValidation);
-  report.overallAverage = calculateOverallAverage(report.subjects);
-  return report;
+  const parsed = ReportDataSchema.parse(reportForValidation);
+  parsed.overallAverage = calculateOverallAverage(parsed.subjects);
+  return parsed;
 };
 
 export async function getReportsAction(user: PlainUser): Promise<{ success: boolean; reports?: ReportData[]; error?: string }> {
