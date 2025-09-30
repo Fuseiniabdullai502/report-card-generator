@@ -409,7 +409,7 @@ export async function batchUpdateTeacherFeedbackAction(
 const serializeReport = (doc: DocumentData): ReportData => {
   const data = doc.data();
   
-  const reportForValidation = {
+  const reportForValidation: ReportData = {
     id: doc.id,
     teacherId: data.teacherId || '',
     studentEntryNumber: data.studentEntryNumber || 0,
@@ -569,16 +569,16 @@ export async function registerUserAction(input: z.infer<typeof RegisterUserSchem
 
 const GoogleUserSchema = z.object({
   uid: z.string(),
-  email: z.string().email().nullable(),
+  email: z.string().email().nullable().optional(),
   displayName: z.string().nullable(),
   phoneNumber: z.string().nullable(),
 });
 
 export async function handleGoogleSignInAction(
-  goolgeUser: z.infer<typeof GoogleUserSchema>
+  googleUser: z.infer<typeof GoogleUserSchema>
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const validatedUser = GoogleUserSchema.parse(goolgeUser);
+    const validatedUser = GoogleUserSchema.parse(googleUser);
     const { uid, email, displayName, phoneNumber } = validatedUser;
 
     const userDocRef = doc(db, 'users', uid);
@@ -1092,3 +1092,38 @@ export async function getSchoolProgramRankingAction(
         return { success: false, error: error.message };
     }
 }
+
+export type PopulationStats = {
+  schoolCount: number;
+  publicSchoolCount: number;
+  privateSchoolCount: number;
+  totalStudents: number;
+  maleCount: number;
+  femaleCount: number;
+  schoolLevelCounts: Record<string, number>;
+}
+
+export async function getReportsForAdminAction(user: PlainUser): Promise<{ success: boolean; reports?: ReportData[]; error?: string }> {
+  if (!user || (user.role !== 'super-admin' && user.role !== 'big-admin')) {
+    return { success: false, error: 'Permission denied.' };
+  }
+
+  try {
+    const dbAdmin = admin.firestore();
+    let q: Query = dbAdmin.collection('reports');
+
+    if (user.role === 'big-admin') {
+      if (!user.district) throw new Error("District admin's scope is not defined.");
+      q = q.where('district', '==', user.district);
+    }
+    // No .where() for super-admin means all reports are fetched.
+
+    const snapshot = await q.get();
+    const reports = snapshot.docs.map(serializeReport);
+    return { success: true, reports };
+  } catch (error: any) {
+    return { success: false, error: `Failed to fetch reports for admin: ${error.message}` };
+  }
+}
+
+    
