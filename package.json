@@ -13,8 +13,9 @@
   },
   "dependencies": {
     "@alloc/quick-lru": "^5.2.0",
+    "@ducanh2912/next-pwa": "^10.2.8",
     "@genkit-ai/googleai": "1.4.0",
-    "@hookform/resolvers": "^3.6.0",
+    "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-avatar": "^1.1.3",
@@ -44,12 +45,17 @@
     "firebase-functions": "^5.0.1",
     "genkit": "1.4.0",
     "genkit-cli": "1.4.0",
-    "lucide-react": "^0.395.0",
+    "lucide-react": "^0.417.0",
     "next": "^14.2.33",
+<<<<<<< HEAD
+=======
+    "next-pwa": "^5.6.0",
+    "postcss": "^8",
+>>>>>>> 63ae6acb (I want the app to work on both online and offline)
     "react": "18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "18.3.1",
-    "react-hook-form": "^7.52.0",
+    "react-hook-form": "^7.52.1",
     "react-signature-canvas": "^1.0.6",
     "recharts": "^2.12.7",
     "tailwind-merge": "^2.3.0",
@@ -60,7 +66,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20.14.2",
+    "@types/node": "^20.14.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@types/react-signature-canvas": "^1.0.7",
