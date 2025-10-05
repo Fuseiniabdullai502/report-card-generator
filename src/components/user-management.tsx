@@ -330,11 +330,13 @@ export default function UserManagement({ user, users, invites, populationStats, 
       bigAdmin: { active: 0, inactive: 0 },
       admin: { active: 0, inactive: 0 },
       user: { active: 0, inactive: 0 },
+      publicUser: { active: 0, inactive: 0 },
     };
     users.forEach(u => {
       if (u.role === 'big-admin') u.status === 'active' ? counts.bigAdmin.active++ : counts.bigAdmin.inactive++;
       else if (u.role === 'admin') u.status === 'active' ? counts.admin.active++ : counts.admin.inactive++;
       else if (u.role === 'user') u.status === 'active' ? counts.user.active++ : counts.user.inactive++;
+      else if (u.role === 'public_user') u.status === 'active' ? counts.publicUser.active++ : counts.publicUser.inactive++;
     });
     return counts;
   }, [users, user.role]);
@@ -438,10 +440,11 @@ export default function UserManagement({ user, users, invites, populationStats, 
         <div className="space-y-8">
             <div>
             <h3 className="text-lg font-semibold text-foreground mb-4">System Role Overview</h3>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Big Admins (District)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts?.bigAdmin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts?.bigAdmin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
                 <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Admins (School)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><ShieldCheck /> {roleCounts?.admin.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><ShieldX /> {roleCounts?.admin.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
                 <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Users (Instructors)</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {roleCounts?.user.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {roleCounts?.user.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
+                <Card><CardHeader className="pb-2"><CardTitle className="text-base font-medium">Public Users</CardTitle></CardHeader><CardContent className="flex items-center justify-around"><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-green-600"><UserCheck /> {roleCounts?.publicUser.active}</p><p className="text-xs text-muted-foreground">Active</p></div><div className="text-center"><p className="flex items-center gap-2 text-2xl font-bold text-destructive"><UserX /> {roleCounts?.publicUser.inactive}</p><p className="text-xs text-muted-foreground">Inactive</p></div></CardContent></Card>
             </div>
             </div>
             {populationStats && (
@@ -1325,3 +1328,4 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
         </Dialog>
     );
 }
+
