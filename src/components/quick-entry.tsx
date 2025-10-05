@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -18,7 +17,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Loader2, UserPlus, FileUp, Download, Wand2, CheckCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { doc, updateDoc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
 import { getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
@@ -178,22 +178,33 @@ export function QuickEntry({
     setImageUploadStatus((p) => ({ ...p, [studentId]: "uploading" }));
 
     try {
-      // convert to base64
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const dataUrl = reader.result as string;
-        await saveData(studentId, { studentPhotoUrl: dataUrl });
-        setStudentsInClass((prev) =>
-          prev.map((s) =>
-            s.id === studentId ? { ...s, studentPhotoUrl: dataUrl } : s
-          )
-        );
-        setImageUploadStatus((p) => ({ ...p, [studentId]: null }));
-      };
-      reader.readAsDataURL(file);
-    } catch {
+      // Unique path for each student’s photo
+      const storageRef = ref(storage, `student_photos/${studentId}/${file.name}`);
+      await uploadBytes(storageRef, file);
+
+      // Get the public download URL
+      const downloadUrl = await getDownloadURL(storageRef);
+
+      // Save to Firestore
+      await saveData(studentId, { studentPhotoUrl: downloadUrl });
+
+      // Update local state
+      setStudentsInClass((prev) =>
+        prev.map((s) =>
+          s.id === studentId ? { ...s, studentPhotoUrl: downloadUrl } : s
+        )
+      );
+
+      setImageUploadStatus((p) => ({ ...p, [studentId]: null }));
+
       toast({
-        title: "Image Upload Failed",
+        title: "Upload Complete",
+        description: "Student photo uploaded successfully.",
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Upload Failed",
         description: "Could not upload student photo.",
         variant: "destructive",
       });
