@@ -1437,29 +1437,25 @@ function AppContent({ user }: { user: CustomUser }) {
                                   />
                                 </div>
                               )}
-                              <div className="a4-page-simulation break-inside-avoid">
-                                <ReportPreview 
-                                  data={reportData} 
-                                  classTotal={getClassTotal(reportData.className)} 
-                                  subjectOrder={subjectOrder}
-                                  sessionLogo={sessionDefaults.schoolLogoDataUri}
-                                  sessionSignature={sessionDefaults.headMasterSignatureDataUri}
-                                />
-                              </div>
+                              <ReportPreview 
+                                data={reportData} 
+                                classTotal={getClassTotal(reportData.className)} 
+                                subjectOrder={subjectOrder}
+                                sessionLogo={sessionDefaults.schoolLogoDataUri}
+                                sessionSignature={sessionDefaults.headMasterSignatureDataUri}
+                              />
                           </div>
                         ))}
                       </>
                     ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
                         // This is the LIVE preview of the report being edited in the form
-                        <div className="a4-page-simulation break-inside-avoid">
-                           <ReportPreview 
-                            data={currentEditingReport} 
-                            classTotal={getClassTotal(currentEditingReport.className)} 
-                            subjectOrder={subjectOrder}
-                            sessionLogo={sessionDefaults.schoolLogoDataUri}
-                            sessionSignature={sessionDefaults.headMasterSignatureDataUri}
-                           />
-                        </div>
+                        <ReportPreview 
+                          data={currentEditingReport} 
+                          classTotal={getClassTotal(currentEditingReport.className)} 
+                          subjectOrder={subjectOrder}
+                          sessionLogo={sessionDefaults.schoolLogoDataUri}
+                          sessionSignature={sessionDefaults.headMasterSignatureDataUri}
+                        />
                     ) : (
                       <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center p-8 bg-card">
                         <FileText className="h-24 w-24 mb-6 text-gray-300 dark:text-gray-600" />
@@ -1482,29 +1478,22 @@ function AppContent({ user }: { user: CustomUser }) {
 
       {/* This is the dedicated container for PRINTING ONLY. It is OUTSIDE the main app container. */}
       <div className="print-only-reports">
-        {reportsToPrint.length > 0 ? (
-          reportsToPrint.map((reportData) => (
-            <div key={`print-${reportData.id}`} className="a4-page-simulation">
-               <ReportPreview 
-                data={reportData} 
-                classTotal={getClassTotal(reportData.className)} 
-                subjectOrder={subjectOrder}
-                sessionLogo={sessionDefaults.schoolLogoDataUri}
-                sessionSignature={sessionDefaults.headMasterSignatureDataUri}
-              />
-            </div>
-          ))
-        ) : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className || currentEditingReport.schoolName) ? (
-          <div className="a4-page-simulation">
-             <ReportPreview 
-              data={currentEditingReport} 
-              classTotal={getClassTotal(currentEditingReport.className)} 
+        {(reportsToPrint.length > 0
+          ? reportsToPrint
+          : currentEditingReport && (currentEditingReport.studentName || currentEditingReport.className)
+          ? [currentEditingReport]
+          : []
+        ).map((reportData) => (
+          <div key={`print-${reportData.id}`} className="a4-page-simulation">
+            <ReportPreview
+              data={reportData}
+              classTotal={getClassTotal(reportData.className)}
               subjectOrder={subjectOrder}
               sessionLogo={sessionDefaults.schoolLogoDataUri}
               sessionSignature={sessionDefaults.headMasterSignatureDataUri}
             />
           </div>
-        ) : null}
+        ))}
       </div>
 
 
