@@ -32,11 +32,10 @@ import { z } from 'zod';
 import admin from '@/lib/firebase-admin';
 import type { Query, DocumentData } from 'firebase-admin/firestore';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc, writeBatch, Timestamp, getDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { CustomUser, PlainUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 import { ReportDataSchema, type ReportData, type SubjectEntry, SubjectEntrySchema } from '@/lib/schemas';
-import { auth, db } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import type { UserData, InviteData } from '@/types';
 
 
@@ -506,8 +505,8 @@ export async function getReportsAction(user: PlainUser): Promise<{ success: bool
 // --- User & Invite Management Actions ---
 
 const RegisterUserSchema = z.object({
+  uid: z.string(),
   email: z.string().email(),
-  password: z.string().min(6),
   name: z.string().min(1),
   telephone: z.string().optional(),
 });
@@ -515,15 +514,13 @@ const RegisterUserSchema = z.object({
 
 export async function registerUserAction(input: z.infer<typeof RegisterUserSchema>): Promise<{ success: boolean, message: string }> {
     try {
-        const { email, password, name, telephone } = RegisterUserSchema.parse(input);
+        const { uid, email, name, telephone } = RegisterUserSchema.parse(input);
         
         const invitesRef = collection(db, 'invites');
         const q = query(invitesRef, where("email", "==", email), where("status", "==", "pending"));
         const inviteSnapshot = await getDocs(q);
 
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        const userDocRef = doc(db, 'users', user.uid);
+        const userDocRef = doc(db, 'users', uid);
         
         if (!inviteSnapshot.empty) {
             // Invited User Flow
@@ -531,8 +528,8 @@ export async function registerUserAction(input: z.infer<typeof RegisterUserSchem
             const inviteData = inviteDoc.data();
 
             await setDoc(userDocRef, {
-                uid: user.uid,
-                email: user.email,
+                uid: uid,
+                email: email,
                 name: name,
                 telephone: telephone || null,
                 role: inviteData.role || 'user', // Role from invite
@@ -550,14 +547,14 @@ export async function registerUserAction(input: z.infer<typeof RegisterUserSchem
             await updateDoc(inviteDoc.ref, {
                 status: 'completed',
                 registeredAt: serverTimestamp(),
-                registeredUserId: user.uid
+                registeredUserId: uid
             });
             return { success: true, message: "Registration successful! You have been registered with your assigned role." };
         } else {
             // Public User Flow
             await setDoc(userDocRef, {
-                uid: user.uid,
-                email: user.email,
+                uid: uid,
+                email: email,
                 name: name,
                 telephone: telephone || null,
                 role: 'public_user', // Assign public_user role

@@ -12,6 +12,8 @@ import { Loader2, UserPlus, Eye, EyeOff, User, Phone } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { registerUserAction } from '@/app/actions';
 import { useToast } from "@/hooks/use-toast";
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -65,21 +67,37 @@ export default function RegisterPage() {
 
     setIsLoading(true);
 
-    const result = await registerUserAction({ email: email.trim().toLowerCase(), password, name, telephone });
+    try {
+      // 1. Create user on the client with Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+      const newUser = userCredential.user;
 
-    if (result.success) {
-      toast({
-        title: "Registration Complete",
-        description: result.message,
+      // 2. Call the server action with the new user's data to create the DB record
+      const result = await registerUserAction({
+        uid: newUser.uid,
+        email: newUser.email!,
+        name,
+        telephone
       });
-      // AuthProvider will pick up the new user state and their role.
-      // Redirect to the main application page.
-      router.push('/');
-    } else {
-      setError(result.message || 'Registration failed. Please try again.');
-    }
 
-    setIsLoading(false);
+      if (result.success) {
+        toast({
+          title: "Registration Complete",
+          description: result.message,
+        });
+        // Let the AuthProvider handle the redirect on state change
+      } else {
+        setError(result.message || 'Registration failed after user creation. Please contact support.');
+      }
+    } catch (error: any) {
+        let message = 'An unexpected error occurred during registration.';
+        if (error.code === 'auth/email-already-in-use') {
+            message = 'This email address is already registered. Please log in instead.';
+        }
+        setError(message);
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (
