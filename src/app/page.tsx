@@ -524,6 +524,7 @@ function AppContent({ user }: { user: CustomUser }) {
       className: formDataFromForm.className || '',
       shsProgram: formDataFromForm.shsProgram || undefined,
       gender: formDataFromForm.gender,
+      country: formDataFromForm.country || 'Ghana',
       schoolName: formDataFromForm.schoolName || '',
       region: formDataFromForm.region || '',
       district: formDataFromForm.district || '',
