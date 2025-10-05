@@ -168,6 +168,9 @@ export default function RegisterPage() {
                         <SelectContent>
                           <SelectItem value="Ghana">Ghana</SelectItem>
                           <SelectItem value="Nigeria">Nigeria</SelectItem>
+                          <SelectItem value="Sierra Leone">Sierra Leone</SelectItem>
+                          <SelectItem value="The Gambia">The Gambia</SelectItem>
+                          <SelectItem value="Liberia">Liberia</SelectItem>
                           <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select>
