@@ -55,7 +55,7 @@ export default function QuickEntryTable({
   );
 
   return (
-    <div className="w-full max-w-full overflow-x-auto border rounded-lg">
+    <div className="overflow-x-auto border rounded-lg">
       <Table className="text-xs sm:text-sm">
         <TableHeader className="sticky top-0 bg-muted z-10">
           <TableRow>
@@ -96,10 +96,10 @@ export default function QuickEntryTable({
                 {/* Photo */}
                 <TableCell className="sticky left-0 bg-background z-20">
                   <div className="flex flex-col gap-2">
-                    {student.studentPhotoUrl ? (
+                    {student.studentPhotoDataUri ? (
                       <div className="relative w-10 h-14 sm:w-12 sm:h-16">
                         <NextImage
-                          src={student.studentPhotoUrl}
+                          src={student.studentPhotoDataUri}
                           alt={student.studentName || "Student"}
                           layout="fill"
                           className="rounded object-cover border"
@@ -136,7 +136,7 @@ export default function QuickEntryTable({
                         variant="outline"
                         className="h-7 w-7"
                         onClick={() => onAiEditImage(student)}
-                        disabled={!student.studentPhotoUrl || isProcessing}
+                        disabled={!student.studentPhotoDataUri || isProcessing}
                       >
                         {isAiEditing[student.id] ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
