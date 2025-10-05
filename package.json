@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@alloc/quick-lru": "^5.2.0",
     "@genkit-ai/googleai": "1.4.0",
     "@hookform/resolvers": "^3.6.0",
     "@radix-ui/react-accordion": "^1.2.3",
