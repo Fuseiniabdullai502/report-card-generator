@@ -3,12 +3,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
-  experimental: {
-    unstable_allowDynamic: [
-      // This is required for the Genkit dependency 'require-in-the-middle'
-      '**/node_modules/require-in-the-middle/index.js',
-    ],
-  },
   images: {
     remotePatterns: [
       {
