@@ -13,6 +13,7 @@ export interface CustomUser extends User {
   telephone?: string | null;
   role: 'super-admin' | 'big-admin' | 'admin' | 'user' | 'public_user';
   status: 'active' | 'inactive';
+  country?: string | null;
   region?: string | null;
   district?: string | null;
   circuit?: string | null;
@@ -28,6 +29,7 @@ export interface PlainUser {
   role: 'super-admin' | 'big-admin' | 'admin' | 'user' | 'public_user';
   name?: string | null;
   email?: string | null;
+  country?: string | null;
   district?: string | null;
   schoolName?: string | null;
   region?: string | null;
@@ -64,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           let telephone: CustomUser['telephone'] = null;
           let role: CustomUser['role'] = 'user';
           let status: CustomUser['status'] = 'active';
+          let country: CustomUser['country'] = null;
           let region: CustomUser['region'] = null;
           let district: CustomUser['district'] = null;
           let circuit: CustomUser['circuit'] = null;
@@ -78,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               telephone = userData.telephone ?? null;
               role = userData.role ?? 'user';
               status = userData.status ?? 'active';
+              country = userData.country ?? null;
               region = userData.region ?? null;
               district = userData.district ?? null;
               circuit = userData.circuit ?? null;
@@ -110,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   telephone: firebaseUser.phoneNumber || null,
                   role: role,
                   status: status,
+                  country: null,
                   region: null,
                   district: null,
                   circuit: null,
@@ -121,12 +126,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }, { merge: true });
           }
           
-          console.log(`📄 Firestore data: Name: ${name}, Tel: ${telephone}, Role: ${role}, Status: ${status}, Region: ${region}, District: ${district}, Circuit: ${circuit}, School: ${schoolName}, Classes: ${classNames?.join(', ')}`);
-          setUser({ ...firebaseUser, id: firebaseUser.uid, name, telephone, role, status, region, district, circuit, schoolName, classNames, schoolLevels, schoolCategory });
+          console.log(`📄 Firestore data: Name: ${name}, Tel: ${telephone}, Role: ${role}, Status: ${status}, Country: ${country}, Region: ${region}, District: ${district}, Circuit: ${circuit}, School: ${schoolName}, Classes: ${classNames?.join(', ')}`);
+          setUser({ ...firebaseUser, id: firebaseUser.uid, name, telephone, role, status, country, region, district, circuit, schoolName, classNames, schoolLevels, schoolCategory });
 
         } catch (error) {
           console.error('Error in AuthProvider while fetching/setting user role:', error);
-          setUser({ ...firebaseUser, id: firebaseUser.uid, role: 'public_user', status: 'active', name: null, telephone: null, region: null, district: null, circuit: null, schoolName: null, classNames: null, schoolLevels: null, schoolCategory: null }); // Fallback on error
+          setUser({ ...firebaseUser, id: firebaseUser.uid, role: 'public_user', status: 'active', name: null, telephone: null, country: null, region: null, district: null, circuit: null, schoolName: null, classNames: null, schoolLevels: null, schoolCategory: null }); // Fallback on error
         }
       } else {
         // User is not logged in.
@@ -159,3 +164,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+    

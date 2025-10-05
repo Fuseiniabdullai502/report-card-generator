@@ -416,6 +416,7 @@ const serializeReport = (doc: DocumentData): ReportData => {
     className: data.className,
     shsProgram: data.shsProgram,
     gender: data.gender,
+    country: data.country,
     schoolName: data.schoolName,
     schoolCategory: data.schoolCategory,
     region: data.region,
@@ -510,12 +511,14 @@ const RegisterUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   telephone: z.string().optional(),
+  country: z.string().optional(),
+  schoolCategory: z.enum(['public', 'private']).optional(),
 });
 
 
 export async function registerUserAction(input: z.infer<typeof RegisterUserSchema>): Promise<{ success: boolean, message: string }> {
     try {
-        const { uid, email, name, telephone } = RegisterUserSchema.parse(input);
+        const { uid, email, name, telephone, country, schoolCategory } = RegisterUserSchema.parse(input);
         
         const invitesRef = collection(db, 'invites');
         const q = query(invitesRef, where("email", "==", email), where("status", "==", "pending"));
@@ -535,13 +538,14 @@ export async function registerUserAction(input: z.infer<typeof RegisterUserSchem
                 telephone: telephone || null,
                 role: inviteData.role || 'user', // Role from invite
                 status: 'active',
+                country: country || null,
                 region: inviteData.region || null,
                 district: inviteData.district || null,
                 circuit: inviteData.circuit || null,
                 schoolName: inviteData.schoolName || null,
                 classNames: inviteData.classNames || null,
                 schoolLevels: inviteData.schoolLevels || null,
-                schoolCategory: inviteData.schoolCategory || null,
+                schoolCategory: schoolCategory || inviteData.schoolCategory || null,
                 createdAt: serverTimestamp()
             });
 
@@ -560,6 +564,8 @@ export async function registerUserAction(input: z.infer<typeof RegisterUserSchem
                 telephone: telephone || null,
                 role: 'public_user', // Assign public_user role
                 status: 'active',
+                country: country || null,
+                schoolCategory: schoolCategory || null,
                 createdAt: serverTimestamp(),
             });
             return { success: true, message: "Registration successful! Welcome to the Report Card Generator." };
@@ -756,6 +762,7 @@ const UpdateUserRoleAndScopeSchema = z.object({
   classNames: z.array(z.string()).optional(),
   schoolLevels: z.array(z.string()).optional(),
   schoolCategory: z.enum(['public', 'private']).optional(),
+  country: z.string().optional(),
 });
 
 
@@ -786,6 +793,7 @@ const serializeUser = (userDoc: DocumentData): UserData => {
     telephone: data.telephone || null,
     role: data.role,
     status: data.status,
+    country: data.country || null,
     region: data.region || null,
     district: data.district || null,
     circuit: data.circuit || null,
@@ -1136,6 +1144,8 @@ export async function getReportsForAdminAction(user: PlainUser): Promise<{ succe
     return { success: false, error: `Failed to fetch reports for admin: ${error.message}` };
   }
 }
+
+    
 
     
 

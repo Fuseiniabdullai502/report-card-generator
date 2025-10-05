@@ -8,6 +8,7 @@ export interface UserData {
   telephone: string | null;
   role: 'super-admin' | 'big-admin' | 'admin' | 'user' | 'public_user';
   status: 'active' | 'inactive';
+  country: string | null;
   region: string | null;
   district: string | null;
   circuit: string | null;
@@ -32,3 +33,5 @@ export interface InviteData {
   schoolCategory: 'public' | 'private' | null;
   createdAt: string | null; // Keep as string for serializability
 }
+
+    

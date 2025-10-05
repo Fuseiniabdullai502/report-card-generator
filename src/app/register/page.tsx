@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, UserPlus, Eye, EyeOff, User, Phone, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, UserPlus, Eye, EyeOff, User, Phone, CheckCircle, ArrowLeft, Globe, Building } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { registerUserAction } from '@/app/actions';
 import { useToast } from "@/hooks/use-toast";
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -21,6 +22,8 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [telephone, setTelephone] = useState('');
+  const [country, setCountry] = useState('Ghana');
+  const [schoolCategory, setSchoolCategory] = useState<'public' | 'private' | undefined>(undefined);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +81,9 @@ export default function RegisterPage() {
         uid: newUser.uid,
         email: newUser.email!,
         name,
-        telephone
+        telephone,
+        country,
+        schoolCategory
       });
 
       if (result.success) {
@@ -114,7 +119,7 @@ export default function RegisterPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-background">
-      <Card className="w-full max-w-sm shadow-xl">
+      <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline text-primary">Create an Account</CardTitle>
           <CardDescription>
@@ -133,95 +138,74 @@ export default function RegisterPage() {
             </div>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="flex items-center gap-2"><User />Full Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="John Doe"
-                  required
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="flex items-center gap-2"><User />Full Name</Label>
+                  <Input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="telephone" className="flex items-center gap-2"><Phone />Telephone</Label>
+                  <Input id="telephone" type="tel" value={telephone} onChange={(e) => setTelephone(e.target.value)} placeholder="e.g., 0241234567" />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="telephone" className="flex items-center gap-2"><Phone />Telephone Number</Label>
-                <Input
-                  id="telephone"
-                  type="tel"
-                  value={telephone}
-                  onChange={(e) => setTelephone(e.target.value)}
-                  placeholder="e.g., 0241234567"
-                />
-              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your.email@school.com"
-                  required
-                />
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your.email@school.com" required />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Must be at least 6 characters"
-                    required
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="country" className="flex items-center gap-2"><Globe />Country</Label>
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger id="country">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Ghana">Ghana</SelectItem>
+                      <SelectItem value="Nigeria">Nigeria</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="schoolCategory" className="flex items-center gap-2"><Building />School Type</Label>
+                   <Select value={schoolCategory} onValueChange={(v) => setSchoolCategory(v as 'public' | 'private' | undefined)}>
+                    <SelectTrigger id="schoolCategory">
+                      <SelectValue placeholder="Select school type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">Public</SelectItem>
+                      <SelectItem value="private">Private</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <div className="relative">
-                  <Input
-                    id="confirm-password"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
-                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 characters" required className="pr-10" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground" aria-label={showPassword ? "Hide password" : "Show password"}>
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <div className="relative">
+                    <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" required className="pr-10" />
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground" aria-label={showConfirmPassword ? "Hide password" : "Show password"}>
+                      {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
                 </div>
               </div>
+
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2" />
-                    Registering...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="mr-2" />
-                    Register
-                  </>
-                )}
+                {isLoading ? <><Loader2 className="mr-2" />Registering...</> : <><UserPlus className="mr-2" />Register</>}
               </Button>
             </form>
           )}
@@ -245,3 +229,5 @@ export default function RegisterPage() {
     </main>
   );
 }
+
+    
