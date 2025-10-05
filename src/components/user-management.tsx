@@ -607,7 +607,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                     </div>
                     <div className="w-full">
                       <Label htmlFor="category-ranking-select">School Category</Label>
-                        <Select value={selectedRankingCategory} onValueChange={(value) => setSelectedRankingCategory(value as any)}>
+                        <Select value={selectedRankingCategory} onValueChange={(value: 'public' | 'private' | 'all') => setSelectedRankingCategory(value as any)}>
                         <SelectTrigger id="category-ranking-select">
                             <SelectValue placeholder="All Schools" />
                         </SelectTrigger>
