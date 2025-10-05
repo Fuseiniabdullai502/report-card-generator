@@ -30,7 +30,6 @@ export default function RootLayout({
       </head>
       <body>
         <Providers>
-          {/* Toggle Options */}
           <div className="flex flex-col items-center gap-2 my-3">
             <PreviewModeToggle />
           </div>
