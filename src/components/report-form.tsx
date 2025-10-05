@@ -258,7 +258,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     startImageEditingAiTransition(async () => {
       const result = await editImageWithAiAction({ photoDataUri: photoUrl, prompt: editPrompt });
       if (result.success && result.editedPhotoDataUri) {
-          onFormUpdate({ ...formData, studentPhotoDataUri: result.editedPhotoDataUri });
+          onFormUpdate({ ...formData, studentPhotoUrl: result.editedPhotoDataUri });
           toast({ title: "AI Image Enhancement Successful", description: "The student photo has been updated." });
       } else {
           toast({ 
@@ -286,7 +286,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
     try {
       const resizedFile = await resizeImage(file);
       const base64 = await fileToBase64(resizedFile);
-      onFormUpdate({ ...formData, studentPhotoDataUri: base64 });
+      onFormUpdate({ ...formData, studentPhotoUrl: base64 });
       toast({ title: "Image Ready", description: "Image has been converted and is ready to be saved." });
     } catch (error) {
       console.error("Image processing error:", error);
@@ -531,8 +531,8 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                           type="button" 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => handleAiEditImage(formData.studentPhotoDataUri!, "Brighten this photo and enhance its clarity, keeping all original features.")}
-                          disabled={!formData.studentPhotoDataUri || isImageEditingAiLoading || isUploading}
+                          onClick={() => handleAiEditImage(formData.studentPhotoUrl!, "Brighten this photo and enhance its clarity, keeping all original features.")}
+                          disabled={!formData.studentPhotoUrl || isImageEditingAiLoading || isUploading}
                           title="Enhance with AI"
                         >
                           {isImageEditingAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4 text-accent" />}
@@ -540,9 +540,9 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                         </Button>
                     </div>
                     {isUploading && <p className="text-xs text-blue-500">Processing image...</p>}
-                    {formData.studentPhotoDataUri && !isUploading && (
+                    {formData.studentPhotoUrl && !isUploading && (
                       <div className="relative w-24 h-32 mt-2 rounded border p-1">
-                        <img src={formData.studentPhotoDataUri} alt="student" className="object-cover rounded w-full h-full" />
+                        <img src={formData.studentPhotoUrl} alt="student" className="object-cover rounded w-full h-full" />
                         {(isImageEditingAiLoading || isUploading) && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
                             <Loader2 className="h-6 w-6 animate-spin text-white" />

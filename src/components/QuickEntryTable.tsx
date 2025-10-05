@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -96,10 +97,10 @@ export default function QuickEntryTable({
                 {/* Photo */}
                 <TableCell className="sticky left-0 bg-background z-20">
                   <div className="flex flex-col gap-2">
-                    {student.studentPhotoDataUri ? (
+                    {student.studentPhotoUrl ? (
                       <div className="relative w-10 h-14 sm:w-12 sm:h-16">
                         <NextImage
-                          src={student.studentPhotoDataUri}
+                          src={student.studentPhotoUrl}
                           alt={student.studentName || "Student"}
                           layout="fill"
                           className="rounded object-cover border"
@@ -136,7 +137,7 @@ export default function QuickEntryTable({
                         variant="outline"
                         className="h-7 w-7"
                         onClick={() => onAiEditImage(student)}
-                        disabled={!student.studentPhotoDataUri || isProcessing}
+                        disabled={!student.studentPhotoUrl || isProcessing}
                       >
                         {isAiEditing[student.id] ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

@@ -550,7 +550,7 @@ function AppContent({ user }: { user: CustomUser }) {
         examinationMark: s.examinationMark === undefined || s.examinationMark === null ? null : Number(s.examinationMark),
       })),
       promotionStatus: formDataFromForm.promotionStatus || null,
-      studentPhotoDataUri: formDataFromForm.studentPhotoDataUri || null,
+      studentPhotoUrl: formDataFromForm.studentPhotoUrl || null,
       headMasterSignatureDataUri: formDataFromForm.headMasterSignatureDataUri || null,
       clientSideId: formDataFromForm.id,
     };
@@ -590,11 +590,11 @@ function AppContent({ user }: { user: CustomUser }) {
     if (!isEditing && reportToSaveForFirestore.academicTerm === 'First Term' && reportToSaveForFirestore.studentName) {
       try {
         const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
-        const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
+        const profiles: Record<string, { studentName: string; studentPhotoUrl?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
         const profileKey = reportToSaveForFirestore.studentName;
         profiles[profileKey] = {
           studentName: reportToSaveForFirestore.studentName,
-          studentPhotoDataUri: reportToSaveForFirestore.studentPhotoDataUri ?? undefined,
+          studentPhotoUrl: reportToSaveForFirestore.studentPhotoUrl ?? undefined,
           className: reportToSaveForFirestore.className,
           gender: reportToSaveForFirestore.gender ?? undefined,
         };
@@ -844,7 +844,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
     try {
         const storedProfilesRaw = localStorage.getItem(STUDENT_PROFILES_STORAGE_KEY);
-        const profiles: Record<string, { studentName: string; studentPhotoDataUri?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
+        const profiles: Record<string, { studentName: string; studentPhotoUrl?: string; className?: string; gender?: string }> = storedProfilesRaw ? JSON.parse(storedProfilesRaw) : {};
         
         let importedCount = 0;
         let currentImportEntryNumberBase = nextStudentEntryNumber;
@@ -858,7 +858,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     createdAt: serverTimestamp(),
                     studentName: profile.studentName,
                     gender: profile.gender ?? '',
-                    studentPhotoDataUri: profile.studentPhotoDataUri ?? null,
+                    studentPhotoUrl: profile.studentPhotoUrl ?? null,
                     className: destinationClass,
                     schoolName: sessionDefaults.schoolName,
                     region: sessionDefaults.region,

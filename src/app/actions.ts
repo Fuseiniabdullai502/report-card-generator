@@ -443,7 +443,7 @@ const serializeReport = (doc: DocumentData): ReportData => {
       examinationMark: s.examinationMark,
     })) : [],
     promotionStatus: data.promotionStatus,
-    studentPhotoDataUri: data.studentPhotoDataUri,
+    studentPhotoUrl: data.studentPhotoUrl,
     headMasterSignatureDataUri: data.headMasterSignatureDataUri,
     createdAt: data.createdAt?.toDate()?.toISOString(),
     updatedAt: data.updatedAt?.toDate()?.toISOString(),

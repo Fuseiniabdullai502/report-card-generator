@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -181,10 +182,10 @@ export function QuickEntry({
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
-        await saveData(studentId, { studentPhotoDataUri: dataUrl });
+        await saveData(studentId, { studentPhotoUrl: dataUrl });
         setStudentsInClass((prev) =>
           prev.map((s) =>
-            s.id === studentId ? { ...s, studentPhotoDataUri: dataUrl } : s
+            s.id === studentId ? { ...s, studentPhotoUrl: dataUrl } : s
           )
         );
         setImageUploadStatus((p) => ({ ...p, [studentId]: null }));
@@ -204,13 +205,13 @@ export function QuickEntry({
     setIsAiEditing((p) => ({ ...p, [student.id]: true }));
     try {
       const result = await editImageWithAiAction({
-        photoDataUri: student.studentPhotoDataUri!,
+        photoDataUri: student.studentPhotoUrl!,
         prompt: "brighten and enhance photo for passport",
       });
 
       if (result.success && result.editedPhotoDataUri) {
-         await saveData(student.id, { studentPhotoDataUri: result.editedPhotoDataUri });
-         setStudentsInClass((prev) => prev.map((s) => s.id === student.id ? { ...s, studentPhotoDataUri: result.editedPhotoDataUri } : s));
+         await saveData(student.id, { studentPhotoUrl: result.editedPhotoDataUri });
+         setStudentsInClass((prev) => prev.map((s) => s.id === student.id ? { ...s, studentPhotoUrl: result.editedPhotoDataUri } : s));
          toast({
             title: "AI Edit Complete",
             description: `${student.studentName}'s photo enhanced.`,
@@ -281,7 +282,7 @@ export function QuickEntry({
       studentName: newStudentName.trim(),
       className: selectedClass,
       gender: "",
-      studentPhotoDataUri: null,
+      studentPhotoUrl: null,
       subjects: subjectOrder.map((s) => ({
         subjectName: s,
         continuousAssessment: null,

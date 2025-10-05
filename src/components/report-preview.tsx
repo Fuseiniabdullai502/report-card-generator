@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -253,7 +254,7 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
             
             <div className="flex-shrink-0 text-center student-photo-container">
               <img
-                  src={data.studentPhotoDataUri || `https://placehold.co/80x100/F0F4F7/7F9Cf5?text=${data.studentName?.charAt(0) || 'S'}&font=raleway`}
+                  src={data.studentPhotoUrl || `https://placehold.co/80x100/F0F4F7/7F9Cf5?text=${data.studentName?.charAt(0) || 'S'}&font=raleway`}
                   alt={`${data.studentName || 'Student'}'s photo`}
                   width={80}
                   height={100}
