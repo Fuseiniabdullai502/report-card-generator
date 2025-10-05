@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -289,10 +290,14 @@ export function QuickEntry({
     if (!newStudentName.trim() || !selectedClass) return;
     setIsAddingStudent(true);
 
-    const newStudent: Omit<ReportData, "id" | "studentEntryNumber"> = {
+    const highestEntryNum = allReports.reduce((max, r) => r.studentEntryNumber > max ? r.studentEntryNumber : max, 0);
+
+    const newStudent: Omit<ReportData, "id"> = {
+      studentEntryNumber: highestEntryNum + 1,
       studentName: newStudentName.trim(),
       className: selectedClass,
       gender: "",
+      selectedTemplateId: 'default',
       studentPhotoUrl: null,
       subjects: subjectOrder.map((s) => ({
         subjectName: s,
@@ -332,6 +337,7 @@ export function QuickEntry({
         className: s.className,
         currentAcademicTerm: s.academicTerm || "",
         subjects: s.subjects,
+        previousTermsData: [], // Quick Entry does not have access to history
       });
       if (res.success && res.insights) {
         batch.update(doc(db, "reports", s.id), {
@@ -466,15 +472,14 @@ export function QuickEntry({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialogs */}
-      <ExportGradesheetDialog isOpen={isExportDialogOpen} onOpenChange={setIsExportDialogOpen} subjects={subjectOrder} students={studentsInClass} className={selectedClass} />
-      <ImportGradesheetDialog isOpen={isImportDialogOpen} onOpenChange={setIsImportDialogOpen} onImport={handleImportedData} className={selectedClass} />
-      <AddSubjectDialog isOpen={isCustomSubjectDialogOpen} onOpenChange={setIsCustomSubjectDialogOpen} onAddSubject={(newSubject) => {
+      {isExportDialogOpen && <ExportGradesheetDialog isOpen={isExportDialogOpen} onOpenChange={setIsExportDialogOpen} subjects={subjectOrder} students={studentsInClass} className={selectedClass} />}
+      {isImportDialogOpen && <ImportGradesheetDialog isOpen={isImportDialogOpen} onOpenChange={setIsImportDialogOpen} onImport={handleImportedData} className={selectedClass} />}
+      {isCustomSubjectDialogOpen && <AddSubjectDialog isOpen={isCustomSubjectDialogOpen} onOpenChange={setIsCustomSubjectDialogOpen} onAddSubject={(newSubject: string) => {
         if (!subjectsForClass.includes(newSubject)) {
           setSubjectsForClass(prev => [...prev, newSubject].sort());
         }
-      }} />
-      <AddHobbyDialog isOpen={isCustomHobbyDialogOpen} onOpenChange={setIsCustomHobbyDialogOpen} />
+      }} />}
+      {isCustomHobbyDialogOpen && <AddHobbyDialog isOpen={isCustomHobbyDialogOpen} onOpenChange={setIsCustomHobbyDialogOpen} />}
     </>
   );
 }
