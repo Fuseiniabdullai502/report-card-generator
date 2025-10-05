@@ -4,14 +4,6 @@
 
 import React, { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -25,37 +17,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, Save, CheckCircle, Search, Trash2, BookOpen, Edit, Download, FileUp, Eye, EyeOff, Wand2, BookPlus, PlusCircle, VenetianMask, CalendarCheck2, ChevronDown, BookPlus as BookPlusIcon, MessageSquare, Image as ImageIcon, Smile, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, UserPlus, Upload, CheckCircle, Trash2, Wand2, FileUp, Download, PlusCircle, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
-import { db, storage } from '@/lib/firebase';
-import { doc, setDoc, addDoc, collection, serverTimestamp, writeBatch, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { v4 as uuidv4 } from 'uuid';
-import NextImage from 'next/image';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction, batchUpdateTeacherFeedbackAction, getBulkAiTeacherFeedbackAction, editImageWithAiAction } from '@/app/actions';
+import { db } from '@/lib/firebase';
+import { doc, updateDoc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction, getBulkAiTeacherFeedbackAction, editImageWithAiAction } from '@/app/actions';
 import * as XLSX from 'xlsx';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import type { GenerateReportInsightsInput, GenerateReportInsightsOutput } from '@/ai/flows/generate-performance-summary';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
 import { getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
-import { Textarea } from './ui/textarea';
-import { Progress } from './ui/progress';
 import { resizeImage, fileToBase64 } from '@/lib/utils';
 import QuickEntryToolbar from './quick-entry-toolbar';
+import GradesheetView from './gradesheet-view';
 
 
 interface QuickEntryProps {
@@ -66,15 +43,6 @@ interface QuickEntryProps {
   subjectOrder: string[];
   setSubjectOrder: (order: string[]) => void;
 }
-
-const scoreTypeOptions = [
-    { value: 'continuousAssessment', label: 'Continuous Assessment (CA)' },
-    { value: 'examinationMark', label: 'Examination Mark (Exam)' }
-];
-type ScoreType = 'continuousAssessment' | 'examinationMark';
-
-const predefinedHobbiesList = ["Reading", "Sports (General)", "Music", "Art & Craft", "Debating", "Coding/Programming", "Gardening", "Volunteering", "Cooking/Baking", "Drama/Theater"];
-const ADD_CUSTOM_HOBBY_VALUE = "--add-custom-hobby--";
 
 export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjectOrder, setSubjectOrder }: QuickEntryProps) {
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -92,7 +60,6 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
 
   const [isExportGradesheetDialogOpen, setIsExportGradesheetDialogOpen] = useState(false);
   const [isImportGradesheetDialogOpen, setIsImportGradesheetDialogOpen] = useState(false);
-  const [isTableVisible, setIsTableVisible] = useState(true);
   const [isGeneratingBulkInsights, setIsGeneratingBulkInsights] = useState(false);
   const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
   const [customSubjectInputValue, setCustomSubjectInputValue] = useState("");
@@ -101,11 +68,6 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
 
   const [imageUploadStatus, setImageUploadStatus] = useState<Record<string, 'uploading' | null>>({});
   const [isAiEditing, setIsAiEditing] = useState<Record<string, boolean>>({});
-
-  const [customHobbies, setCustomHobbies] = useState<string[]>([]);
-  const [isCustomHobbyDialogOpen, setIsCustomHobbyDialogOpen] = useState(false);
-  const [customHobbyInputValue, setCustomHobbyInputValue] = useState('');
-  const [currentHobbyTargetStudentId, setCurrentHobbyTargetStudentId] = useState<string | null>(null);
 
   const availableClasses = useMemo(() => {
     if (user.role === 'user' && user.classNames) {
@@ -122,7 +84,6 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
     }
   }, [availableClasses, selectedClass]);
   
-  // New useEffect to manage subjectOrder state
   useEffect(() => {
     if (selectedClass) {
       const reports = allReports.filter(r => r.className === selectedClass);
@@ -138,15 +99,12 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
       const allPossibleSubjects = [...new Set([...curriculumSubjects, ...Array.from(subjectsFromReports)])].sort();
       setSubjectsForClass(allPossibleSubjects);
       
-      // Load saved order or initialize it
       const savedOrderKey = `subjectOrder_${selectedClass}`;
       try {
         const savedOrder = localStorage.getItem(savedOrderKey);
         if (savedOrder) {
           const parsedOrder = JSON.parse(savedOrder);
-          // Filter out subjects that are no longer relevant
           const validOrder = parsedOrder.filter((s: string) => allPossibleSubjects.includes(s));
-          // Add any new subjects that weren't in the saved order
           const newSubjects = allPossibleSubjects.filter(s => !validOrder.includes(s));
           setSubjectOrder([...validOrder, ...newSubjects]);
         } else {
@@ -192,7 +150,7 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
         saveData(reportId, updatedFields);
     };
 
-    const handleMarkChange = (reportId: string, subjectName: string, markType: ScoreType, value: string) => {
+    const handleMarkChange = (reportId: string, subjectName: string, markType: "continuousAssessment" | "examinationMark", value: string) => {
         const numericValue = value === '' || value === '-' ? null : Number(value);
 
         if (markType === 'continuousAssessment' && numericValue !== null && numericValue > 60) {
@@ -546,40 +504,6 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
     setIsAiEditing(prev => ({...prev, [student.id]: false}));
   };
 
-  const handleHobbyChange = (studentId: string, hobby: string, checked: boolean) => {
-    const student = studentsInClass.find(s => s.id === studentId);
-    if (!student) return;
-
-    const currentHobbies = student.hobbies || [];
-    const newHobbies = checked
-      ? [...currentHobbies, hobby]
-      : currentHobbies.filter(h => h !== hobby);
-    
-    handleFieldChange(studentId, 'hobbies', newHobbies);
-  };
-
-    const handleAddCustomHobby = () => {
-        if (!currentHobbyTargetStudentId || !customHobbyInputValue.trim()) {
-            setIsCustomHobbyDialogOpen(false);
-            return;
-        }
-
-        const newHobby = customHobbyInputValue.trim();
-        handleHobbyChange(currentHobbyTargetStudentId, newHobby, true);
-        if (!predefinedHobbiesList.includes(newHobby) && !customHobbies.includes(newHobby)) {
-            setCustomHobbies(prev => [...new Set([...prev, newHobby])]);
-        }
-
-        setIsCustomHobbyDialogOpen(false);
-        setCustomHobbyInputValue('');
-        setCurrentHobbyTargetStudentId(null);
-    };
-
-    const openCustomHobbyDialog = (studentId: string) => {
-        setCurrentHobbyTargetStudentId(studentId);
-        setIsCustomHobbyDialogOpen(true);
-    };
-
   return (
     <>
       <Card>
@@ -607,189 +531,21 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
               onOpenAddSubject={() => setIsCustomSubjectDialogOpen(true)}
             />
 
-            <div className="overflow-x-auto relative border rounded-lg">
-                <Table>
-                    <TableHeader className="sticky top-0 bg-muted z-10">
-                        <TableRow>
-                            <TableHead className="w-[150px] sticky left-0 bg-muted z-20"><ImageIcon className="inline-block mr-1 h-4 w-4"/>Photo</TableHead>
-                            <TableHead className="min-w-[180px] sticky left-[150px] bg-muted z-20">Student Name</TableHead>
-                            <TableHead className="min-w-[120px]"><VenetianMask className="inline-block mr-1 h-4 w-4"/>Gender</TableHead>
-                            <TableHead className="min-w-[150px]"><CalendarCheck2 className="inline-block mr-1 h-4 w-4"/>Days Attended</TableHead>
-                             <TableHead className="min-w-[180px]"><Smile className="inline-block mr-1 h-4 w-4"/>Hobbies</TableHead>
-                            {subjectOrder.map(subject => (
-                              <TableHead key={subject} colSpan={2} className="text-center border-l min-w-[150px]">
-                                {subject}
-                              </TableHead>
-                            ))}
-                            <TableHead className="w-[50px] text-center">Status</TableHead>
-                            <TableHead className="w-[80px] text-center">Actions</TableHead>
-                        </TableRow>
-                         <TableRow>
-                            <TableHead className="sticky left-0 bg-muted z-20"></TableHead>
-                            <TableHead className="sticky left-[150px] bg-muted z-20"></TableHead>
-                            <TableHead></TableHead>
-                            <TableHead></TableHead>
-                            <TableHead></TableHead>
-                            {subjectOrder.map(subject => (
-                              <React.Fragment key={`${subject}-sub`}>
-                                <TableHead className="text-center border-l">CA (60)</TableHead>
-                                <TableHead className="text-center border-l">Exam (100)</TableHead>
-                              </React.Fragment>
-                            ))}
-                            <TableHead></TableHead>
-                            <TableHead></TableHead>
-                          </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredStudents.map((student, index) => {
-                            const isImageProcessing = imageUploadStatus[student.id] === 'uploading' || isAiEditing[student.id];
-                            return (
-                                <TableRow key={student.id}>
-                                    <TableCell className="sticky left-0 bg-background z-20">
-                                      <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2">
-                                            {student.studentPhotoDataUri ? (
-                                                <div className="relative w-12 h-16">
-                                                  <NextImage src={student.studentPhotoDataUri} alt={student.studentName || 'Student'} layout='fill' className="rounded object-cover border" />
-                                                </div>
-                                            ) : (
-                                                <div className="w-12 h-16 bg-muted rounded flex items-center justify-center"><ImageIcon className="h-6 w-6 text-muted-foreground"/></div>
-                                            )}
-                                            <div className="flex flex-col gap-1">
-                                               <input type="file" id={`photo-upload-${student.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, student.id)} disabled={isImageProcessing} />
-                                               <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => document.getElementById(`photo-upload-${student.id}`)?.click()} disabled={isImageProcessing}>
-                                                  <Upload className="h-4 w-4"/>
-                                               </Button>
-                                               <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => handleAiEditImage(student)} disabled={!student.studentPhotoDataUri || isImageProcessing}>
-                                                  {isAiEditing[student.id] ? <Loader2 className="h-4 w-4 animate-spin"/> : <Wand2 className="h-4 w-4"/>}
-                                               </Button>
-                                            </div>
-                                        </div>
-                                        {imageUploadStatus[student.id] === 'uploading' && <Progress value={100} className="h-2 w-full animate-pulse" />}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="font-medium sticky left-[150px] bg-background z-20">
-                                      <Input
-                                          id={`studentName-${student.id}`}
-                                          value={student.studentName || ''}
-                                          onChange={(e) => handleFieldChange(student.id, 'studentName', e.target.value)}
-                                          onKeyDown={(e) => handleKeyDown(e, index, 'studentName')}
-                                          onBlur={() => handleFieldBlur(student.id, { studentName: student.studentName })}
-                                          className="h-9"
-                                      />
-                                    </TableCell>
-                                    <TableCell>
-                                      <Select 
-                                        value={student.gender || ''} 
-                                        onValueChange={(value) => {
-                                            handleFieldChange(student.id, 'gender', value);
-                                            saveData(student.id, { gender: value });
-                                        }}
-                                      >
-                                          <SelectTrigger id={`gender-${student.id}`} className="h-9 w-[100px]">
-                                              <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                              <SelectItem value="Male">Male</SelectItem>
-                                              <SelectItem value="Female">Female</SelectItem>
-                                          </SelectContent>
-                                      </Select>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Input
-                                            type="number"
-                                            id={`daysAttended-${student.id}`}
-                                            value={student.daysAttended ?? ''}
-                                            onChange={(e) => handleFieldChange(student.id, 'daysAttended', e.target.value === '' ? null : Number(e.target.value))}
-                                            onKeyDown={(e) => handleKeyDown(e, index, 'daysAttended')}
-                                            onBlur={() => handleFieldBlur(student.id, { daysAttended: student.daysAttended })}
-                                            placeholder="e.g., 85"
-                                            className="text-center h-9 w-[100px]"
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" className="h-9 w-full justify-between">
-                                                    <span className="truncate">{student.hobbies?.join(', ') || 'Select...'}</span>
-                                                    <ChevronDown className="ml-2 h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="w-[200px]">
-                                                <ScrollArea className="h-60">
-                                                    {[...predefinedHobbiesList, ...customHobbies].map(hobby => (
-                                                        <DropdownMenuCheckboxItem
-                                                            key={hobby}
-                                                            checked={student.hobbies?.includes(hobby)}
-                                                            onCheckedChange={checked => handleHobbyChange(student.id, hobby, Boolean(checked))}
-                                                            onSelect={(e) => { e.preventDefault(); handleFieldBlur(student.id, { hobbies: student.hobbies })}}
-                                                        >
-                                                            {hobby}
-                                                        </DropdownMenuCheckboxItem>
-                                                    ))}
-                                                </ScrollArea>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem onSelect={() => openCustomHobbyDialog(student.id)}>
-                                                    <PlusCircle className="mr-2 h-4 w-4 text-accent"/>Add New Hobby...
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                     {subjectOrder.map(subjectName => {
-                                        const subjectData = student.subjects.find(s => s.subjectName === subjectName);
-                                        return (
-                                          <React.Fragment key={`${student.id}-${subjectName}`}>
-                                            <TableCell className="border-l p-1">
-                                              <Input
-                                                type="number"
-                                                id={`${subjectName}-ca-${student.id}`}
-                                                placeholder="-"
-                                                className="text-center min-w-[60px] h-9"
-                                                value={subjectData?.continuousAssessment ?? ''}
-                                                onChange={(e) => handleMarkChange(student.id, subjectName, 'continuousAssessment', e.target.value)}
-                                                onKeyDown={(e) => handleKeyDown(e, index, `${subjectName}-ca`)}
-                                                onBlur={() => handleFieldBlur(student.id, { subjects: student.subjects })}
-                                              />
-                                            </TableCell>
-                                            <TableCell className="border-l p-1">
-                                               <Input
-                                                type="number"
-                                                id={`${subjectName}-exam-${student.id}`}
-                                                placeholder="-"
-                                                className="text-center min-w-[60px] h-9"
-                                                value={subjectData?.examinationMark ?? ''}
-                                                onChange={(e) => handleMarkChange(student.id, subjectName, 'examinationMark', e.target.value)}
-                                                onKeyDown={(e) => handleKeyDown(e, index, `${subjectName}-exam`)}
-                                                onBlur={() => handleFieldBlur(student.id, { subjects: student.subjects })}
-                                              />
-                                            </TableCell>
-                                          </React.Fragment>
-                                        );
-                                      })}
-                                    <TableCell>
-                                        <div className="flex justify-center">
-                                            {savingStatus[student.id] === 'saving' && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
-                                            {savingStatus[student.id] === 'saved' && <CheckCircle className="h-5 w-5 text-green-500" />}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setStudentToDelete(student)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
-                        {filteredStudents.length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={subjectOrder.length * 2 + 7} className="text-center h-24 text-muted-foreground">
-                                No students found. {searchQuery ? 'Try adjusting your search.' : 'Select a class or add a new student.'}
-                              </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+            <GradesheetView
+                students={filteredStudents}
+                subjectOrder={subjectOrder}
+                searchQuery={searchQuery}
+                savingStatus={savingStatus}
+                imageUploadStatus={imageUploadStatus}
+                isAiEditing={isAiEditing}
+                onMarkChange={handleMarkChange}
+                onFieldChange={handleFieldChange}
+                onFieldBlur={handleFieldBlur}
+                onUploadImage={handleImageUpload}
+                onAiEditImage={handleAiEditImage}
+                onDelete={setStudentToDelete}
+                onKeyDown={handleKeyDown}
+            />
           </CardContent>
           <CardFooter className="border-t pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-end gap-2 w-full sm:w-auto">
@@ -909,26 +665,6 @@ export function QuickEntry({ allReports, user, onDataRefresh, shsProgram, subjec
                         setCustomSubjectInputValue('');
                         setIsCustomSubjectDialogOpen(false);
                     }}>Add Subject</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-        <Dialog open={isCustomHobbyDialogOpen} onOpenChange={setIsCustomHobbyDialogOpen}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Add New Hobby</DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                    <Label htmlFor="custom-hobby-input">Hobby Name</Label>
-                    <Input 
-                        id="custom-hobby-input"
-                        value={customHobbyInputValue}
-                        onChange={(e) => setCustomHobbyInputValue(e.target.value)}
-                        placeholder="e.g., Chess Club"
-                    />
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                    <Button onClick={handleAddCustomHobby}>Add Hobby</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
