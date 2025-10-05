@@ -1,13 +1,14 @@
-
-import type { Metadata } from 'next';
-import './globals.css';
+import type { Metadata } from "next";
+import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { Providers } from '@/components/providers'; 
+import { Providers } from "@/components/providers"; 
+import PreviewToggle from "@/components/PreviewToggle";
+import PreviewSwitch from "@/components/PreviewSwitch";
 
 export const metadata: Metadata = {
-  title: 'Report Card Generator',
-  description: 'Easily create, customize, rank, and print student terminal reports.',
-  manifest: '/manifest.json',
+  title: "Report Card Generator",
+  description: "Easily create, customize, rank, and print student terminal reports.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -18,6 +19,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta charSet="UTF-8" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1"
+        />
         <meta name="theme-color" content="#64B5F6" />
         <link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="any" />
         <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
@@ -25,6 +31,11 @@ export default function RootLayout({
       </head>
       <body>
         <Providers>
+          {/* Toggle Options */}
+          <div className="flex flex-col items-center gap-2 my-3">
+            <PreviewToggle />
+            <PreviewSwitch />
+          </div>
           {children}
           <Toaster />
         </Providers>
