@@ -199,14 +199,17 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
       <div className="relative z-10 flex flex-col h-full">
         <header className={cn("mb-2 print:mb-1", templateStyles.headerContainerClass)}>
           <div className="flex justify-between items-center">
-             <img
-                src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg"
-                alt="Ghana Coat of Arms"
-                width={80}
-                height={80}
-                data-ai-hint="ghana coat of arms"
-                className="object-contain"
-            />
+             {data.country === 'Ghana' && (
+                <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/5/59/Coat_of_arms_of_Ghana.svg"
+                    alt="Ghana Coat of Arms"
+                    width={80}
+                    height={80}
+                    data-ai-hint="ghana coat of arms"
+                    className="object-contain"
+                />
+             )}
+             {data.country !== 'Ghana' && <div style={{width: 80, height: 80}} />}
             <div className="text-center">
               <h2 className={templateStyles.headerTitleClass}>{data.schoolName || 'School Name'}</h2>
               <p className={templateStyles.headerSubtitleClass}>{data.academicYear || 'Academic Year'} - {data.academicTerm || 'Term/Semester'}</p>
