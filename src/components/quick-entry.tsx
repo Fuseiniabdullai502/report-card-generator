@@ -27,7 +27,7 @@ import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsights
 
 // ⬇️ New components
 import QuickEntryToolbar from './quick-entry-toolbar';
-import QuickEntryTable from './QuickEntryTable';
+import GradesheetView from "./gradesheet-view";
 
 // ⬇️ Existing dialogs reused
 import ExportGradesheetDialog from "./ExportGradesheetDialog";
@@ -404,7 +404,7 @@ export function QuickEntry({
             onOpenAddSubject={() => setIsCustomSubjectDialogOpen(true)}
           />
 
-          <QuickEntryTable
+          <GradesheetView
             students={studentsInClass}
             subjectOrder={subjectOrder}
             searchQuery={searchQuery}
