@@ -55,7 +55,7 @@ export default function QuickEntryTable({
   );
 
   return (
-    <div className="overflow-x-auto border rounded-lg">
+    <div className="w-full max-w-full overflow-x-auto border rounded-lg">
       <Table className="text-xs sm:text-sm">
         <TableHeader className="sticky top-0 bg-muted z-10">
           <TableRow>
