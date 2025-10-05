@@ -153,6 +153,10 @@ function AppContent({ user }: { user: CustomUser }) {
                 savedDefaults = JSON.parse(savedDefaultsRaw);
             }
              const userScopeDefaults: Partial<ReportData> = {};
+             if (user.role === 'public_user' && user.country) {
+                userScopeDefaults.country = user.country;
+                userScopeDefaults.schoolCategory = user.schoolCategory;
+             }
             if (user.region) userScopeDefaults.region = user.region;
             if (user.district) userScopeDefaults.district = user.district;
             if (user.circuit) userScopeDefaults.circuit = user.circuit;
@@ -183,7 +187,7 @@ function AppContent({ user }: { user: CustomUser }) {
                 delete defaultsToSave.circuit;
                 delete defaultsToSave.schoolName;
                }
-               if (user.role === 'user') {
+               if (user.role === 'user' || user.role === 'public_user') {
                 delete defaultsToSave.className;
                }
               
@@ -228,6 +232,7 @@ function AppContent({ user }: { user: CustomUser }) {
   const isBigAdmin = user.role === 'big-admin';
   const isAdmin = user.role === 'admin';
   const isRegularUser = user.role === 'user';
+  const isPublicUser = user.role === 'public_user';
   const isAdminRole = isSuperAdmin || isBigAdmin || isAdmin;
 
 
@@ -435,7 +440,7 @@ function AppContent({ user }: { user: CustomUser }) {
     }
     
     setIsLoadingReports(false);
-  }, [user, calculateAndSetRanks, toast]);
+  }, [user, calculateAndSetRanks, toast, sessionDefaults]);
 
 
   useEffect(() => {
@@ -1081,7 +1086,7 @@ function AppContent({ user }: { user: CustomUser }) {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-1">
                           <Label htmlFor="sessionRegion" className="text-sm font-medium">Region</Label>
-                          <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)} disabled={user.role !== 'super-admin'}>
+                          <Select value={sessionDefaults.region || ''} onValueChange={value => handleSessionDefaultChange('region', value)} disabled={!isSuperAdmin}>
                               <SelectTrigger id="sessionRegion"><SelectValue placeholder="Select region" /></SelectTrigger>
                               <SelectContent>
                                   {ghanaRegions.map(region => <SelectItem key={region} value={region}>{region}</SelectItem>)}
@@ -1093,7 +1098,7 @@ function AppContent({ user }: { user: CustomUser }) {
                           <Select 
                               value={sessionDefaults.district || ''} 
                               onValueChange={value => handleSessionDefaultChange('district', value)}
-                              disabled={user.role !== 'super-admin' && user.role !== 'big-admin'}
+                              disabled={!isSuperAdmin && !isBigAdmin}
                           >
                               <SelectTrigger id="sessionDistrict">
                                   <SelectValue placeholder="Select district" />
@@ -1115,7 +1120,7 @@ function AppContent({ user }: { user: CustomUser }) {
                               onChange={e => handleSessionDefaultChange('circuit', e.target.value)} 
                               placeholder="e.g., Kalpohin"
                               list="circuit-datalist"
-                              disabled={user.role !== 'super-admin' && user.role !== 'big-admin'}
+                              disabled={!isSuperAdmin && !isBigAdmin}
                           />
                           <datalist id="circuit-datalist">
                               {availableCircuits.map(circuit => (
@@ -1127,12 +1132,12 @@ function AppContent({ user }: { user: CustomUser }) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
                       <div className="space-y-1 md:col-span-2">
                           <Label htmlFor="sessionSchoolName" className="text-sm font-medium">School Name</Label>
-                          <Input id="sessionSchoolName" value={sessionDefaults.schoolName ?? ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={user.role === 'admin' || user.role === 'user'}/>
+                          <Input id="sessionSchoolName" value={sessionDefaults.schoolName ?? ''} onChange={e => handleSessionDefaultChange('schoolName', e.target.value)} placeholder="e.g., Faacom Academy" disabled={isAdmin || isRegularUser} />
                       </div>
                       {(isSuperAdmin || isBigAdmin) && (
                         <div className="space-y-1">
                           <Label htmlFor="sessionSchoolCategory" className="text-sm font-medium">School Category</Label>
-                          <Select value={sessionDefaults.schoolCategory || ''} onValueChange={value => handleSessionDefaultChange('schoolCategory', value)}>
+                          <Select value={sessionDefaults.schoolCategory || ''} onValueChange={value => handleSessionDefaultChange('schoolCategory', value)} disabled={isPublicUser}>
                               <SelectTrigger id="sessionSchoolCategory"><SelectValue placeholder="Select category..."/></SelectTrigger>
                               <SelectContent>
                                   <SelectItem value="placeholder" disabled>Select category...</SelectItem>
