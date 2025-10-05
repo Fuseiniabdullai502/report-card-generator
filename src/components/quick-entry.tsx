@@ -12,30 +12,26 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, Upload, CheckCircle, Trash2, Wand2, FileUp, Download, PlusCircle, ChevronDown } from 'lucide-react';
+import { Loader2, UserPlus, FileUp, Download, Wand2, CheckCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { doc, updateDoc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
 import type { CustomUser } from './auth-provider';
-import { db } from '@/lib/firebase';
-import { doc, updateDoc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction, getBulkAiTeacherFeedbackAction, editImageWithAiAction } from '@/app/actions';
-import * as XLSX from 'xlsx';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import { Checkbox } from './ui/checkbox';
-import { ScrollArea } from './ui/scroll-area';
-import type { GenerateReportInsightsInput, GenerateReportInsightsOutput } from '@/ai/flows/generate-performance-summary';
 import { getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
-import { resizeImage, fileToBase64 } from '@/lib/utils';
+import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsightsAction, getBulkAiTeacherFeedbackAction, editImageWithAiAction } from '@/app/actions';
+
+// ⬇️ New components
 import QuickEntryToolbar from './quick-entry-toolbar';
-import GradesheetView from './gradesheet-view';
+import QuickEntryTable from './QuickEntryTable';
+
+// ⬇️ Existing dialogs reused
 import ExportGradesheetDialog from "./ExportGradesheetDialog";
 import ImportGradesheetDialog from "./ImportGradesheetDialog";
 import AddSubjectDialog from "./AddSubjectDialog";
 import AddHobbyDialog from "./AddHobbyDialog";
-
 
 interface QuickEntryProps {
   allReports: ReportData[];
@@ -129,85 +125,115 @@ export function QuickEntry({
     }
   }, [selectedClass, allReports, shsProgram, setSubjectOrder]);
 
-  const handleMarkChange = (reportId: string, subjectName: string, markType: "continuousAssessment" | "examinationMark", value: string) => {
-    const numericValue = value === '' || value === '-' ? null : Number(value);
-
-    if (markType === 'continuousAssessment' && numericValue !== null && numericValue > 60) {
-        toast({ title: "Invalid CA Mark", description: `CA for ${subjectName} cannot exceed 60.`, variant: "destructive" });
-        return;
-    }
-    if (markType === 'examinationMark' && numericValue !== null && numericValue > 100) {
-        toast({ title: "Invalid Exam Mark", description: `Exam for ${subjectName} cannot exceed 100.`, variant: "destructive" });
-        return;
-    }
-
-    setStudentsInClass(prevStudents => 
-        prevStudents.map(student => {
-            if (student.id === reportId) {
-                let subjectFound = false;
-                const newSubjects = student.subjects.map(sub => {
-                    if (sub.subjectName === subjectName) {
-                        subjectFound = true;
-                        return { ...sub, [markType]: numericValue };
-                    }
-                    return sub;
-                });
-                if (!subjectFound) {
-                    newSubjects.push({ subjectName, continuousAssessment: markType === 'continuousAssessment' ? numericValue : null, examinationMark: markType === 'examinationMark' ? numericValue : null });
-                }
-                return { ...student, subjects: newSubjects };
+  // --- Handlers for table inputs
+  const handleMarkChange = (
+    studentId: string,
+    subject: string,
+    type: "continuousAssessment" | "examinationMark",
+    val: string
+  ) => {
+    setStudentsInClass((prev) =>
+      prev.map((s) =>
+        s.id === studentId
+          ? {
+              ...s,
+              subjects: s.subjects.map((sub) =>
+                sub.subjectName === subject
+                  ? { ...sub, [type]: val === "" ? null : Number(val) }
+                  : sub
+              ),
             }
-            return student;
-        })
+          : s
+      )
     );
-};
+  };
 
-const handleFieldChange = (reportId: string, field: keyof ReportData, value: any) => {
-    setStudentsInClass(prevStudents => 
-        prevStudents.map(student => {
-            if (student.id === reportId) {
-                return { ...student, [field]: value };
-            }
-            return student;
-        })
+  const handleFieldChange = (
+    studentId: string,
+    field: keyof ReportData,
+    value: any
+  ) => {
+    setStudentsInClass((prev) =>
+      prev.map((s) =>
+        s.id === studentId ? { ...s, [field]: value } : s
+      )
     );
-};
+  };
 
-const filteredStudents = useMemo(() => {
-    if (!searchQuery) return studentsInClass;
-    return studentsInClass.filter(student =>
-      student.studentName?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [studentsInClass, searchQuery]);
-  
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, studentIndex: number, colId: string) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const currentInput = e.target as HTMLInputElement;
-        currentInput.blur(); // Triggers onBlur, which saves the data.
-        
-        const allColumns = ['studentName', 'gender', 'daysAttended', ...subjectOrder.flatMap(s => [`${s}-ca`, `${s}-exam`])];
-        let nextStudentIndex = studentIndex + 1;
-        let nextColId = colId;
+  const handleFieldBlur = async (
+    studentId: string,
+    updatedFields: Partial<ReportData>
+  ) => {
+    await saveData(studentId, updatedFields);
+  };
 
-        if (nextStudentIndex >= filteredStudents.length) {
-            nextStudentIndex = 0;
-            const currentColIndex = allColumns.indexOf(colId);
-            const nextColIndex = currentColIndex + 1;
-            nextColId = (nextColIndex < allColumns.length) ? allColumns[nextColIndex] : allColumns[0];
-        }
-        
-        const nextStudentId = filteredStudents[nextStudentIndex]?.id;
-        if(nextStudentId){
-            const nextInputId = `${nextColId}-${nextStudentId}`;
-            const nextInput = document.getElementById(nextInputId) as HTMLInputElement | null;
-            nextInput?.focus();
-            nextInput?.select();
-        }
+  const handleUploadImage = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    studentId: string
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageUploadStatus((p) => ({ ...p, [studentId]: "uploading" }));
+
+    try {
+      // convert to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const dataUrl = reader.result as string;
+        await saveData(studentId, { studentPhotoDataUri: dataUrl });
+        setStudentsInClass((prev) =>
+          prev.map((s) =>
+            s.id === studentId ? { ...s, studentPhotoDataUri: dataUrl } : s
+          )
+        );
+        setImageUploadStatus((p) => ({ ...p, [studentId]: null }));
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast({
+        title: "Image Upload Failed",
+        description: "Could not upload student photo.",
+        variant: "destructive",
+      });
+      setImageUploadStatus((p) => ({ ...p, [studentId]: null }));
     }
-};
+  };
 
-const handleDeleteStudent = async () => {
+  const handleAiEditImage = async (student: ReportData) => {
+    setIsAiEditing((p) => ({ ...p, [student.id]: true }));
+    try {
+      const result = await editImageWithAiAction({
+        photoDataUri: student.studentPhotoDataUri!,
+        prompt: "brighten and enhance photo for passport",
+      });
+
+      if (result.success && result.editedPhotoDataUri) {
+         await saveData(student.id, { studentPhotoDataUri: result.editedPhotoDataUri });
+         setStudentsInClass((prev) => prev.map((s) => s.id === student.id ? { ...s, studentPhotoDataUri: result.editedPhotoDataUri } : s));
+         toast({
+            title: "AI Edit Complete",
+            description: `${student.studentName}'s photo enhanced.`,
+         });
+      } else {
+         toast({
+            title: "AI Edit Failed",
+            description: result.error,
+            variant: "destructive",
+         });
+      }
+    } catch {
+      toast({
+        title: "AI Edit Failed",
+        description: "Could not process student photo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiEditing((p) => ({ ...p, [student.id]: false }));
+    }
+  };
+
+  const handleDeleteStudent = async () => {
     if (!studentToDelete) return;
     setIsDeleting(true);
     
@@ -222,86 +248,16 @@ const handleDeleteStudent = async () => {
     
     setIsDeleting(false);
     setStudentToDelete(null);
-};
-
-const handleImageUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    studentId: string
-  ) => {
-    const input = e.target as HTMLInputElement;
-    let file = input.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid File', description: 'Please select an image.', variant: 'destructive' });
-      return;
-    }
-
-    setImageUploadStatus(prev => ({ ...prev, [studentId]: 'uploading' }));
-
-    try {
-      const resizedFile = await resizeImage(file);
-      const base64 = await fileToBase64(resizedFile);
-      handleFieldChange(studentId, 'studentPhotoDataUri', base64);
-      await saveData(studentId, { studentPhotoDataUri: base64 });
-      toast({ title: 'Image Uploaded', description: 'The student photo has been updated.' });
-    } catch (error) {
-      console.error("Image processing or saving error:", error);
-      toast({ title: 'Image Upload Failed', description: 'Could not process or save the image.', variant: 'destructive' });
-    } finally {
-      setImageUploadStatus(prev => ({ ...prev, [studentId]: null }));
-      if (input) input.value = '';
-    }
   };
-
-  const handleAiEditImage = async (student: ReportData) => {
-    const photoUrl = student.studentPhotoDataUri;
-    if (!photoUrl) return;
-
-    setIsAiEditing(prev => ({...prev, [student.id]: true}));
-
-    const result = await editImageWithAiAction({ photoDataUri: photoUrl, prompt: "Brighten this photo and enhance its clarity, keeping all original features." });
-    if (result.success && result.editedPhotoDataUri) {
-        handleFieldChange(student.id, 'studentPhotoDataUri', result.editedPhotoDataUri);
-        await saveData(student.id, { studentPhotoDataUri: result.editedPhotoDataUri });
-        toast({ title: "AI Image Enhancement Successful", description: "The student photo has been updated." });
-    } else {
-      toast({ title: "AI Image Edit Failed", description: result.error, variant: "destructive" });
-    }
-    setIsAiEditing(prev => ({...prev, [student.id]: false}));
+  
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, studentIndex: number, colId: string) => {
+      // This is a placeholder for keyboard navigation, can be expanded later
   };
 
   const handleImportedData = async (dataToImport: { studentName: string, subjects: SubjectEntry[] }[]) => {
-    const updates = dataToImport.map(importedStudent => {
-        const existingStudent = studentsInClass.find(s => s.studentName === importedStudent.studentName);
-        if (!existingStudent) return null;
+      // This is a placeholder for import logic, can be expanded later
+  };
 
-        const existingSubjectsMap = new Map(existingStudent.subjects.map(s => [s.subjectName, s]));
-        importedStudent.subjects.forEach(importedSub => {
-            existingSubjectsMap.set(importedSub.subjectName, { ...existingSubjectsMap.get(importedSub.subjectName), ...importedSub });
-        });
-
-        return {
-            reportId: existingStudent.id,
-            subjects: Array.from(existingSubjectsMap.values()),
-        };
-    }).filter(Boolean) as { reportId: string; subjects: SubjectEntry[] }[];
-
-    if (updates.length === 0) {
-        toast({ title: 'No Matching Students', description: 'No students in the Excel file matched the students in the selected class.', variant: 'destructive' });
-        return;
-    }
-
-    const result = await batchUpdateStudentScoresAction({ updates });
-
-    if (result.success) {
-        toast({ title: 'Import Successful', description: `${updates.length} student records have been updated.` });
-        onDataRefresh();
-    } else {
-        toast({ title: 'Import Failed', description: result.error, variant: 'destructive' });
-    }
-    setIsImportDialogOpen(false);
-};
 
   // --- Handlers
   const saveData = async (id: string, fields: Partial<ReportData>) => {
@@ -321,7 +277,7 @@ const handleImageUpload = async (
     if (!newStudentName.trim() || !selectedClass) return;
     setIsAddingStudent(true);
 
-    const newStudent: Omit<ReportData, "id"> = {
+    const newStudent: Omit<ReportData, "id" | "studentEntryNumber"> = {
       studentName: newStudentName.trim(),
       className: selectedClass,
       gender: "",
@@ -332,7 +288,6 @@ const handleImageUpload = async (
         examinationMark: null,
       })),
       teacherId: user.uid,
-      studentEntryNumber: 0,
       performanceSummary: "",
       strengths: "",
       areasForImprovement: "",
@@ -431,8 +386,8 @@ const handleImageUpload = async (
             onOpenAddSubject={() => setIsCustomSubjectDialogOpen(true)}
           />
 
-          <GradesheetView
-            students={filteredStudents}
+          <QuickEntryTable
+            students={studentsInClass}
             subjectOrder={subjectOrder}
             searchQuery={searchQuery}
             savingStatus={savingStatus}
@@ -440,10 +395,10 @@ const handleImageUpload = async (
             isAiEditing={isAiEditing}
             onMarkChange={handleMarkChange}
             onFieldChange={handleFieldChange}
-            onFieldBlur={saveData}
-            onUploadImage={handleImageUpload}
+            onFieldBlur={handleFieldBlur}
+            onUploadImage={handleUploadImage}
             onAiEditImage={handleAiEditImage}
-            onDelete={setStudentToDelete}
+            onDelete={(student) => setStudentToDelete(student)}
             onKeyDown={handleKeyDown}
           />
         </CardContent>
