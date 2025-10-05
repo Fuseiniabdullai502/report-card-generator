@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "@/components/providers"; 
-import PreviewToggle from "@/components/PreviewToggle";
-import PreviewSwitch from "@/components/PreviewSwitch";
+import PreviewModeToggle from "@/components/PreviewModeToggle";
 
 export const metadata: Metadata = {
   title: "Report Card Generator",
@@ -33,8 +32,7 @@ export default function RootLayout({
         <Providers>
           {/* Toggle Options */}
           <div className="flex flex-col items-center gap-2 my-3">
-            <PreviewToggle />
-            <PreviewSwitch />
+            <PreviewModeToggle />
           </div>
           {children}
           <Toaster />
