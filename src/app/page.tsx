@@ -117,7 +117,6 @@ function AppContent({ user }: { user: CustomUser }) {
     academicYear: 'all',
     academicTerm: 'all',
   });
-  const [searchQuery, setSearchQuery] = useState('');
   const [reportToDelete, setReportToDelete] = useState<ReportData | null>(null);
   const [isDeletingReport, setIsDeletingReport] = useState(false);
   
@@ -281,12 +280,6 @@ function AppContent({ user }: { user: CustomUser }) {
   // Apply filters based on user role and search query
   const filteredReports = useMemo(() => {
     let reports = allRankedReports;
-
-    if (searchQuery) {
-        reports = reports.filter(report => 
-            report.studentName?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }
     
     if (isAdminRole) {
       reports = reports.filter(report => 
@@ -301,13 +294,13 @@ function AppContent({ user }: { user: CustomUser }) {
       }
     }
     return reports;
-  }, [allRankedReports, isAdminRole, adminFilters, searchQuery]);
+  }, [allRankedReports, isAdminRole, adminFilters]);
 
   // Reset preview index when filters change
   useEffect(() => {
     setCurrentPreviewIndex(0);
     setSelectedReportsForPrint({});
-  }, [adminFilters, searchQuery]);
+  }, [adminFilters]);
 
   const calculateAndSetRanks = useCallback((listToProcess: ReportData[]) => {
     if (listToProcess.length === 0) {
@@ -953,12 +946,11 @@ function AppContent({ user }: { user: CustomUser }) {
 }, [user, adminFilters]);
 
     const noReportsFoundMessage = useMemo(() => {
-        if (searchQuery) return `No reports found for "${searchQuery}". Try a different name.`;
         if (reportsCount === 0 && allRankedReports.length > 0) {
             return 'No reports match the selected filters. Try broadening your criteria.';
         }
         return `The report card preview will appear here as you fill out the form.`;
-    }, [reportsCount, allRankedReports.length, searchQuery]);
+    }, [reportsCount, allRankedReports.length]);
 
     const headerTitle = useMemo(() => {
       if (user.role === 'admin' || user.role === 'user') {
@@ -1431,8 +1423,6 @@ function AppContent({ user }: { user: CustomUser }) {
                                       report={reportData} 
                                       onEditReport={handleLoadReportForEditing}
                                       onDeleteReport={() => setReportToDelete(reportData)}
-                                      searchQuery={searchQuery}
-                                      onSearchQueryChange={setSearchQuery}
                                       onPrevious={handlePreviousPreview}
                                       onNext={handleNextPreview}
                                       isPreviousDisabled={currentPreviewIndex === 0}

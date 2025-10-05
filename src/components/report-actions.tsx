@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import type { ReportData } from '@/lib/schemas';
@@ -12,8 +11,6 @@ interface ReportActionsProps {
   report: ReportData;
   onEditReport: (report: ReportData) => void;
   onDeleteReport: (reportId: string) => void;
-  searchQuery: string;
-  onSearchQueryChange: (query: string) => void;
   onPrevious: () => void;
   onNext: () => void;
   isPreviousDisabled: boolean;
@@ -25,8 +22,6 @@ export default function ReportActions({
   report, 
   onEditReport, 
   onDeleteReport,
-  searchQuery,
-  onSearchQueryChange,
   onPrevious,
   onNext,
   isPreviousDisabled,
@@ -71,17 +66,8 @@ export default function ReportActions({
   return (
     <div className="p-3 mb-2 border border-dashed border-primary/50 rounded-md bg-primary/5 shadow-sm no-print">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        {/* Left Side: Search and Navigation */}
+        {/* Left Side: Navigation */}
         <div className="flex items-center gap-2 flex-1 w-full sm:w-auto">
-           <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name..."
-              value={searchQuery}
-              onChange={(e) => onSearchQueryChange(e.target.value)}
-              className="pl-10 h-9"
-            />
-          </div>
           {hasMultipleReports && (
             <div className="flex items-center gap-1">
               <Button onClick={onPrevious} disabled={isPreviousDisabled} variant="outline" size="icon" aria-label="Previous Report" className="h-9 w-9">
