@@ -44,7 +44,7 @@ export default function RegisterPage() {
   }, [user, authLoading, router]);
 
   // Show a loading screen while auth state is resolving or if a redirect is imminent
-  if (authLoading || (user && isSuccess)) {
+  if (authLoading || (user && !isSuccess)) {
     return (
       <div className="flex justify-center items-center h-screen w-screen bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -94,7 +94,7 @@ export default function RegisterPage() {
           description: result.message,
         });
         setIsSuccess(true);
-        // The useAuth hook will detect the new user state and handle the redirect.
+        setTimeout(() => router.push('/'), 2000);
       } else {
         setError(result.message || 'Registration failed after user creation. Please contact support.');
         setIsLoading(false);
@@ -103,6 +103,8 @@ export default function RegisterPage() {
         let message = 'An unexpected error occurred during registration.';
         if (error.code === 'auth/email-already-in-use') {
             message = 'This email address is already registered. Please log in instead.';
+        } else if (error.code === 'auth/invalid-email') {
+            message = 'Please enter a valid email address.';
         }
         setError(message);
         setIsLoading(false);
@@ -162,18 +164,21 @@ export default function RegisterPage() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="country">Country</Label>
-                      <Select value={country} onValueChange={setCountry}>
-                        <SelectTrigger id="country"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ghana">Ghana</SelectItem>
-                          <SelectItem value="Nigeria">Nigeria</SelectItem>
-                          <SelectItem value="Sierra Leone">Sierra Leone</SelectItem>
-                          <SelectItem value="The Gambia">The Gambia</SelectItem>
-                          <SelectItem value="Liberia">Liberia</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <Label htmlFor="country-input">Country</Label>
+                        <Input
+                          id="country-input"
+                          list="country-list"
+                          value={country}
+                          onChange={(e) => setCountry(e.target.value)}
+                          placeholder="Type or select a country"
+                        />
+                        <datalist id="country-list">
+                          <option value="Ghana" />
+                          <option value="Nigeria" />
+                          <option value="Sierra Leone" />
+                          <option value="The Gambia" />
+                          <option value="Liberia" />
+                        </datalist>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="schoolCategory">School Type</Label>
