@@ -449,7 +449,8 @@ const serializeReport = (doc: DocumentData): ReportData => {
   };
 
   const parsed = ReportDataSchema.parse(reportForValidation);
-  parsed.overallAverage = calculateOverallAverage(parsed.subjects);
+  const average = calculateOverallAverage(parsed.subjects);
+  parsed.overallAverage = average === null ? undefined : average;
   return parsed;
 };
 
@@ -1135,6 +1136,8 @@ export async function getReportsForAdminAction(user: PlainUser): Promise<{ succe
     return { success: false, error: `Failed to fetch reports for admin: ${error.message}` };
   }
 }
+
+    
 
     
 
