@@ -78,6 +78,7 @@ interface UserData {
   telephone?: string | null;
   role: 'super-admin' | 'big-admin' | 'admin' | 'user' | 'public_user';
   status: 'active' | 'inactive';
+  country?: string | null;
   region?: string | null;
   district?: string | null;
   circuit?: string | null;
@@ -380,6 +381,8 @@ export default function UserManagement({ user, users, invites, populationStats, 
       district: user.district,
       schoolName: user.schoolName,
       circuit: user.circuit,
+      schoolLevels: user.schoolLevels,
+      schoolCategory: user.schoolCategory,
     };
     
     const result = await deleteUserAction({ userId: userToDelete.id }, plainUser);
@@ -476,7 +479,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                             {Object.entries(populationStats.schoolLevelCounts).map(([level, count]) => (
                                 <div key={level} className="flex items-center gap-2 p-2 bg-muted rounded-md">
                                     <span className="font-semibold">{level}:</span>
-                                    <span className="text-primary font-bold">{count}</span>
+                                    <span className="text-primary font-bold">{String(count)}</span>
                                 </div>
                             ))}
                         </CardContent>
@@ -517,7 +520,7 @@ export default function UserManagement({ user, users, invites, populationStats, 
                              {Object.entries(populationStats.schoolLevelCounts).map(([level, count]) => (
                                 <div key={level} className="flex items-center gap-2 p-2 bg-muted rounded-md">
                                     <span className="font-semibold">{level}:</span>
-                                    <span className="text-primary font-bold">{count}</span>
+                                    <span className="text-primary font-bold">{String(count)}</span>
                                 </div>
                             ))}
                         </CardContent>
@@ -1329,3 +1332,6 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
     );
 }
 
+
+
+    
