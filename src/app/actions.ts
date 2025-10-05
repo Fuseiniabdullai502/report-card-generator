@@ -521,41 +521,51 @@ export async function registerUserAction(input: z.infer<typeof RegisterUserSchem
         const q = query(invitesRef, where("email", "==", email), where("status", "==", "pending"));
         const inviteSnapshot = await getDocs(q);
 
-        if (inviteSnapshot.empty) {
-            return { success: false, message: "Registration failed. Your email has not been authorized. Please contact an administrator." };
-        }
-
-        const inviteDoc = inviteSnapshot.docs[0];
-        const inviteData = inviteDoc.data();
-
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-
         const userDocRef = doc(db, 'users', user.uid);
-        await setDoc(userDocRef, {
-            uid: user.uid,
-            email: user.email,
-            name: name,
-            telephone: telephone || null,
-            role: inviteData.role || 'user',
-            status: 'active',
-            region: inviteData.region || null,
-            district: inviteData.district || null,
-            circuit: inviteData.circuit || null,
-            schoolName: inviteData.schoolName || null,
-            classNames: inviteData.classNames || null,
-            schoolLevels: inviteData.schoolLevels || null,
-            schoolCategory: inviteData.schoolCategory || null,
-            createdAt: serverTimestamp()
-        });
-
-        await updateDoc(inviteDoc.ref, {
-            status: 'completed',
-            registeredAt: serverTimestamp(),
-            registeredUserId: user.uid
-        });
         
-        return { success: true, message: "Registration successful! You are now being redirected." };
+        if (!inviteSnapshot.empty) {
+            // Invited User Flow
+            const inviteDoc = inviteSnapshot.docs[0];
+            const inviteData = inviteDoc.data();
+
+            await setDoc(userDocRef, {
+                uid: user.uid,
+                email: user.email,
+                name: name,
+                telephone: telephone || null,
+                role: inviteData.role || 'user', // Role from invite
+                status: 'active',
+                region: inviteData.region || null,
+                district: inviteData.district || null,
+                circuit: inviteData.circuit || null,
+                schoolName: inviteData.schoolName || null,
+                classNames: inviteData.classNames || null,
+                schoolLevels: inviteData.schoolLevels || null,
+                schoolCategory: inviteData.schoolCategory || null,
+                createdAt: serverTimestamp()
+            });
+
+            await updateDoc(inviteDoc.ref, {
+                status: 'completed',
+                registeredAt: serverTimestamp(),
+                registeredUserId: user.uid
+            });
+            return { success: true, message: "Registration successful! You have been registered with your assigned role." };
+        } else {
+            // Public User Flow
+            await setDoc(userDocRef, {
+                uid: user.uid,
+                email: user.email,
+                name: name,
+                telephone: telephone || null,
+                role: 'public_user', // Assign public_user role
+                status: 'active',
+                createdAt: serverTimestamp(),
+            });
+            return { success: true, message: "Registration successful! Welcome to the Report Card Generator." };
+        }
 
     } catch (error: any) {
         console.error("Registration Error:", error);
@@ -569,7 +579,7 @@ export async function registerUserAction(input: z.infer<typeof RegisterUserSchem
 
 const GoogleUserSchema = z.object({
   uid: z.string(),
-  email: z.string().email().nullable().optional(),
+  email: z.string().email().optional().nullable(),
   displayName: z.string().nullable(),
   phoneNumber: z.string().nullable(),
 });
@@ -1004,6 +1014,9 @@ export async function getDistrictClassRankingAction(
 
         const schools = new Map<string, { scores: number[], count: number }>();
         reports.forEach(report => {
+            if (!report.schoolName!) {
+                return;
+            }
             if (!schools.has(report.schoolName!)) {
                 schools.set(report.schoolName!, { scores: [], count: 0 });
             }
