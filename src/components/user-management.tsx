@@ -76,7 +76,7 @@ interface UserData {
   email: string;
   name?: string | null;
   telephone?: string | null;
-  role: 'super-admin' | 'big-admin' | 'admin' | 'user';
+  role: 'super-admin' | 'big-admin' | 'admin' | 'user' | 'public_user';
   status: 'active' | 'inactive';
   region?: string | null;
   district?: string | null;
@@ -85,7 +85,7 @@ interface UserData {
   classNames?: string[] | null;
   schoolLevels?: string[] | null;
   schoolCategory?: 'public' | 'private' | null;
-  createdAt: Date | null;
+  createdAt: string | null;
 }
 
 interface InviteData {
@@ -100,7 +100,7 @@ interface InviteData {
   classNames?: string[] | null;
   schoolLevels?: string[] | null;
   schoolCategory?: 'public' | 'private' | null;
-  createdAt: Date | null;
+  createdAt: string | null;
 }
 
 interface SchoolStats {
@@ -1130,7 +1130,7 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
 
         const result = await updateUserRoleAndScopeAction({
             userId: user.id,
-            role: role as 'big-admin' | 'admin' | 'user',
+            role: role as 'big-admin' | 'admin' | 'user' | 'public_user',
             region,
             district,
             circuit,
