@@ -142,3 +142,8 @@ firestore-debug.log
 *.log
 
 next-env.d.ts
+
+# Logs
+firebase-debug.log
+firestore-debug.log
+*.log
