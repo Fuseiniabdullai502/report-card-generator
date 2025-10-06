@@ -24,7 +24,7 @@ import type { GenerateDistrictInsightsOutput, GenerateDistrictInsightsInput } fr
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { calculateSubjectFinalMark, calculateOverallAverage } from '@/lib/calculations';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Image from 'next/image';
 
 interface DistrictPerformanceDashboardProps {
