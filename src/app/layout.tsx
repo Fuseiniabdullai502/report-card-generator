@@ -7,7 +7,6 @@ import PreviewModeToggle from "@/components/PreviewModeToggle";
 export const metadata: Metadata = {
   title: "Report Card Generator",
   description: "Easily create, customize, rank, and print student terminal reports.",
-  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -25,8 +24,6 @@ export default function RootLayout({
         />
         <meta name="theme-color" content="#64B5F6" />
         <link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="any" />
-        <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
       </head>
       <body>
         <Providers>
