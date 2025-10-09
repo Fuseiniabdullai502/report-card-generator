@@ -63,8 +63,8 @@ export default function DistrictPerformanceDashboard({
 
   const districtName = user.district || 'District';
 
-  const allAvailableYears = useMemo(() => ['all', ...[...new Set(allReports.map(r => r.academicYear).filter(Boolean) as string[])].sort()], [allReports]);
-  const allAvailableTerms = useMemo(() => ['all', ...[...new Set(allReports.map(r => r.academicTerm).filter(Boolean) as string[])].sort()], [allReports]);
+  const allAvailableYears = useMemo(() => ['all', ...Array.from(new Set(allReports.map((r: ReportData) => r.academicYear).filter(Boolean) as string[]))].sort(), [allReports]);
+  const allAvailableTerms = useMemo(() => ['all', ...Array.from(new Set(allReports.map((r: ReportData) => r.academicTerm).filter(Boolean) as string[]))].sort(), [allReports]);
 
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedTerm, setSelectedTerm] = useState<string>('all');
