@@ -32,13 +32,6 @@ interface DistrictPerformanceDashboardProps {
   user: CustomUser;
 }
 
-interface HistoricalDistrictTermData {
-  term: string;
-  numStudents: number;
-  numSchools: number;
-  districtAverage: number | null;
-}
-
 interface DistrictStatistics {
   overallDistrictAverage: number | null;
   totalStudentsInDistrict: number;
@@ -47,6 +40,9 @@ interface DistrictStatistics {
   overallSubjectStatsForDistrictUI: Array<{ subjectName: string; numBelowAverage: number; numAverage: number; numAboveAverage: number; districtAverageForSubject: number | null; }>;
   overallGenderStatsForDistrictUI: Array<{ gender: string; count: number; averageScore: number | null; }>;
 }
+
+/** keep constants outside the component */
+const GENDER_COLORS = ['#0088FE', '#FF8042', '#FFBB28', '#00C49F', '#AF19FF'];
 
 export default function DistrictPerformanceDashboard({
   isOpen,
@@ -63,8 +59,16 @@ export default function DistrictPerformanceDashboard({
 
   const districtName = user.district || 'District';
 
-  const allAvailableYears = useMemo(() => ['all', ...Array.from(new Set(allReports.map((r: ReportData) => r.academicYear).filter(Boolean) as string[]))].sort(), [allReports]);
-  const allAvailableTerms = useMemo(() => ['all', ...Array.from(new Set(allReports.map((r: ReportData) => r.academicTerm).filter(Boolean) as string[]))].sort(), [allReports]);
+  /** keep 'all' first by sorting only real values, then prefix */
+  const allAvailableYears = useMemo(() => {
+    const years = Array.from(new Set(allReports.map((r: ReportData) => r.academicYear).filter(Boolean) as string[])).sort();
+    return ['all', ...years];
+  }, [allReports]);
+
+  const allAvailableTerms = useMemo(() => {
+    const terms = Array.from(new Set(allReports.map((r: ReportData) => r.academicTerm).filter(Boolean) as string[])).sort();
+    return ['all', ...terms];
+  }, [allReports]);
 
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedTerm, setSelectedTerm] = useState<string>('all');
@@ -145,7 +149,6 @@ export default function DistrictPerformanceDashboard({
     const newStats = aggregateDistrictDataForTerm(filteredReports);
     setDistrictStats(newStats);
     setIsLoadingStats(false);
-
   }, [isOpen, filteredReports]);
 
   const districtSubjectPerformanceChartData = useMemo(() => {
@@ -163,7 +166,6 @@ export default function DistrictPerformanceDashboard({
       value: g.count,
     })) || [];
   }, [districtStats]);
-  const GENDER_COLORS = ['#0088FE', '#FF8042', '#FFBB28', '#00C49F', '#AF19FF'];
 
   const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -246,6 +248,7 @@ export default function DistrictPerformanceDashboard({
                     lineHeight: '1.2',
                     wordBreak: 'break-word',
                   }}
+                  aria-hidden="true"
                 >
                   {districtName}
                 </p>
@@ -271,7 +274,12 @@ export default function DistrictPerformanceDashboard({
                     <CardContent className="grid md:grid-cols-4 gap-4">
                       <div className="text-center"><p className="text-sm text-muted-foreground">Total Students</p><p className="text-2xl font-bold">{districtStats.totalStudentsInDistrict}</p></div>
                       <div className="text-center"><p className="text-sm text-muted-foreground">Schools Represented</p><p className="text-2xl font-bold">{districtStats.numberOfSchoolsRepresented}</p></div>
-                      <div className="text-center"><p className="text-sm text-muted-foreground">District Average</p><p className="text-2xl font-bold">{districtStats.overallDistrictAverage?.toFixed(2)}%</p></div>
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground">District Average</p>
+                        <p className="text-2xl font-bold">
+                          {districtStats.overallDistrictAverage == null ? 'N/A' : `${districtStats.overallDistrictAverage.toFixed(2)}%`}
+                        </p>
+                      </div>
                     </CardContent>
                   </Card>
 
@@ -283,7 +291,17 @@ export default function DistrictPerformanceDashboard({
                           <TableHeader>
                             <TableRow><TableHead>School</TableHead><TableHead className="text-center">Students</TableHead><TableHead className="text-center">Avg (%)</TableHead></TableRow>
                           </TableHeader>
-                          <TableBody>{districtStats.schoolSummariesForUI.sort((a, b) => (b.schoolAverage || 0) - (a.schoolAverage || 0)).map(s => <TableRow key={s.schoolName}><TableCell>{s.schoolName}</TableCell><TableCell className="text-center">{s.numberOfStudents}</TableCell><TableCell className="text-center">{s.schoolAverage?.toFixed(1) || 'N/A'}</TableCell></TableRow>)}</TableBody>
+                          <TableBody>
+                            {[...districtStats.schoolSummariesForUI]
+                              .sort((a, b) => (b.schoolAverage || 0) - (a.schoolAverage || 0))
+                              .map(s => (
+                                <TableRow key={s.schoolName || `school-${s.numberOfStudents}`}>
+                                  <TableCell>{s.schoolName || 'Unnamed School'}</TableCell>
+                                  <TableCell className="text-center">{s.numberOfStudents}</TableCell>
+                                  <TableCell className="text-center">{s.schoolAverage == null ? 'N/A' : s.schoolAverage.toFixed(1)}</TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
                         </Table>
                       </div>
                     </CardContent>
@@ -292,7 +310,19 @@ export default function DistrictPerformanceDashboard({
                   <Card>
                     <CardHeader><CardTitle className="flex items-center"><BookOpen className="mr-2" />Subject Performance</CardTitle></CardHeader>
                     <CardContent>
-                      <div className="h-[300px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={districtSubjectPerformanceChartData}><XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{ fontSize: 10 }} /><YAxis /><Tooltip content={<CustomTooltip />} /><Legend /><Bar dataKey="Below Average (<40%)" fill="hsl(var(--destructive))" /><Bar dataKey="Average (40-59%)" fill="hsl(var(--primary))" /><Bar dataKey="Above Average (>=60%)" fill="hsl(var(--accent))" /></BarChart></ResponsiveContainer></div>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={districtSubjectPerformanceChartData}>
+                            <XAxis dataKey="name" angle={-35} textAnchor="end" height={80} interval={0} tick={{ fontSize: 10 }} />
+                            <YAxis />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                            <Bar dataKey="Below Average (<40%)" fill="hsl(var(--destructive))" />
+                            <Bar dataKey="Average (40-59%)" fill="hsl(var(--primary))" />
+                            <Bar dataKey="Above Average (>=60%)" fill="hsl(var(--accent))" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                       <div className="overflow-x-auto">
                         <Table className="mt-6 border rounded-md bg-card">
                           <TableHeader className="bg-muted/50">
@@ -308,7 +338,7 @@ export default function DistrictPerformanceDashboard({
                             {districtStats.overallSubjectStatsForDistrictUI.map(s => (
                               <TableRow key={s.subjectName}>
                                 <TableCell className="font-medium py-2 px-3">{s.subjectName}</TableCell>
-                                <TableCell className="text-center py-2 px-3">{s.districtAverageForSubject?.toFixed(1) || 'N/A'}</TableCell>
+                                <TableCell className="text-center py-2 px-3">{s.districtAverageForSubject == null ? 'N/A' : s.districtAverageForSubject.toFixed(1)}</TableCell>
                                 <TableCell className="text-center py-2 px-3">{s.numBelowAverage}</TableCell>
                                 <TableCell className="text-center py-2 px-3">{s.numAverage}</TableCell>
                                 <TableCell className="text-center py-2 px-3">{s.numAboveAverage}</TableCell>
@@ -323,11 +353,37 @@ export default function DistrictPerformanceDashboard({
                   <Card>
                     <CardHeader><CardTitle className="flex items-center"><LucidePieChart className="mr-2" />Gender Statistics</CardTitle></CardHeader>
                     <CardContent className="grid md:grid-cols-2 gap-6 items-center">
-                      <div className="h-[250px]"><ResponsiveContainer width="100%" height="100%"><RechartsPieChart><Pie data={districtGenderChartData} dataKey="value" nameKey="name" label>{districtGenderChartData.map((e, i) => <Cell key={`cell-${i}`} fill={GENDER_COLORS[i % GENDER_COLORS.length]} />)}</Pie><Tooltip content={<CustomTooltip />} /><Legend /></RechartsPieChart></ResponsiveContainer></div>
+                      <div className="h:[250px] h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsPieChart>
+                            <Pie data={districtGenderChartData} dataKey="value" nameKey="name" label labelLine={false}>
+                              {districtGenderChartData.map((e, i) => (
+                                <Cell key={`cell-${i}`} fill={GENDER_COLORS[i % GENDER_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                          </RechartsPieChart>
+                        </ResponsiveContainer>
+                      </div>
                       <div className="overflow-x-auto">
                         <Table>
-                          <TableHeader><TableRow><TableHead>Gender</TableHead><TableHead className="text-center">Count</TableHead><TableHead className="text-center">Avg (%)</TableHead></TableRow></TableHeader>
-                          <TableBody>{districtStats.overallGenderStatsForDistrictUI.map(g => <TableRow key={g.gender}><TableCell>{g.gender}</TableCell><TableCell className="text-center">{g.count}</TableCell><TableCell className="text-center">{g.averageScore?.toFixed(1) || 'N/A'}</TableCell></TableRow>)}</TableBody>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Gender</TableHead>
+                              <TableHead className="text-center">Count</TableHead>
+                              <TableHead className="text-center">Avg (%)</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {districtStats.overallGenderStatsForDistrictUI.map(g => (
+                              <TableRow key={g.gender}>
+                                <TableCell>{g.gender}</TableCell>
+                                <TableCell className="text-center">{g.count}</TableCell>
+                                <TableCell className="text-center">{g.averageScore == null ? 'N/A' : g.averageScore.toFixed(1)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
                         </Table>
                       </div>
                     </CardContent>
@@ -337,8 +393,15 @@ export default function DistrictPerformanceDashboard({
                     <CardHeader>
                       <div className="flex justify-between items-center">
                         <CardTitle className="flex items-center"><Brain className="mr-2" />AI Insights & Advice</CardTitle>
-                        <Button variant="outline" size="sm" onClick={fetchDistrictAiInsights} disabled={isLoadingAi} aria-label="Reload AI Insights">
-                          <RefreshCw className={cn("mr-2 h-4 w-4", isLoadingAi && "animate-spin")} />Reload
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={fetchDistrictAiInsights}
+                          disabled={isLoadingAi || !districtStats}
+                          aria-label="Reload AI Insights"
+                        >
+                          <RefreshCw className={cn("mr-2 h-4 w-4", isLoadingAi && "animate-spin")} />
+                          Reload
                         </Button>
                       </div>
                     </CardHeader>
