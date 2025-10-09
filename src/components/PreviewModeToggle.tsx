@@ -5,15 +5,17 @@ import { FileText, Smartphone } from "lucide-react";
 
 export default function PreviewModeToggle() {
   const [mode, setMode] = useState<"a4" | "card">("a4");
+  const [mounted, setMounted] = useState(false);
 
-  // Load saved mode on mount
+  // Load saved mode on mount, only on the client
   useEffect(() => {
+    setMounted(true);
     const savedMode = localStorage.getItem("preview-mode") as "a4" | "card" | null;
     if (savedMode) {
       setMode(savedMode);
       document.body.dataset.previewMode = savedMode;
     } else {
-      document.body.dataset.previewMode = "a4";
+      document.body.dataset.previewMode = "a4"; // Default on first load
     }
   }, []);
 
@@ -23,6 +25,16 @@ export default function PreviewModeToggle() {
     localStorage.setItem("preview-mode", newMode);
     document.body.dataset.previewMode = newMode;
   };
+
+  if (!mounted) {
+    // Render a placeholder or null on the server and initial client render
+    // to prevent hydration mismatch.
+    return (
+       <div className="flex justify-center items-center gap-3 mb-4 h-6 w-32">
+        {/* You can add a skeleton loader here if you prefer */}
+       </div>
+    );
+  }
 
   return (
     <div className="flex justify-center items-center gap-3 mb-4">
