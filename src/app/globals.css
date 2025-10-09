@@ -586,3 +586,82 @@
   }
 }
 
+/* ===== District Dashboard: Print Styles ===== */
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  /* Make sure everything fits and scrollbars don't show */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  /* Print exact colors for Tailwind utilities (bg-muted, etc.) */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide dialog header/footer controls and any poppers/overlays */
+  .dialog-header-print-hide,
+  .dialog-footer-print-hide,
+  [data-radix-popper-content-wrapper],
+  [data-state="open"][data-radix-portal] .fixed,
+  [role="dialog"][data-state="open"] ~ * .DialogOverlay,
+  .react-aria-DialogOverlay,
+  .radix-DialogOverlay {
+    display: none !important;
+  }
+
+  /* Strip drop-shadows/rounded from the printable container */
+  #school-dashboard-dialog-content {
+    box-shadow: none !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  /* A4 page simulation container */
+  .a4-page-simulation {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+  }
+
+  /* Avoid breaking inside key blocks */
+  .a4-page-simulation > *,
+  .card,
+  .card *:not(p),       /* paragraphs can break, components shouldn't */
+  .recharts-wrapper,
+  .recharts-legend-wrapper {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Tables: keep headers on each page */
+  table { page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr, img { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Recharts: prevent overflow */
+  .recharts-surface {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Watermark: keep but soften */
+  .watermark-container { opacity: 0.06 !important; }
+
+  /* Utility to hide any element explicitly on print */
+  .no-print { display: none !important; }
+}
+
+/* Optional: when you add the class before window.print() */
+body.dashboard-printing-active {
+  cursor: progress;
+}
