@@ -380,25 +380,25 @@ function AppContent({ user }: { user: CustomUser }) {
       setIsLoadingReports(false);
       return;
     }
-
+  
     setIsLoadingReports(true);
     setIndexError(null);
-
+  
     const plainUser: PlainUser = {
       uid: user.uid,
       role: user.role,
       district: user.district,
       schoolName: user.schoolName,
     };
-
+  
     const { success, reports, error } = await getReportsAction(plainUser);
-
+  
     if (success && reports) {
       setIndexError(null);
       let maxEntryNum = 0;
       const classNamesFromDB = new Set<string>();
-
-      const fetchedReports: ReportData[] = reports.map((data: any) => {
+  
+      const fetchedReports = reports.map((data: any) => {
         if (data.className) classNamesFromDB.add(data.className);
         if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
           maxEntryNum = data.studentEntryNumber;
@@ -408,13 +408,13 @@ function AppContent({ user }: { user: CustomUser }) {
           createdAt: tsToDate(data.createdAt),
           updatedAt: tsToDate(data.updatedAt),
         };
-      });
-
+      }) as ReportData[];
+  
       fetchedReports.sort((a: ReportData, b: ReportData) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
-
+  
       const newNextEntryNumber = maxEntryNum + 1;
       setNextStudentEntryNumber(newNextEntryNumber);
-
+  
       const newSessionDefaults: Partial<ReportData> = {};
       if (fetchedReports.length > 0) {
         const lastReport = fetchedReports[fetchedReports.length - 1];
@@ -426,11 +426,11 @@ function AppContent({ user }: { user: CustomUser }) {
         newSessionDefaults.academicYear = lastReport.academicYear;
         newSessionDefaults.academicTerm = lastReport.academicTerm;
       }
-
+  
       setSessionDefaults(prev => ({ ...prev, ...newSessionDefaults }));
-      setCustomClassNames(prev => Array.from(new Set([...prev, ...classNamesFromDB])));
+      setCustomClassNames(prev => [...new Set([...prev, ...Array.from(classNamesFromDB)])]);
       calculateAndSetRanks(fetchedReports);
-
+  
       if (fetchedReports.length === 0) {
         const baseReset = structuredClone(defaultReportData);
         setCurrentEditingReport(prev => ({
@@ -444,9 +444,9 @@ function AppContent({ user }: { user: CustomUser }) {
       setIndexError(errorMessage);
       toast({ title: "Error Fetching Reports", description: errorMessage, variant: "destructive", duration: 20000 });
     }
-
+  
     setIsLoadingReports(false);
-  }, [user, calculateAndSetRanks, toast, sessionDefaults]);
+  }, [user, calculateAndSetRanks, toast]);
 
   useEffect(() => {
     fetchData();
@@ -549,6 +549,7 @@ function AppContent({ user }: { user: CustomUser }) {
       areasForImprovement: formDataFromForm.areasForImprovement || '',
       hobbies: formDataFromForm.hobbies || [],
       teacherFeedback: formDataFromForm.teacherFeedback || "",
+      instructorContact: formDataFromForm.instructorContact || "",
       subjects: formDataFromForm.subjects.map(s => ({
         subjectName: s.subjectName || '',
         continuousAssessment: s.continuousAssessment == null ? null : Number(s.continuousAssessment),
