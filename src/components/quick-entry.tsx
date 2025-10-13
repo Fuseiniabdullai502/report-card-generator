@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, UserPlus, FileUp, Download, Wand2, CheckCircle, Trash2 } from 'lucide-react';
+import { Loader2, UserPlus, FileUp, Download, Wand2, CheckCircle, Trash2, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { doc, updateDoc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
@@ -27,7 +27,7 @@ import { batchUpdateStudentScoresAction, deleteReportAction, getAiReportInsights
 
 // ⬇️ New components
 import QuickEntryToolbar from './quick-entry-toolbar';
-import GradesheetView from "./gradesheet-view";
+import QuickEntryTable from './QuickEntryTable'; 
 
 // ⬇️ Existing dialogs reused
 import ExportGradesheetDialog from "./ExportGradesheetDialog";
@@ -404,7 +404,7 @@ export function QuickEntry({
             onOpenAddSubject={() => setIsCustomSubjectDialogOpen(true)}
           />
 
-          <GradesheetView
+          <QuickEntryTable
             students={studentsInClass}
             subjectOrder={subjectOrder}
             searchQuery={searchQuery}
@@ -483,3 +483,5 @@ export function QuickEntry({
     </>
   );
 }
+
+    
