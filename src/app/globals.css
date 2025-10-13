@@ -665,3 +665,17 @@
 body.dashboard-printing-active {
   cursor: progress;
 }
+
+/* Keeps the header in 3 columns: [left][title][right]
+   Left/right can wrap; the middle gets min-width:0 so truncate works */
+@layer utilities {
+  .header-safe {
+    @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2;
+  }
+  .header-side {
+    @apply flex flex-wrap items-center gap-2;
+  }
+  .header-title-wrap {
+    @apply min-w-0 text-center;
+  }
+}
