@@ -265,7 +265,7 @@ export default function ReportPreview({ data, classTotal, subjectOrder, sessionL
                   className="object-cover rounded border border-gray-300 shadow-sm"
                   data-ai-hint="student portrait"
               />
-              <p className="text-xs text-gray-700 mt-1 font-medium">{data.studentName}</p>
+              <p className="text-xs text-gray-700 mt-1">{data.studentName}</p>
             </div>
         </section>
 
@@ -389,3 +389,5 @@ function ReportSection({ title, children, templateStyles, highlightColor }: Repo
     </div>
   );
 }
+
+    
