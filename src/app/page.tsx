@@ -428,8 +428,8 @@ function AppContent({ user }: { user: CustomUser }) {
       }
 
       setSessionDefaults(prev => ({ ...prev, ...newSessionDefaults }));
-      setCustomClassNames(prev => Array.from(new Set([...prev, ...Array.from(classNamesFromDB)])));
-      calculateAndSetRanks(fetchedReports);
+      setCustomClassNames(prev => Array.from(new Set(Array.from(prev).concat(Array.from(classNamesFromDB)))));
+      calculateAndSetRanks(fetchedReports as ReportData[]);
 
       if (fetchedReports.length === 0) {
         const baseReset = structuredClone(defaultReportData);
@@ -786,7 +786,7 @@ function AppContent({ user }: { user: CustomUser }) {
     if (newClassName === '') return;
     handleSessionDefaultChange('className', newClassName);
     if (!classLevels.includes(newClassName) && !customClassNames.includes(newClassName)) {
-        setCustomClassNames(prev => Array.from(new Set([...prev, newClassName])));
+        setCustomClassNames(prev => Array.from(new Set(prev).add(newClassName)));
     }
     setIsCustomClassNameDialogOpen(false);
     setCustomClassNameInputValue('');
@@ -922,7 +922,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
   const headerTitle = useMemo(() => {
     if (user.role === 'admin' || user.role === 'user') {
-      return user.schoolName || 'Report Card Generator';
+        return user.schoolName || 'Report Card Generator';
     }
     if (user.role === 'big-admin' && user.district) {
         return user.district.replace(/ (Municipal|District)$/, '');
@@ -986,8 +986,7 @@ function AppContent({ user }: { user: CustomUser }) {
           )}
 
           <div className="relative z-10">
-            <header className="mb-8 no-print">
-              <div className="header-safe">
+            <header className="mb-8 no-print header-safe">
                 {/* LEFT: admin link (wraps if it must) */}
                 <div className="header-side justify-self-start">
                   {isAdminRole && (
@@ -1023,8 +1022,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     Logout
                   </Button>
                 </div>
-              </div>
-            </header>
+              </header>
 
             {indexError && (
               <Alert variant="destructive" className="mb-8 no-print">
@@ -1280,7 +1278,7 @@ function AppContent({ user }: { user: CustomUser }) {
                         allReports={allRankedReports}
                         user={user}
                         onDataRefresh={fetchData}
-                        shsProgram={shsProgram}
+                        shsProgram={isShsClass ? sessionDefaults.shsProgram as string : undefined}
                         subjectOrder={subjectOrder}
                         setSubjectOrder={setSubjectOrder}
                       />
@@ -1608,3 +1606,5 @@ export default function Home() {
 
   return <AppContent user={user} />;
 }
+
+    
