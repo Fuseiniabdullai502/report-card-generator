@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -48,7 +49,7 @@ const SchoolPerformanceDashboard = dynamic(() => import('@/components/school-das
 const ClassPerformanceDashboard = dynamic(() => import('@/components/class-dashboard'), { ssr: false });
 const ImportStudentsDialog = dynamic(() => import('@/components/import-students-dialog'), { ssr: false });
 const SignaturePad = dynamic(() => import('@/components/signature-pad'), { ssr: false });
-const QuickEntry = dynamic(() => import('@/components/quick-entry').then(m => m.QuickEntry), { ssr: false });
+const QuickEntry = dynamic(() => import('@/components/gradesheet-view'), { ssr: false });
 
 const ADD_CUSTOM_CLASS_VALUE = "--add-custom-class--";
 const classLevels = ["KG1", "KG2", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "JHS1", "JHS2", "JHS3", "SHS1", "SHS2", "SHS3", "Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600", "Level 700"];
@@ -427,8 +428,8 @@ function AppContent({ user }: { user: CustomUser }) {
       }
 
       setSessionDefaults(prev => ({ ...prev, ...newSessionDefaults }));
-      setCustomClassNames(prev => Array.from(new Set(prev.concat(Array.from(classNamesFromDB)))));
-      calculateAndSetRanks(fetchedReports as ReportData[]);
+      setCustomClassNames(prev => Array.from(new Set([...prev, ...Array.from(classNamesFromDB)])));
+      calculateAndSetRanks(fetchedReports);
 
       if (fetchedReports.length === 0) {
         const baseReset = structuredClone(defaultReportData);
@@ -785,7 +786,7 @@ function AppContent({ user }: { user: CustomUser }) {
     if (newClassName === '') return;
     handleSessionDefaultChange('className', newClassName);
     if (!classLevels.includes(newClassName) && !customClassNames.includes(newClassName)) {
-      setCustomClassNames(prev => Array.from(new Set([...prev, newClassName])));
+        setCustomClassNames(prev => Array.from(new Set([...prev, newClassName])));
     }
     setIsCustomClassNameDialogOpen(false);
     setCustomClassNameInputValue('');
@@ -923,8 +924,8 @@ function AppContent({ user }: { user: CustomUser }) {
     if (user.role === 'admin' || user.role === 'user') {
       return user.schoolName || 'Report Card Generator';
     }
-    if (user.role === 'big-admin') {
-      return user.district ? user.district.replace('Municipal', '').replace('District', '').trim() : 'Report Card Generator';
+    if (user.role === 'big-admin' && user.district) {
+        return user.district.replace(/ (Municipal|District)$/, '');
     }
     return 'Report Card Generator';
   }, [user]);
@@ -1279,7 +1280,7 @@ function AppContent({ user }: { user: CustomUser }) {
                         allReports={allRankedReports}
                         user={user}
                         onDataRefresh={fetchData}
-                        shsProgram={(sessionDefaults as any).shsProgram}
+                        shsProgram={shsProgram}
                         subjectOrder={subjectOrder}
                         setSubjectOrder={setSubjectOrder}
                       />
