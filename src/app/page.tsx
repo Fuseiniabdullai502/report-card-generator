@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -924,7 +923,7 @@ function AppContent({ user }: { user: CustomUser }) {
       return user.schoolName || 'Report Card Generator';
     }
     if (user.role === 'big-admin') {
-      return user.district ? `${user.district} District` : 'Report Card Generator';
+      return user.district ? `${user.district}` : 'Report Card Generator';
     }
     return 'Report Card Generator';
   }, [user]);
@@ -985,42 +984,41 @@ function AppContent({ user }: { user: CustomUser }) {
           )}
 
           <div className="relative z-10">
+            {/* ✅ Responsive header: wraps gracefully on small screens */}
             <header className="mb-8 no-print">
-              <div className="header-safe">
-                {/* LEFT: admin link (wraps if it must) */}
-                <div className="header-side justify-self-start">
-                  {isAdminRole && (
-                    <Link href="/admin" passHref className="inline-flex">
-                      <Button variant="outline" size="sm">
-                        <Shield className="mr-2 h-4 w-4 text-primary" />
-                        Admin Panel
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-
-                {/* CENTER: title (min-w-0 + truncate) */}
-                <div className="header-title-wrap">
-                  <div className="mx-auto inline-flex items-center gap-3 max-w-full">
-                    {headerIcon}
-                    <div className="min-w-0">
-                      <h1 className="text-2xl sm:text-3xl md:text-4xl font-headline font-bold text-primary truncate">
-                        {headerTitle}
-                      </h1>
-                      <p className="text-muted-foreground mt-1 text-xs sm:text-sm truncate">
-                        Welcome, {user.name || user.email} ({user.role})
-                      </p>
-                    </div>
+              <div className="flex flex-col gap-3">
+                {/* Top row: left + right utilities */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {isAdminRole && (
+                      <Link href="/admin" passHref className="inline-flex">
+                        <Button variant="outline" size="sm">
+                          <Shield className="mr-2 h-4 w-4 text-primary" />
+                          Admin Panel
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ThemeToggleButton />
+                    <Button variant="outline" size="sm" onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4 text-destructive" />
+                      Logout
+                    </Button>
                   </div>
                 </div>
 
-                {/* RIGHT: theme + logout (wraps if it must) */}
-                <div className="header-side justify-self-end">
-                  <ThemeToggleButton />
-                  <Button variant="outline" size="sm" onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4 text-destructive" />
-                    Logout
-                  </Button>
+                {/* Title row */}
+                <div className="flex items-center justify-center gap-3 text-center">
+                  {headerIcon}
+                  <div className="min-w-0">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-headline font-bold text-primary truncate">
+                      {headerTitle}
+                    </h1>
+                    <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
+                      Welcome, {user.name || user.email} ({user.role})
+                    </p>
+                  </div>
                 </div>
               </div>
             </header>
@@ -1607,5 +1605,3 @@ export default function Home() {
 
   return <AppContent user={user} />;
 }
-
-    
