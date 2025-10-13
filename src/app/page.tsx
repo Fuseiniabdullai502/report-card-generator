@@ -380,25 +380,25 @@ function AppContent({ user }: { user: CustomUser }) {
       setIsLoadingReports(false);
       return;
     }
-  
+
     setIsLoadingReports(true);
     setIndexError(null);
-  
+
     const plainUser: PlainUser = {
       uid: user.uid,
       role: user.role,
       district: user.district,
       schoolName: user.schoolName,
     };
-  
+
     const { success, reports, error } = await getReportsAction(plainUser);
-  
+
     if (success && reports) {
       setIndexError(null);
       let maxEntryNum = 0;
       const classNamesFromDB = new Set<string>();
-  
-      const fetchedReports = reports.map((data: any) => {
+
+      const fetchedReports: ReportData[] = reports.map((data: any) => {
         if (data.className) classNamesFromDB.add(data.className);
         if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
           maxEntryNum = data.studentEntryNumber;
@@ -408,13 +408,13 @@ function AppContent({ user }: { user: CustomUser }) {
           createdAt: tsToDate(data.createdAt),
           updatedAt: tsToDate(data.updatedAt),
         };
-      }) as ReportData[];
-  
+      });
+
       fetchedReports.sort((a: ReportData, b: ReportData) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
-  
+
       const newNextEntryNumber = maxEntryNum + 1;
       setNextStudentEntryNumber(newNextEntryNumber);
-  
+
       const newSessionDefaults: Partial<ReportData> = {};
       if (fetchedReports.length > 0) {
         const lastReport = fetchedReports[fetchedReports.length - 1];
@@ -426,11 +426,10 @@ function AppContent({ user }: { user: CustomUser }) {
         newSessionDefaults.academicYear = lastReport.academicYear;
         newSessionDefaults.academicTerm = lastReport.academicTerm;
       }
-  
-      setSessionDefaults(prev => ({ ...prev, ...newSessionDefaults }));
-      setCustomClassNames(prev => [...new Set([...prev, ...Array.from(classNamesFromDB)])]);
+      
+      setCustomClassNames(prev => Array.from(new Set(prev.concat(Array.from(classNamesFromDB)))));
       calculateAndSetRanks(fetchedReports);
-  
+
       if (fetchedReports.length === 0) {
         const baseReset = structuredClone(defaultReportData);
         setCurrentEditingReport(prev => ({
@@ -444,9 +443,9 @@ function AppContent({ user }: { user: CustomUser }) {
       setIndexError(errorMessage);
       toast({ title: "Error Fetching Reports", description: errorMessage, variant: "destructive", duration: 20000 });
     }
-  
+
     setIsLoadingReports(false);
-  }, [user, calculateAndSetRanks, toast]);
+  }, [user, calculateAndSetRanks, toast, sessionDefaults]);
 
   useEffect(() => {
     fetchData();
@@ -549,7 +548,7 @@ function AppContent({ user }: { user: CustomUser }) {
       areasForImprovement: formDataFromForm.areasForImprovement || '',
       hobbies: formDataFromForm.hobbies || [],
       teacherFeedback: formDataFromForm.teacherFeedback || "",
-      instructorContact: formDataFromForm.instructorContact || "",
+      instructorContact: formDataFromForm.instructorContact,
       subjects: formDataFromForm.subjects.map(s => ({
         subjectName: s.subjectName || '',
         continuousAssessment: s.continuousAssessment == null ? null : Number(s.continuousAssessment),
@@ -988,41 +987,39 @@ function AppContent({ user }: { user: CustomUser }) {
           <div className="relative z-10">
             {/* ✅ Responsive header: wraps gracefully on small screens */}
             <header className="mb-8 no-print">
-              <div className="header-safe">
-                {/* LEFT: admin link (wraps if it must) */}
-                <div className="header-side justify-self-start">
-                  {isAdminRole && (
-                    <Link href="/admin" passHref className="inline-flex">
-                      <Button variant="outline" size="sm">
-                        <Shield className="mr-2 h-4 w-4 text-primary" />
-                        Admin Panel
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-
-                {/* CENTER: title (min-w-0 + truncate) */}
-                <div className="header-title-wrap">
-                  <div className="mx-auto inline-flex items-center gap-3 max-w-full">
-                    {headerIcon}
-                    <div className="min-w-0">
-                      <h1 className="text-2xl sm:text-3xl md:text-4xl font-headline font-bold text-primary truncate">
-                        {headerTitle}
-                      </h1>
-                      <p className="text-muted-foreground mt-1 text-xs sm:text-sm truncate">
-                        Welcome, {user.name || user.email} ({user.role})
-                      </p>
-                    </div>
+              <div className="flex flex-col gap-3">
+                {/* Top row: left + right utilities */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {isAdminRole && (
+                      <Link href="/admin" passHref className="inline-flex">
+                        <Button variant="outline" size="sm">
+                          <Shield className="mr-2 h-4 w-4 text-primary" />
+                          Admin Panel
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ThemeToggleButton />
+                    <Button variant="outline" size="sm" onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4 text-destructive" />
+                      Logout
+                    </Button>
                   </div>
                 </div>
 
-                {/* RIGHT: theme + logout (wraps if it must) */}
-                <div className="header-side justify-self-end">
-                  <ThemeToggleButton />
-                  <Button variant="outline" size="sm" onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4 text-destructive" />
-                    Logout
-                  </Button>
+                {/* Title row */}
+                <div className="flex items-center justify-center gap-3 text-center">
+                  {headerIcon}
+                  <div className="min-w-0">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-headline font-bold text-primary truncate">
+                      {headerTitle}
+                    </h1>
+                    <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
+                      Welcome, {user.name || user.email} ({user.role})
+                    </p>
+                  </div>
                 </div>
               </div>
             </header>
@@ -1194,7 +1191,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="sessionInstructorContact" className="text-sm font-medium">Instructor's Contact</Label>
-                      <Input id="sessionInstructorContact" value={(sessionDefaults.instructorContact as any) ?? ''} onChange={e => handleSessionDefaultChange('instructorContact', e.target.value)} placeholder="Phone or Email" />
+                      <Input id="sessionInstructorContact" value={(sessionDefaults as any).instructorContact ?? ''} onChange={e => handleSessionDefaultChange('instructorContact', e.target.value)} placeholder="Phone or Email" />
                     </div>
                     <div className="space-y-1 flex items-center gap-2">
                       <input type="file" id="sessionSchoolLogoUpload" className="hidden" accept="image/*" onChange={e => handleSessionImageUpload(e, 'schoolLogoDataUri')} />
