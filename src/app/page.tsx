@@ -428,7 +428,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
       setSessionDefaults(prev => ({ ...prev, ...newSessionDefaults }));
       setCustomClassNames(prev => Array.from(new Set(prev.concat(Array.from(classNamesFromDB)))));
-      calculateAndSetRanks(fetchedReports);
+      calculateAndSetRanks(fetchedReports as ReportData[]);
 
       if (fetchedReports.length === 0) {
         const baseReset = structuredClone(defaultReportData);
@@ -445,7 +445,7 @@ function AppContent({ user }: { user: CustomUser }) {
     }
 
     setIsLoadingReports(false);
-  }, [user, calculateAndSetRanks, toast]);
+  }, [user, calculateAndSetRanks, toast, sessionDefaults]);
 
   useEffect(() => {
     fetchData();
@@ -785,7 +785,7 @@ function AppContent({ user }: { user: CustomUser }) {
     if (newClassName === '') return;
     handleSessionDefaultChange('className', newClassName);
     if (!classLevels.includes(newClassName) && !customClassNames.includes(newClassName)) {
-      setCustomClassNames(prev => [...new Set([...prev, newClassName])]);
+      setCustomClassNames(prev => Array.from(new Set([...prev, newClassName])));
     }
     setIsCustomClassNameDialogOpen(false);
     setCustomClassNameInputValue('');
