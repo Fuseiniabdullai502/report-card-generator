@@ -163,5 +163,5 @@ export const getSubjectsForClass = (className: string, shsProgram?: ShsProgram):
     }
 
     // Return a sorted list of unique subjects
-    return [...new Set(subjects)].sort();
+    return Array.from(new Set(subjects)).sort();
 }
