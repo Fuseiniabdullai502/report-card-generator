@@ -19,10 +19,11 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { calculateOverallAverage } from '@/lib/calculations';
 import { storage } from '@/lib/firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { getClassLevel, getSubjectsForClass, type ShsProgram } from '@/lib/curriculum';
 import { resizeImage, fileToBase64 } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 
 interface ReportFormProps {
@@ -459,9 +460,19 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                  {/* Student Name */}
                 <div className="space-y-2">
                   <Label htmlFor="studentName" className="flex items-center"><User className="mr-2 h-4 w-4 text-primary" />Student Name</Label>
-                  <Input id="studentName" name="studentName" value={formData.studentName || ''} onChange={handleInputChange} placeholder="e.g., Jane Doe" list="studentNameHistoryDatalist" />
+                  <Input 
+                    id="studentName" 
+                    name="studentName" 
+                    value={formData.studentName || ''} 
+                    onChange={handleInputChange} 
+                    placeholder="e.g., Fuseini Abdullai" 
+                    list="studentNameHistoryDatalist"
+                    className={cn(
+                      !isEditing && formData.studentName === 'Fuseini Abdullai' && 'text-muted-foreground'
+                    )}
+                  />
                    <datalist id="studentNameHistoryDatalist">
-                    {studentNameHistory.map((name, index) => <option key={`history-${index}`} value={name} />)}
+                    {Array.from(studentNameHistory).map((name, index) => <option key={`history-${index}`} value={name} />)}
                   </datalist>
                 </div>
                 {/* Gender */}
@@ -496,8 +507,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
                             <ScrollArea className="h-[200px]">
-                            {predefinedHobbiesList.map(hobby => <DropdownMenuCheckboxItem key={hobby} checked={formData.hobbies?.includes(hobby)} onCheckedChange={checked => handleHobbyChange(hobby, checked)}>{hobby}</DropdownMenuCheckboxItem>)}
-                            {customHobbies.map(hobby => <DropdownMenuCheckboxItem key={hobby} checked={formData.hobbies?.includes(hobby)} onCheckedChange={checked => handleHobbyChange(hobby, checked)}>{hobby}</DropdownMenuCheckboxItem>)}
+                            {Array.from(new Set([...predefinedHobbiesList, ...customHobbies])).sort().map(hobby => <DropdownMenuCheckboxItem key={hobby} checked={formData.hobbies?.includes(hobby)} onCheckedChange={checked => handleHobbyChange(hobby, checked)}>{hobby}</DropdownMenuCheckboxItem>)}
                             </ScrollArea>
                             <DropdownMenuSeparator/>
                             <DropdownMenuItem onSelect={() => setIsCustomHobbyDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4 text-accent"/>Add New Hobby...</DropdownMenuItem>
