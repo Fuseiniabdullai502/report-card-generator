@@ -140,7 +140,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
   , [formData.subjects]);
 
   const allAvailableSubjects = useMemo(() => {
-      return [...new Set([...predefinedSubjectsList, ...customSubjects])].sort();
+      return Array.from(new Set(predefinedSubjectsList.concat(customSubjects))).sort();
   }, [customSubjects]);
   
   const studentNameHistory = React.useMemo(() => {
@@ -157,7 +157,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
         console.error("Error reading student names from localStorage for history:", e);
       }
     }
-    return [...new Set([...namesFromList, ...namesFromStorage])];
+    return Array.from(new Set(namesFromList.concat(namesFromStorage)));
   }, [reportPrintListForHistory]);
 
   const isPromotionStatusApplicable = React.useMemo(() => {
@@ -415,7 +415,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
           const newSubjectName = customSubjectInputValue.trim();
           handleSubjectChange(currentCustomSubjectTargetIndex, 'subjectName', newSubjectName);
           if (!predefinedSubjectsList.includes(newSubjectName) && !customSubjects.includes(newSubjectName)) {
-              setCustomSubjects(prev => [...new Set([...prev, newSubjectName])]);
+              setCustomSubjects(prev => Array.from(new Set(prev).add(newSubjectName)));
           }
           setIsCustomSubjectDialogOpen(false);
       }
@@ -426,7 +426,7 @@ export default function ReportForm({ onFormUpdate, initialData, sessionDefaults,
       if (newHobby === '') return;
       handleHobbyChange(newHobby, true);
       if (!predefinedHobbiesList.includes(newHobby) && !customHobbies.includes(newHobby)) {
-          setCustomHobbies(prev => [...new Set([...prev, newHobby])]);
+          setCustomHobbies(prev => Array.from(new Set(prev).add(newHobby)));
       }
       setIsCustomHobbyDialogOpen(false);
   };
