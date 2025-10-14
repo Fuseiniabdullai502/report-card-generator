@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -22,7 +23,7 @@ import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { defaultReportData, STUDENT_PROFILES_STORAGE_KEY } from '@/lib/schemas';
 import { db, auth, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 import { useAuth } from '@/components/auth-provider';
@@ -383,24 +384,24 @@ function AppContent({ user }: { user: CustomUser }) {
       setIsLoadingReports(false);
       return;
     }
-
+  
     setIsLoadingReports(true);
     setIndexError(null);
-
+  
     const plainUser: PlainUser = {
       uid: user.uid,
       role: user.role,
       district: user.district,
       schoolName: user.schoolName,
     };
-
+  
     const { success, reports, error } = await getReportsAction(plainUser);
-
+  
     if (success && reports) {
       setIndexError(null);
       let maxEntryNum = 0;
       const classNamesFromDB = new Set<string>();
-
+  
       const fetchedReports = reports.map((data: any) => {
         if (data.className) classNamesFromDB.add(data.className);
         if (data.studentEntryNumber && data.studentEntryNumber > maxEntryNum) {
@@ -412,12 +413,12 @@ function AppContent({ user }: { user: CustomUser }) {
           updatedAt: tsToDate(data.updatedAt),
         };
       }) as ReportData[];
-
+  
       fetchedReports.sort((a: ReportData, b: ReportData) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
-
+  
       const newNextEntryNumber = maxEntryNum + 1;
       setNextStudentEntryNumber(newNextEntryNumber);
-
+  
       const newSessionDefaults: Partial<ReportData> = {};
       if (fetchedReports.length > 0) {
         const lastReport = fetchedReports[fetchedReports.length - 1];
@@ -430,12 +431,15 @@ function AppContent({ user }: { user: CustomUser }) {
         newSessionDefaults.academicTerm = lastReport.academicTerm;
       }
       
-      const combinedDefaults = { ...sessionDefaults, ...newSessionDefaults };
-
+      const savedDefaultsRaw = typeof window !== 'undefined' ? localStorage.getItem(`sessionDefaults-report-card-app-${user.uid}`) : null;
+      const savedDefaults = savedDefaultsRaw ? JSON.parse(savedDefaultsRaw) : {};
+  
+      const combinedDefaults = { ...savedDefaults, ...newSessionDefaults };
+  
       setSessionDefaults(combinedDefaults);
       setCustomClassNames(prev => Array.from(new Set(Array.from(prev).concat(Array.from(classNamesFromDB)))));
       calculateAndSetRanks(fetchedReports as ReportData[]);
-
+  
       if (fetchedReports.length === 0) {
         const baseReset = structuredClone(defaultReportData);
         setCurrentEditingReport(prev => ({
@@ -449,9 +453,9 @@ function AppContent({ user }: { user: CustomUser }) {
       setIndexError(errorMessage);
       toast({ title: "Error Fetching Reports", description: errorMessage, variant: "destructive", duration: 20000 });
     }
-
+  
     setIsLoadingReports(false);
-  }, [user, calculateAndSetRanks, toast, sessionDefaults]);
+  }, [user, calculateAndSetRanks, toast]);
 
   useEffect(() => {
     fetchData();
@@ -755,7 +759,7 @@ function AppContent({ user }: { user: CustomUser }) {
           const storageRef = ref(storage, `school_logos/${user.uid}-${uuidv4()}`);
           const uploadTask = uploadBytesResumable(storageRef, file);
           uploadTask.on('state_changed', null,
-            (error) => {
+            (error: any) => {
               console.error("Admin logo upload error:", error);
               toast({ title: "Logo Upload Failed", description: "Could not save logo to storage.", variant: "destructive" });
             },
@@ -1652,7 +1656,7 @@ function QuickEntryComponent({
     if (user.role === "user" && user.classNames) {
       return user.classNames.sort();
     }
-    return [...new Set(allReports.map((r) => r.className).filter(Boolean) as string[])].sort();
+    return Array.from(new Set(allReports.map((r) => r.className).filter(Boolean) as string[])).sort();
   }, [allReports, user]);
 
   useEffect(() => {
@@ -1678,7 +1682,7 @@ function QuickEntryComponent({
     const curriculumSubjects = getSubjectsForClass(selectedClass, shsProgram as ShsProgram | undefined);
     const subjectsFromReports = new Set<string>();
     reports.forEach((r) => r.subjects?.forEach((s) => s.subjectName && subjectsFromReports.add(s.subjectName)));
-    const allPossible = [...new Set([...curriculumSubjects, ...Array.from(subjectsFromReports)])].sort();
+    const allPossible = Array.from(new Set([...curriculumSubjects, ...Array.from(subjectsFromReports)])).sort();
     setSubjectsForClass(allPossible);
 
     // restore saved order
@@ -1868,6 +1872,7 @@ function QuickEntryComponent({
       studentName: newStudentName.trim(),
       className: selectedClass,
       gender: "",
+      country: "Ghana",
       selectedTemplateId: 'default',
       studentPhotoUrl: null,
       subjects: subjectOrder.map((s) => ({
