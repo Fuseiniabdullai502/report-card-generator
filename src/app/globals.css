@@ -3,6 +3,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom utility classes */
+@layer utilities {
+  .header-safe {
+    @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2;
+  }
+  .header-side {
+    @apply flex flex-wrap items-center gap-2;
+  }
+  .header-title-wrap {
+    @apply min-w-0 text-center;
+  }
+}
+
 /* Import fonts after Tailwind directives */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -664,18 +677,4 @@
 /* Optional: when you add the class before window.print() */
 body.dashboard-printing-active {
   cursor: progress;
-}
-
-/* Keeps the header in 3 columns: [left][title][right]
-   Left/right can wrap; the middle gets min-width:0 so truncate works */
-@layer utilities {
-  .header-safe {
-    @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2;
-  }
-  .header-side {
-    @apply flex flex-wrap items-center gap-2;
-  }
-  .header-title-wrap {
-    @apply min-w-0 text-center;
-  }
 }
