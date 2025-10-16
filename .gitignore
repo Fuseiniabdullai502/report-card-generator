@@ -1,0 +1,19 @@
+# deps
+node_modules/
+functions/node_modules/
+
+# builds & caches
+.next/
+functions/.next/
+.next/cache/
+functions/.next/cache/
+dist/
+build/
+out/
+.turbo/
+.cache/
+.firebase/
+
+# logs
+firestore-debug.log
+firebase-debug.log

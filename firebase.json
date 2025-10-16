@@ -1,0 +1,74 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules",
+    "cors": "storage.cors.json",
+    "bucket": "report-card-generator-e3zkv.firebasestorage.app"
+  },
+  "functions": [
+    {
+      "source": ".firebase/report-card-generator-e3zkv/functions",
+      "codebase": "firebase-frameworks-report-card-generator-e3zkv",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local.js",
+        "*.env",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        ".runtimeconfig.json"
+      ]
+    }
+  ],
+  "apphosting": {
+    "backendId": "report-card-generator",
+    "rootDir": "/",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "region": "us-central1",
+    "alwaysDeployFromSource": true
+  },
+  "hosting": {
+    "public": "build",
+    "region": "europe-west4",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|png|jpg|svg|webp|woff2|ttf)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public,max-age=31536000,immutable"
+          }
+        ]
+      },
+      {
+        "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ]
+  }
+}

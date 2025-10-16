@@ -1,0 +1,72 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // =====================
+    // Helper functions
+    // =====================
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+    
+    function hasRole(userId, role) {
+      let userData = getUserData(userId);
+      return userData.role == role;
+    }
+
+    function isAdmin(userId) {
+      return hasRole(userId, 'super-admin') || hasRole(userId, 'big-admin') || hasRole(userId, 'admin');
+    }
+
+    // =====================
+    // Users collection rules
+    // =====================
+    match /users/{userId} {
+      // Any authenticated user can create their own document (e.g., on registration).
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // A user can only read their own document.
+      allow get: if request.auth != null && request.auth.uid == userId;
+
+      // A user can update their own info, but cannot change their role.
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.role == resource.data.role;
+
+      // Only super-admin should be able to delete users (handled by admin SDK).
+      allow delete: if hasRole(request.auth.uid, 'super-admin');
+      
+      // Admins can list users to manage them
+      allow list: if request.auth != null && isAdmin(request.auth.uid);
+    }
+    
+    // =====================
+    // Invites collection rules
+    // =====================
+    match /invites/{inviteId} {
+      // Anyone (even unauthenticated users during registration) can read an invite to check its status.
+      allow get: if true;
+
+      // Only admins can create, update, or delete invites.
+      allow create, update, delete, list: if request.auth != null && isAdmin(request.auth.uid);
+    }
+
+    // =====================
+    // Reports collection rules
+    // =====================
+    match /reports/{reportId} {
+      // Any authenticated user can create a report.
+      allow create: if request.auth != null;
+
+      // Now, only server-side actions (admin SDK) can read, update, or delete reports.
+      // This prevents any direct client-side access, forcing data access
+      // through our secure server actions.
+      allow read, update, delete: if false;
+
+      // Disallow all list operations from the client.
+      allow list: if false;
+    }
+  }
+}
