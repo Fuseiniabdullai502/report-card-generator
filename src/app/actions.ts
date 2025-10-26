@@ -463,37 +463,34 @@ export async function getReportsAction(user: PlainUser): Promise<{ success: bool
   try {
     const dbAdmin = admin.firestore();
     const reportsCollection = dbAdmin.collection('reports');
-    const snapshot = await reportsCollection.get();
-    const allReports = snapshot.docs.map(serializeReport);
+    let q: Query = reportsCollection;
 
-    let filteredReports: ReportData[];
-
+    // Apply Firestore-level filtering based on user role
     switch (user.role) {
-      case 'super-admin':
-        filteredReports = allReports;
-        break;
       case 'big-admin':
         if (!user.district) throw new Error("District admin's scope is not defined.");
-        filteredReports = allReports.filter(report => report.district === user.district);
+        q = q.where('district', '==', user.district);
         break;
       case 'admin':
         if (!user.schoolName) throw new Error("School admin's scope is not defined.");
-        filteredReports = allReports.filter(report => report.schoolName === user.schoolName);
+        q = q.where('schoolName', '==', user.schoolName);
         break;
       case 'user':
       case 'public_user':
-        filteredReports = allReports.filter(report => report.teacherId === user.uid);
+        q = q.where('teacherId', '==', user.uid);
         break;
-      default:
-        filteredReports = [];
+      // super-admin has no .where() clause, fetches all.
     }
 
-    return { success: true, reports: filteredReports };
+    const snapshot = await q.get();
+    const reports = snapshot.docs.map(serializeReport);
+
+    return { success: true, reports };
 
   } catch (error: any) {
     let errorMessage = "An unknown error occurred while fetching reports.";
     if (error.code === 5 && error.message.includes('requires an index')) { // NOT_FOUND for missing index
-      errorMessage = `A Firestore index is required for this query. Please create the index in your Firebase console. Details: ${error.message}`;
+      errorMessage = `5: ${error.message}`; // More specific error
     } else {
       errorMessage = `${error.code || 'UNKNOWN'}: ${error.message}`;
     }
@@ -861,21 +858,26 @@ export async function getInvitesAction(
 ): Promise<{ success: boolean; invites?: InviteData[]; error?: string }> {
   try {
     const dbAdmin = admin.firestore();
-    let q: Query = dbAdmin.collection('invites');
-
-    if (user.role === 'big-admin') {
-        if (!user.district) throw new Error("District admin's scope is not defined.");
-        q = q.where('district', '==', user.district);
-    } else if (user.role === 'admin') {
-        if (!user.schoolName) throw new Error("Admin's scope is not defined.");
-        q = q.where('schoolName', '==', user.schoolName);
-    } else if (user.role === 'user' || user.role === 'public_user') {
-       return { success: false, error: 'Permission denied.' };
-    }
+    let q: Query = dbAdmin.collection('invites').where('status', '==', 'pending');
     
-    const snapshot = await q.where('status', '==', 'pending').get();
-    const invites = snapshot.docs.map(serializeInvite);
-    return { success: true, invites };
+    const snapshot = await q.get();
+    const allPendingInvites = snapshot.docs.map(serializeInvite);
+
+    let filteredInvites: InviteData[];
+
+    if (user.role === 'super-admin') {
+      filteredInvites = allPendingInvites;
+    } else if (user.role === 'big-admin') {
+      if (!user.district) throw new Error("District admin's scope is not defined.");
+      filteredInvites = allPendingInvites.filter(invite => invite.district === user.district);
+    } else if (user.role === 'admin') {
+      if (!user.schoolName) throw new Error("Admin's scope is not defined.");
+      filteredInvites = allPendingInvites.filter(invite => invite.schoolName === user.schoolName);
+    } else {
+      return { success: false, error: 'Permission denied.' };
+    }
+
+    return { success: true, invites: filteredInvites };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
