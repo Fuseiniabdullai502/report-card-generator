@@ -459,43 +459,43 @@ export async function getReportsAction(user: PlainUser): Promise<{ success: bool
   if (!user) {
     return { success: false, error: 'User is not authenticated.' };
   }
-  
+
   try {
     const dbAdmin = admin.firestore();
-    let q: Query = dbAdmin.collection('reports');
+    const reportsCollection = dbAdmin.collection('reports');
+    const snapshot = await reportsCollection.get();
+    const allReports = snapshot.docs.map(serializeReport);
+
+    let filteredReports: ReportData[];
 
     switch (user.role) {
       case 'super-admin':
-        // Super admin sees all reports
+        filteredReports = allReports;
         break;
       case 'big-admin':
         if (!user.district) throw new Error("District admin's scope is not defined.");
-        q = q.where('district', '==', user.district);
+        filteredReports = allReports.filter(report => report.district === user.district);
         break;
       case 'admin':
         if (!user.schoolName) throw new Error("School admin's scope is not defined.");
-        q = q.where('schoolName', '==', user.schoolName);
+        filteredReports = allReports.filter(report => report.schoolName === user.schoolName);
         break;
       case 'user':
       case 'public_user':
-        q = q.where('teacherId', '==', user.uid);
+        filteredReports = allReports.filter(report => report.teacherId === user.uid);
         break;
       default:
-        // If role is undefined or not recognized, return no reports.
-        return { success: true, reports: [] };
+        filteredReports = [];
     }
 
-    const snapshot = await q.get();
-    const reports = snapshot.docs.map(serializeReport);
-    
-    return { success: true, reports };
+    return { success: true, reports: filteredReports };
 
   } catch (error: any) {
     let errorMessage = "An unknown error occurred while fetching reports.";
-    if (error.code === 'FAILED_PRECONDITION' && error.message.includes('requires an index')) {
+    if (error.code === 5 && error.message.includes('requires an index')) { // NOT_FOUND for missing index
       errorMessage = `A Firestore index is required for this query. Please create the index in your Firebase console. Details: ${error.message}`;
     } else {
-      errorMessage = error.message;
+      errorMessage = `${error.code || 'UNKNOWN'}: ${error.message}`;
     }
     console.error("Error in getReportsAction: ", errorMessage);
     return { success: false, error: errorMessage };
