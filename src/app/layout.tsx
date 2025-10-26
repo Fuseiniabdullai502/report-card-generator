@@ -27,9 +27,6 @@ export default function RootLayout({
       </head>
       <body>
         <Providers>
-          <div className="flex flex-col items-center gap-2 my-3">
-            <PreviewModeToggle />
-          </div>
           {children}
           <Toaster />
         </Providers>
