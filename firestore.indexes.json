@@ -151,6 +151,14 @@
       "collectionGroup": "users",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "district", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "schoolName", "order": "ASCENDING" },
         { "fieldPath": "role", "order": "ASCENDING" },
         { "fieldPath": "__name__", "order": "ASCENDING" }
