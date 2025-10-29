@@ -460,7 +460,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [user]);
 
   const handleFormUpdate = useCallback((data: ReportData) => {
     setCurrentEditingReport(prev => ({ ...prev, ...data }));
