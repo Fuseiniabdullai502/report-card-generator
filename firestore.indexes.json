@@ -164,6 +164,14 @@
         { "fieldPath": "__name__", "order": "ASCENDING" }
       ]
     },
+     {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "schoolName", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
+    },
     {
       "collectionGroup": "users",
       "queryScope": "COLLECTION",
