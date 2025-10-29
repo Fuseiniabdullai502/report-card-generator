@@ -449,6 +449,7 @@ function AppContent({ user }: { user: CustomUser }) {
         } as any));
       }
     } else {
+      console.error("Full error from getReportsAction:", error);
       const errorMessage = error || "An unknown error occurred while fetching reports.";
       setIndexError(errorMessage);
       toast({ title: "Error Fetching Reports", description: errorMessage, variant: "destructive", duration: 20000 });
