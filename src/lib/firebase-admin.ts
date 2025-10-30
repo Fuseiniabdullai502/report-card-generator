@@ -8,24 +8,32 @@ function initializeFirebaseAdmin(): typeof admin {
 
     try {
         const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+        const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+        if (!projectId) {
+            throw new Error("NEXT_PUBLIC_FIREBASE_PROJECT_ID is not set in the environment variables.");
+        }
+
+        const config: admin.AppOptions = {
+            projectId,
+            databaseURL: `https://${projectId}.firebaseio.com`,
+        };
         
         if (serviceAccountEnv) {
             // Used in production (Firebase App Hosting) where the secret is passed as an env var.
+            console.log(`Initializing Admin SDK for production project: ${projectId}`);
             const serviceAccount = JSON.parse(serviceAccountEnv);
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-            });
-            console.log("Firebase Admin SDK initialized using FIREBASE_SERVICE_ACCOUNT environment variable.");
-            return admin;
+            config.credential = admin.credential.cert(serviceAccount);
         } else {
             // Used for local development via `gcloud auth application-default login`.
             // This command sets up credentials that the SDK automatically finds.
-            admin.initializeApp({
-                credential: admin.credential.applicationDefault(),
-            });
-            console.log("Firebase Admin SDK initialized using Application Default Credentials.");
-            return admin;
+            console.log(`Initializing Admin SDK for local development against project: ${projectId}`);
+            config.credential = admin.credential.applicationDefault();
         }
+
+        admin.initializeApp(config);
+        console.log("Firebase Admin SDK initialized successfully.");
+        return admin;
 
     } catch (error) {
         console.warn("Firebase Admin SDK initialization failed. Admin features will be disabled.");
