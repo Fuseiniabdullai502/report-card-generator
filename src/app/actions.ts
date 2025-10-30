@@ -456,6 +456,7 @@ const serializeReport = (doc: DocumentData): ReportData => {
 };
 
 export async function getReportsAction(user: PlainUser): Promise<{ success: boolean; reports?: ReportData[]; error?: string }> {
+  console.log("[getReportsAction] admin projectId:", admin.app().options.projectId);
   if (!user) {
     return { success: false, error: 'User is not authenticated.' };
   }
@@ -488,13 +489,22 @@ export async function getReportsAction(user: PlainUser): Promise<{ success: bool
     return { success: true, reports };
 
   } catch (error: any) {
-    let errorMessage = "An unknown error occurred while fetching reports.";
-    if (error.code === 5 && error.message.includes('requires an index')) { // NOT_FOUND for missing index
-      errorMessage = `5: ${error.message}`; // More specific error
+    const code = error?.code ?? error?.status ?? "UNKNOWN";
+    const msg = String(error?.message || "");
+    // Firestore index errors are usually FAILED_PRECONDITION (9)
+    const isIndexError =
+      msg.includes("requires an index") ||
+      code === 9 ||
+      msg.includes("FAILED_PRECONDITION");
+
+    let errorMessage: string;
+    if (isIndexError) {
+      errorMessage = `INDEX_REQUIRED: ${msg}`;
     } else {
-      errorMessage = `${error.code || 'UNKNOWN'}: ${error.message}`;
+      errorMessage = `${code}: ${msg}`;
     }
-    console.error("Error in getReportsAction: ", errorMessage);
+
+    console.error("[getReportsAction] ERROR", { code, msg });
     return { success: false, error: errorMessage };
   }
 }
