@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -99,7 +100,7 @@ export default function QuickEntryToolbar({
             onValueChange={setSelectedClass}
           >
             <SelectTrigger id="class-select" className="w-full">
-              <SelectValue placeholder="Select a class..." />
+              <SelectValue placeholder={availableClasses.length > 0 ? "Select a class..." : "No classes found"} />
             </SelectTrigger>
             <SelectContent>
               {availableClasses.length > 0 ? (
@@ -109,9 +110,7 @@ export default function QuickEntryToolbar({
                   </SelectItem>
                 ))
               ) : (
-                <SelectItem value="" disabled>
-                  No classes found
-                </SelectItem>
+                <div className="p-2 text-center text-xs text-muted-foreground">No classes available.</div>
               )}
             </SelectContent>
           </Select>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -175,7 +176,7 @@ export default function QuickEntryTable({
                     }}
                   >
                       <SelectTrigger id={`gender-${student.id}`} className="h-9 w-[100px]">
-                          <SelectValue />
+                          <SelectValue placeholder="Select gender..."/>
                       </SelectTrigger>
                       <SelectContent>
                           <SelectItem value="Male">Male</SelectItem>
