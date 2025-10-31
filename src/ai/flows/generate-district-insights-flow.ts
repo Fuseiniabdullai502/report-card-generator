@@ -5,6 +5,7 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 
 const DistrictSubjectPerformanceStatSchema = z.object({
@@ -54,7 +55,7 @@ export async function generateDistrictInsights(input: GenerateDistrictInsightsIn
 
 const prompt = ai.definePrompt({
   name: 'generateDistrictInsightsPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: googleAI('gemini-1.5-flash'),
   input: { schema: GenerateDistrictInsightsInputSchema },
   output: { schema: GenerateDistrictInsightsOutputSchema },
   prompt: `You are an expert educational director and data analyst providing a district-level performance review for the {{{districtName}}} district.

@@ -4,6 +4,7 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 
 // -------------------------
@@ -64,7 +65,7 @@ export async function generateClassInsights(input: GenerateClassInsightsInput): 
 // -------------------------
 const prompt = ai.definePrompt({
   name: 'generateClassInsightsPrompt',
-  model: 'googleai/gemini-1.5-flash', // ⚡ fast model; switch to "gemini-1.5-pro" for deeper reasoning
+  model: googleAI('gemini-1.5-flash'), // ⚡ fast model; switch to "gemini-1.5-pro" for deeper reasoning
   input: { schema: GenerateClassInsightsInputSchema },
   output: { schema: GenerateClassInsightsOutputSchema },
   prompt: `You are an experienced educational analyst and pedagogical advisor.

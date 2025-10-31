@@ -11,6 +11,7 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 
 // Define the schema for individual subject entries for the flow input - NOT EXPORTED
@@ -55,7 +56,7 @@ export async function generateReportInsights(input: GenerateReportInsightsInput)
 
 const generateReportInsightsPrompt = ai.definePrompt({
   name: 'generateReportInsightsPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: googleAI('gemini-1.5-flash'),
   input: { schema: GenerateReportInsightsInputSchema },
   output: { schema: GenerateReportInsightsOutputSchema },
   prompt: `You are an academic advisor tasked with writing concise insights for a student's report card for the {{{currentAcademicTerm}}}.

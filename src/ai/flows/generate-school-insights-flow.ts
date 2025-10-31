@@ -5,6 +5,7 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 
 const SchoolSubjectPerformanceStatSchema = z.object({
@@ -54,7 +55,7 @@ export async function generateSchoolInsights(input: GenerateSchoolInsightsInput)
 
 const prompt = ai.definePrompt({
   name: 'generateSchoolInsightsPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: googleAI('gemini-1.5-flash'),
   input: { schema: GenerateSchoolInsightsInputSchema },
   output: { schema: GenerateSchoolInsightsOutputSchema },
   prompt: `You are an expert educational consultant and data analyst providing a school-level performance review for {{{schoolName}}}.
