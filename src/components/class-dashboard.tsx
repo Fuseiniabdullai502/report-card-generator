@@ -181,9 +181,9 @@ export default function ClassPerformanceDashboard({
       setAiError(null);
       return;
     }
-
+  
     setIsLoadingStats(true);
-
+  
     const reportsByTerm = new Map<string, ReportData[]>();
     reportsForClass.forEach(report => {
         const term = report.academicTerm || 'Unknown Term';
@@ -192,7 +192,7 @@ export default function ClassPerformanceDashboard({
         }
         reportsByTerm.get(term)!.push(report);
     });
-
+  
     const termOrder = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
     const sortedTerms = Array.from(reportsByTerm.keys()).sort((a, b) => {
         const indexA = termOrder.indexOf(a);
@@ -202,79 +202,87 @@ export default function ClassPerformanceDashboard({
         if (indexB !== -1) return 1;
         return a.localeCompare(b);
     });
-
-    const newMostRecentTerm = sortedTerms[sortedTerms.length - 1] || '';
+  
+    const newMostRecentTerm = sortedTerms.length > 0 ? sortedTerms[sortedTerms.length - 1] : '';
     setMostRecentTerm(newMostRecentTerm);
     
-    const reports = reportsByTerm.get(newMostRecentTerm) || [];
-    const sortedStudents = [...reports].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
-    setRankedStudents(sortedStudents);
-
-    const totalStudents = reports.length;
-
-    const validOverallAverages = reports
-      .map(r => r.overallAverage)
-      .filter(avg => avg !== undefined && avg !== null && !Number.isNaN(avg)) as number[];
-      
-    const overallClassAverage = validOverallAverages.length > 0 
-      ? parseFloat((validOverallAverages.reduce((a, b) => a + b, 0) / validOverallAverages.length).toFixed(2)) 
-      : null;
-
-    const subjectMap: Map<string, { scores: number[] }> = new Map();
-    reports.forEach(report => {
-      (report.subjects ?? []).forEach(subject => {
-        if (subject.subjectName && subject.subjectName.trim() !== '') {
-          const finalMark = calculateSubjectFinalMark(subject);
-          if (finalMark !== null && !Number.isNaN(finalMark)) {
-            if (!subjectMap.has(subject.subjectName)) {
-              subjectMap.set(subject.subjectName, { scores: [] });
+    // Use the most recent term's reports for main stats calculation
+    const reportsForStatCalculation = newMostRecentTerm ? (reportsByTerm.get(newMostRecentTerm) || []) : [];
+  
+    if (reportsForStatCalculation.length === 0) {
+        setClassStats(null);
+        setRankedStudents([]);
+    } else {
+        const sortedStudents = [...reportsForStatCalculation].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
+        setRankedStudents(sortedStudents);
+  
+        const totalStudents = reportsForStatCalculation.length;
+  
+        const validOverallAverages = reportsForStatCalculation
+          .map(r => r.overallAverage)
+          .filter(avg => avg !== undefined && avg !== null && !Number.isNaN(avg)) as number[];
+          
+        const overallClassAverage = validOverallAverages.length > 0 
+          ? parseFloat((validOverallAverages.reduce((a, b) => a + b, 0) / validOverallAverages.length).toFixed(2)) 
+          : null;
+  
+        const subjectMap: Map<string, { scores: number[] }> = new Map();
+        reportsForStatCalculation.forEach(report => {
+          (report.subjects ?? []).forEach(subject => {
+            if (subject.subjectName && subject.subjectName.trim() !== '') {
+              const finalMark = calculateSubjectFinalMark(subject);
+              if (finalMark !== null && !Number.isNaN(finalMark)) {
+                if (!subjectMap.has(subject.subjectName)) {
+                  subjectMap.set(subject.subjectName, { scores: [] });
+                }
+                subjectMap.get(subject.subjectName)!.scores.push(finalMark);
+              }
             }
-            subjectMap.get(subject.subjectName)!.scores.push(finalMark);
+          });
+        });
+  
+        const subjectStats: SubjectPerformanceStatForUI[] = Array.from(subjectMap.entries()).map(([subjectName, data]) => {
+          const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
+          const subjectAvg = validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null;
+          return {
+            subjectName,
+            numBelowAverage: validScores.filter(score => score < 40).length,
+            numAverage: validScores.filter(score => score >= 40 && score < 60).length,
+            numAboveAverage: validScores.filter(score => score >= 60).length,
+            classAverageForSubject: subjectAvg,
+          };
+        });
+  
+        const genderMap: Map<string, { scores: number[]; count: number }> = new Map();
+        reportsForStatCalculation.forEach(report => {
+          const gender = report.gender || 'Unknown';
+          if (!genderMap.has(gender)) {
+              genderMap.set(gender, { scores: [], count: 0 });
           }
-        }
-      });
-    });
-
-    const subjectStats: SubjectPerformanceStatForUI[] = Array.from(subjectMap.entries()).map(([subjectName, data]) => {
-      const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
-      const subjectAvg = validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null;
-      return {
-        subjectName,
-        numBelowAverage: validScores.filter(score => score < 40).length,
-        numAverage: validScores.filter(score => score >= 40 && score < 60).length,
-        numAboveAverage: validScores.filter(score => score >= 60).length,
-        classAverageForSubject: subjectAvg,
-      };
-    });
-
-    const genderMap: Map<string, { scores: number[]; count: number }> = new Map();
-    reports.forEach(report => {
-      const gender = report.gender || 'Unknown';
-      if (!genderMap.has(gender)) {
-          genderMap.set(gender, { scores: [], count: 0 });
-      }
-      if (report.overallAverage !== undefined && report.overallAverage !== null && !Number.isNaN(report.overallAverage)) {
-          genderMap.get(gender)!.scores.push(report.overallAverage);
-      }
-      genderMap.get(gender)!.count++;
-    });
-    
-    const genderStats: GenderPerformanceStatForUI[] = Array.from(genderMap.entries()).map(([gender, data]) => {
-      const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
-      return {
-          gender,
-          count: data.count,
-          averageScore: validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null,
-      };
-    });
-
-    const newStats = { overallClassAverage, totalStudents, subjectStats, genderStats };
-    setClassStats(newStats);
-    setIsLoadingStats(false);
-    
+          if (report.overallAverage !== undefined && report.overallAverage !== null && !Number.isNaN(report.overallAverage)) {
+              genderMap.get(gender)!.scores.push(report.overallAverage);
+          }
+          genderMap.get(gender)!.count++;
+        });
+        
+        const genderStats: GenderPerformanceStatForUI[] = Array.from(genderMap.entries()).map(([gender, data]) => {
+          const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
+          return {
+              gender,
+              count: data.count,
+              averageScore: validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null,
+          };
+        });
+  
+        setClassStats({ overallClassAverage, totalStudents, subjectStats, genderStats });
+    }
+  
+    // Calculate historical data from all terms
     const newHistoricalData = sortedTerms.map(term => {
         const termReports = reportsByTerm.get(term)!;
-        const avg = calculateOverallAverage(termReports.flatMap(r => r.subjects ?? []));
+        const validAverages = termReports.map(r => r.overallAverage).filter(avg => avg != null) as number[];
+        const avg = validAverages.length > 0 ? validAverages.reduce((a,b) => a+b, 0) / validAverages.length : null;
+
         return {
             term,
             numStudents: termReports.length,
@@ -282,6 +290,8 @@ export default function ClassPerformanceDashboard({
         };
     });
     setHistoricalData(newHistoricalData);
+  
+    setIsLoadingStats(false);
   }, [isOpen, reportsForClass]);
 
   const subjectPerformanceChartData = useMemo(() => {
@@ -524,7 +534,7 @@ export default function ClassPerformanceDashboard({
                           <CardTitle className="text-lg font-semibold text-primary border-b pb-2 flex items-center"><AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />Data Error</CardTitle>
                       </CardHeader>
                       <CardContent>
-                          <p className="text-muted-foreground">Could not calculate class statistics for the most recent term. Please check report data or try again.</p>
+                          <p className="text-muted-foreground">Could not calculate class statistics. This may be due to incomplete report data for the most recent term. Please check the reports and try again.</p>
                       </CardContent>
                   </Card>
               )}
