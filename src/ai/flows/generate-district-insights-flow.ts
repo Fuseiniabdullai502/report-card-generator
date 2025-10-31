@@ -55,7 +55,7 @@ export async function generateDistrictInsights(input: GenerateDistrictInsightsIn
 
 const prompt = ai.definePrompt({
   name: 'generateDistrictInsightsPrompt',
-  model: googleAI('gemini-1.5-flash'),
+  model: 'gemini-1.5-flash',
   input: { schema: GenerateDistrictInsightsInputSchema },
   output: { schema: GenerateDistrictInsightsOutputSchema },
   prompt: `You are an expert educational director and data analyst providing a district-level performance review for the {{{districtName}}} district.
@@ -82,14 +82,14 @@ Overall Gender Performance Across the District:
 - {{gender}}s: {{count}} students, Average Score: {{#if averageScore}}{{averageScore}}%{{else}}N/A{{/if}}
 {{/each}}
 
-Based on this comprehensive district-level data, provide:
+Based on this comprehensive district-level data, you MUST provide:
 1. **Overall District Assessment**: A summary of the district's academic health.
-2. **Key Strengths (District-Wide)**: Identify subjects or trends where the district excels.
-3. **Areas for Concern (District-Wide)**: Pinpoint subjects or trends that require attention at a district level.
-4. **Actionable Advice for District Administration**: Suggest concrete, strategic actions the district administration can take (e.g., professional development for teachers in a specific subject, resource allocation, cross-school collaboration).
+2. **Key Strengths (District-Wide)**: ALWAYS identify at least one subject or positive trend where the district excels.
+3. **Areas for Concern (District-Wide)**: ALWAYS pinpoint at least one subject or trend that requires attention at a district level, even if performance is generally good.
+4. **Actionable Advice for District Administration**: For each 'Area for Concern' you identified, suggest at least one concrete, strategic action the district administration can take.
 5. **Inter-School Observations**: Note any significant performance gaps or similarities between schools that might inform district strategy.
 
-Ensure all output fields are present, using empty strings or empty arrays if no specific points can be made for a particular section.
+Ensure all output fields are present. If a section seems balanced, find the most subtle positive or negative trend to highlight. Do not return empty arrays for strengths, concerns, or advice.
 `,
   config: {
     safetySettings: [
