@@ -40,7 +40,7 @@ const editImageFlow = ai.defineFlow(
     const { photoDataUri, prompt } = input;
 
     const { media } = await ai.generate({
-      model: 'gemini-2.0-flash-preview-image-generation',
+      model: 'gemini-2.5-flash-image-preview',
       prompt: [
         { media: { url: photoDataUri } },
         { text: prompt },
