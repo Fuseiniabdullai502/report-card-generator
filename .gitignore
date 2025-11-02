@@ -51,6 +51,7 @@ firebase-debug.log
 firebase-debug.*.log
 firebase-service-account.json
 
+<<<<<<< HEAD
 # Logs
 firebase-debug.log
 firestore-debug.log
@@ -162,3 +163,20 @@ firestore-debug.log
 firebase-debug.log
 firestore-debug.log
 *.log
+=======
+# Node & build
+node_modules/
+.next/
+dist/
+build/
+.vercel/
+.firebase/
+functions/node_modules/
+
+# Logs
+firestore-debug.log
+*.log
+
+# Editor backups
+*~
+>>>>>>> 3c9782e4 (chore: ignore and untrack build outputs, node_modules, and logs)
