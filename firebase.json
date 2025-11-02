@@ -8,16 +8,5 @@
     "rules": "storage.rules",
     "cors": "storage.cors.json",
     "bucket": "report-card-generator-e3zkv.firebasestorage.app"
-  },
-  "apphosting": {
-    "backendId": "report-card-generator",
-    "rootDir": "/",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "region": "us-central1",
-    "alwaysDeployFromSource": true
   }
 }
