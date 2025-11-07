@@ -1,33 +1,52 @@
+version: 1
 
-# Settings for Backend (on Cloud Run).
-# See https://firebase.google.com/docs/app-hosting/configure#cloud-run
 runConfig:
   minInstances: 0
   maxInstances: 100
   concurrency: 80
   cpu: 1
   memoryMiB: 512
-vpc:
-  connector: projects/report-card-generator-e3zkv/locations/us-central1/connectors/apphosting-vpc-connector
-# Environment variables and secrets.
-# See https://firebase.google.com/docs/app-hosting/configure
+  vpc:
+    connector: projects/report-card-generator-e3zkv/locations/us-central1/connectors/apphosting-vpc-connector
+
 env:
   - variable: GOOGLE_API_KEY
     secret: GOOGLE_API_KEY
+    availability: [BUILD, RUNTIME]
+
   - variable: NEXT_PUBLIC_ADMIN_EMAIL
     secret: NEXT_PUBLIC_ADMIN_EMAIL
+    availability: [BUILD, RUNTIME]
+
+  # If you use Admin SDK via JSON in a secret:
   - variable: FIREBASE_SERVICE_ACCOUNT
     secret: FIREBASE_SERVICE_ACCOUNT
+    availability: [RUNTIME]
+
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    # value removed; provided via Secret Manager
+    secret: NEXT_PUBLIC_FIREBASE_API_KEY
+    availability: [BUILD, RUNTIME]
+
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
     secret: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    availability: [BUILD, RUNTIME]
+
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    secret: NEXT_PUBLIC_FIREBASE_PROJECT_ID 
+    secret: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    availability: [BUILD, RUNTIME]
+
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
     secret: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    availability: [BUILD, RUNTIME]
+
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    secret: "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"
+    secret: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    availability: [BUILD, RUNTIME]
+
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     secret: NEXT_PUBLIC_FIREBASE_APP_ID
-run: npm run dev
+    availability: [BUILD, RUNTIME]
+
+scripts:
+  buildCommand: npm run build
+  runCommand: npm start
