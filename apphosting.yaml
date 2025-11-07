@@ -21,13 +21,13 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     # value removed; provided via Secret Manager
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: report-card-generator-e3zkv.firebaseapp.com
+    secret: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: report-card-generator-e3zkv
+    secret: NEXT_PUBLIC_FIREBASE_PROJECT_ID 
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: report-card-generator-e3zkv.appspot.com
+    secret: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    value: "103786735519"
+    secret: "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: 1:103786735519:web:22922ed07e07c3dd817faa
+    secret: NEXT_PUBLIC_FIREBASE_APP_ID
 run: npm run dev
