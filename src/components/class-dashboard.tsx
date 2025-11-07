@@ -173,126 +173,138 @@ export default function ClassPerformanceDashboard({
   // Effect for calculating statistics when the class or reports change
   useEffect(() => {
     if (!isOpen || reportsForClass.length === 0) {
-      setClassStats(null);
-      setMostRecentTerm('');
-      setHistoricalData([]);
-      setRankedStudents([]);
-      setAiAdvice(null);
-      setAiError(null);
-      return;
+        setClassStats(null);
+        setMostRecentTerm('');
+        setHistoricalData([]);
+        setRankedStudents([]);
+        setAiAdvice(null);
+        setAiError(null);
+        return;
     }
-  
+
     setIsLoadingStats(true);
-  
-    const reportsByTerm = new Map<string, ReportData[]>();
-    reportsForClass.forEach(report => {
-        const term = report.academicTerm || 'Unknown Term';
-        if (!reportsByTerm.has(term)) {
-            reportsByTerm.set(term, []);
+
+    let reportsForStatCalculation: ReportData[] = [];
+    let termForDisplay = 'All Terms';
+
+    try {
+        // --- Try to find the most recent term's data ---
+        const reportsByTerm = new Map<string, ReportData[]>();
+        reportsForClass.forEach(report => {
+            const term = report.academicTerm || 'Unknown Term';
+            if (!reportsByTerm.has(term)) {
+                reportsByTerm.set(term, []);
+            }
+            reportsByTerm.get(term)!.push(report);
+        });
+
+        const termOrder = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
+        const sortedTerms = Array.from(reportsByTerm.keys()).sort((a, b) => {
+            const indexA = termOrder.indexOf(a);
+            const indexB = termOrder.indexOf(b);
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            if (indexA !== -1) return -1;
+            if (indexB !== -1) return 1;
+            return a.localeCompare(b);
+        });
+        
+        const newMostRecentTerm = sortedTerms.length > 0 ? sortedTerms[sortedTerms.length - 1] : '';
+        
+        if (newMostRecentTerm && reportsByTerm.has(newMostRecentTerm)) {
+            reportsForStatCalculation = reportsByTerm.get(newMostRecentTerm) || [];
+            termForDisplay = newMostRecentTerm;
+
+            // Calculate historical data from all terms
+            const newHistoricalData = sortedTerms.map(term => {
+                const termReports = reportsByTerm.get(term)!;
+                const validAverages = termReports.map(r => r.overallAverage).filter(avg => avg != null) as number[];
+                const avg = validAverages.length > 0 ? validAverages.reduce((a,b) => a+b, 0) / validAverages.length : null;
+                return { term, numStudents: termReports.length, classAverage: avg };
+            });
+            setHistoricalData(newHistoricalData);
+        } else {
+             throw new Error("No standard recent term found. Falling back to all data.");
         }
-        reportsByTerm.get(term)!.push(report);
-    });
-  
-    const termOrder = ["First Term", "Second Term", "Third Term", "First Semester", "Second Semester"];
-    const sortedTerms = Array.from(reportsByTerm.keys()).sort((a, b) => {
-        const indexA = termOrder.indexOf(a);
-        const indexB = termOrder.indexOf(b);
-        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-        return a.localeCompare(b);
-    });
-  
-    const newMostRecentTerm = sortedTerms.length > 0 ? sortedTerms[sortedTerms.length - 1] : '';
-    setMostRecentTerm(newMostRecentTerm);
-    
-    // Use the most recent term's reports for main stats calculation
-    const reportsForStatCalculation = newMostRecentTerm ? (reportsByTerm.get(newMostRecentTerm) || []) : [];
-  
+
+    } catch (error) {
+        // --- Fallback: Use all data for the class if term logic fails ---
+        console.warn("Could not determine most recent term, falling back to all reports for the class.", error);
+        reportsForStatCalculation = reportsForClass;
+        termForDisplay = 'All Available Data';
+        setHistoricalData([]);
+    }
+
+    setMostRecentTerm(termForDisplay);
+
     if (reportsForStatCalculation.length === 0) {
         setClassStats(null);
         setRankedStudents([]);
     } else {
         const sortedStudents = [...reportsForStatCalculation].sort((a, b) => (b.overallAverage ?? -1) - (a.overallAverage ?? -1));
         setRankedStudents(sortedStudents);
-  
+
         const totalStudents = reportsForStatCalculation.length;
-  
         const validOverallAverages = reportsForStatCalculation
-          .map(r => r.overallAverage)
-          .filter(avg => avg !== undefined && avg !== null && !Number.isNaN(avg)) as number[];
-          
-        const overallClassAverage = validOverallAverages.length > 0 
-          ? parseFloat((validOverallAverages.reduce((a, b) => a + b, 0) / validOverallAverages.length).toFixed(2)) 
-          : null;
-  
+            .map(r => r.overallAverage)
+            .filter(avg => avg !== undefined && avg !== null && !Number.isNaN(avg)) as number[];
+        
+        const overallClassAverage = validOverallAverages.length > 0
+            ? parseFloat((validOverallAverages.reduce((a, b) => a + b, 0) / validOverallAverages.length).toFixed(2))
+            : null;
+
         const subjectMap: Map<string, { scores: number[] }> = new Map();
         reportsForStatCalculation.forEach(report => {
-          (report.subjects ?? []).forEach(subject => {
-            if (subject.subjectName && subject.subjectName.trim() !== '') {
-              const finalMark = calculateSubjectFinalMark(subject);
-              if (finalMark !== null && !Number.isNaN(finalMark)) {
-                if (!subjectMap.has(subject.subjectName)) {
-                  subjectMap.set(subject.subjectName, { scores: [] });
+            (report.subjects ?? []).forEach(subject => {
+                if (subject.subjectName && subject.subjectName.trim() !== '') {
+                    const finalMark = calculateSubjectFinalMark(subject);
+                    if (finalMark !== null && !Number.isNaN(finalMark)) {
+                        if (!subjectMap.has(subject.subjectName)) {
+                            subjectMap.set(subject.subjectName, { scores: [] });
+                        }
+                        subjectMap.get(subject.subjectName)!.scores.push(finalMark);
+                    }
                 }
-                subjectMap.get(subject.subjectName)!.scores.push(finalMark);
-              }
-            }
-          });
+            });
         });
-  
+
         const subjectStats: SubjectPerformanceStatForUI[] = Array.from(subjectMap.entries()).map(([subjectName, data]) => {
-          const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
-          const subjectAvg = validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null;
-          return {
-            subjectName,
-            numBelowAverage: validScores.filter(score => score < 40).length,
-            numAverage: validScores.filter(score => score >= 40 && score < 60).length,
-            numAboveAverage: validScores.filter(score => score >= 60).length,
-            classAverageForSubject: subjectAvg,
-          };
+            const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
+            const subjectAvg = validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null;
+            return {
+                subjectName,
+                numBelowAverage: validScores.filter(score => score < 40).length,
+                numAverage: validScores.filter(score => score >= 40 && score < 60).length,
+                numAboveAverage: validScores.filter(score => score >= 60).length,
+                classAverageForSubject: subjectAvg,
+            };
         });
-  
+
         const genderMap: Map<string, { scores: number[]; count: number }> = new Map();
         reportsForStatCalculation.forEach(report => {
-          const gender = report.gender || 'Unknown';
-          if (!genderMap.has(gender)) {
-              genderMap.set(gender, { scores: [], count: 0 });
-          }
-          if (report.overallAverage !== undefined && report.overallAverage !== null && !Number.isNaN(report.overallAverage)) {
-              genderMap.get(gender)!.scores.push(report.overallAverage);
-          }
-          genderMap.get(gender)!.count++;
+            const gender = report.gender || 'Unknown';
+            if (!genderMap.has(gender)) {
+                genderMap.set(gender, { scores: [], count: 0 });
+            }
+            if (report.overallAverage !== undefined && report.overallAverage !== null && !Number.isNaN(report.overallAverage)) {
+                genderMap.get(gender)!.scores.push(report.overallAverage);
+            }
+            genderMap.get(gender)!.count++;
         });
         
         const genderStats: GenderPerformanceStatForUI[] = Array.from(genderMap.entries()).map(([gender, data]) => {
-          const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
-          return {
-              gender,
-              count: data.count,
-              averageScore: validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null,
-          };
+            const validScores = data.scores.filter(s => s !== null && !Number.isNaN(s));
+            return {
+                gender,
+                count: data.count,
+                averageScore: validScores.length > 0 ? parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)) : null,
+            };
         });
-  
+
         setClassStats({ overallClassAverage, totalStudents, subjectStats, genderStats });
     }
-  
-    // Calculate historical data from all terms
-    const newHistoricalData = sortedTerms.map(term => {
-        const termReports = reportsByTerm.get(term)!;
-        const validAverages = termReports.map(r => r.overallAverage).filter(avg => avg != null) as number[];
-        const avg = validAverages.length > 0 ? validAverages.reduce((a,b) => a+b, 0) / validAverages.length : null;
 
-        return {
-            term,
-            numStudents: termReports.length,
-            classAverage: avg
-        };
-    });
-    setHistoricalData(newHistoricalData);
-  
     setIsLoadingStats(false);
-  }, [isOpen, reportsForClass]);
+}, [isOpen, reportsForClass]);
 
   const subjectPerformanceChartData = useMemo(() => {
     return classStats?.subjectStats.map(s => ({
