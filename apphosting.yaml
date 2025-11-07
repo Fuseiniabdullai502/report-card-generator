@@ -19,7 +19,7 @@ env:
   - variable: FIREBASE_SERVICE_ACCOUNT
     secret: FIREBASE_SERVICE_ACCOUNT
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: AIzaSyCRe24-c5OnazQ2jbs84eiLnQheopbiIno
+    # value removed; provided via Secret Manager
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
     value: report-card-generator-e3zkv.firebaseapp.com
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
