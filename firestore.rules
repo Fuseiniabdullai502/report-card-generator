@@ -11,7 +11,7 @@ service cloud.firestore {
       return userData.role == role;
     }
 
-    function isAdmin(userId) {
+    function isAdmin() {
       return requesterRole() in ['super-admin', 'big-admin', 'admin'];
     }
 
@@ -59,13 +59,26 @@ service cloud.firestore {
       allow create: if request.auth != null;
       
       allow read, update, delete: if request.auth != null && (
-        hasRole(request.auth.uid, 'super-admin') ||
-        (hasRole(request.auth.uid, 'big-admin') && getUserData(request.auth.uid).district == resource.data.district) ||
-        (hasRole(request.auth.uid, 'admin') && getUserData(request.auth.uid).schoolName == resource.data.schoolName) ||
+        requesterRole() == 'super-admin' ||
+        (requesterRole() == 'big-admin' && getUserData(request.auth.uid).district == resource.data.district) ||
+        (requesterRole() == 'admin' && getUserData(request.auth.uid).schoolName == resource.data.schoolName) ||
         resource.data.teacherId == request.auth.uid
       );
 
-      allow list: if request.auth != null; // Allow all authenticated users to query, but filter in client. Rules on fields will secure it.
+      // Allow queries based on role
+      allow list: if request.auth != null && (
+        // Super-admin can query anything
+        requesterRole() == 'super-admin' ||
+        
+        // Big-admin can only query their own district
+        (requesterRole() == 'big-admin' && request.query.get('district') == getUserData(request.auth.uid).district) ||
+        
+        // Admin can only query their own school
+        (requesterRole() == 'admin' && request.query.get('schoolName') == getUserData(request.auth.uid).schoolName) ||
+        
+        // Users (teacher) and public users can only query their own reports
+        ((requesterRole() == 'user' || requesterRole() == 'public_user') && request.query.get('teacherId') == request.auth.uid)
+      );
     }
   }
 }
