@@ -456,55 +456,55 @@ const serializeReport = (doc: DocumentData): ReportData => {
 };
 
 export async function getReportsAction(user: PlainUser): Promise<{ success: boolean; reports?: ReportData[]; error?: string }> {
-  console.log("[getReportsAction] admin projectId:", admin.app().options.projectId);
   if (!user) {
     return { success: false, error: 'User is not authenticated.' };
   }
 
   try {
-    const dbAdmin = admin.firestore();
-    const reportsCollection = dbAdmin.collection('reports');
-    let q: Query = reportsCollection;
+    const reportsCollection = collection(db, 'reports');
+    let q;
 
-    // Apply Firestore-level filtering based on user role
     switch (user.role) {
+      case 'super-admin':
+        q = query(reportsCollection);
+        break;
       case 'big-admin':
         if (!user.district) throw new Error("District admin's scope is not defined.");
-        q = q.where('district', '==', user.district);
+        q = query(reportsCollection, where('district', '==', user.district));
         break;
       case 'admin':
         if (!user.schoolName) throw new Error("School admin's scope is not defined.");
-        q = q.where('schoolName', '==', user.schoolName);
+        q = query(reportsCollection, where('schoolName', '==', user.schoolName));
         break;
       case 'user':
       case 'public_user':
-        q = q.where('teacherId', '==', user.uid);
+        q = query(reportsCollection, where('teacherId', '==', user.uid));
         break;
-      // super-admin has no .where() clause, fetches all.
+      default:
+        return { success: false, error: 'Invalid user role for fetching reports.' };
     }
 
-    const snapshot = await q.get();
+    const snapshot = await getDocs(q);
     const reports = snapshot.docs.map(serializeReport);
 
     return { success: true, reports };
 
   } catch (error: any) {
-    const code = error?.code ?? error?.status ?? "UNKNOWN";
+    const code = error?.code ?? "UNKNOWN";
     const msg = String(error?.message || "");
-    // Firestore index errors are usually FAILED_PRECONDITION (9)
-    const isIndexError =
-      msg.includes("requires an index") ||
-      code === 9 ||
-      msg.includes("FAILED_PRECONDITION");
+    const isIndexError = msg.includes("requires an index") || code === 'failed-precondition';
 
     let errorMessage: string;
     if (isIndexError) {
       errorMessage = `INDEX_REQUIRED: ${msg}`;
-    } else {
+    } else if (code === 'permission-denied') {
+      errorMessage = `PERMISSION_DENIED: Your security rules are blocking this query. Please check the rules for the 'reports' collection.`;
+    }
+    else {
       errorMessage = `${code}: ${msg}`;
     }
 
-    console.error("[getReportsAction] ERROR", { code, msg });
+    console.error("[getReportsAction] ERROR", { code, msg, isIndexError });
     return { success: false, error: errorMessage };
   }
 }
