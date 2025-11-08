@@ -18,7 +18,6 @@ env:
     secret: NEXT_PUBLIC_ADMIN_EMAIL
     availability: [BUILD, RUNTIME]
 
-  # If you use Admin SDK via JSON in a secret:
   - variable: FIREBASE_SERVICE_ACCOUNT
     secret: FIREBASE_SERVICE_ACCOUNT
     availability: [RUNTIME]
