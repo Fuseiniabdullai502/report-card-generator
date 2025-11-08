@@ -1,44 +1,51 @@
 // src/lib/firebase.ts
-import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
-import { getAuth, Auth } from 'firebase/auth';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
+import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+type WebConfig = {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket?: string;
+  messagingSenderId?: string;
+  appId?: string;
+  measurementId?: string;
 };
 
-// --- START ENHANCED VALIDATION ---
-const requiredConfigKeys: (keyof typeof firebaseConfig)[] = [
-  'apiKey',
-  'authDomain',
-  'projectId',
-];
+function getWebConfig(): WebConfig {
+  const json = process.env.FIREBASE_WEBAPP_CONFIG; // auto-provided by App Hosting at BUILD
+  if (json) {
+    try {
+      const parsed = JSON.parse(json);
+      return parsed as WebConfig;
+    } catch {
+      // fall through to NEXT_PUBLIC_* if parse fails
+    }
+  }
+  const cfg: WebConfig = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  };
 
-const missingKeys = requiredConfigKeys.filter(key => !firebaseConfig[key]);
-
-if (missingKeys.length > 0) {
-  throw new Error(
-    `Firebase config is missing required environment variables. 
-    Please check your .env.local file and ensure the following keys are set:
-    ${missingKeys.map(key => `NEXT_PUBLIC_FIREBASE_${key.replace(/([A-Z])/g, '_$1').toUpperCase()}`).join(', ')}. 
-    See README.md for more details on setting up your Firebase project credentials.`
-  );
+  // Minimal validation (apiKey/authDomain/projectId are must-have)
+  if (!cfg.apiKey || !cfg.authDomain || !cfg.projectId) {
+    throw new Error(
+      'Firebase config is missing required environment variables.'
+    );
+  }
+  return cfg;
 }
-// --- END ENHANCED VALIDATION ---
+
+const firebaseConfig = getWebConfig();
 
 // Initialize Firebase
-let app: FirebaseApp;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
-}
+const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 const db: Firestore = getFirestore(app);
 const auth: Auth = getAuth(app);
