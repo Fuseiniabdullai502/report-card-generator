@@ -180,3 +180,21 @@ firestore-debug.log
 # Editor backups
 *~
 >>>>>>> 3c9782e4 (chore: ignore and untrack build outputs, node_modules, and logs)
+
+# Big build artifacts
+.next/
+.turbo/
+node_modules/
+.firebase/
+.vercel/
+dist/
+build/
+
+# Big build artifacts
+.next/
+.turbo/
+node_modules/
+.firebase/
+.vercel/
+dist/
+build/

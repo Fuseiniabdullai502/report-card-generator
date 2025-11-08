@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow for generating a student's performance summary,
@@ -11,7 +12,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { gemini15Flash } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 
 // Define the schema for individual subject entries for the flow input - NOT EXPORTED
@@ -56,7 +57,7 @@ export async function generateReportInsights(input: GenerateReportInsightsInput)
 
 const generateReportInsightsPrompt = ai.definePrompt({
   name: 'generateReportInsightsPrompt',
-  model: googleAI('gemini-1.5-flash'),
+  model: gemini15Flash,
   input: { schema: GenerateReportInsightsInputSchema },
   output: { schema: GenerateReportInsightsOutputSchema },
   prompt: `You are an academic advisor tasked with writing concise insights for a student's report card for the {{{currentAcademicTerm}}}.
@@ -93,7 +94,7 @@ Important Grading Information:
   - 40-49: D (Unsatisfactory)
   - Below 40: F (Fail)
 
-{{#if previousTermsData.length}}
+{{#if previousTermsData}}
 Previous Term Performance for Comparison:
 {{#each previousTermsData}}
 - {{termName}}:
