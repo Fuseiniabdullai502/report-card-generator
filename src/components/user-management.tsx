@@ -143,15 +143,15 @@ export default function UserManagement({ user, users, invites, populationStats, 
 
 
   const allAvailableClasses = useMemo(() => {
-    return [...new Set(allReports.map(r => r.className).filter(Boolean))].sort();
+    return Array.from(new Set(allReports.map(r => r.className).filter(Boolean))).sort();
   }, [allReports]);
 
   const allAvailableYears = useMemo(() => {
-    return [...new Set(allReports.map(r => r.academicYear).filter(Boolean) as string[])].sort();
+    return Array.from(new Set(allReports.map(r => r.academicYear).filter(Boolean) as string[])).sort();
   }, [allReports]);
 
   const allAvailableTerms = useMemo(() => {
-    return [...new Set(allReports.map(r => r.academicTerm).filter(Boolean) as string[])].sort();
+    return Array.from(new Set(allReports.map(r => r.academicTerm).filter(Boolean) as string[])).sort();
   }, [allReports]);
 
   const classPerformanceRanking = useMemo(() => {
