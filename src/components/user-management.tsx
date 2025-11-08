@@ -57,6 +57,7 @@ import {
 } from '@/app/actions';
 import { ghanaRegions, ghanaRegionsAndDistricts, ghanaDistrictsAndCircuits } from '@/lib/ghana-regions-districts';
 import type { CustomUser, PlainUser } from './auth-provider';
+import type { UserData, InviteData } from '@/types';
 import DistrictClassRankingDialog from '@/components/district-class-ranking';
 import SchoolProgramRankingDialog from '@/components/school-program-ranking';
 import { ReportData, SubjectEntry } from '@/lib/schemas';
@@ -70,39 +71,6 @@ const academicTermOptions = ["First Term", "Second Term", "Third Term", "First S
 const academicYearOptions = ["2024/2025", "2025/2026", "2026/2027", "2027/2028", "2028/2029", "2029/2030"];
 const schoolLevels = ['Nursery', 'KG', 'Primary', 'JHS', 'SHS'];
 const schoolCategories = [{ value: 'public', label: 'Public School' }, { value: 'private', label: 'Private School' }];
-
-interface UserData {
-  id: string;
-  email: string;
-  name?: string | null;
-  telephone?: string | null;
-  role: 'super-admin' | 'big-admin' | 'admin' | 'user' | 'public_user';
-  status: 'active' | 'inactive';
-  country?: string | null;
-  region?: string | null;
-  district?: string | null;
-  circuit?: string | null;
-  schoolName?: string | null;
-  classNames?: string[] | null;
-  schoolLevels?: string[] | null;
-  schoolCategory?: 'public' | 'private' | null;
-  createdAt: string | null;
-}
-
-interface InviteData {
-  id: string;
-  email: string;
-  status: 'pending' | 'completed';
-  role?: 'big-admin' | 'admin' | 'user' | null;
-  region?: string | null;
-  district?: string | null;
-  circuit?: string | null;
-  schoolName?: string | null;
-  classNames?: string[] | null;
-  schoolLevels?: string[] | null;
-  schoolCategory?: 'public' | 'private' | null;
-  createdAt: string | null;
-}
 
 interface SchoolStats {
   classCount: number;
@@ -1117,8 +1085,10 @@ function EditUserDialog({ currentUser, user, onOpenChange, onUserUpdated }: { cu
     }, [role]);
     
     const handleMultiSelectChange = (item: string, checked: boolean, field: 'classNames' | 'schoolLevels') => {
+        const currentValues = field === 'classNames' ? classNames : schoolLevels;
         const setFunction = field === 'classNames' ? setClassNames : setSchoolLevels;
-        setFunction(prev => checked ? [...prev, item] : prev.filter(c => c !== item));
+        const newValues = checked ? [...currentValues, item] : currentValues.filter(c => c !== item);
+        setFunction(newValues);
     };
 
     const handleSave = async () => {
@@ -1240,8 +1210,10 @@ function EditInviteDialog({ currentUser, invite, onOpenChange, onInviteUpdated }
     }, [role]);
 
     const handleMultiSelectChange = (item: string, checked: boolean, field: 'classNames' | 'schoolLevels') => {
+        const currentValues = field === 'classNames' ? classNames : schoolLevels;
         const setFunction = field === 'classNames' ? setClassNames : setSchoolLevels;
-        setFunction(prev => checked ? [...prev, item] : prev.filter(c => c !== item));
+        const newValues = checked ? [...currentValues, item] : currentValues.filter(c => c !== item);
+        setFunction(newValues);
     };
 
     const handleSave = async () => {
