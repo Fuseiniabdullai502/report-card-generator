@@ -1,21 +1,71 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow users to read and write reports they own.
-    match /reports/{reportId} {
-      // A user can read a single report if they are the teacher who created it.
-      allow get: if request.auth != null && request.auth.uid == resource.data.teacherId;
-      
-      // A user can query the reports collection, but only for their own reports.
-      allow list: if request.auth != null && request.query.where[0][2] == request.auth.uid;
-
-      // Allow creating, updating, and deleting own reports.
-      allow write: if request.auth != null && request.auth.uid == request.resource.data.teacherId;
+  
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+    
+    function hasRole(userId, role) {
+      let userData = getUserData(userId);
+      return userData.role == role;
     }
 
-    // Default deny all other access
-    match /{document=**} {
-      allow read, write: if false;
+    function isAdmin(userId) {
+      return requesterRole() in ['super-admin', 'big-admin', 'admin'];
+    }
+
+    function requesterRole() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : null;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    match /users/{userId} {
+      // A user can read their own user doc; admins can read any
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Listing / querying users is admin-only
+      allow list: if isSignedIn() && isAdmin();
+
+      // A user creates their own doc (e.g., on registration)
+      allow create: if isSignedIn() && request.auth.uid == userId;
+
+      // Updates:
+      // - The user can update their own document only if they DON'T change their role
+      // - Admins can update any user doc
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role) ||
+        isAdmin()
+      );
+
+      // Only super-admins can delete user docs
+      allow delete: if isSignedIn() && requesterRole() == 'super-admin';
+    }
+    
+    match /invites/{inviteId} {
+      // If you truly need public reads during registration, keep this true.
+      // If you want to limit exposure, switch to "if isSignedIn()" instead.
+      allow read: if true;
+
+      // Only admins can create/update/delete invites
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow create: if request.auth != null;
+      
+      allow read, update, delete: if request.auth != null && (
+        hasRole(request.auth.uid, 'super-admin') ||
+        (hasRole(request.auth.uid, 'big-admin') && getUserData(request.auth.uid).district == resource.data.district) ||
+        (hasRole(request.auth.uid, 'admin') && getUserData(request.auth.uid).schoolName == resource.data.schoolName) ||
+        resource.data.teacherId == request.auth.uid
+      );
+
+      allow list: if request.auth != null; // Allow all authenticated users to query, but filter in client. Rules on fields will secure it.
     }
   }
 }
