@@ -2,13 +2,77 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{db}/documents {
 
-    // TEMP: let any signed-in user read reports
-    match /reports/{doc} {
-      allow read: if request.auth != null;
-      allow write: if false;  // keep writes locked for safety
+    // ---------- Helpers ----------
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    // keep everything else locked for now
+    // Safely fetch the caller's role from /users/{uid}.
+    function requesterRole() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : null;
+    }
+
+    function isAdmin() {
+      return requesterRole() in ['super-admin', 'big-admin', 'admin'];
+    }
+
+    // ---------- USERS ----------
+    match /users/{userId} {
+      // A user can read their own user doc; admins can read any
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Listing / querying users is admin-only
+      allow list: if isSignedIn() && isAdmin();
+
+      // A user creates their own doc (e.g., on registration)
+      allow create: if isSignedIn() && request.auth.uid == userId;
+
+      // Updates:
+      // - The user can update their own document only if they DON'T change their role
+      // - Admins can update any user doc
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role) ||
+        isAdmin()
+      );
+
+      // Only super-admins can delete user docs
+      allow delete: if isSignedIn() && requesterRole() == 'super-admin';
+    }
+
+    // ---------- REPORTS ----------
+    match /reports/{reportId} {
+      // Anyone signed in can create a report (adjust as needed)
+      allow create: if isSignedIn();
+
+      // Read if signed in AND:
+      //   - caller is admin OR
+      //   - caller owns the report via ownerUid OR teacherId
+      allow read: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.ownerUid == request.auth.uid ||
+        resource.data.teacherId == request.auth.uid
+      );
+
+      // Update/Delete by admins or the owner/teacher who created it
+      allow update, delete: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.ownerUid == request.auth.uid ||
+        resource.data.teacherId == request.auth.uid
+      );
+    }
+
+    // ---------- INVITES ----------
+    match /invites/{inviteId} {
+      // If you truly need public reads during registration, keep this true.
+      // If you want to limit exposure, switch to "if isSignedIn()" instead.
+      allow read: if true;
+
+      // Only admins can create/update/delete invites
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    // ---------- DEFAULT DENY ----------
     match /{document=**} {
       allow read, write: if false;
     }
