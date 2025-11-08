@@ -1,74 +1,16 @@
-
 rules_version = '2';
-
 service cloud.firestore {
-  match /databases/{database}/documents {
-  
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-    
-    function hasRole(userId, role) {
-      let userData = getUserData(userId);
-      return userData.role == role;
+  match /databases/{db}/documents {
+
+    // TEMP: let any signed-in user read reports
+    match /reports/{doc} {
+      allow read: if request.auth != null;
+      allow write: if false;  // keep writes locked for safety
     }
 
-    function isAdmin(userId) {
-      return hasRole(userId, 'super-admin') || hasRole(userId, 'big-admin') || hasRole(userId, 'admin');
-    }
-
-    match /users/{userId} {
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow get: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null
-                    && request.auth.uid == userId
-                    && request.resource.data.role == resource.data.role;
-      allow delete: if request.auth != null && hasRole(request.auth.uid, 'super-admin');
-      allow list: if request.auth != null && isAdmin(request.auth.uid);
-    }
-    
-    match /invites/{inviteId} {
-      allow get: if true;
-      allow list, create, update, delete: if request.auth != null && isAdmin(request.auth.uid);
-    }
-
-    match /reports/{reportId} {
-      allow create: if request.auth != null;
-      
-      allow get, update, delete: if request.auth != null && (
-        resource.data.teacherId == request.auth.uid ||
-        hasRole(request.auth.uid, 'super-admin') ||
-        (hasRole(request.auth.uid, 'big-admin') && getUserData(request.auth.uid).district == resource.data.district) ||
-        (hasRole(request.auth.uid, 'admin') && getUserData(request.auth.uid).schoolName == resource.data.schoolName)
-      );
-
-      allow list: if request.auth != null && (
-        hasRole(request.auth.uid, 'super-admin') ||
-        (
-          hasRole(request.auth.uid, 'big-admin') &&
-          request.query.filters.size() > 0 &&
-          request.query.filters[0].field == 'district' &&
-          request.query.filters[0].value == getUserData(request.auth.uid).district
-        ) ||
-        (
-          hasRole(request.auth.uid, 'admin') &&
-          request.query.filters.size() > 0 &&
-          request.query.filters[0].field == 'schoolName' &&
-          request.query.filters[0].value == getUserData(request.auth.uid).schoolName
-        ) ||
-        (
-          hasRole(request.auth.uid, 'user') &&
-          request.query.filters.size() > 0 &&
-          request.query.filters[0].field == 'teacherId' &&
-          request.query.filters[0].value == request.auth.uid
-        ) ||
-        (
-          hasRole(request.auth.uid, 'public_user') &&
-          request.query.filters.size() > 0 &&
-          request.query.filters[0].field == 'teacherId' &&
-          request.query.filters[0].value == request.auth.uid
-        )
-      );
+    // keep everything else locked for now
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
