@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -41,23 +42,31 @@ service cloud.firestore {
         (hasRole(request.auth.uid, 'admin') && getUserData(request.auth.uid).schoolName == resource.data.schoolName)
       );
 
-      // Rules for LIST (queries) must be separate and check the query constraints.
       allow list: if request.auth != null && (
         hasRole(request.auth.uid, 'super-admin') ||
         (
           hasRole(request.auth.uid, 'big-admin') &&
-          request.query.where[0][1] == 'district' &&
-          request.query.where[0][2] == getUserData(request.auth.uid).district
+          request.query.filters.size() > 0 &&
+          request.query.filters[0].field == 'district' &&
+          request.query.filters[0].value == getUserData(request.auth.uid).district
         ) ||
         (
           hasRole(request.auth.uid, 'admin') &&
-          request.query.where[0][1] == 'schoolName' &&
-          request.query.where[0][2] == getUserData(request.auth.uid).schoolName
+          request.query.filters.size() > 0 &&
+          request.query.filters[0].field == 'schoolName' &&
+          request.query.filters[0].value == getUserData(request.auth.uid).schoolName
         ) ||
         (
           hasRole(request.auth.uid, 'user') &&
-          request.query.where[0][1] == 'teacherId' &&
-          request.query.where[0][2] == request.auth.uid
+          request.query.filters.size() > 0 &&
+          request.query.filters[0].field == 'teacherId' &&
+          request.query.filters[0].value == request.auth.uid
+        ) ||
+        (
+          hasRole(request.auth.uid, 'public_user') &&
+          request.query.filters.size() > 0 &&
+          request.query.filters[0].field == 'teacherId' &&
+          request.query.filters[0].value == request.auth.uid
         )
       );
     }
