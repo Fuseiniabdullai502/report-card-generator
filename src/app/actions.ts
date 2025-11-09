@@ -31,7 +31,7 @@ import {
 import { z } from 'zod';
 import admin from '@/lib/firebase-admin';
 import type { Query, DocumentData } from 'firebase-admin/firestore';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc, writeBatch, Timestamp, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query as clientQuery, where as clientWhere, getDocs as clientGetDocs, doc, setDoc, deleteDoc, updateDoc, writeBatch, Timestamp, getDoc } from 'firebase/firestore';
 import type { CustomUser, PlainUser } from '@/components/auth-provider';
 import { calculateOverallAverage, calculateSubjectFinalMark } from '@/lib/calculations';
 import { ReportDataSchema, type ReportData, type SubjectEntry, SubjectEntrySchema } from '@/lib/schemas';
@@ -461,30 +461,31 @@ export async function getReportsAction(user: PlainUser): Promise<{ success: bool
   }
 
   try {
+    // Use the client-side db for this action as it's called from client components
     const reportsCollection = collection(db, 'reports');
     let q;
 
     switch (user.role) {
       case 'super-admin':
-        q = query(reportsCollection);
+        q = clientQuery(reportsCollection);
         break;
       case 'big-admin':
         if (!user.district) throw new Error("District admin's scope is not defined.");
-        q = query(reportsCollection, where('district', '==', user.district));
+        q = clientQuery(reportsCollection, clientWhere('district', '==', user.district));
         break;
       case 'admin':
         if (!user.schoolName) throw new Error("School admin's scope is not defined.");
-        q = query(reportsCollection, where('schoolName', '==', user.schoolName));
+        q = clientQuery(reportsCollection, clientWhere('schoolName', '==', user.schoolName));
         break;
       case 'user':
       case 'public_user':
-        q = query(reportsCollection, where('teacherId', '==', user.uid));
+        q = clientQuery(reportsCollection, clientWhere('teacherId', '==', user.uid));
         break;
       default:
         return { success: false, error: 'Invalid user role for fetching reports.' };
     }
 
-    const snapshot = await getDocs(q);
+    const snapshot = await clientGetDocs(q);
     const reports = snapshot.docs.map(serializeReport);
 
     return { success: true, reports };
@@ -528,8 +529,8 @@ export async function registerUserAction(input: z.infer<typeof RegisterUserSchem
         const { uid, email, name, telephone, country, schoolCategory } = RegisterUserSchema.parse(input);
         
         const invitesRef = collection(db, 'invites');
-        const q = query(invitesRef, where("email", "==", email), where("status", "==", "pending"));
-        const inviteSnapshot = await getDocs(q);
+        const q = clientQuery(invitesRef, clientWhere("email", "==", email), clientWhere("status", "==", "pending"));
+        const inviteSnapshot = await clientGetDocs(q);
 
         const userDocRef = doc(db, 'users', uid);
         
@@ -684,10 +685,10 @@ export async function createInviteAction(
     const invitesRef = collection(db, 'invites');
     const usersRef = collection(db, 'users');
 
-    const inviteQuery = query(invitesRef, where("email", "==", data.email));
-    const userQuery = query(usersRef, where("email", "==", data.email));
+    const inviteQuery = clientQuery(invitesRef, clientWhere("email", "==", data.email));
+    const userQuery = clientQuery(usersRef, clientWhere("email", "==", data.email));
 
-    const [inviteSnapshot, userSnapshot] = await Promise.all([getDocs(inviteQuery), getDocs(userQuery)]);
+    const [inviteSnapshot, userSnapshot] = await Promise.all([clientGetDocs(inviteQuery), clientGetDocs(userQuery)]);
 
     if (!userSnapshot.empty) {
       return { success: false, message: "This email address is already registered to a user." };
@@ -1156,15 +1157,5 @@ export async function getReportsForAdminAction(user: PlainUser): Promise<{ succe
     return { success: false, error: `Failed to fetch reports for admin: ${error.message}` };
   }
 }
-
-    
-
-    
-
-    
-
-    
-
-    
 
     
