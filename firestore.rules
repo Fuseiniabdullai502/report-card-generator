@@ -1,87 +1,93 @@
-
+// Firestore Rules
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-    
-    function hasRole(userId, role) {
-      let userData = getUserData(userId);
-      return userData.role == role;
-    }
 
-    function isAdmin() {
-      return requesterRole() in ['super-admin', 'big-admin', 'admin'];
-    }
-
-    function requesterRole() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-        : null;
-    }
-
+    // ---------- helpers ----------
     function isSignedIn() {
       return request.auth != null;
     }
 
-    match /users/{userId} {
-      // A user can read their own user doc; admins can read any
-      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      // Listing / querying users is admin-only
-      allow list: if isSignedIn() && isAdmin();
+    function me() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        : null;
+    }
 
-      // A user creates their own doc (e.g., on registration)
+    function role() {
+      return me() != null ? me().role : null;
+    }
+
+    function isSuperAdmin() { return role() == 'super-admin'; }
+    function isBigAdmin()   { return role() == 'big-admin'; }
+    function isAdmin()      { return role() == 'admin'; }
+    function isAnyAdmin()   { return isSuperAdmin() || isBigAdmin() || isAdmin(); }
+
+    // ---------- default deny ----------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---------- users ----------
+    match /users/{userId} {
+      // read
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAnyAdmin());
+      allow list: if isSignedIn() && isAnyAdmin();
+
+      // create own user doc
       allow create: if isSignedIn() && request.auth.uid == userId;
 
-      // Updates:
-      // - The user can update their own document only if they DON'T change their role
-      // - Admins can update any user doc
+      // user may update self but not elevate role/status
       allow update: if isSignedIn() && (
-        (request.auth.uid == userId && request.resource.data.role == resource.data.role) ||
-        isAdmin()
+        (request.auth.uid == userId &&
+          // prevent changing role/status yourself
+          request.resource.data.role   == resource.data.role &&
+          request.resource.data.status == resource.data.status
+        )
+        || isAnyAdmin()
       );
 
-      // Only super-admins can delete user docs
-      allow delete: if isSignedIn() && requesterRole() == 'super-admin';
+      // only super-admin can delete
+      allow delete: if isSignedIn() && isSuperAdmin();
     }
-    
+
+    // ---------- invites ----------
     match /invites/{inviteId} {
-      // If you truly need public reads during registration, keep this true.
-      // If you want to limit exposure, switch to "if isSignedIn()" instead.
-      allow read: if true;
+      // public read during registration
+      allow get, list: if true;
 
-      // Only admins can create/update/delete invites
-      allow write: if isSignedIn() && isAdmin();
+      // only admins can write
+      allow create, update, delete: if isSignedIn() && isAnyAdmin();
     }
 
+    // ---------- reports ----------
     match /reports/{reportId} {
-      allow create: if request.auth != null;
-      
-      allow read, update, delete: if request.auth != null && (
-        requesterRole() == 'super-admin' ||
-        (requesterRole() == 'big-admin' && getUserData(request.auth.uid).district == resource.data.district) ||
-        (requesterRole() == 'admin' && getUserData(request.auth.uid).schoolName == resource.data.schoolName) ||
-        resource.data.teacherId == request.auth.uid
+      // Anyone signed in can create, but enforce ownership on create
+      allow create: if isSignedIn()
+        && request.resource.data.teacherId == request.auth.uid;
+
+      // Reads (covers get + list). Evaluated per document returned:
+      // - super-admin: any
+      // - big-admin: same district
+      // - admin: same school
+      // - user/public_user: only own docs
+      allow read: if isSignedIn() && (
+           isSuperAdmin()
+        || (isBigAdmin() && me() != null && resource.data.district == me().district)
+        || (isAdmin()    && me() != null && resource.data.schoolName == me().schoolName)
+        || resource.data.teacherId == request.auth.uid
+        || resource.data.ownerUid  == request.auth.uid
       );
 
-      // Allow queries based on role
-      allow list: if request.auth != null && (
-        // Super-admin can query anything
-        requesterRole() == 'super-admin' ||
-        
-        // Big-admin can only query their own district
-        (requesterRole() == 'big-admin' && request.query.get('district') == getUserData(request.auth.uid).district) ||
-        
-        // Admin can only query their own school
-        (requesterRole() == 'admin' && request.query.get('schoolName') == getUserData(request.auth.uid).schoolName) ||
-        
-        // Users (teacher) and public users can only query their own reports
-        ((requesterRole() == 'user' || requesterRole() == 'public_user') && request.query.get('teacherId') == request.auth.uid)
+      // Updates/deletes:
+      // - super-admin: any
+      // - others: only if they own the doc
+      allow update, delete: if isSignedIn() && (
+           isSuperAdmin()
+        || resource.data.teacherId == request.auth.uid
+        || resource.data.ownerUid  == request.auth.uid
       );
     }
   }
 }
-
-    
