@@ -31,62 +31,61 @@ service cloud.firestore {
 
     // ---------- users ----------
     match /users/{userId} {
-      // read
       allow get: if isSignedIn() && (request.auth.uid == userId || isAnyAdmin());
       allow list: if isSignedIn() && isAnyAdmin();
-
-      // create own user doc
       allow create: if isSignedIn() && request.auth.uid == userId;
-
-      // user may update self but not elevate role/status
       allow update: if isSignedIn() && (
         (request.auth.uid == userId &&
-          // prevent changing role/status yourself
           request.resource.data.role   == resource.data.role &&
           request.resource.data.status == resource.data.status
         )
         || isAnyAdmin()
       );
-
-      // only super-admin can delete
       allow delete: if isSignedIn() && isSuperAdmin();
     }
 
     // ---------- invites ----------
     match /invites/{inviteId} {
-      // public read during registration
       allow get, list: if true;
-
-      // only admins can write
       allow create, update, delete: if isSignedIn() && isAnyAdmin();
     }
 
     // ---------- reports ----------
     match /reports/{reportId} {
-      // Anyone signed in can create, but enforce ownership on create
+      // Create: enforce ownership
       allow create: if isSignedIn()
         && request.resource.data.teacherId == request.auth.uid;
 
-      // Reads (covers get + list). Evaluated per document returned:
-      // - super-admin: any
-      // - big-admin: same district
-      // - admin: same school
-      // - user/public_user: only own docs
+      // Read: null-safe checks and role-based access
       allow read: if isSignedIn() && (
            isSuperAdmin()
-        || (isBigAdmin() && me() != null && resource.data.district == me().district)
-        || (isAdmin()    && me() != null && resource.data.schoolName == me().schoolName)
-        || resource.data.teacherId == request.auth.uid
-        || resource.data.ownerUid  == request.auth.uid
+        || (isBigAdmin() && me() != null
+            && resource.data.district != null
+            && resource.data.district == me().district)
+        || (isAdmin() && me() != null
+            && resource.data.schoolName != null
+            && resource.data.schoolName == me().schoolName)
+        || (resource.data.teacherId != null
+            && resource.data.teacherId == request.auth.uid)
+        || (resource.data.ownerUid != null
+            && resource.data.ownerUid == request.auth.uid)
       );
 
-      // Updates/deletes:
-      // - super-admin: any
-      // - others: only if they own the doc
+      // List: simplified fallback for ownership
+      allow list: if isSignedIn() && (
+           (resource.data.teacherId != null
+            && resource.data.teacherId == request.auth.uid)
+        || (resource.data.ownerUid != null
+            && resource.data.ownerUid == request.auth.uid)
+      );
+
+      // Update/Delete: super-admin or owner
       allow update, delete: if isSignedIn() && (
            isSuperAdmin()
-        || resource.data.teacherId == request.auth.uid
-        || resource.data.ownerUid  == request.auth.uid
+        || (resource.data.teacherId != null
+            && resource.data.teacherId == request.auth.uid)
+        || (resource.data.ownerUid != null
+            && resource.data.ownerUid == request.auth.uid)
       );
     }
   }
