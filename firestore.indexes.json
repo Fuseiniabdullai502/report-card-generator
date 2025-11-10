@@ -30,7 +30,6 @@
         { "fieldPath": "overallAverage", "order": "DESCENDING" }
       ]
     },
-
     {
       "collectionGroup": "reports",
       "queryScope": "COLLECTION",
@@ -57,6 +56,36 @@
         { "fieldPath": "schoolName", "order": "ASCENDING" },
         { "fieldPath": "className", "order": "ASCENDING" },
         { "fieldPath": "shsProgram", "order": "ASCENDING" },
+        { "fieldPath": "subjectName", "order": "ASCENDING" },
+        { "fieldPath": "overallAverage", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "district", "order": "ASCENDING" },
+        { "fieldPath": "className", "order": "ASCENDING" },
+        { "fieldPath": "academicTerm", "order": "ASCENDING" },
+        { "fieldPath": "overallAverage", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "district", "order": "ASCENDING" },
+        { "fieldPath": "className", "order": "ASCENDING" },
+        { "fieldPath": "schoolCategory", "order": "ASCENDING" },
+        { "fieldPath": "overallAverage", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "schoolName", "order": "ASCENDING" },
+        { "fieldPath": "className", "order": "ASCENDING" },
         { "fieldPath": "subjectName", "order": "ASCENDING" },
         { "fieldPath": "overallAverage", "order": "DESCENDING" }
       ]
