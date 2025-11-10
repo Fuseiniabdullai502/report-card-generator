@@ -1,91 +1,68 @@
-// Firestore Rules
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ---------- helpers ----------
-    function isSignedIn() {
-      return request.auth != null;
-    }
+    // --- helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function userDoc()    { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function userExists() { return exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function role()       { return isSignedIn() && userExists() ? userDoc().role : null; }
 
-    function me() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
-        : null;
-    }
-
-    function role() {
-      return me() != null ? me().role : null;
-    }
-
-    function isSuperAdmin() { return role() == 'super-admin'; }
-    function isBigAdmin()   { return role() == 'big-admin'; }
-    function isAdmin()      { return role() == 'admin'; }
-    function isAnyAdmin()   { return isSuperAdmin() || isBigAdmin() || isAdmin(); }
-
-    // ---------- default deny ----------
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // ---------- users ----------
+    // --------------------------------------------------------------------
+    // users
+    // --------------------------------------------------------------------
     match /users/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId || isAnyAdmin());
-      allow list: if isSignedIn() && isAnyAdmin();
+      // a user can read themself; admins can read any
+      allow get:  if isSignedIn() && (request.auth.uid == userId || role() in ['super-admin','big-admin','admin']);
+      // listing users is admin-only
+      allow list: if isSignedIn() && role() in ['super-admin','big-admin','admin'];
+
+      // create only your own doc
       allow create: if isSignedIn() && request.auth.uid == userId;
+
+      // user can update themself if they don't change role; admins may update any
       allow update: if isSignedIn() && (
-        (request.auth.uid == userId &&
-          request.resource.data.role   == resource.data.role &&
-          request.resource.data.status == resource.data.status
-        )
-        || isAnyAdmin()
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role) ||
+        role() in ['super-admin','big-admin','admin']
       );
-      allow delete: if isSignedIn() && isSuperAdmin();
+
+      // only super-admin may delete
+      allow delete: if isSignedIn() && role() == 'super-admin';
     }
 
-    // ---------- invites ----------
+    // --------------------------------------------------------------------
+    // invites
+    // --------------------------------------------------------------------
     match /invites/{inviteId} {
-      allow get, list: if true;
-      allow create, update, delete: if isSignedIn() && isAnyAdmin();
+      // public read is fine for your signup flow; tighten to isSignedIn() if you want
+      allow read: if true;
+      // writes only by admins
+      allow write: if isSignedIn() && role() in ['super-admin','big-admin','admin'];
     }
 
-    // ---------- reports ----------
+    // --------------------------------------------------------------------
+    // reports
+    // IMPORTANT: For queries, Firestore evaluates this rule PER DOCUMENT in the result.
+    // Do *not* try to read request.query.* — it won’t work. Use document fields.
+    // --------------------------------------------------------------------
     match /reports/{reportId} {
-      // Create: enforce ownership
-      allow create: if isSignedIn()
-        && request.resource.data.teacherId == request.auth.uid;
-
-      // Get (Single Document Read): allow admins and owners
-      allow get: if isSignedIn() && (
-           isSuperAdmin()
-        || (isBigAdmin() && me() != null
-            && resource.data.district != null
-            && resource.data.district == me().district)
-        || (isAdmin() && me() != null
-            && resource.data.schoolName != null
-            && resource.data.schoolName == me().schoolName)
-        || (resource.data.teacherId != null
-            && resource.data.teacherId == request.auth.uid)
-        || (resource.data.ownerUid != null
-            && resource.data.ownerUid == request.auth.uid)
-      );
-      
-      // List (Query): Allow queries based on role and scope
-      allow list: if isSignedIn() && (
-        isSuperAdmin() ||
-        (isBigAdmin() && request.query.district == me().district) ||
-        (isAdmin() && request.query.schoolName == me().schoolName) ||
-        (request.query.teacherId == request.auth.uid)
+      // anyone signed-in can create;
+      // teachers/public_user may only create docs where teacherId == their uid
+      allow create: if isSignedIn() && (
+        role() in ['super-admin','big-admin','admin'] ||
+        (role() in ['user','public_user'] && request.resource.data.teacherId == request.auth.uid)
       );
 
-      // Update/Delete: super-admin or owner
-      allow update, delete: if isSignedIn() && (
-           isSuperAdmin()
-        || (resource.data.teacherId != null
-            && resource.data.teacherId == request.auth.uid)
-        || (resource.data.ownerUid != null
-            && resource.data.ownerUid == request.auth.uid)
+      // read/update/delete for:
+      // - super-admin (all)
+      // - big-admin (same district)
+      // - admin (same school)
+      // - teacher/public_user (their own docs via teacherId)
+      allow read, update, delete: if isSignedIn() && (
+        role() == 'super-admin' ||
+        (role() == 'big-admin' && resource.data.district == userDoc().district) ||
+        (role() == 'admin'     && resource.data.schoolName == userDoc().schoolName) ||
+        (resource.data.teacherId == request.auth.uid)
       );
     }
   }
