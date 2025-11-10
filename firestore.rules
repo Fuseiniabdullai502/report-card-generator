@@ -1,4 +1,6 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -42,8 +44,6 @@ service cloud.firestore {
 
     // --------------------------------------------------------------------
     // reports
-    // IMPORTANT: For queries, Firestore evaluates this rule PER DOCUMENT in the result.
-    // Do *not* try to read request.query.* — it won’t work. Use document fields.
     // --------------------------------------------------------------------
     match /reports/{reportId} {
       // anyone signed-in can create;
@@ -53,16 +53,24 @@ service cloud.firestore {
         (role() in ['user','public_user'] && request.resource.data.teacherId == request.auth.uid)
       );
 
-      // read/update/delete for:
-      // - super-admin (all)
-      // - big-admin (same district)
-      // - admin (same school)
-      // - teacher/public_user (their own docs via teacherId)
-      allow read, update, delete: if isSignedIn() && (
+      // get/update/delete for individual documents
+      allow get, update, delete: if isSignedIn() && (
         role() == 'super-admin' ||
         (role() == 'big-admin' && resource.data.district == userDoc().district) ||
         (role() == 'admin'     && resource.data.schoolName == userDoc().schoolName) ||
         (resource.data.teacherId == request.auth.uid)
+      );
+
+      // list for queries - evaluated on the query, not per-document
+      allow list: if isSignedIn() && (
+          // Super-admin can list all documents without filters
+          role() == 'super-admin'
+          // Big-admin can list documents if the query is filtered by their district
+          || (role() == 'big-admin' && request.query.get('district') == userDoc().district)
+          // Admin can list documents if the query is filtered by their school
+          || (role() == 'admin' && request.query.get('schoolName') == userDoc().schoolName)
+          // Users can list documents if the query is filtered by their user ID
+          || (role() in ['user', 'public_user'] && request.query.get('teacherId') == request.auth.uid)
       );
     }
   }

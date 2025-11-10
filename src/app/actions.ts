@@ -461,31 +461,30 @@ export async function getReportsAction(user: PlainUser): Promise<{ success: bool
   }
 
   try {
-    // Use the client-side db for this action as it's called from client components
-    const reportsCollection = collection(db, 'reports');
-    let q;
+    const dbAdmin = admin.firestore();
+    let q: Query = dbAdmin.collection('reports');
 
     switch (user.role) {
       case 'super-admin':
-        q = clientQuery(reportsCollection);
+        // No filter, gets all documents.
         break;
       case 'big-admin':
         if (!user.district) throw new Error("District admin's scope is not defined.");
-        q = clientQuery(reportsCollection, clientWhere('district', '==', user.district));
+        q = q.where('district', '==', user.district);
         break;
       case 'admin':
         if (!user.schoolName) throw new Error("School admin's scope is not defined.");
-        q = clientQuery(reportsCollection, clientWhere('schoolName', '==', user.schoolName));
+        q = q.where('schoolName', '==', user.schoolName);
         break;
       case 'user':
       case 'public_user':
-        q = clientQuery(reportsCollection, clientWhere('teacherId', '==', user.uid));
+        q = q.where('teacherId', '==', user.uid);
         break;
       default:
         return { success: false, error: 'Invalid user role for fetching reports.' };
     }
 
-    const snapshot = await clientGetDocs(q);
+    const snapshot = await q.get();
     const reports = snapshot.docs.map(serializeReport);
 
     return { success: true, reports };
@@ -871,6 +870,8 @@ export async function getInvitesAction(
     const dbAdmin = admin.firestore();
     let q: Query = dbAdmin.collection('invites').where('status', '==', 'pending');
     
+    // Server-side filtering based on inviter's scope
+    // This is less efficient than a direct query but works without complex composite indexes
     const snapshot = await q.get();
     const allPendingInvites = snapshot.docs.map(serializeInvite);
 
@@ -880,11 +881,13 @@ export async function getInvitesAction(
       filteredInvites = allPendingInvites;
     } else if (user.role === 'big-admin') {
       if (!user.district) throw new Error("District admin's scope is not defined.");
+      // Note: This relies on the district being set correctly when the invite was created.
       filteredInvites = allPendingInvites.filter(invite => invite.district === user.district);
     } else if (user.role === 'admin') {
       if (!user.schoolName) throw new Error("Admin's scope is not defined.");
       filteredInvites = allPendingInvites.filter(invite => invite.schoolName === user.schoolName);
     } else {
+      // Regular users cannot see any invites.
       return { success: false, error: 'Permission denied.' };
     }
 
@@ -1157,5 +1160,3 @@ export async function getReportsForAdminAction(user: PlainUser): Promise<{ succe
     return { success: false, error: `Failed to fetch reports for admin: ${error.message}` };
   }
 }
-
-    
