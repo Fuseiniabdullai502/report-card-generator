@@ -56,8 +56,8 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.teacherId == request.auth.uid;
 
-      // Read: null-safe checks and role-based access
-      allow read: if isSignedIn() && (
+      // Get (Single Document Read): allow admins and owners
+      allow get: if isSignedIn() && (
            isSuperAdmin()
         || (isBigAdmin() && me() != null
             && resource.data.district != null
@@ -70,13 +70,13 @@ service cloud.firestore {
         || (resource.data.ownerUid != null
             && resource.data.ownerUid == request.auth.uid)
       );
-
-      // List: simplified fallback for ownership
+      
+      // List (Query): Allow queries based on role and scope
       allow list: if isSignedIn() && (
-           (resource.data.teacherId != null
-            && resource.data.teacherId == request.auth.uid)
-        || (resource.data.ownerUid != null
-            && resource.data.ownerUid == request.auth.uid)
+        isSuperAdmin() ||
+        (isBigAdmin() && request.query.district == me().district) ||
+        (isAdmin() && request.query.schoolName == me().schoolName) ||
+        (request.query.teacherId == request.auth.uid)
       );
 
       // Update/Delete: super-admin or owner
