@@ -15,31 +15,24 @@ type WebConfig = {
 };
 
 function getWebConfig(): WebConfig {
-  const json = process.env.FIREBASE_WEBAPP_CONFIG; // auto-provided by App Hosting at BUILD
-  if (json) {
-    try {
-      const parsed = JSON.parse(json);
-      return parsed as WebConfig;
-    } catch {
-      // fall through to NEXT_PUBLIC_* if parse fails
-    }
-  }
-  const cfg: WebConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  };
+  const json = process.env.FIREBASE_WEBAPP_CONFIG; // auto-provided by App Hosting
 
-  // Minimal validation (apiKey/authDomain/projectId are must-have)
-  if (!cfg.apiKey || !cfg.authDomain || !cfg.projectId) {
+  if (!json) {
     throw new Error(
-      'Firebase config is missing required environment variables.'
+      "Firebase config environment variable 'FIREBASE_WEBAPP_CONFIG' is not set. This is required for Firebase App Hosting."
     );
   }
-  return cfg;
+
+  const parsedConfig = JSON.parse(json) as WebConfig;
+
+  // Minimal validation
+  if (!parsedConfig.apiKey || !parsedConfig.authDomain || !parsedConfig.projectId) {
+    throw new Error(
+      'Firebase config is missing required fields (apiKey, authDomain, projectId).'
+    );
+  }
+
+  return parsedConfig;
 }
 
 const firebaseConfig = getWebConfig();
