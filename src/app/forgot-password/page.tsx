@@ -30,8 +30,15 @@ export default function ForgotPasswordPage() {
     setIsSuccess(false);
     setIsLoading(true);
 
+    const actionCodeSettings = {
+      // URL to redirect back to.
+      // This must be a domain authorized in your Firebase console.
+      url: window.location.origin + '/login',
+      handleCodeInApp: true,
+    };
+    
     try {
-      await sendPasswordResetEmail(auth, email.trim().toLowerCase());
+      await sendPasswordResetEmail(auth, email.trim().toLowerCase(), actionCodeSettings);
       // For security, we always show a success message to prevent email enumeration.
       setIsSuccess(true);
       toast({
