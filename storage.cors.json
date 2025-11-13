@@ -5,7 +5,8 @@
       "http://localhost:3000",
       "http://localhost:6000",
       "https://*.web.app",
-      "https://*.firebaseapp.com"
+      "https://*.firebaseapp.com",
+      "https://report-card-generator--report-card-generator-e3zkv.europe-west4.hosted.app"
     ],
     "method": [
       "GET",
