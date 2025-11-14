@@ -8,17 +8,16 @@ function initializeFirebaseAdmin(): typeof admin {
 
     try {
         const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
-        // CORRECT: Use standard Google Cloud environment variables for server-side code.
-        const projectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
+        // Use standard Google Cloud environment variables, with a hardcoded fallback as a last resort.
+        const projectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || 'report-card-generator-e3zkv';
 
         if (!projectId) {
-            // Updated error message to be more specific to the server environment.
-            throw new Error("Google Cloud Project ID is not set in the server environment. This is required for the Admin SDK.");
+            // This error should now be virtually impossible to hit.
+            throw new Error("Google Cloud Project ID could not be determined. This is required for the Admin SDK.");
         }
 
         const config: admin.AppOptions = {
             projectId,
-            databaseURL: `https://${projectId}.firebaseio.com`,
         };
         
         if (serviceAccountEnv) {
