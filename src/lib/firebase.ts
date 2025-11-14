@@ -1,3 +1,4 @@
+
 // src/lib/firebase.ts
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
@@ -14,7 +15,7 @@ const firebaseConfig = {
 };
 
 // Basic validation to ensure the config is loaded
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
     throw new Error(
       "Firebase public config is not set. Make sure NEXT_PUBLIC_FIREBASE_* environment variables are available."
     );
