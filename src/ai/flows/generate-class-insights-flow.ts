@@ -90,10 +90,10 @@ Gender Performance:
 
 Based on this data, you MUST provide:
 1. **Overall Assessment**: A general summary of the class's performance.
-2. **Strengths**: ALWAYS identify at least one subject or trend where the class is performing well. Be encouraging. Do not leave this field empty.
+2. **Strengths**: CRITICAL - ALWAYS identify at least one subject or trend where the class is performing well. Be encouraging. Do not leave this field empty.
 3. **Areas for Concern**: CRITICAL - ALWAYS analyze the data to find at least one subject where a significant number of students are below average or where the class average is lowest. Explicitly list this as an area for concern. Do not leave this field empty.
 4. **Actionable Advice for Teacher**: CRITICAL - For each 'Area for Concern' you identified, you MUST provide at least one specific, practical, and actionable piece of advice that a teacher can implement in the classroom. Do not leave this field empty.
-5. **Recommended Resources**: Based on the 'Areas for Concern', recommend 2-3 specific, high-quality, and well-known educational websites or YouTube channels (like Khan Academy, BBC Bitesize, CrashCourse, etc.) that could help the teacher and students. For each resource, provide its name, type (Website or YouTube Channel), a valid URL, and a brief description of its relevance.
+5. **Recommended Resources**: CRITICAL - Based on the 'Areas for Concern', recommend 2-3 specific, high-quality, and well-known educational websites or YouTube channels (like Khan Academy, BBC Bitesize, CrashCourse, etc.) that could help the teacher and students. For each resource, provide its name, type (Website or YouTube Channel), a valid URL, and a brief description of its relevance.
 
 Ensure all output fields are present. If a section seems balanced, find the most subtle positive or negative trend to highlight. Do not return empty arrays for strengths, concerns, or advice. Format the output as JSON matching the GenerateClassInsightsOutputSchema.`,
   config: {
