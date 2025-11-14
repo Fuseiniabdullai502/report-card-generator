@@ -23,6 +23,11 @@ env:
     secret: FIREBASE_SERVICE_ACCOUNT
     availability:
       - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: ${GCLOUD_PROJECT}
+    availability:
+      - BUILD
+      - RUNTIME
 
 scripts:
   buildCommand: npm run build

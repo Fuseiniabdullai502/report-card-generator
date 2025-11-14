@@ -8,10 +8,12 @@ function initializeFirebaseAdmin(): typeof admin {
 
     try {
         const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
-        const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+        // CORRECT: Use standard Google Cloud environment variables for server-side code.
+        const projectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
 
         if (!projectId) {
-            throw new Error("NEXT_PUBLIC_FIREBASE_PROJECT_ID is not set in the environment variables.");
+            // Updated error message to be more specific to the server environment.
+            throw new Error("Google Cloud Project ID is not set in the server environment. This is required for the Admin SDK.");
         }
 
         const config: admin.AppOptions = {
