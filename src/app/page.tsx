@@ -538,7 +538,7 @@ function AppContent({ user }: { user: CustomUser }) {
       studentEntryNumber: formDataFromForm.studentEntryNumber,
       studentName: formDataFromForm.studentName || '',
       className: formDataFromForm.className || '',
-      shsProgram: formDataFromForm.shsProgram || undefined,
+      shsProgram: formDataFromForm.shsProgram || null,
       gender: formDataFromForm.gender,
       country: formDataFromForm.country || 'Ghana',
       schoolName: formDataFromForm.schoolName || '',
@@ -2016,10 +2016,10 @@ function QuickEntryComponent({
             savingStatus={savingStatus}
             imageUploadStatus={imageUploadStatus}
             isAiEditing={isAiEditing}
-            onMarkChange={handleMarkChange}
+            onMarkChange={onMarkChange}
             onFieldChange={handleFieldChange}
             onFieldBlur={handleFieldBlur}
-            onUploadImage={handleUploadImage}
+            onUploadImage={onUploadImage}
             onAiEditImage={handleAiEditImage}
             onDelete={(student) => setStudentToDelete(student)}
             onKeyDown={handleKeyDown}
