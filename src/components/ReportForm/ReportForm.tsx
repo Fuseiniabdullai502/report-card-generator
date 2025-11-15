@@ -366,7 +366,8 @@ export default function ReportForm({
     }
 
     const updatedSubjects = [...formData.subjects];
-    updatedSubjects[index] = { ...updatedSubjects[index], [field]: value };
+    const valueToSet = field === 'subjectName' ? String(value || '') : value;
+    updatedSubjects[index] = { ...updatedSubjects[index], [field]: valueToSet };
     debouncedUpdate({ ...formData, subjects: updatedSubjects });
   };
 
