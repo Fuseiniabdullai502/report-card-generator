@@ -405,7 +405,7 @@ export default function ReportForm({
     debouncedUpdate({ ...formData, hobbies: newHobbies });
   };
 
-  const handleAiEditImage = async (photoUrl: string | null | undefined, editPrompt: string) => {
+  const handleAiEditImage = async (photoUrl: string | undefined, editPrompt: string) => {
     if (!photoUrl) return;
     startImageEditingAiTransition(async () => {
       const result = await editImageWithAiAction({ photoDataUri: photoUrl, prompt: editPrompt });
