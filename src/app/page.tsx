@@ -292,7 +292,7 @@ function AppContent({ user }: { user: CustomUser }) {
     });
 
     let userVisibleClasses = Array.from(classes).filter(Boolean).sort();
-    if (isRegularUser && user.classNames) {
+    if ((isRegularUser || isPublicUser) && user.classNames) {
       userVisibleClasses = user.classNames.filter(Boolean);
     }
 
@@ -302,7 +302,7 @@ function AppContent({ user }: { user: CustomUser }) {
       years: ['all', ...Array.from(years).filter(Boolean).sort()],
       terms: ['all', ...Array.from(terms).filter(Boolean).sort()],
     };
-  }, [allRankedReports, isRegularUser, user.classNames]);
+  }, [allRankedReports, isRegularUser, isPublicUser, user.classNames]);
 
   // Apply filters
   const filteredReports = useMemo(() => {
@@ -920,6 +920,7 @@ function AppContent({ user }: { user: CustomUser }) {
       case 'admin':
         return `Viewing School: ${user.schoolName || 'N/A'}. ${activeFilters ? `Filtering by: ${activeFilters}` : 'Showing all reports in your school.'}`;
       case 'user':
+      case 'public_user':
         if (!user.classNames || (user.classNames as any).length === 0) {
           return 'You are not assigned to any classes. Please contact an administrator.';
         }
@@ -937,7 +938,7 @@ function AppContent({ user }: { user: CustomUser }) {
   }, [reportsCount, allRankedReports.length]);
 
   const headerTitle = useMemo(() => {
-    if (user.role === 'admin' || user.role === 'user') {
+    if (user.role === 'admin' || user.role === 'user' || user.role === 'public_user') {
         return user.schoolName || 'Report Card Generator';
     }
     if (user.role === 'big-admin' && user.district) {
@@ -947,14 +948,14 @@ function AppContent({ user }: { user: CustomUser }) {
   }, [user]);
 
   const headerIcon = useMemo(() => {
-    if (user.role === 'admin' || user.role === 'user' || user.role === 'big-admin') {
+    if (user.role === 'admin' || user.role === 'user' || user.role === 'public_user' || user.role === 'big-admin') {
       return <Building className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />;
     }
     return <BookMarked className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />;
   }, [user.role]);
 
   const schoolNameWatermark = useMemo(() => {
-    if ((user.role === 'admin' || user.role === 'user') && user.schoolName) {
+    if ((user.role === 'admin' || user.role === 'user' || user.role === 'public_user') && user.schoolName) {
       return user.schoolName;
     }
     return null;

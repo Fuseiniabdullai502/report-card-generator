@@ -61,16 +61,12 @@ service cloud.firestore {
         (resource.data.teacherId == request.auth.uid)
       );
 
-      // list for queries - evaluated on the query, not per-document
+      // list for queries - MUST validate the query itself, not resource.data
       allow list: if isSignedIn() && (
-          // Super-admin can list all documents without filters
-          role() == 'super-admin'
-          // Big-admin can list documents if the query is filtered by their district
-          || (role() == 'big-admin' && request.query.get('district') == userDoc().district)
-          // Admin can list documents if the query is filtered by their school
-          || (role() == 'admin' && request.query.get('schoolName') == userDoc().schoolName)
-          // Users can list documents if the query is filtered by their user ID
-          || (role() in ['user', 'public_user'] && request.query.get('teacherId') == request.auth.uid)
+        role() == 'super-admin' ||
+        (role() == 'big-admin' && request.query.district == userDoc().district) ||
+        (role() == 'admin' && request.query.schoolName == userDoc().schoolName) ||
+        (role() in ['user', 'public_user'] && request.query.teacherId == request.auth.uid)
       );
     }
   }
