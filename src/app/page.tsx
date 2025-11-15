@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, ChangeEvent, KeyboardEvent } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, ChangeEvent, KeyboardEvent, useTransition } from 'react';
 import NextImage from 'next/image';
 import dynamic from 'next/dynamic';
 import type { ReportData, SubjectEntry } from '@/lib/schemas';
@@ -133,6 +133,7 @@ function AppContent({ user }: { user: CustomUser }) {
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  const [isReportInsightsAiLoading, startReportInsightsAiTransition] = useTransition();
 
   // Filters
   const [adminFilters, setAdminFilters] = useState({
@@ -540,8 +541,8 @@ function AppContent({ user }: { user: CustomUser }) {
         studentEntryNumber: formDataFromForm.studentEntryNumber || 1,
         studentName: formDataFromForm.studentName || '',
         className: formDataFromForm.className || '',
-        shsProgram: formDataFromForm.shsProgram || null,
-        gender: formDataFromForm.gender || null,
+        shsProgram: formDataFromForm.shsProgram ?? null,
+        gender: formDataFromForm.gender ?? null,
         country: formDataFromForm.country || 'Ghana',
         schoolName: formDataFromForm.schoolName || null,
         schoolCategory: formDataFromForm.schoolCategory || null,
@@ -562,7 +563,7 @@ function AppContent({ user }: { user: CustomUser }) {
         areasForImprovement: formDataFromForm.areasForImprovement || '',
         hobbies: formDataFromForm.hobbies || [],
         teacherFeedback: formDataFromForm.teacherFeedback || null,
-        instructorContact: formDataFromForm.instructorContact || null,
+        instructorContact: formDataFromForm.instructorContact ?? null,
         subjects: formDataFromForm.subjects.map(s => ({
           subjectName: s.subjectName || '',
           continuousAssessment: s.continuousAssessment == null ? null : Number(s.continuousAssessment),
@@ -894,7 +895,7 @@ function AppContent({ user }: { user: CustomUser }) {
   };
 
   const handleGenerateAiReportInsights = async () => {
-    const { studentName, className, subjects, daysAttended, totalSchoolDays, academicTerm } = formData;
+    const { studentName, className, subjects, daysAttended, totalSchoolDays, academicTerm } = currentEditingReport;
   
     if (!studentName?.trim()) {
       toast({ title: "Missing Student Name", description: "Please enter the student's name.", variant: "destructive" });
@@ -909,7 +910,7 @@ function AppContent({ user }: { user: CustomUser }) {
       return;
     }
   
-    const validSubjects = subjects.filter((s) => s.subjectName && s.subjectName.trim() !== "");
+    const validSubjects = subjects.filter((s: SubjectEntry) => s.subjectName && s.subjectName.trim() !== "");
     if (validSubjects.length === 0) {
       toast({ title: "No Valid Subjects", description: "Please add at least one subject with a name.", variant: "destructive" });
       return;
@@ -920,12 +921,12 @@ function AppContent({ user }: { user: CustomUser }) {
       previousTermsDataForAI = allRankedReports
         .filter(
           (report) =>
-            report.studentName?.trim().toLowerCase() === formData.studentName?.trim().toLowerCase() &&
-            report.academicTerm !== formData.academicTerm
+            report.studentName?.trim().toLowerCase() === currentEditingReport.studentName?.trim().toLowerCase() &&
+            report.academicTerm !== currentEditingReport.academicTerm
         )
         .map((report) => ({
           termName: report.academicTerm || "Unknown Term",
-          subjects: report.subjects.map((s) => ({
+          subjects: report.subjects.map((s: SubjectEntry) => ({
             subjectName: s.subjectName,
             continuousAssessment: s.continuousAssessment,
             examinationMark: s.examinationMark,
@@ -934,14 +935,14 @@ function AppContent({ user }: { user: CustomUser }) {
         }));
     }
   
-    startAiTransition(async () => {
+    startReportInsightsAiTransition(async () => {
       const aiInput: GenerateReportInsightsInput = {
         studentName,
         className,
         currentAcademicTerm: academicTerm,
         daysAttended: daysAttended === null ? null : Number(daysAttended),
         totalSchoolDays: totalSchoolDays === null ? null : Number(totalSchoolDays),
-        subjects: validSubjects.map((s) => ({
+        subjects: validSubjects.map((s: SubjectEntry) => ({
           subjectName: s.subjectName,
           continuousAssessment: s.continuousAssessment === null ? null : Number(s.continuousAssessment),
           examinationMark: s.examinationMark === null ? null : Number(s.examinationMark),
@@ -950,7 +951,7 @@ function AppContent({ user }: { user: CustomUser }) {
       };
       const result = await getAiReportInsightsAction(aiInput);
       if (result.success && result.insights) {
-        handleFormUpdate({ ...formData, ...result.insights });
+        handleFormUpdate({ ...currentEditingReport, ...result.insights });
         toast({ title: "AI Insights Generated", description: "Performance summary updated with term-over-term comparison." });
       } else {
         toast({
@@ -1908,7 +1909,7 @@ function QuickEntryComponent({
       studentEntryNumber: highestEntryNum + 1,
       studentName: newStudentName.trim(),
       className: selectedClass,
-      gender: null,
+      gender: undefined,
       country: "Ghana",
       selectedTemplateId: 'default',
       studentPhotoUrl: null,
