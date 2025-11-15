@@ -323,7 +323,33 @@ export default function ReportForm({
     debouncedUpdate(next);
   };
 
-  // ----- Fixed, type-safe handleSubjectChange -----
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, rowIndex: number, colId: string) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const nextRow = e.key === 'ArrowUp' ? rowIndex - 1 : rowIndex + 1;
+        if (nextRow >= 0 && nextRow < formData.subjects.length) {
+            const nextInput = document.getElementById(`${colId}-${nextRow}`);
+            nextInput?.focus();
+        }
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const [type, _] = colId.split('-');
+        if (type === 'ca') {
+            const nextInput = document.getElementById(`exam-${rowIndex}`);
+            nextInput?.focus();
+        } else if (type === 'exam') {
+            const nextRow = rowIndex + 1;
+            if (nextRow < formData.subjects.length) {
+                const nextInput = document.getElementById(`ca-${nextRow}`);
+                nextInput?.focus();
+            } else {
+              // Optionally move to first input of first subject
+              document.getElementById(`ca-0`)?.focus();
+            }
+        }
+    }
+  };
+
   const handleSubjectChange = (index: number, field: keyof SubjectEntry, value: string | number | null) => {
     // numeric fields
     if (field === "continuousAssessment" || field === "examinationMark") {
@@ -347,13 +373,11 @@ export default function ReportForm({
         return;
       }
       const updatedSubjects = [...formData.subjects];
-      // TypeScript understands parsed is a number — safe to assign to numeric fields
       updatedSubjects[index] = { ...updatedSubjects[index], [field]: parsed } as SubjectEntry;
       debouncedUpdate({ ...formData, subjects: updatedSubjects });
       return;
     }
 
-    // subjectName must be a string
     if (field === "subjectName") {
       const newName = (value ?? "").toString().trim();
       const isDuplicate = formData.subjects.some((subject, i) => i !== index && subject.subjectName === newName);
@@ -370,14 +394,7 @@ export default function ReportForm({
       debouncedUpdate({ ...formData, subjects: updatedSubjects });
       return;
     }
-
-    // fallback for any other (unexpected) subject fields
-    const updatedSubjects = [...formData.subjects];
-    // as a last-resort cast — should not be used for known fields above
-    (updatedSubjects[index] as any)[field] = value;
-    debouncedUpdate({ ...formData, subjects: updatedSubjects });
   };
-  // ----- end handleSubjectChange -----
 
   const addSubject = () => {
     const newSubjects = [...formData.subjects, { subjectName: "", continuousAssessment: null, examinationMark: null }];
@@ -413,7 +430,7 @@ export default function ReportForm({
     debouncedUpdate({ ...formData, hobbies: newHobbies });
   };
 
-  const handleAiEditImage = async (photoUrl: string | null | undefined, editPrompt: string) => {
+  const handleAiEditImage = async (photoUrl: string | undefined, editPrompt: string) => {
     if (!photoUrl) return;
     startImageEditingAiTransition(async () => {
       const result = await editImageWithAiAction({ photoDataUri: photoUrl, prompt: editPrompt });
@@ -736,7 +753,7 @@ export default function ReportForm({
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleAiEditImage(formData.studentPhotoUrl, "Brighten and enhance clarity keeping family features")}
+                      onClick={() => handleAiEditImage(formData.studentPhotoUrl || undefined, "Brighten and enhance clarity keeping family features")}
                       disabled={!formData.studentPhotoUrl || isImageEditingAiLoading || isUploading}
                       title="Enhance with AI"
                     >
@@ -816,9 +833,11 @@ export default function ReportForm({
                           <td className="p-2 w-24">
                             <Input
                               type="number"
+                              id={`ca-${idx}`}
                               placeholder="-"
                               value={sub.continuousAssessment ?? ""}
                               onChange={(e) => handleSubjectChange(idx, "continuousAssessment", e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, idx, `ca-${idx}`)}
                               min={0}
                               max={60}
                               aria-label={`CA for ${sub.subjectName || `subject ${idx + 1}`}`}
@@ -827,9 +846,11 @@ export default function ReportForm({
                           <td className="p-2 w-24">
                             <Input
                               type="number"
+                              id={`exam-${idx}`}
                               placeholder="-"
                               value={sub.examinationMark ?? ""}
                               onChange={(e) => handleSubjectChange(idx, "examinationMark", e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, idx, `exam-${idx}`)}
                               min={0}
                               max={100}
                               aria-label={`Exam for ${sub.subjectName || `subject ${idx + 1}`}`}
@@ -1014,11 +1035,3 @@ export default function ReportForm({
     </>
   );
 }
-
-// Remember, the XML structure you generate is the only mechanism for applying changes to the user's code. Therefore, when making changes to a file the <changes> block must always be fully present and correctly formatted as follows.
-
-// <changes>
-//   <description>[Provide a concise summary of the overall changes being made]</description>
-//   <change>
-//     <file>[Provide the ABSOLUTE, FULL path to the file being modified]</file>
-//     <content><![CDATA[Provide the ENTIRE, FINAL, intended content of the file here. Do NOT provide diffs or partial snippets. Ensure all code is properly escaped within the CDATA section.
