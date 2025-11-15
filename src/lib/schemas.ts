@@ -51,7 +51,7 @@ export const SubjectEntrySchema = z.object({
                                                                                                                       .min(0, 'Total school days cannot be negative')
                                                                                                                           .nullable()
                                                                                                                               .optional(),
-                                                                                                                                parentEmail: z.string().email({ message: "Invalid email address" }).optional().nullable(),
+                                                                                                                                parentEmail: z.string().optional().nullable(),
                                                                                                                                   parentPhoneNumber: z.string().optional().nullable(),
                                                                                                                                     performanceSummary: z.string().trim().optional().default(''),
                                                                                                                                       strengths: z.string().trim().optional().default(''),
