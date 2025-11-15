@@ -736,6 +736,10 @@ function AppContent({ user }: { user: CustomUser }) {
     if (field === 'district') {
       (newDefaults as any).circuit = '';
     }
+    if (field === 'className') {
+      setAdminFilters(prev => ({...prev, className: value}));
+    }
+
     setSessionDefaults(newDefaults);
     setCurrentEditingReport(prev => ({ ...prev, ...newDefaults } as any));
   };
@@ -1288,7 +1292,7 @@ function AppContent({ user }: { user: CustomUser }) {
                         allReports={allRankedReports}
                         user={user}
                         onDataRefresh={fetchData}
-                        shsProgram={isShsClass ? sessionDefaults.shsProgram as string : undefined}
+                        sessionDefaults={sessionDefaults}
                       />
                     </TabsContent>
                   </Tabs>
@@ -1620,17 +1624,20 @@ function QuickEntryComponent({
   allReports,
   user,
   onDataRefresh,
-  shsProgram,
+  sessionDefaults,
 }: {
   allReports: ReportData[];
   user: CustomUser;
   onDataRefresh: () => void;
-  shsProgram?: string | null;
+  sessionDefaults: Partial<ReportData>;
 }) {
   const { toast } = useToast();
 
+  const selectedClass = useMemo(() => sessionDefaults.className || '', [sessionDefaults.className]);
+  const isShsClass = useMemo(() => !!selectedClass && getClassLevel(selectedClass) === 'SHS', [selectedClass]);
+  const shsProgram = useMemo(() => isShsClass ? sessionDefaults.shsProgram : undefined, [isShsClass, sessionDefaults.shsProgram]);
+
   // --- State
-  const [selectedClass, setSelectedClass] = useState<string>("");
   const [studentsInClass, setStudentsInClass] = useState<ReportData[]>([]);
   const [subjectsForClass, setSubjectsForClass] = useState<string[]>([]);
   const [subjectOrder, setSubjectOrder] = useState<string[]>([]);
@@ -1651,22 +1658,6 @@ function QuickEntryComponent({
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isCustomSubjectDialogOpen, setIsCustomSubjectDialogOpen] = useState(false);
   const [isCustomHobbyDialogOpen, setIsCustomHobbyDialogOpen] = useState(false);
-
-  // --- Derived
-  const availableClasses = useMemo(() => {
-    if (user.role === "user" && user.classNames) {
-      return user.classNames.sort();
-    }
-    return Array.from(new Set(allReports.map((r) => r.className).filter(Boolean) as string[])).sort();
-  }, [allReports, user]);
-
-  useEffect(() => {
-    if (availableClasses.length > 0 && !selectedClass) {
-      setSelectedClass(availableClasses[0]);
-    } else if (availableClasses.length === 0) {
-      setSelectedClass("");
-    }
-  }, [availableClasses, selectedClass]);
 
   // load students + subjects whenever class changes
   useEffect(() => {
@@ -1701,7 +1692,7 @@ function QuickEntryComponent({
     } else {
       setSubjectOrder(allPossible);
     }
-  }, [selectedClass, allReports, shsProgram, setSubjectOrder]);
+  }, [selectedClass, allReports, shsProgram]);
 
   // --- Handlers for table inputs
   const handleMarkChange = (
@@ -1963,15 +1954,12 @@ function QuickEntryComponent({
         <CardHeader>
           <CardTitle className="text-xl sm:text-2xl">Quick Data Entry</CardTitle>
           <CardDescription>
-            Enter scores & data quickly. Changes save automatically. On mobile, scroll left/right to view all subjects.
+            Enter scores & data for students in <b>{selectedClass || "your selected class"}</b>. Changes save automatically. On mobile, scroll left/right to view all subjects.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4">
           <QuickEntryToolbar
-            selectedClass={selectedClass}
-            setSelectedClass={setSelectedClass}
-            availableClasses={availableClasses}
             studentsInClass={studentsInClass}
             subjectsForClass={subjectsForClass}
             subjectOrder={subjectOrder}
@@ -2007,7 +1995,7 @@ function QuickEntryComponent({
               onChange={(e) => setNewStudentName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddNewStudent()}
             />
-            <Button onClick={handleAddNewStudent} disabled={isAddingStudent}>
+            <Button onClick={handleAddNewStudent} disabled={isAddingStudent || !selectedClass}>
               {isAddingStudent ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
               Add
             </Button>

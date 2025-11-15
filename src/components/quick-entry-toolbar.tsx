@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React from "react";
@@ -6,13 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -32,26 +26,16 @@ import {
 import type { ReportData } from "@/lib/schemas";
 
 type ToolbarProps = {
-  selectedClass: string;
-  setSelectedClass: (v: string) => void;
-  availableClasses: string[];
   studentsInClass: ReportData[];
   subjectsForClass: string[];
   subjectOrder: string[];
   setSubjectOrder: (order: string[]) => void;
-
-  // Search state is kept in parent (so the table can filter)
   searchQuery: string;
   setSearchQuery: (v: string) => void;
-
-  // Opens your “Add New Subject” dialog (handled in QuickEntryDialogs)
   onOpenAddSubject?: () => void;
 };
 
 export default function QuickEntryToolbar({
-  selectedClass,
-  setSelectedClass,
-  availableClasses,
   studentsInClass,
   subjectsForClass,
   subjectOrder,
@@ -63,10 +47,10 @@ export default function QuickEntryToolbar({
   // save order per class
   const handleSubjectOrderChange = (newOrder: string[]) => {
     setSubjectOrder(newOrder);
-    if (selectedClass) {
+    if (studentsInClass[0]?.className) {
       try {
         localStorage.setItem(
-          `subjectOrder_${selectedClass}`,
+          `subjectOrder_${studentsInClass[0].className}`,
           JSON.stringify(newOrder)
         );
       } catch {
@@ -87,43 +71,12 @@ export default function QuickEntryToolbar({
     }
   };
 
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
-      {/* Class select */}
-      <div className="lg:col-span-1">
-        <Label htmlFor="class-select" className="text-xs text-muted-foreground">
-          Select a Class
-        </Label>
-        <div className="flex items-center gap-2">
-          <Select
-            value={selectedClass}
-            onValueChange={setSelectedClass}
-          >
-            <SelectTrigger id="class-select" className="w-full">
-              <SelectValue placeholder={availableClasses.length > 0 ? "Select a class..." : "No classes found"} />
-            </SelectTrigger>
-            <SelectContent>
-              {availableClasses.length > 0 ? (
-                availableClasses.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))
-              ) : (
-                <div className="p-2 text-center text-xs text-muted-foreground">No classes available.</div>
-              )}
-            </SelectContent>
-          </Select>
-          {selectedClass && (
-            <div className="text-xs sm:text-sm font-semibold text-primary whitespace-nowrap">
-              (Total: {studentsInClass.length})
-            </div>
-          )}
-        </div>
-      </div>
+  const hasStudents = studentsInClass.length > 0;
 
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
       {/* Subject manager */}
-      <div className="lg:col-span-1">
+      <div className="sm:col-span-1">
         <Label className="text-xs text-muted-foreground">
           Manage & Order Subjects
         </Label>
@@ -132,7 +85,7 @@ export default function QuickEntryToolbar({
             <Button
               variant="outline"
               className="w-full"
-              disabled={!selectedClass}
+              disabled={!hasStudents}
             >
               <BookPlusIcon className="mr-2 h-4 w-4 text-purple-500" />
               Manage Subjects
@@ -205,7 +158,7 @@ export default function QuickEntryToolbar({
       </div>
 
       {/* Search */}
-      <div className="sm:col-span-2 lg:col-span-2">
+      <div className="sm:col-span-1">
         <Label
           htmlFor="search-student"
           className="text-xs text-muted-foreground"
@@ -220,7 +173,7 @@ export default function QuickEntryToolbar({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
-            disabled={!selectedClass}
+            disabled={!hasStudents}
           />
         </div>
       </div>
