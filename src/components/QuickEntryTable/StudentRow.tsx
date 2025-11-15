@@ -135,7 +135,7 @@ function StudentRow({
             </TableCell>
             <TableCell className="border-l p-1">
               <label htmlFor={`${sub}-exam-${student.id}`} className="sr-only">{sub} exam</label>
-              <Input type="number" placeholder="-" id={`${sub}-exam-${student.id}`} value={subjectData?.examinationMark ?? ""} onChange={(e) => handleNumberInput(e.target.value, (val) => onMarkChange(student.id, sub, "examinationMark", val))} onKeyDown={(e) => onKeyDown(e, index, `${sub}-exam`)} onBlur={() => onFieldBlur(student.id, { subjects: student.subjects })} className="text-center h-8 w-[60px] text-xs sm:h-9 sm:text-sm" min={0} max={100} disabled={savingStatus[student.id] === "saving"} aria-label={`${sub} exam for ${student.studentName || index + 1}`} />
+              <Input type="number" placeholder="-" id={`${sub}-exam-${student.id}`} value={subjectData?.examinationMark ?? ""} onChange={(e) => handleNumberInput(e.target.value, (val) => onMarkChange(student.id, sub, "examinationMark", val), 0, 100)} onKeyDown={(e) => onKeyDown(e, index, `${sub}-exam`)} onBlur={() => onFieldBlur(student.id, { subjects: student.subjects })} className="text-center h-8 w-[60px] text-xs sm:h-9 sm:text-sm" min={0} max={100} disabled={savingStatus[student.id] === "saving"} aria-label={`${sub} exam for ${student.studentName || index + 1}`} />
             </TableCell>
           </React.Fragment>
         );
@@ -160,3 +160,4 @@ function StudentRow({
 }
 
 export default React.memo(StudentRow);
+    

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -1705,18 +1704,27 @@ function QuickEntryComponent({
     val: string
   ) => {
     setStudentsInClass((prev) =>
-      prev.map((s) =>
-        s.id === studentId
-          ? {
-              ...s,
-              subjects: s.subjects.map((sub) =>
+      prev.map((s) => {
+        if (s.id !== studentId) return s;
+
+        const existingSubject = s.subjects.find(sub => sub.subjectName === subject);
+        let newSubjects;
+
+        if (existingSubject) {
+            newSubjects = s.subjects.map((sub) =>
                 sub.subjectName === subject
-                  ? { ...sub, [type]: val === "" ? null : Number(val) }
-                  : sub
-              ),
-            }
-          : s
-      )
+                    ? { ...sub, [type]: val === "" ? null : Number(val) }
+                    : sub
+            );
+        } else {
+            // This case handles adding a new subject row for a student who doesn't have it yet
+            const newSubjectEntry: SubjectEntry = { subjectName: subject, continuousAssessment: null, examinationMark: null };
+            newSubjectEntry[type] = val === "" ? null : Number(val);
+            newSubjects = [...s.subjects, newSubjectEntry];
+        }
+
+        return { ...s, subjects: newSubjects };
+      })
     );
   };
 
@@ -1986,12 +1994,15 @@ function QuickEntryComponent({
 
         <CardContent className="space-y-4">
           <QuickEntryToolbar
-            studentsInClass={studentsInClass}
-            subjectsForClass={subjectsForClass}
-            subjectOrder={subjectOrder}
-            setSubjectOrder={setSubjectOrder}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+            hasStudents={studentsInClass.length > 0}
+            subjectOrder={subjectOrder}
+            setSubjectOrder={(newOrder) => {
+              setSubjectOrder(newOrder);
+              localStorage.setItem(`subjectOrder_${selectedClass}`, JSON.stringify(newOrder));
+            }}
+            allSubjects={subjectsForClass}
             onOpenAddSubject={() => setIsCustomSubjectDialogOpen(true)}
           />
 

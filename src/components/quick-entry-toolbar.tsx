@@ -23,11 +23,10 @@ import {
   ArrowDown,
   Search as SearchIcon,
 } from "lucide-react";
-import type { ReportData } from "@/lib/schemas";
 
 type ToolbarProps = {
-  studentsInClass: ReportData[];
-  subjectsForClass: string[];
+  hasStudents: boolean;
+  allSubjects: string[];
   subjectOrder: string[];
   setSubjectOrder: (order: string[]) => void;
   searchQuery: string;
@@ -36,8 +35,8 @@ type ToolbarProps = {
 };
 
 export default function QuickEntryToolbar({
-  studentsInClass,
-  subjectsForClass,
+  hasStudents,
+  allSubjects,
   subjectOrder,
   setSubjectOrder,
   searchQuery,
@@ -47,16 +46,7 @@ export default function QuickEntryToolbar({
   // save order per class
   const handleSubjectOrderChange = (newOrder: string[]) => {
     setSubjectOrder(newOrder);
-    if (studentsInClass[0]?.className) {
-      try {
-        localStorage.setItem(
-          `subjectOrder_${studentsInClass[0].className}`,
-          JSON.stringify(newOrder)
-        );
-      } catch {
-        /* no-op */
-      }
-    }
+    // Persisting to localStorage is handled in the parent component now
   };
 
   const moveSubject = (index: number, direction: "up" | "down") => {
@@ -70,8 +60,6 @@ export default function QuickEntryToolbar({
       handleSubjectOrderChange(newOrder);
     }
   };
-
-  const hasStudents = studentsInClass.length > 0;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
@@ -97,7 +85,7 @@ export default function QuickEntryToolbar({
             <DropdownMenuLabel>Visible Subjects</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <ScrollArea className="h-60">
-              {subjectsForClass.map((subject) => {
+              {allSubjects.map((subject) => {
                 const visible = subjectOrder.includes(subject);
                 const idx = subjectOrder.indexOf(subject);
                 return (
@@ -180,3 +168,5 @@ export default function QuickEntryToolbar({
     </div>
   );
 }
+
+    

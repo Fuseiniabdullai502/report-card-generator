@@ -117,3 +117,4 @@ export default function QuickEntryTable({
     </div>
   );
 }
+    
