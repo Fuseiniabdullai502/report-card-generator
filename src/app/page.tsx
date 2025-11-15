@@ -44,7 +44,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Components for Quick Entry integrated directly
 import QuickEntryToolbar from '@/components/quick-entry-toolbar';
-import QuickEntryTable from '@/components/QuickEntryTable'; 
+import QuickEntryTable from '@/components/QuickEntryTable';
+import AddSubjectDialog from '@/components/AddSubjectDialog';
+
 
 // ⚡️ Dynamic imports (smaller initial JS)
 const ReportForm = dynamic(() => import('@/components/report-form'), { ssr: false, loading: () => <div className="p-4 text-sm text-muted-foreground">Loading form…</div> });
@@ -1946,6 +1948,29 @@ function QuickEntryComponent({
       toast({ title: "Feedback Failed", description: result.error, variant: "destructive" });
     }
   };
+  
+  const handleAddSubject = (newSubject: string) => {
+    if (newSubject && !subjectsForClass.includes(newSubject)) {
+      const newSubjectsForClass = [...subjectsForClass, newSubject].sort();
+      setSubjectsForClass(newSubjectsForClass);
+
+      const newOrder = [...subjectOrder, newSubject];
+      setSubjectOrder(newOrder);
+
+      // Add new subject to all students in the current class view
+      const updatedStudents = studentsInClass.map(student => ({
+        ...student,
+        subjects: [...student.subjects, { subjectName: newSubject, continuousAssessment: null, examinationMark: null }]
+      }));
+      setStudentsInClass(updatedStudents);
+
+      toast({
+        title: "Subject Added",
+        description: `"${newSubject}" has been added to the list and to all students in this class.`,
+      });
+    }
+  };
+
 
   // --- Render
   return (
@@ -2036,8 +2061,12 @@ function QuickEntryComponent({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Dialogs would be rendered here, currently they are placeholders */}
+      
+      <AddSubjectDialog
+        isOpen={isCustomSubjectDialogOpen}
+        onOpenChange={setIsCustomSubjectDialogOpen}
+        onAddSubject={handleAddSubject}
+      />
     </>
   );
 }
