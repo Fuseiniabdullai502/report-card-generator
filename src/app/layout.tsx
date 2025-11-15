@@ -23,7 +23,6 @@ export default function RootLayout({
           content="width=device-width, initial-scale=1, maximum-scale=1"
         />
         <meta name="theme-color" content="#64B5F6" />
-        <link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="any" />
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
       </head>
       <body>
