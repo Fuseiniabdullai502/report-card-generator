@@ -7,6 +7,10 @@ import PreviewModeToggle from "@/components/PreviewModeToggle";
 export const metadata: Metadata = {
   title: "Report Card Generator",
   description: "Easily create, customize, rank, and print student terminal reports.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icons/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -24,6 +28,7 @@ export default function RootLayout({
         />
         <meta name="theme-color" content="#64B5F6" />
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
+        <link rel="icon" href="/icons/favicon.ico" sizes="any" />
       </head>
       <body>
         <Providers>
