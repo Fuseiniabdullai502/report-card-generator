@@ -323,8 +323,9 @@ export default function ReportForm({
     debouncedUpdate(next);
   };
 
+  // ----- Fixed, type-safe handleSubjectChange -----
   const handleSubjectChange = (index: number, field: keyof SubjectEntry, value: string | number | null) => {
-    // handle numeric conversions robustly
+    // numeric fields
     if (field === "continuousAssessment" || field === "examinationMark") {
       if (value === "" || value === null) {
         const updatedSubjects = [...formData.subjects];
@@ -346,14 +347,15 @@ export default function ReportForm({
         return;
       }
       const updatedSubjects = [...formData.subjects];
-      updatedSubjects[index] = { ...updatedSubjects[index], [field]: parsed };
+      // TypeScript understands parsed is a number — safe to assign to numeric fields
+      updatedSubjects[index] = { ...updatedSubjects[index], [field]: parsed } as SubjectEntry;
       debouncedUpdate({ ...formData, subjects: updatedSubjects });
       return;
     }
 
-    // subject name
+    // subjectName must be a string
     if (field === "subjectName") {
-      const newName = String(value || "").trim();
+      const newName = (value ?? "").toString().trim();
       const isDuplicate = formData.subjects.some((subject, i) => i !== index && subject.subjectName === newName);
       if (isDuplicate) {
         toast({
@@ -363,13 +365,19 @@ export default function ReportForm({
         });
         return;
       }
+      const updatedSubjects = [...formData.subjects];
+      updatedSubjects[index] = { ...updatedSubjects[index], subjectName: newName };
+      debouncedUpdate({ ...formData, subjects: updatedSubjects });
+      return;
     }
 
+    // fallback for any other (unexpected) subject fields
     const updatedSubjects = [...formData.subjects];
-    const valueToSet = field === 'subjectName' ? String(value || '') : value;
-    updatedSubjects[index] = { ...updatedSubjects[index], [field]: valueToSet };
+    // as a last-resort cast — should not be used for known fields above
+    (updatedSubjects[index] as any)[field] = value;
     debouncedUpdate({ ...formData, subjects: updatedSubjects });
   };
+  // ----- end handleSubjectChange -----
 
   const addSubject = () => {
     const newSubjects = [...formData.subjects, { subjectName: "", continuousAssessment: null, examinationMark: null }];
@@ -405,7 +413,7 @@ export default function ReportForm({
     debouncedUpdate({ ...formData, hobbies: newHobbies });
   };
 
-  const handleAiEditImage = async (photoUrl: string | undefined, editPrompt: string) => {
+  const handleAiEditImage = async (photoUrl: string | null | undefined, editPrompt: string) => {
     if (!photoUrl) return;
     startImageEditingAiTransition(async () => {
       const result = await editImageWithAiAction({ photoDataUri: photoUrl, prompt: editPrompt });
@@ -728,7 +736,7 @@ export default function ReportForm({
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleAiEditImage(formData.studentPhotoUrl || '', "Brighten and enhance clarity keeping family features")}
+                      onClick={() => handleAiEditImage(formData.studentPhotoUrl, "Brighten and enhance clarity keeping family features")}
                       disabled={!formData.studentPhotoUrl || isImageEditingAiLoading || isUploading}
                       title="Enhance with AI"
                     >
@@ -1006,3 +1014,11 @@ export default function ReportForm({
     </>
   );
 }
+
+// Remember, the XML structure you generate is the only mechanism for applying changes to the user's code. Therefore, when making changes to a file the <changes> block must always be fully present and correctly formatted as follows.
+
+// <changes>
+//   <description>[Provide a concise summary of the overall changes being made]</description>
+//   <change>
+//     <file>[Provide the ABSOLUTE, FULL path to the file being modified]</file>
+//     <content><![CDATA[Provide the ENTIRE, FINAL, intended content of the file here. Do NOT provide diffs or partial snippets. Ensure all code is properly escaped within the CDATA section.
