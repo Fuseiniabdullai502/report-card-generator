@@ -44,7 +44,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Components for Quick Entry integrated directly
 import QuickEntryToolbar from '@/components/quick-entry-toolbar';
-import QuickEntryTable from '@/components/QuickEntryTable';
+import QuickEntryTable from '@/components/QuickEntryTable/QuickEntryTable';
 import AddSubjectDialog from '@/components/AddSubjectDialog';
 
 
