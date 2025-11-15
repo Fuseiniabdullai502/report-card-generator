@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -535,32 +534,32 @@ function AppContent({ user }: { user: CustomUser }) {
 
     const reportToSaveForFirestore = {
       teacherId: user.uid,
-      studentEntryNumber: formDataFromForm.studentEntryNumber,
+      studentEntryNumber: formDataFromForm.studentEntryNumber || 1,
       studentName: formDataFromForm.studentName || '',
       className: formDataFromForm.className || '',
       shsProgram: formDataFromForm.shsProgram || null,
       gender: formDataFromForm.gender || null,
       country: formDataFromForm.country || 'Ghana',
       schoolName: formDataFromForm.schoolName || '',
+      schoolCategory: formDataFromForm.schoolCategory || null,
       region: formDataFromForm.region || '',
       district: formDataFromForm.district || '',
       circuit: formDataFromForm.circuit || '',
-      schoolCategory: formDataFromForm.schoolCategory || null,
       schoolLogoDataUri: formDataFromForm.schoolLogoDataUri || null,
       academicYear: formDataFromForm.academicYear || '',
       academicTerm: formDataFromForm.academicTerm || '',
       reopeningDate: formDataFromForm.reopeningDate || null,
-      selectedTemplateId: formDataFromForm.selectedTemplateId ?? 'default',
+      selectedTemplateId: formDataFromForm.selectedTemplateId || 'default',
       daysAttended: formDataFromForm.daysAttended == null ? null : Number(formDataFromForm.daysAttended),
       totalSchoolDays: formDataFromForm.totalSchoolDays == null ? null : Number(formDataFromForm.totalSchoolDays),
-      parentEmail: formDataFromForm.parentEmail || "",
-      parentPhoneNumber: formDataFromForm.parentPhoneNumber || "",
+      parentEmail: formDataFromForm.parentEmail || null,
+      parentPhoneNumber: formDataFromForm.parentPhoneNumber || null,
       performanceSummary: formDataFromForm.performanceSummary || '',
       strengths: formDataFromForm.strengths || '',
       areasForImprovement: formDataFromForm.areasForImprovement || '',
       hobbies: formDataFromForm.hobbies || [],
-      teacherFeedback: formDataFromForm.teacherFeedback || "",
-      instructorContact: formDataFromForm.instructorContact,
+      teacherFeedback: formDataFromForm.teacherFeedback || '',
+      instructorContact: formDataFromForm.instructorContact || null,
       subjects: formDataFromForm.subjects.map(s => ({
         subjectName: s.subjectName || '',
         continuousAssessment: s.continuousAssessment == null ? null : Number(s.continuousAssessment),
@@ -569,7 +568,7 @@ function AppContent({ user }: { user: CustomUser }) {
       promotionStatus: formDataFromForm.promotionStatus || null,
       studentPhotoUrl: formDataFromForm.studentPhotoUrl || null,
       headMasterSignatureDataUri: formDataFromForm.headMasterSignatureDataUri || null,
-      clientSideId: formDataFromForm.id,
+      clientSideId: formDataFromForm.id, // For local tracking if needed
     };
 
     try {
@@ -1859,12 +1858,19 @@ function QuickEntryComponent({
     setSavingStatus((p) => ({ ...p, [id]: "saving" }));
     try {
       
-      const dataToSave = { ...fields };
+      const dataToSave: { [key: string]: any } = { ...fields };
+      // Ensure all undefined optional fields are converted to null
+      Object.keys(dataToSave).forEach(key => {
+        if (dataToSave[key] === undefined) {
+          dataToSave[key] = null;
+        }
+      });
+
       if (dataToSave.subjects) {
-        dataToSave.subjects = dataToSave.subjects.map(s => ({
+        dataToSave.subjects = dataToSave.subjects.map((s: SubjectEntry) => ({
           ...s,
-          continuousAssessment: s.continuousAssessment === undefined ? null : s.continuousAssessment,
-          examinationMark: s.examinationMark === undefined ? null : s.examinationMark,
+          continuousAssessment: s.continuousAssessment ?? null,
+          examinationMark: s.examinationMark ?? null,
         }));
       }
 
@@ -2095,3 +2101,5 @@ function QuickEntryComponent({
     </>
   );
 }
+
+    
