@@ -498,11 +498,11 @@ function AppContent({ user }: { user: CustomUser }) {
       circuit: currentEditingReport.circuit,
       schoolLogoDataUri: currentEditingReport.schoolLogoDataUri,
       className: currentEditingReport.className,
+      shsProgram: currentEditingReport.shsProgram,
       academicYear: currentEditingReport.academicYear,
       academicTerm: currentEditingReport.academicTerm,
       reopeningDate: currentEditingReport.reopeningDate,
       selectedTemplateId: currentEditingReport.selectedTemplateId,
-      shsProgram: currentEditingReport.shsProgram,
       totalSchoolDays: currentEditingReport.totalSchoolDays,
       headMasterSignatureDataUri: currentEditingReport.headMasterSignatureDataUri,
       instructorContact: currentEditingReport.instructorContact,
@@ -1858,11 +1858,21 @@ function QuickEntryComponent({
     if (id.startsWith("temp-")) return;
     setSavingStatus((p) => ({ ...p, [id]: "saving" }));
     try {
-      await updateDoc(doc(db, "reports", id), fields);
+      
+      const dataToSave = { ...fields };
+      if (dataToSave.subjects) {
+        dataToSave.subjects = dataToSave.subjects.map(s => ({
+          ...s,
+          continuousAssessment: s.continuousAssessment === undefined ? null : s.continuousAssessment,
+          examinationMark: s.examinationMark === undefined ? null : s.examinationMark,
+        }));
+      }
+
+      await updateDoc(doc(db, "reports", id), dataToSave);
       setSavingStatus((p) => ({ ...p, [id]: "saved" }));
       setTimeout(() => setSavingStatus((p) => ({ ...p, [id]: "idle" })), 2000);
-    } catch {
-      toast({ title: "Save Failed", description: "Could not save data.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Save Failed", description: error.message || "Could not save data.", variant: "destructive" });
       setSavingStatus((p) => ({ ...p, [id]: "idle" }));
     }
   };
@@ -2017,7 +2027,7 @@ function QuickEntryComponent({
             imageUploadStatus={imageUploadStatus}
             isAiEditing={isAiEditing}
             onMarkChange={handleMarkChange}
-            onFieldChange={onFieldChange}
+            onFieldChange={handleFieldChange}
             onFieldBlur={handleFieldBlur}
             onUploadImage={handleUploadImage}
             onAiEditImage={handleAiEditImage}
