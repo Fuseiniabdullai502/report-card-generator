@@ -8,7 +8,7 @@ import { Loader2, Upload, Wand2, CheckCircle, Trash2, Image as ImageIcon } from 
 import NextImage from "next/image";
 import { Progress } from "@/components/ui/progress";
 import type { ReportData } from "@/lib/schemas";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type SaveStatus = "idle" | "saving" | "saved";
 
@@ -131,7 +131,7 @@ function StudentRow({
           <React.Fragment key={`${student.id}-${sub}`}>
             <TableCell className="border-l p-1">
               <label htmlFor={`${sub}-ca-${student.id}`} className="sr-only">{sub} continuous assessment</label>
-              <Input type="number" id={`${sub}-ca-${student.id}`} placeholder="-" value={subjectData?.continuousAssessment ?? ""} onChange={(e) => handleNumberInput(e.target.value, (val) => onMarkChange(student.id, sub, "continuousAssessment", val))} onKeyDown={(e) => onKeyDown(e, index, `${sub}-ca`)} onBlur={() => onFieldBlur(student.id, { subjects: student.subjects })} className="text-center h-8 w-[60px] text-xs sm:h-9 sm:text-sm" min={0} max={100} disabled={savingStatus[student.id] === "saving"} aria-label={`${sub} continuous assessment for ${student.studentName || index + 1}`} />
+              <Input type="number" id={`${sub}-ca-${student.id}`} placeholder="-" value={subjectData?.continuousAssessment ?? ""} onChange={(e) => handleNumberInput(e.target.value, (val) => onMarkChange(student.id, sub, "continuousAssessment", val))} onKeyDown={(e) => onKeyDown(e, index, `${sub}-ca`)} onBlur={() => onFieldBlur(student.id, { subjects: student.subjects })} className="text-center h-8 w-[60px] text-xs sm:h-9 sm:text-sm" min={0} max={60} disabled={savingStatus[student.id] === "saving"} aria-label={`${sub} continuous assessment for ${student.studentName || index + 1}`} />
             </TableCell>
             <TableCell className="border-l p-1">
               <label htmlFor={`${sub}-exam-${student.id}`} className="sr-only">{sub} exam</label>
