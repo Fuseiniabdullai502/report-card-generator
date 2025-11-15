@@ -56,7 +56,7 @@ export async function generateBulkStudentFeedback(
 
 const generateBulkStudentFeedbackPrompt = ai.definePrompt({
   name: 'generateBulkStudentFeedbackPrompt',
-  model: 'gemini-1.5-pro-latest',
+  model: 'gemini-pro',
   input: {schema: GenerateBulkStudentFeedbackInputSchema},
   output: {schema: GenerateBulkStudentFeedbackOutputSchema},
   prompt: `You are a helpful and efficient teacher providing feedback to a group of students.

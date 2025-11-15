@@ -55,7 +55,7 @@ export async function generateSchoolInsights(input: GenerateSchoolInsightsInput)
 
 const prompt = ai.definePrompt({
   name: 'generateSchoolInsightsPrompt',
-  model: 'gemini-1.5-pro-latest',
+  model: 'gemini-pro',
   input: { schema: GenerateSchoolInsightsInputSchema },
   output: { schema: GenerateSchoolInsightsOutputSchema },
   prompt: `You are an expert educational consultant and data analyst providing a school-level performance review for {{{schoolName}}}.
