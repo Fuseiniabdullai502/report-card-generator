@@ -308,7 +308,7 @@ export default function ReportForm({
       }
     }
     // intentionally not debounced as it's a derived value
-  }, [isPromotionStatusApplicable, formData.subjects, formData.promotionStatus, onFormUpdate]);
+  }, [isPromotionStatusApplicable, formData.subjects, formData.promotionStatus, onFormUpdate, formData]);
 
   /* -------------------- Handlers -------------------- */
 
@@ -728,7 +728,7 @@ export default function ReportForm({
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleAiEditImage(formData.studentPhotoUrl, "Brighten and enhance clarity keeping family features")}
+                      onClick={() => handleAiEditImage(formData.studentPhotoUrl || '', "Brighten and enhance clarity keeping family features")}
                       disabled={!formData.studentPhotoUrl || isImageEditingAiLoading || isUploading}
                       title="Enhance with AI"
                     >
