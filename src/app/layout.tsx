@@ -28,7 +28,6 @@ export default function RootLayout({
         />
         <meta name="theme-color" content="#64B5F6" />
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
-        <link rel="icon" href="/icons/favicon.ico" sizes="any" />
       </head>
       <body>
         <Providers>
