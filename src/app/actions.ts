@@ -429,7 +429,7 @@ const serializeReport = (doc: DocumentData): ReportData => {
     selectedTemplateId: data.selectedTemplateId,
     daysAttended: data.daysAttended,
     totalSchoolDays: data.totalSchoolDays,
-    parentEmail: data.parentEmail,
+    parentEmail: data.parentEmail ?? null,
     parentPhoneNumber: data.parentPhoneNumber,
     performanceSummary: data.performanceSummary,
     strengths: data.strengths,
@@ -495,7 +495,9 @@ export async function getReportsAction(user: PlainUser): Promise<{ success: bool
     const isIndexError = msg.includes("requires an index") || code === 'failed-precondition';
 
     let errorMessage: string;
-    if (isIndexError) {
+    if (error instanceof z.ZodError) {
+      errorMessage = JSON.stringify(error.errors);
+    } else if (isIndexError) {
       errorMessage = `INDEX_REQUIRED: ${msg}`;
     } else if (code === 'permission-denied') {
       errorMessage = `PERMISSION_DENIED: Your security rules are blocking this query. Please check the rules for the 'reports' collection.`;
@@ -504,7 +506,7 @@ export async function getReportsAction(user: PlainUser): Promise<{ success: bool
       errorMessage = `${code}: ${msg}`;
     }
 
-    console.error("[getReportsAction] ERROR", { code, msg, isIndexError });
+    console.error("[getReportsAction] ERROR", { code, msg, isIndexError, fullError: error });
     return { success: false, error: errorMessage };
   }
 }
