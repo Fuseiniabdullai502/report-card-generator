@@ -849,7 +849,7 @@ function AppContent({ user }: { user: CustomUser }) {
             studentEntryNumber: currentImportEntryNumberBase + importedCount,
             createdAt: serverTimestamp(),
             studentName: profile.studentName,
-            gender: profile.gender ?? '',
+            gender: profile.gender ?? null,
             studentPhotoUrl: profile.studentPhotoUrl ?? null,
             className: destinationClass,
             schoolName: sessionDefaults.schoolName,
@@ -1516,7 +1516,7 @@ function AppContent({ user }: { user: CustomUser }) {
         <SchoolPerformanceDashboard
           isOpen={isSchoolDashboardOpen}
           onOpenChange={setIsSchoolDashboardOpen}
-          allReports={allRankedReports}
+          allReports={allReports}
           schoolNameProp={schoolNameForDashboard}
           academicYearProp={academicYearForDashboard}
           userRole={user.role}
@@ -1877,7 +1877,7 @@ function QuickEntryComponent({
       studentEntryNumber: highestEntryNum + 1,
       studentName: newStudentName.trim(),
       className: selectedClass,
-      gender: "",
+      gender: null,
       country: "Ghana",
       selectedTemplateId: 'default',
       studentPhotoUrl: null,
@@ -2016,11 +2016,11 @@ function QuickEntryComponent({
             savingStatus={savingStatus}
             imageUploadStatus={imageUploadStatus}
             isAiEditing={isAiEditing}
-            onMarkChange={onMarkChange}
+            onMarkChange={handleMarkChange}
             onFieldChange={onFieldChange}
             onFieldBlur={handleFieldBlur}
-            onUploadImage={onUploadImage}
-            onAiEditImage={onAiEditImage}
+            onUploadImage={handleUploadImage}
+            onAiEditImage={handleAiEditImage}
             onDelete={(student) => setStudentToDelete(student)}
             onKeyDown={handleKeyDown}
           />
