@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -48,7 +49,7 @@ import AddSubjectDialog from '@/components/AddSubjectDialog';
 
 
 // ⚡️ Dynamic imports (smaller initial JS)
-const ReportForm = dynamic(() => import('@/components/report-form'), { ssr: false, loading: () => <div className="p-4 text-sm text-muted-foreground">Loading form…</div> });
+const ReportForm = dynamic(() => import('@/components/ReportForm/ReportForm'), { ssr: false, loading: () => <div className="p-4 text-sm text-muted-foreground">Loading form…</div> });
 const ReportPreview = dynamic(() => import('@/components/report-preview'), { ssr: false, loading: () => <div className="p-4 text-sm text-muted-foreground">Loading preview…</div> });
 const ReportActions = dynamic(() => import('@/components/report-actions'), { ssr: false });
 const SchoolPerformanceDashboard = dynamic(() => import('@/components/school-dashboard'), { ssr: false });
@@ -167,8 +168,7 @@ function AppContent({ user }: { user: CustomUser }) {
   const isSuperAdmin = user.role === 'super-admin';
   const isBigAdmin = user.role === 'big-admin';
   const isAdmin = user.role === 'admin';
-  const isRegularUser = user.role === 'user';
-  const isPublicUser = user.role === 'public_user';
+  const isRegularUser = user.role === 'user' || user.role === 'public_user';
   const isAdminRole = isSuperAdmin || isBigAdmin || isAdmin;
 
   // Load session defaults
@@ -291,7 +291,7 @@ function AppContent({ user }: { user: CustomUser }) {
     });
 
     let userVisibleClasses = Array.from(classes).filter(Boolean).sort();
-    if ((isRegularUser || isPublicUser) && user.classNames) {
+    if ((isRegularUser) && user.classNames) {
       userVisibleClasses = user.classNames.filter(Boolean);
     }
 
@@ -301,7 +301,7 @@ function AppContent({ user }: { user: CustomUser }) {
       years: ['all', ...Array.from(years).filter(Boolean).sort()],
       terms: ['all', ...Array.from(terms).filter(Boolean).sort()],
     };
-  }, [allRankedReports, isRegularUser, isPublicUser, user.classNames]);
+  }, [allRankedReports, isRegularUser, user.classNames]);
 
   // Apply filters
   const filteredReports = useMemo(() => {
@@ -739,6 +739,9 @@ function AppContent({ user }: { user: CustomUser }) {
     }
     if (field === 'className') {
       setAdminFilters(prev => ({...prev, className: value}));
+      if (filteredReports.length > 0) {
+        setCurrentPreviewIndex(0);
+      }
     }
 
     setSessionDefaults(newDefaults);
@@ -1134,7 +1137,7 @@ function AppContent({ user }: { user: CustomUser }) {
                     {(isSuperAdmin || isBigAdmin) && (
                       <div className="space-y-1">
                         <Label htmlFor="sessionSchoolCategory" className="text-sm font-medium">School Category</Label>
-                        <Select value={(sessionDefaults.schoolCategory as any) || ''} onValueChange={value => handleSessionDefaultChange('schoolCategory', value)} disabled={isPublicUser}>
+                        <Select value={(sessionDefaults.schoolCategory as any) || ''} onValueChange={value => handleSessionDefaultChange('schoolCategory', value)} disabled={isRegularUser}>
                           <SelectTrigger id="sessionSchoolCategory"><SelectValue placeholder="Select category..." /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="placeholder" disabled>Select category...</SelectItem>
