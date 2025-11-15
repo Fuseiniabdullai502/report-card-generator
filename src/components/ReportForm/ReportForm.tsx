@@ -784,7 +784,7 @@ export default function ReportForm({
               <div className="flex justify-between items-center border-b pb-2 mb-4">
                 <h3 className="text-lg font-medium text-primary">Subject Marks</h3>
                 <div className="flex gap-2 items-center">
-                  <Button variant="outline" size="sm" onClick={() => setShowCompactSubjectTable((s) => !s)}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowCompactSubjectTable((s) => !s)}>
                     {showCompactSubjectTable ? "Pager Mode" : "Compact Table"}
                   </Button>
                   <Button type="button" onClick={addSubject} className="flex items-center"><PlusCircle className="mr-2 h-4 w-4" />Add Subject</Button>
