@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, ChangeEvent, KeyboardEvent } from 'react';
@@ -40,6 +41,8 @@ import { format } from 'date-fns';
 import { getClassLevel, getSubjectsForClass, shsProgramOptions, type ShsProgram } from '@/lib/curriculum';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import type { GenerateReportInsightsInput } from '@/ai/flows/generate-performance-summary';
+
 
 // Components for Quick Entry integrated directly
 import QuickEntryToolbar from '@/components/quick-entry-toolbar';
@@ -888,6 +891,76 @@ function AppContent({ user }: { user: CustomUser }) {
       toast({ title: "Import Failed", description: "An error occurred while preparing student data for import.", variant: "destructive" });
     }
     setIsImportStudentsDialogOpen(false);
+  };
+
+  const handleGenerateAiReportInsights = async () => {
+    const { studentName, className, subjects, daysAttended, totalSchoolDays, academicTerm } = formData;
+  
+    if (!studentName?.trim()) {
+      toast({ title: "Missing Student Name", description: "Please enter the student's name.", variant: "destructive" });
+      return;
+    }
+    if (!className?.trim()) {
+      toast({ title: "Missing Class Name", description: "Please select a class in the 'Session Controls' section.", variant: "destructive" });
+      return;
+    }
+    if (!academicTerm?.trim()) {
+      toast({ title: "Missing Academic Term", description: "Please select a term in the 'Session Controls' section.", variant: "destructive" });
+      return;
+    }
+  
+    const validSubjects = subjects.filter((s) => s.subjectName && s.subjectName.trim() !== "");
+    if (validSubjects.length === 0) {
+      toast({ title: "No Valid Subjects", description: "Please add at least one subject with a name.", variant: "destructive" });
+      return;
+    }
+  
+    let previousTermsDataForAI: GenerateReportInsightsInput["previousTermsData"] = [];
+    if (allRankedReports && allRankedReports.length > 0) {
+      previousTermsDataForAI = allRankedReports
+        .filter(
+          (report) =>
+            report.studentName?.trim().toLowerCase() === formData.studentName?.trim().toLowerCase() &&
+            report.academicTerm !== formData.academicTerm
+        )
+        .map((report) => ({
+          termName: report.academicTerm || "Unknown Term",
+          subjects: report.subjects.map((s) => ({
+            subjectName: s.subjectName,
+            continuousAssessment: s.continuousAssessment,
+            examinationMark: s.examinationMark,
+          })),
+          overallAverage: report.overallAverage ?? null,
+        }));
+    }
+  
+    startAiTransition(async () => {
+      const aiInput: GenerateReportInsightsInput = {
+        studentName,
+        className,
+        currentAcademicTerm: academicTerm,
+        daysAttended: daysAttended === null ? null : Number(daysAttended),
+        totalSchoolDays: totalSchoolDays === null ? null : Number(totalSchoolDays),
+        subjects: validSubjects.map((s) => ({
+          subjectName: s.subjectName,
+          continuousAssessment: s.continuousAssessment === null ? null : Number(s.continuousAssessment),
+          examinationMark: s.examinationMark === null ? null : Number(s.examinationMark),
+        })),
+        previousTermsData: previousTermsDataForAI!.length > 0 ? previousTermsDataForAI : undefined,
+      };
+      const result = await getAiReportInsightsAction(aiInput);
+      if (result.success && result.insights) {
+        handleFormUpdate({ ...formData, ...result.insights });
+        toast({ title: "AI Insights Generated", description: "Performance summary updated with term-over-term comparison." });
+      } else {
+        toast({
+          title: "AI Insights Generation Failed",
+          description: <div className="text-xs"><pre className="whitespace-pre-wrap">{result.error}</pre></div>,
+          variant: "destructive",
+          duration: 30000,
+        });
+      }
+    });
   };
 
   const initialClassForDashboard = useMemo(() => {
