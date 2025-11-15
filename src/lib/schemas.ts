@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 import { serverTimestamp } from 'firebase/firestore'; // Import serverTimestamp
 
@@ -23,23 +22,23 @@ export const SubjectEntrySchema = z.object({
 
                                               export const ReportDataSchema = z.object({
                                                 id: z.string(),
-                                                  teacherId: z.string().optional(),
+                                                  teacherId: z.string().optional().nullable(),
                                                     studentEntryNumber: z.coerce.number(),
                                                       studentName: z.string().min(1, 'Student name is required'),
                                                         className: z.string().min(1, 'Class name is required'),
-                                                          shsProgram: z.string().optional(),
-                                                            gender: z.string().trim().optional(),
+                                                          shsProgram: z.string().optional().nullable(),
+                                                            gender: z.string().trim().optional().nullable(),
                                                               country: z.string().optional().default('Ghana'),
-                                                                schoolName: z.string().optional(),
+                                                                schoolName: z.string().optional().nullable(),
                                                                   schoolCategory: z.enum(['public', 'private']).optional().nullable(),
-                                                                    region: z.string().optional(),
-                                                                      district: z.string().optional(),
-                                                                        circuit: z.string().optional(),
+                                                                    region: z.string().optional().nullable(),
+                                                                      district: z.string().optional().nullable(),
+                                                                        circuit: z.string().optional().nullable(),
                                                                           schoolLogoDataUri: z.union([z.string(), z.null(), z.literal('')])
                                                                               .optional()
                                                                                   .describe("A data URI of the school's logo."),
-                                                                                    academicYear: z.string().optional(),
-                                                                                      academicTerm: z.string().optional(),
+                                                                                    academicYear: z.string().optional().nullable(),
+                                                                                      academicTerm: z.string().optional().nullable(),
                                                                                         reopeningDate: z.string().optional().nullable(),
                                                                                           selectedTemplateId: z.string().optional().default('default'),
                                                                                             daysAttended: z.coerce
@@ -53,19 +52,19 @@ export const SubjectEntrySchema = z.object({
                                                                                                                           .nullable()
                                                                                                                               .optional(),
                                                                                                                                 parentEmail: z.string().email({ message: "Invalid email address" }).optional().or(z.literal('')),
-                                                                                                                                  parentPhoneNumber: z.string().optional(),
+                                                                                                                                  parentPhoneNumber: z.string().optional().nullable(),
                                                                                                                                     performanceSummary: z.string().trim().optional().default(''),
                                                                                                                                       strengths: z.string().trim().optional().default(''),
                                                                                                                                         areasForImprovement: z.string().trim().optional().default(''),
                                                                                                                                           hobbies: z.array(z.string()).optional().default([]),
-                                                                                                                                            teacherFeedback: z.string().optional(),
-                                                                                                                                              instructorContact: z.string().optional(),
+                                                                                                                                            teacherFeedback: z.string().optional().nullable(),
+                                                                                                                                              instructorContact: z.string().optional().nullable(),
                                                                                                                                                 subjects: z
                                                                                                                                                     .array(SubjectEntrySchema)
                                                                                                                                                         .min(1, 'At least one subject is required.')
                                                                                                                                                             .default([{ subjectName: 'Subject', continuousAssessment: null, examinationMark: null }]),
-                                                                                                                                                              overallAverage: z.number().optional(),
-                                                                                                                                                                rank: z.string().optional(),
+                                                                                                                                                              overallAverage: z.number().optional().nullable(),
+                                                                                                                                                                rank: z.string().optional().nullable(),
                                                                                                                                                                   promotionStatus: z.string().nullable().optional(),
                                                                                                                                                                     studentPhotoUrl: z.union([z.string(), z.null(), z.literal('')])
                                                                                                                                                                         .optional()
@@ -98,32 +97,31 @@ export const SubjectEntrySchema = z.object({
                                                                                                                                                                                                                               > & { subjects: SubjectEntry[]; hobbies: string[] } = {
                                                                                                                                                                                                                                 studentName: 'Fuseini Abdullai',
                                                                                                                                                                                                                                   className: '',
-                                                                                                                                                                                                                                    shsProgram: undefined,
-                                                                                                                                                                                                                                      gender: undefined,
+                                                                                                                                                                                                                                    shsProgram: null,
+                                                                                                                                                                                                                                      gender: null,
                                                                                                                                                                                                                                         country: 'Ghana',
-                                                                                                                                                                                                                                          schoolName: '',
-                                                                                                                                                                                                                                            schoolCategory: undefined,
-                                                                                                                                                                                                                                              region: '',
-                                                                                                                                                                                                                                                district: '',
-                                                                                                                                                                                                                                                  circuit: '',
-                                                                                                                                                                                                                                                    schoolLogoDataUri: undefined,
-                                                                                                                                                                                                                                                      academicYear: '',
-                                                                                                                                                                                                                                                        academicTerm: undefined,
+                                                                                                                                                                                                                                          schoolName: null,
+                                                                                                                                                                                                                                            schoolCategory: null,
+                                                                                                                                                                                                                                              region: null,
+                                                                                                                                                                                                                                                district: null,
+                                                                                                                                                                                                                                                  circuit: null,
+                                                                                                                                                                                                                                                    schoolLogoDataUri: null,
+                                                                                                                                                                                                                                                      academicYear: null,
+                                                                                                                                                                                                                                                        academicTerm: null,
                                                                                                                                                                                                                                                           reopeningDate: null,
                                                                                                                                                                                                                                                             selectedTemplateId: 'default',
                                                                                                                                                                                                                                                               daysAttended: null,
                                                                                                                                                                                                                                                                 totalSchoolDays: null,
                                                                                                                                                                                                                                                                   parentEmail: '',
-                                                                                                                                                                                                                                                                    parentPhoneNumber: '',
+                                                                                                                                                                                                                                                                    parentPhoneNumber: null,
                                                                                                                                                                                                                                                                       performanceSummary: '',
                                                                                                                                                                                                                                                                         strengths: '',
                                                                                                                                                                                                                                                                           areasForImprovement: '',
                                                                                                                                                                                                                                                                             hobbies: [],
-                                                                                                                                                                                                                                                                              teacherFeedback: '',
-                                                                                                                                                                                                                                                                                instructorContact: '',
+                                                                                                                                                                                                                                                                              teacherFeedback: null,
+                                                                                                                                                                                                                                                                                instructorContact: null,
                                                                                                                                                                                                                                                                                   subjects: [{ subjectName: 'Subject', continuousAssessment: null, examinationMark: null }],
-                                                                                                                                                                                                                                                                                    promotionStatus: undefined,
-                                                                                                                                                                                                                                                                                      studentPhotoUrl: undefined,
-                                                                                                                                                                                                                                                                                        headMasterSignatureDataUri: undefined,
+                                                                                                                                                                                                                                                                                    promotionStatus: null,
+                                                                                                                                                                                                                                                                                      studentPhotoUrl: null,
+                                                                                                                                                                                                                                                                                        headMasterSignatureDataUri: null,
                                                                                                                                                                                                                                                                                         };
-                                                                                                                                                                                                                                                                                        

@@ -533,43 +533,43 @@ function AppContent({ user }: { user: CustomUser }) {
     }
 
     const reportToSaveForFirestore = {
-      teacherId: user.uid,
-      studentEntryNumber: formDataFromForm.studentEntryNumber || 1,
-      studentName: formDataFromForm.studentName || '',
-      className: formDataFromForm.className || '',
-      shsProgram: formDataFromForm.shsProgram || null,
-      gender: formDataFromForm.gender || null,
-      country: formDataFromForm.country || 'Ghana',
-      schoolName: formDataFromForm.schoolName || '',
-      schoolCategory: formDataFromForm.schoolCategory || null,
-      region: formDataFromForm.region || '',
-      district: formDataFromForm.district || '',
-      circuit: formDataFromForm.circuit || '',
-      schoolLogoDataUri: formDataFromForm.schoolLogoDataUri || null,
-      academicYear: formDataFromForm.academicYear || '',
-      academicTerm: formDataFromForm.academicTerm || '',
-      reopeningDate: formDataFromForm.reopeningDate || null,
-      selectedTemplateId: formDataFromForm.selectedTemplateId || 'default',
-      daysAttended: formDataFromForm.daysAttended == null ? null : Number(formDataFromForm.daysAttended),
-      totalSchoolDays: formDataFromForm.totalSchoolDays == null ? null : Number(formDataFromForm.totalSchoolDays),
-      parentEmail: formDataFromForm.parentEmail || null,
-      parentPhoneNumber: formDataFromForm.parentPhoneNumber || null,
-      performanceSummary: formDataFromForm.performanceSummary || '',
-      strengths: formDataFromForm.strengths || '',
-      areasForImprovement: formDataFromForm.areasForImprovement || '',
-      hobbies: formDataFromForm.hobbies || [],
-      teacherFeedback: formDataFromForm.teacherFeedback || '',
-      instructorContact: formDataFromForm.instructorContact || null,
-      subjects: formDataFromForm.subjects.map(s => ({
-        subjectName: s.subjectName || '',
-        continuousAssessment: s.continuousAssessment == null ? null : Number(s.continuousAssessment),
-        examinationMark: s.examinationMark == null ? null : Number(s.examinationMark),
-      })),
-      promotionStatus: formDataFromForm.promotionStatus || null,
-      studentPhotoUrl: formDataFromForm.studentPhotoUrl || null,
-      headMasterSignatureDataUri: formDataFromForm.headMasterSignatureDataUri || null,
-      clientSideId: formDataFromForm.id, // For local tracking if needed
-    };
+        teacherId: user.uid,
+        studentEntryNumber: formDataFromForm.studentEntryNumber || 1,
+        studentName: formDataFromForm.studentName || '',
+        className: formDataFromForm.className || '',
+        shsProgram: formDataFromForm.shsProgram || null,
+        gender: formDataFromForm.gender || null,
+        country: formDataFromForm.country || 'Ghana',
+        schoolName: formDataFromForm.schoolName || null,
+        schoolCategory: formDataFromForm.schoolCategory || null,
+        region: formDataFromForm.region || null,
+        district: formDataFromForm.district || null,
+        circuit: formDataFromForm.circuit || null,
+        schoolLogoDataUri: formDataFromForm.schoolLogoDataUri || null,
+        academicYear: formDataFromForm.academicYear || null,
+        academicTerm: formDataFromForm.academicTerm || null,
+        reopeningDate: formDataFromForm.reopeningDate || null,
+        selectedTemplateId: formDataFromForm.selectedTemplateId || 'default',
+        daysAttended: formDataFromForm.daysAttended == null ? null : Number(formDataFromForm.daysAttended),
+        totalSchoolDays: formDataFromForm.totalSchoolDays == null ? null : Number(formDataFromForm.totalSchoolDays),
+        parentEmail: formDataFromForm.parentEmail || null,
+        parentPhoneNumber: formDataFromForm.parentPhoneNumber || null,
+        performanceSummary: formDataFromForm.performanceSummary || '',
+        strengths: formDataFromForm.strengths || '',
+        areasForImprovement: formDataFromForm.areasForImprovement || '',
+        hobbies: formDataFromForm.hobbies || [],
+        teacherFeedback: formDataFromForm.teacherFeedback || null,
+        instructorContact: formDataFromForm.instructorContact || null,
+        subjects: formDataFromForm.subjects.map(s => ({
+          subjectName: s.subjectName || '',
+          continuousAssessment: s.continuousAssessment == null ? null : Number(s.continuousAssessment),
+          examinationMark: s.examinationMark == null ? null : Number(s.examinationMark),
+        })),
+        promotionStatus: formDataFromForm.promotionStatus || null,
+        studentPhotoUrl: formDataFromForm.studentPhotoUrl || null,
+        headMasterSignatureDataUri: formDataFromForm.headMasterSignatureDataUri || null,
+        clientSideId: formDataFromForm.id,
+      };
 
     try {
       if (isEditing) {
@@ -1810,7 +1810,7 @@ function QuickEntryComponent({
 
       if (dataToSave.subjects) {
         dataToSave.subjects = dataToSave.subjects.map((s: SubjectEntry) => ({
-          ...s,
+          subjectName: s.subjectName,
           continuousAssessment: s.continuousAssessment ?? null,
           examinationMark: s.examinationMark ?? null,
         }));
@@ -1829,13 +1829,13 @@ function QuickEntryComponent({
     if (!newStudentName.trim() || !selectedClass) return;
     setIsAddingStudent(true);
 
-    const highestEntryNum = allRankedReports.reduce((max, r) => r.studentEntryNumber > max ? r.studentEntryNumber : max, 0);
+    const highestEntryNum = allReports.reduce((max: number, r: ReportData) => ((r.studentEntryNumber || 0) > max ? (r.studentEntryNumber || 0) : max), 0);
 
     const newStudent: Omit<ReportData, "id"> = {
       studentEntryNumber: highestEntryNum + 1,
       studentName: newStudentName.trim(),
       className: selectedClass,
-      gender: undefined,
+      gender: null,
       country: "Ghana",
       selectedTemplateId: 'default',
       studentPhotoUrl: null,
@@ -1849,6 +1849,13 @@ function QuickEntryComponent({
       strengths: "",
       areasForImprovement: "",
       hobbies: [],
+      schoolName: sessionDefaults.schoolName ?? null,
+      region: sessionDefaults.region ?? null,
+      district: sessionDefaults.district ?? null,
+      circuit: sessionDefaults.circuit ?? null,
+      academicYear: sessionDefaults.academicYear ?? null,
+      academicTerm: sessionDefaults.academicTerm ?? null,
+      shsProgram: sessionDefaults.shsProgram ?? null,
     };
 
     try {
