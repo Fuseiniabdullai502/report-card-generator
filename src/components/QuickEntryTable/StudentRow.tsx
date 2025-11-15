@@ -131,7 +131,7 @@ function StudentRow({
           <React.Fragment key={`${student.id}-${sub}`}>
             <TableCell className="border-l p-1">
               <label htmlFor={`${sub}-ca-${student.id}`} className="sr-only">{sub} continuous assessment</label>
-              <Input type="number" id={`${sub}-ca-${student.id}`} placeholder="-" value={subjectData?.continuousAssessment ?? ""} onChange={(e) => handleNumberInput(e.target.value, (val) => onMarkChange(student.id, sub, "continuousAssessment", val))} onKeyDown={(e) => onKeyDown(e, index, `${sub}-ca`)} onBlur={() => onFieldBlur(student.id, { subjects: student.subjects })} className="text-center h-8 w-[60px] text-xs sm:h-9 sm:text-sm" min={0} max={60} disabled={savingStatus[student.id] === "saving"} aria-label={`${sub} continuous assessment for ${student.studentName || index + 1}`} />
+              <Input type="number" id={`${sub}-ca-${student.id}`} placeholder="-" value={subjectData?.continuousAssessment ?? ""} onChange={(e) => handleNumberInput(e.target.value, (val) => onMarkChange(student.id, sub, "continuousAssessment", val), 0, 60)} onKeyDown={(e) => onKeyDown(e, index, `${sub}-ca`)} onBlur={() => onFieldBlur(student.id, { subjects: student.subjects })} className="text-center h-8 w-[60px] text-xs sm:h-9 sm:text-sm" min={0} max={60} disabled={savingStatus[student.id] === "saving"} aria-label={`${sub} continuous assessment for ${student.studentName || index + 1}`} />
             </TableCell>
             <TableCell className="border-l p-1">
               <label htmlFor={`${sub}-exam-${student.id}`} className="sr-only">{sub} exam</label>
