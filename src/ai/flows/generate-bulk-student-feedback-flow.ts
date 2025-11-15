@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -9,7 +10,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { gemini15Flash } from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 // Schema for a single student's input
@@ -56,7 +56,7 @@ export async function generateBulkStudentFeedback(
 
 const generateBulkStudentFeedbackPrompt = ai.definePrompt({
   name: 'generateBulkStudentFeedbackPrompt',
-  model: gemini15Flash,
+  model: 'gemini-1.5-pro-latest',
   input: {schema: GenerateBulkStudentFeedbackInputSchema},
   output: {schema: GenerateBulkStudentFeedbackOutputSchema},
   prompt: `You are a helpful and efficient teacher providing feedback to a group of students.
